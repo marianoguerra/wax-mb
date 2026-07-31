@@ -103,7 +103,10 @@ fn Ctx::attribute_gen(
         self.space()
         self.attr("=")
         self.space()
-        self.instr(Instruction, v)
+        // The value is coloured as part of the attribute, so `#[export = "f"]`
+        // reads as one unit rather than as an attribute wrapping a
+        // string-coloured literal.
+        self.with_style(Attribute, () => self.instr(Instruction, v))
       }
     }
     // A per-attribute guard, `#[export = "n", if(<cond>)]`.
@@ -173,7 +176,12 @@ fn Ctx::attr_prefix(
 ///|
 /// A byte string, re-escaped and quoted.
 fn Ctx::data_bytes(self : Ctx[@basic.Location], s : Bytes) -> Unit {
-  self.str(string_literal(s))
+  // Three atoms, the middle carrying the escaped form's display width -- the
+  // same shape as an inline string literal.
+  let (len, body) = @unicode.escape_string(s, hex_prefix="x")
+  self.str("\"")
+  self.styled_as(Str, len, body)
+  self.str("\"")
 }
 
 ///|

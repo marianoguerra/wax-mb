@@ -697,6 +697,25 @@ def check_oracle2(
     out.passed += 1
 
 
+# The span fields, which finding 9 exempts for the files below.
+SPAN_FIELDS = {"startLine", "startColumn", "endLine", "endColumn",
+               "startOffset", "endOffset"}
+
+# Files where the offending token is a STRING, so the reference points at its
+# closing quote rather than at the string (see test/UPSTREAM-FINDINGS.md
+# finding 9). We report the true span. Listed so the divergence is visible,
+# bounded, and noticed the day upstream fixes it.
+SPAN_DIVERGENCE_UPSTREAM = {
+    "cram/all-errors-semantic-raise__stmt-raise.wax",
+    "docs/language__034.wax",
+    "docs/language__092.wax",
+    "docs/language__094.wax",
+    "docs/reference__036.wax",
+    "docs/reference__094.wax",
+    "docs/reference__096.wax",
+}
+
+
 def check_oracle3(
     impl: list[str], rel: str, path: Path, meta: dict, out: Outcome, policy: dict
 ) -> None:
@@ -740,9 +759,23 @@ def check_oracle3(
             Failure(rel, "errors", f"{len(got)} diagnostic(s), want {len(want)}")
         )
         return
+    span_exempt = rel in SPAN_DIVERGENCE_UPSTREAM
+    saw_span_divergence = False
     for i, (w, g) in enumerate(zip(want, got)):
         for f in policy["gated"]:
             if w.get(f) != g.get(f):
+                # Finding 9: the reference points a syntax error at a string's
+                # closing quote rather than at the string, because its string
+                # scanner recurses and Menhir reads the lexbuf instead of the
+                # token. We report the true span; the divergence is listed per
+                # file so it stays visible and cannot spread.
+                if span_exempt and f in SPAN_FIELDS:
+                    saw_span_divergence = True
+                    out.drift.append(
+                        f"{rel} #{i} {f} (upstream finding 9)\n"
+                        f"  ref: {w.get(f)!r}\n  ours: {g.get(f)!r}"
+                    )
+                    continue
                 out.failed += 1
                 out.failures.append(
                     Failure(rel, "errors", f"diagnostic {i} field {f}: got {g.get(f)!r}, want {w.get(f)!r}")
@@ -751,6 +784,14 @@ def check_oracle3(
         for f in policy["reported"]:
             if w.get(f) != g.get(f):
                 out.drift.append(f"{rel} #{i} {f}\n  ref: {w.get(f)!r}\n  ours: {g.get(f)!r}")
+    if span_exempt and not saw_span_divergence:
+        out.failed += 1
+        out.failures.append(
+            Failure(rel, "errors",
+                    "listed in SPAN_DIVERGENCE_UPSTREAM but the spans now agree; "
+                    "if upstream fixed finding 9, drop the entry and the finding")
+        )
+        return
     out.passed += 1
 
 

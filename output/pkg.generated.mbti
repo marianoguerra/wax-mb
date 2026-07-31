@@ -75,6 +75,7 @@ pub(all) enum BinopKind {
 pub struct Ctx[Info] {
   p : @printer.Printer
   theme : @colors.Theme
+  mut style_override : @colors.Style?
   trivia : @trivia.Table
   collect : @trivia.Locations?
   locate : (Info) -> @basic.Location?
@@ -120,12 +121,14 @@ pub fn[Info] Ctx::space(Self[Info]) -> Unit
 pub fn[Info] Ctx::storagetype(Self[Info], @wasm_types.StorageType[@ast.Ident]) -> Unit
 pub fn[Info] Ctx::str(Self[Info], String) -> Unit
 pub fn[Info] Ctx::styled(Self[Info], @colors.Style, String) -> Unit
+pub fn[Info] Ctx::styled_as(Self[Info], @colors.Style, Int, String) -> Unit
 pub fn Ctx::subtype(Self[@basic.Location], @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]) -> Unit
 pub fn[Info, T] Ctx::trailing_comma(Self[Info], Array[T]) -> Unit
 pub fn[Info] Ctx::tuple(Self[Info], Bool, Array[@wasm_types.ValType[@ast.Ident]]) -> Unit
 pub fn[Info] Ctx::typ(Self[Info], String) -> Unit
 pub fn[Info] Ctx::typed_pat(Self[Info], @ast.Ident?, @wasm_types.ValType[@ast.Ident]?) -> Unit
 pub fn[Info] Ctx::valtype(Self[Info], @wasm_types.ValType[@ast.Ident]) -> Unit
+pub fn[Info] Ctx::with_style(Self[Info], @colors.Style, () -> Unit) -> Unit
 
 pub(all) enum Prec {
   Instruction

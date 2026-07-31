@@ -1,0 +1,18 @@
+import {
+  "waxmb/wax/ast",
+  "waxmb/wax/basic",
+  "waxmb/wax/colors",
+  "waxmb/wax/diagnostic",
+  "waxmb/wax/grammar",
+  "waxmb/wax/message",
+  "waxmb/wax/output",
+  "waxmb/wax/trivia",
+  "waxmb/wax/warning",
+  "waxmb/wax/io",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/env",
+  "moonbitlang/x/fs",
+  "moonbitlang/x/sys",
+}
+
+pkgtype(kind: "executable")

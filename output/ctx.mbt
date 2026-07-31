@@ -28,6 +28,12 @@ pub struct Ctx[Info] {
   p : @printer.Printer
   /// The palette styled atoms are rendered with.
   theme : @colors.Theme
+  /// When set, every styled atom renders in THIS style instead of its own.
+  ///
+  /// Used to colour an expression printed inside an attribute, so
+  /// `#[export = "f"]` reads as one attribute rather than as an attribute
+  /// containing a differently-coloured string.
+  mut style_override : @colors.Style?
   trivia : @trivia.Table
   /// The dry pass fills this instead of printing; see `associate`.
   collect : @trivia.Locations?
@@ -42,7 +48,7 @@ pub fn Ctx::new(
   locate? : (@basic.Location) -> @basic.Location? = l => Some(l),
   theme? : @colors.Theme = @colors.no_color,
 ) -> Ctx[@basic.Location] {
-  { p, theme, trivia, collect, locate }
+  { p, theme, style_override: None, trivia, collect, locate }
 }
 
 ///|
@@ -52,14 +58,46 @@ pub fn Ctx::new(
 /// colouring never changes a line-breaking decision. Uncoloured themes emit no
 /// sequence at all rather than an empty one.
 pub fn[Info] Ctx::styled(self : Ctx[Info], style : Style, s : String) -> Unit {
+  self.styled_as(style, s.length(), s)
+}
+
+///|
+/// As `styled`, but with an explicit DISPLAY WIDTH.
+///
+/// An escaped string literal is the case that needs it: its printed form is
+/// longer than the value it stands for, and the printed form is what occupies
+/// columns.
+pub fn[Info] Ctx::styled_as(
+  self : Ctx[Info],
+  style : Style,
+  len : Int,
+  s : String,
+) -> Unit {
+  let style = match self.style_override {
+    Some(o) => o
+    None => style
+  }
   let seq = self.theme.escape_sequence(style)
   if seq != "" {
     self.p.string_as(0, seq)
   }
-  self.p.string(s)
+  self.p.string_as(len, s)
   if seq != "" {
     self.p.string_as(0, self.theme.reset)
   }
+}
+
+///|
+/// Run `f` with every styled atom forced to `style`.
+pub fn[Info] Ctx::with_style(
+  self : Ctx[Info],
+  style : Style,
+  f : () -> Unit,
+) -> Unit {
+  let saved = self.style_override
+  self.style_override = Some(style)
+  f()
+  self.style_override = saved
 }
 
 ///|

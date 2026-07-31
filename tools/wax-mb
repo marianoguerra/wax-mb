@@ -1,24 +1,11 @@
 #!/usr/bin/env bash
-# The MoonBit implementation, in the CLI shape `waxdiff` expects.
+# The MoonBit implementation, for the differential harness.
 #
-# A STAND-IN until Phase 4 builds the real `cmd/wax-mb`. It accepts the one
-# invocation Oracle 1 makes -- `wax-mb <file> -f wax` -- and rejects anything
-# else rather than silently ignoring a flag whose absence would make a
-# comparison meaningless.
-#
-# Invoking the linked executable directly, rather than through `moon run`,
-# skips a build-graph check per file; over a 1900-file corpus that dominates.
+# A thin wrapper over the built executable rather than `moon run`, which would
+# re-check the build graph once per file -- and that dominates over a
+# 1900-file corpus.
 set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
-bin="$here/../_build/native/debug/build/tools/reprint/reprint.exe"
-file=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    -f) [ "${2:-}" = "wax" ] || { echo "wax-mb: only -f wax is supported" >&2; exit 2; }; shift 2 ;;
-    -*) echo "wax-mb: unsupported flag $1" >&2; exit 2 ;;
-    *)  file="$1"; shift ;;
-  esac
-done
-[ -n "$file" ] || { echo "wax-mb: no input file" >&2; exit 2; }
+bin="$here/../_build/native/debug/build/cmd/wax-mb/wax-mb.exe"
 [ -x "$bin" ] || { echo "wax-mb: not built; run 'moon build --target native'" >&2; exit 127; }
-exec "$bin" "$file"
+exec "$bin" "$@"

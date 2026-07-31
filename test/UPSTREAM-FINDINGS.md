@@ -233,3 +233,42 @@ Since Oracle 1 gates on byte-exact reprint parity, matching the reference means
 inheriting the instability. Both files are listed in `NON_IDEMPOTENT_UPSTREAM`
 in `tools/waxdiff.py`, which fails if one of them ever becomes stable — so the
 day upstream fixes this, the harness says so rather than quietly diverging.
+
+## 9. A syntax error at a string literal points at its closing quote
+
+When the token the parser cannot shift is a STRING, the reference reports the
+error at the string's closing quote rather than at the string:
+
+```
+$ cat t.wax
+"hello";
+$ wax check --error-format json t.wax
+... "startOffset":6,"endOffset":7 ...     # the `"` at offset 6
+```
+
+`"hello"` spans offsets 0-7, and the reference's own token carries that span:
+`with_loc` (`wax/src/lib-wax/lexer.ml:147`) records
+`lexing_bytes_position_start` before scanning and
+`lexing_bytes_position_curr` after. But a string is scanned by a RECURSIVE
+sedlex rule, so by the time the parser fails, the lexbuf's own
+start position has advanced to the last sub-lexeme matched -- the closing
+quote -- and Menhir's error reporting reads the lexbuf rather than the token.
+
+The artifact is specific to tokens scanned by a recursive rule. It is
+reproducible on demand:
+
+| input | true token span | reference reports |
+|---|---|---|
+| `"hello";` | 0-7 | 6-7 |
+| `"a\tb";` | 0-6 | 5-6 |
+| `/*c*/ "xy";` | 6-10 | 9-10 |
+| `'a';` (char: one rule, no recursion) | 0-3 | 0-3 |
+| `foobar;` | 0-6 | 0-6 |
+
+This port reports the string's true span. It is the one place where it
+deliberately does NOT reproduce the reference's spans, because the divergence
+exists only in the diagnostic and copying it would mean pointing users at the
+wrong character. The seven affected corpus files are listed in
+`SPAN_DIVERGENCE_UPSTREAM` in `tools/waxdiff.py`, which fails if one of them
+ever starts agreeing -- so an upstream fix surfaces as a failing test rather
+than as silent drift.

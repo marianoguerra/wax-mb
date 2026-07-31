@@ -34,7 +34,7 @@ pub fn[Info] Ctx::print_trivia(
     match (e.trivia, e.position) {
       (Item(content~, kind=BlockComment, ..), _) => {
         self.space()
-        self.styled(Punctuation, content)
+        self.styled(Comment, content)
         self.space()
       }
       (Item(content~, kind=LineComment, ..), Inline) =>
@@ -42,11 +42,11 @@ pub fn[Info] Ctx::print_trivia(
         // this line, ahead of the comment.
         self.p.defer_eol(() => {
           self.p.string(" ")
-          self.styled(Punctuation, content.trim().to_owned())
+          self.styled(Comment, content.trim().to_owned())
         })
       (Item(content~, kind=LineComment, ..), LineStart) => {
         self.newline()
-        self.styled(Punctuation, content.trim().to_owned())
+        self.styled(Comment, content.trim().to_owned())
         self.newline()
       }
       (Item(content~, kind=Annotation, ..), _) => {

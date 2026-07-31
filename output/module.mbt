@@ -322,7 +322,7 @@ fn Ctx::fundecl(
         if exact {
           self.punct("!")
         }
-        self.typ(t.name)
+        self.ident(t.name)
         // A trailing space, so `fn f: t ()` keeps the type off the
         // parameter list.
         self.space()

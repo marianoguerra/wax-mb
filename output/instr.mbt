@@ -129,29 +129,46 @@ fn Ctx::instr_desc(
   match i.desc {
     // -- leaves ------------------------------------------------------------
     Unreachable => self.kw("unreachable")
-    Nop => self.kw("nop")
+    // `nop` is an OPERATOR, not a keyword, in the reference's palette.
+    Nop => self.op("nop")
     Hole => self.op("_")
     Null => self.kw("null")
     Get(x) => self.ident(x.name)
     Path(ns, mem) => {
       self.ident(ns.name)
-      self.punct("::")
+      self.op("::")
       self.ident(mem.name)
     }
     // Numeric literals are reproduced from their RAW source text, which is why
     // the AST keeps them as strings.
     Int(s) => self.constant(s)
     Float(s) => self.constant(s)
-    Char(c) => self.constant(char_literal(c))
+    Char(c) => {
+      // Like a string literal: three atoms in the STRING style, the middle one
+      // carrying the escaped form's display width.
+      let (len, body) = @unicode.escape_string(
+        @utf8.encode(c.to_string()),
+        hex_prefix="x",
+      )
+      self.str("'")
+      self.styled_as(Str, len, body)
+      self.str("'")
+    }
     Str(prefix, s) => {
       match prefix {
         Some(t) => {
           self.typ(t.name)
-          self.punct("#")
+          self.op("#")
         }
         None => ()
       }
-      self.str(string_literal(s))
+      // Three atoms, and the middle one carries the ESCAPED form's display
+      // width: `\x00` occupies four columns while standing for one byte, and
+      // it is the printed width that line breaking must count.
+      let (len, body) = @unicode.escape_string(s, hex_prefix="x")
+      self.str("\"")
+      self.styled_as(Str, len, body)
+      self.str("\"")
     }
 
     // -- structured control flow --------------------------------------------
@@ -888,7 +905,16 @@ fn Ctx::hint_attrs(
       for t in h.value {
         parts.push(t.0.name + ": " + percent_string(t.1))
       }
-      self.attr("#[targets(" + parts.join(", ") + ")]")
+      // Three atoms rather than one string: the opening, each target, and the
+      // close are emitted separately, exactly as the reference does.
+      self.attr("#[targets(")
+      for n, part in parts {
+        if n > 0 {
+          self.attr(", ")
+        }
+        self.attr(part)
+      }
+      self.attr(")]")
       self.space()
     }
     None => ()

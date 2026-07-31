@@ -1,0 +1,11 @@
+import {
+  "moonbitlang/core/encoding/utf8",
+}
+
+options(
+  "native-stub": [ "io_stub.c" ],
+  targets: {
+    "io_native.mbt": [ "native", "llvm" ],
+    "io_other.mbt": [ "wasm", "wasm-gc", "js" ],
+  },
+)
