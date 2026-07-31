@@ -96,6 +96,39 @@ jobs:
       - name: harness self-test (reference against its own goldens)
         run: tools/waxdiff.py run --self-test
 
+  # Diff-fuzzing: mutate corpus files and grade the mutants with the same three
+  # oracles. It needs the reference (a mutant has no golden -- the reference is
+  # asked what the answer should be), so it cannot live in the hermetic job, and
+  # it is nightly rather than a gate: a fuzzer is a search, and a search that
+  # blocks a pull request blocks it for reasons the author did not introduce.
+  #
+  # A find is minimized and printed here; turning one into a permanent test is
+  # `waxdiff.py adopt` + `waxdiff.py golden`, a deliberate local act.
+  fuzz:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install moon
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: build the native executable
+        run: |
+          moon update
+          moon build --target native
+
+      - name: fetch the pinned reference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: tools/fetch-reference.sh
+
+      # The seed is printed, so a find reproduces with --seed.
+      - name: fuzz
+        run: tools/waxdiff.py fuzz --count 400
+
   # `edge` upstream is rebuilt on every push to ocsigen/wax main, so the pinned
   # oracle can go stale silently. Catch that on a schedule rather than
   # discovering it mid-review. Non-blocking: it reports, it does not gate.

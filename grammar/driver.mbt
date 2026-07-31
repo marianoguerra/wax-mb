@@ -32,15 +32,36 @@ pub fn parse_string(src : String, fname? : String = "") -> ParseResult {
   set_context(ctx)
   let lexed = @lexer.tokens_from_string(src, fname~, trivia_ctx=ctx)
   if lexed.errors.length() > 0 {
-    return { module_: None, errors: lexed.errors, trivia: ctx }
+    // The reference's parser PULLS tokens, so a syntax error earlier in the
+    // file is reported before its lexer ever reaches the bad character. This
+    // one lexes the whole file first, which would otherwise let a stray `…` on
+    // line 2 hide the real error on line 1. Parse what did lex and prefer an
+    // error that comes first in the file.
+    let errors = match earlier_syntax_error(lexed.tokens, lexed.errors[0]) {
+      Some(report) => [report]
+      None => lexed.errors
+    }
+    return { module_: None, errors, trivia: ctx }
   }
   let module_ = parse(lexed.tokens) catch {
-    e =>
-      return {
-        module_: None,
-        errors: [report_of_parse_error(e, lexed.tokens)],
-        trivia: ctx,
+    e => {
+      // A semantic error recorded EARLIER in the file wins, for the same
+      // reason the lexical case above does. The reference raises from the
+      // action and stops right there; MoonYacc's actions cannot raise
+      // (test/UPSTREAM-FINDINGS.md finding 3), so the parse runs on and can
+      // reach a later syntax error that would otherwise be reported instead.
+      let syntax = report_of_parse_error(e, lexed.tokens)
+      let report : @basic.Report = match taken_error() {
+        Some(SyntaxError(loc~, message~, hint~, fix~)) =>
+          if loc.start.cnum < syntax.loc.start.cnum {
+            { ..@basic.Report::error(loc, message), hint, edit: fix }
+          } else {
+            syntax
+          }
+        None => syntax
       }
+      return { module_: None, errors: [report], trivia: ctx }
+    }
   }
   // A semantic error is recorded rather than raised, so the parse "succeeds"
   // with a tree built partly from placeholders. Discard it.
@@ -62,6 +83,60 @@ pub fn parse_string(src : String, fname? : String = "") -> ParseResult {
         trivia: ctx,
       }
     None => { module_: Some(module_), errors: [], trivia: ctx }
+  }
+}
+
+///|
+/// A parse error strictly before where the scan stopped, if there is one.
+///
+/// The tokens that did lex are a real prefix of the file, so parsing them says
+/// what a lazy lexer's parser would have hit first. Only an error at a token
+/// BEFORE the lexical one counts: running out of tokens is an artifact of the
+/// truncation, not something the reference would report.
+fn earlier_syntax_error(
+  tokens : Array[(Token, Position, Position)],
+  lexical : @basic.Report,
+) -> @basic.Report? {
+  let cut = lexical.loc.start
+  // The scan stops without emitting EOF, and the automaton needs one to make
+  // any decision at the end of the prefix.
+  let prefix = tokens.copy()
+  prefix.push((EOF, cut, cut))
+  let found : @basic.Report? = try {
+    parse(prefix) |> ignore
+    (None : @basic.Report?)
+  } catch {
+    UnexpectedToken(_, (start, _), _) as e =>
+      if start.cnum < cut.cnum {
+        Some(report_of_parse_error(e, prefix))
+      } else {
+        None
+      }
+    // Out of tokens: the file was cut short by the scan, so this says nothing.
+    UnexpectedEndOfInput(_) => None
+  } noraise {
+    _ => None
+  }
+  // A grammar action may have recorded a semantic error along the way; it is
+  // reported on the same first-in-the-file terms. Draining it either way keeps
+  // it from surfacing on the next parse.
+  match (found, taken_error()) {
+    (Some(_), _) => found
+    (None, Some(SyntaxError(loc~, message~, hint~, fix~))) =>
+      if loc.start.cnum < cut.cnum {
+        Some({
+          loc,
+          severity: Error,
+          message,
+          warning: None,
+          hint,
+          edit: fix,
+          related: [],
+        })
+      } else {
+        None
+      }
+    (None, None) => None
   }
 }
 

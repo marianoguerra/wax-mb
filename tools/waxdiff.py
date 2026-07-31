@@ -33,6 +33,8 @@ Subcommands:
   golden     record the reference's expected outputs into test/golden/
   run        compare an implementation against the goldens, writing details to
              test/report/{failures,message-drift}.md
+  fuzz       mutate corpus files and grade the mutants with the same oracles
+  adopt      move a fuzz find into the corpus, where it becomes a permanent test
 
 NOTE ON IMPLEMENTATION LANGUAGE: the plan called for this to be a MoonBit
 executable (cmd/waxdiff). It is Python instead. The harness is pure external
@@ -50,6 +52,7 @@ import concurrent.futures
 import hashlib
 import json
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -454,6 +457,33 @@ def classify_one(path: Path) -> dict:
     }
 
 
+def write_golden(res: dict) -> dict:
+    """Record one file's reference behaviour under GOLDEN; return its index entry.
+
+    Shared with `fuzz`, which points GOLDEN at a scratch directory and grades a
+    mutant with the very same oracles rather than a second implementation of
+    what agreement means.
+    """
+    stem = res["file"].removesuffix(".wax")
+    # The reprint text is Oracle 1's expected output, so store it as a real
+    # file: a golden diff should be reviewable line by line, not a hash that
+    # only says "something changed".
+    if res["reprint"] is not None:
+        p = GOLDEN / f"{stem}.reprint"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(res["reprint"], encoding="utf-8")
+    if res["diagnostics"]:
+        p = GOLDEN / f"{stem}.diag.jsonl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(res["diagnostics"], encoding="utf-8")
+    return {
+        "bucket": res["bucket"],
+        "reprint_code": res["reprint_code"],
+        "diag_code": res["diag_code"],
+        "wasm_sha256": res["wasm_sha256"],
+    }
+
+
 def cmd_golden(args) -> int:
     need_reference()
     files = corpus_files()
@@ -465,25 +495,7 @@ def cmd_golden(args) -> int:
     index: dict = {}
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as ex:
         for res in ex.map(classify_one, files):
-            rel = res["file"]
-            stem = rel.removesuffix(".wax")
-            # The reprint text is Oracle 1's expected output, so store it as a
-            # real file: a golden diff should be reviewable line by line, not a
-            # hash that only says "something changed".
-            if res["reprint"] is not None:
-                p = GOLDEN / f"{stem}.reprint"
-                p.parent.mkdir(parents=True, exist_ok=True)
-                p.write_text(res["reprint"], encoding="utf-8")
-            if res["diagnostics"]:
-                p = GOLDEN / f"{stem}.diag.jsonl"
-                p.parent.mkdir(parents=True, exist_ok=True)
-                p.write_text(res["diagnostics"], encoding="utf-8")
-            index[rel] = {
-                "bucket": res["bucket"],
-                "reprint_code": res["reprint_code"],
-                "diag_code": res["diag_code"],
-                "wasm_sha256": res["wasm_sha256"],
-            }
+            index[res["file"]] = write_golden(res)
 
     counts: dict[str, int] = {}
     for v in index.values():
@@ -701,22 +713,37 @@ def check_oracle2(
     out.passed += 1
 
 
-# The span fields, which finding 9 exempts for the files below.
+# The span fields, the only ones an exemption below can excuse.
 SPAN_FIELDS = {"startLine", "startColumn", "endLine", "endColumn",
                "startOffset", "endOffset"}
 
-# Files where the offending token is a STRING, so the reference points at its
-# closing quote rather than at the string (see test/UPSTREAM-FINDINGS.md
-# finding 9). We report the true span. Listed so the divergence is visible,
-# bounded, and noticed the day upstream fixes it.
-SPAN_DIVERGENCE_UPSTREAM = {
-    "cram/all-errors-semantic-raise__stmt-raise.wax",
-    "docs/language__034.wax",
-    "docs/language__092.wax",
-    "docs/language__094.wax",
-    "docs/reference__036.wax",
-    "docs/reference__094.wax",
-    "docs/reference__096.wax",
+# Files whose spans this port deliberately does not reproduce, each with the
+# reason. Listed one by one so a divergence stays visible, stays bounded, and is
+# noticed the day it stops happening -- the check below FAILS on a listed file
+# whose spans agree, so a fix upstream (or here) surfaces as a red test rather
+# than as a stale exemption nobody reads.
+#
+# This started as one list of seven under finding 9. Diff-fuzzing
+# (`waxdiff.py fuzz`) turned up a mutant whose real cause was ours, not
+# upstream's -- we lexed the whole file before parsing, so a stray character
+# late in a file hid a syntax error early in it -- and fixing that, plus the
+# same first-in-the-file rule for a semantic error an action records, made three
+# of the seven agree exactly. The lesson is in the accounting: an exemption list
+# that lumps unlike causes together stops being a record of a divergence and
+# becomes a place bugs hide.
+SPAN_EXEMPT = {
+    # Finding 9: the offending token is a STRING, so the reference points at
+    # its closing quote rather than at the string. We report the true span.
+    "docs/language__092.wax": "finding 9 (string span)",
+    "docs/language__094.wax": "finding 9 (string span)",
+    "docs/reference__094.wax": "finding 9 (string span)",
+    "docs/reference__096.wax": "finding 9 (string span)",
+    # Finding 12, both directions: the two automata reduce at different
+    # moments, so an action's check fires in one and not the other. Here the
+    # reference runs the action and we do not; below, we run it and the
+    # reference does not. Both are fuzz finds, adopted.
+    "fuzz/hint-attr-then-syntax-error.wax": "finding 12 (action timing)",
+    "fuzz/missing-params-then-syntax-error.wax": "finding 12 (action timing)",
 }
 
 
@@ -763,20 +790,18 @@ def check_oracle3(
             Failure(rel, "errors", f"{len(got)} diagnostic(s), want {len(want)}")
         )
         return
-    span_exempt = rel in SPAN_DIVERGENCE_UPSTREAM
+    span_exempt = rel in SPAN_EXEMPT
     saw_span_divergence = False
     for i, (w, g) in enumerate(zip(want, got)):
         for f in policy["gated"]:
             if w.get(f) != g.get(f):
-                # Finding 9: the reference points a syntax error at a string's
-                # closing quote rather than at the string, because its string
-                # scanner recurses and Menhir reads the lexbuf instead of the
-                # token. We report the true span; the divergence is listed per
-                # file so it stays visible and cannot spread.
+                # A listed divergence: see SPAN_EXEMPT for the reason this
+                # file carries. Only span fields can be excused, and only for a
+                # file that is on the list.
                 if span_exempt and f in SPAN_FIELDS:
                     saw_span_divergence = True
                     out.drift.append(
-                        f"{rel} #{i} {f} (upstream finding 9)\n"
+                        f"{rel} #{i} {f} ({SPAN_EXEMPT[rel]})\n"
                         f"  ref: {w.get(f)!r}\n  ours: {g.get(f)!r}"
                     )
                     continue
@@ -792,8 +817,8 @@ def check_oracle3(
         out.failed += 1
         out.failures.append(
             Failure(rel, "errors",
-                    "listed in SPAN_DIVERGENCE_UPSTREAM but the spans now agree; "
-                    "if upstream fixed finding 9, drop the entry and the finding")
+                    f"listed in SPAN_EXEMPT as {SPAN_EXEMPT[rel]} but the spans "
+                    "now agree; drop the entry and the finding it names")
         )
         return
     out.passed += 1
@@ -909,6 +934,268 @@ def cmd_run(args) -> int:
         return 1
     return 0
 
+
+
+# --------------------------------------------------------------------------
+# fuzz -- the same oracles, on inputs nobody wrote
+# --------------------------------------------------------------------------
+
+# The corpus is 2112 files, every one of them hand-written, generated from the
+# spec suite, or lifted from the docs. It covers what somebody thought to write
+# down. This mutates those files and grades the result with the SAME three
+# oracles, which needs no goldens: the reference is run on the mutant to say
+# what the answer should be.
+#
+# Mutation is at TOKEN level, not byte level. Byte noise mostly produces
+# something the lexer rejects, which only ever exercises oracle 3; moving,
+# dropping and duplicating whole tokens keeps a mutant parseable often enough to
+# reach the printer and the back end, which is where the interesting
+# disagreements are.
+
+FUZZ_FINDS = REPORT / "fuzz"
+
+# Wax's lexical shapes, longest match first. This is deliberately NOT the
+# port's own lexer: a mutator that shares a lexer with the implementation under
+# test can only produce inputs that lexer already understands, which is the
+# opposite of the point. It only has to be good enough to cut the source at
+# plausible boundaries.
+_TOKEN_RE = re.compile(
+    r"""
+      //[^\n]*                       # line comment
+    | /\*(?:[^*]|\*(?!/))*\*/         # block comment
+    | "(?:[^"\\]|\\.)*"             # string literal
+    | '(?:[^'\\]|\\.)*'             # char literal, or a label's quote
+    | [A-Za-z_][A-Za-z0-9_.]*        # identifier / keyword
+    | 0[xXbBoO][0-9a-fA-F_]+         # radix literal
+    | [0-9][0-9_]*(?:\.[0-9_]*)?      # number
+    | >>=|<<=|>=s|>=u|<=s|<=u|>>s|>>u  # three-character operators
+    | ->|=>|::|==|!=|<=|>=|<<|\+\+
+    | \+=|-=|\*=|/=|%=|&=|\|=|\^=|:=
+    | /s|/u|%s|%u|<s|<u|>s|>u
+    | \S                             # anything else, one character
+    """,
+    re.VERBOSE,
+)
+
+
+def tokenize(src: str) -> list[str]:
+    return _TOKEN_RE.findall(src)
+
+
+def mutate(tokens: list[str], rng: random.Random) -> list[str]:
+    """One token-level edit. Swap, delete, duplicate, or borrow.
+
+    "Borrow" replaces a token with another drawn from the same file, which is
+    what produces type-correct-looking nonsense -- an `i32` where a `&func`
+    belongs -- rather than the syntax errors the other three tend toward.
+    """
+    if len(tokens) < 2:
+        return tokens
+    out = list(tokens)
+    i = rng.randrange(len(out))
+    kind = rng.choice(("swap", "delete", "duplicate", "borrow"))
+    if kind == "swap":
+        j = min(i + 1, len(out) - 1)
+        out[i], out[j] = out[j], out[i]
+    elif kind == "delete":
+        del out[i]
+    elif kind == "duplicate":
+        out.insert(i, out[i])
+    else:
+        out[i] = out[rng.randrange(len(out))]
+    return out
+
+
+def render_tokens(tokens: list[str]) -> str:
+    """Tokens back to source.
+
+    Every token is separated by one space and every statement-ish token by a
+    newline: layout is not what is under test here (the printer normalises it
+    anyway), and a single line of 4000 tokens makes a find unreadable.
+    """
+    out = []
+    for t in tokens:
+        out.append(t)
+        if t in (";", "{", "}") or t.startswith("//"):
+            out.append("\n")
+        else:
+            out.append(" ")
+    return "".join(out).strip() + "\n"
+
+
+def _is_finding9(src: str, want: list[dict], got: list[dict]) -> bool:
+    """Do these diagnostics differ only in the way finding 9 describes?
+
+    On the corpus, finding 9 is handled by naming the four files it affects. A
+    mutant has no name to put on a list, and the divergence is common enough in
+    generated input to bury everything else -- so here it is recognised by its
+    SHAPE: same diagnostics, differing only in span, with the reference's span
+    being the last character of ours and ours starting at a quote.
+    """
+    if len(want) != len(got) or not want:
+        return False
+    for w, g in zip(want, got):
+        for k in set(w) | set(g):
+            if w.get(k) != g.get(k) and k not in SPAN_FIELDS:
+                return False
+        start, end = g.get("startOffset"), g.get("endOffset")
+        if start is None or end is None or not 0 <= start < len(src):
+            return False
+        if src[start] != '"':
+            return False
+        if w.get("endOffset") != end or w.get("startOffset") != end - 1:
+            return False
+    return True
+
+
+def grade(impl: list[str], src: str, policy: dict, oracles: list[int]) -> list[Failure]:
+    """Run one mutant through the oracles. Empty means the two agreed."""
+    global CORPUS, GOLDEN
+    saved = (CORPUS, GOLDEN)
+    scratch = Path(tempfile.mkdtemp(prefix="waxdiff-fuzz-"))
+    exempted = False
+    try:
+        CORPUS, GOLDEN = scratch / "corpus", scratch / "golden"
+        CORPUS.mkdir(parents=True)
+        GOLDEN.mkdir(parents=True)
+        path = CORPUS / "mutant.wax"
+        path.write_text(src, encoding="utf-8")
+        meta = write_golden(classify_one(path))
+        want_path = GOLDEN / "mutant.diag.jsonl"
+        if want_path.exists():
+            want = parse_jsonl(want_path.read_text())
+            got = parse_jsonl(
+                impl_run(impl, "check", "--error-format", "json", str(path))
+                .err.decode("utf-8", "replace")
+            )
+            if _is_finding9(src, want, got):
+                SPAN_EXEMPT["mutant.wax"] = "finding 9 (string span)"
+                exempted = True
+        out = Outcome()
+        if 1 in oracles:
+            check_oracle1(impl, "mutant.wax", path, meta, out, policy)
+        if 2 in oracles:
+            check_oracle2(impl, "mutant.wax", path, meta, out, policy)
+        if 3 in oracles:
+            check_oracle3(impl, "mutant.wax", path, meta, out, policy)
+        return out.failures
+    finally:
+        if exempted:
+            SPAN_EXEMPT.pop("mutant.wax", None)
+        CORPUS, GOLDEN = saved
+        shutil.rmtree(scratch, ignore_errors=True)
+
+
+def minimize(
+    impl: list[str], tokens: list[str], policy: dict, oracles: list[int],
+    budget: int = 400,
+) -> list[str]:
+    """Shrink a failing mutant by dropping tokens while it still fails.
+
+    A find is only worth committing to the corpus if someone can read it, and a
+    seed file runs to thousands of tokens. Delta debugging by CHUNKS -- halves,
+    then quarters, down to single tokens -- gets most of the way in a few dozen
+    attempts where one-token-at-a-time would need one attempt per token, each
+    attempt being several processes.
+
+    `budget` caps the attempts. A partly minimized find is still worth having;
+    an hour spent shrinking one is not.
+    """
+    kept = list(tokens)
+    spent = 0
+    width = max(1, len(kept) // 2)
+    while width >= 1 and spent < budget:
+        i = 0
+        shrunk = False
+        while i < len(kept) and spent < budget:
+            candidate = kept[:i] + kept[i + width :]
+            spent += 1
+            if candidate and grade(impl, render_tokens(candidate), policy, oracles):
+                kept = candidate
+                shrunk = True
+            else:
+                i += width
+        if not shrunk:
+            width //= 2
+    return kept
+
+
+def cmd_adopt(args) -> int:
+    """Move a fuzz find into the corpus, where it becomes a permanent test.
+
+    A find in test/report/ is transient -- the directory is gitignored and the
+    next run overwrites it. Adopting one copies it under test/corpus/fuzz/ and
+    records its provenance, so it is graded by every future `run` exactly like
+    the hand-written files. `collect` leaves the fuzz/ subtree alone (it only
+    rebuilds the sources it knows), so an adopted file survives a re-collection.
+    """
+    src = Path(args.file)
+    if not src.exists():
+        sys.exit(f"waxdiff: no such file: {src}")
+    name = args.name or src.stem
+    rel = f"fuzz/{name}.wax"
+    dest = CORPUS / rel
+    if dest.exists() and not args.force:
+        sys.exit(f"waxdiff: {rel} already in the corpus (use --force to replace)")
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+
+    manifest_path = CORPUS / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["files"][rel] = {"origin": args.origin or f"fuzz find, from {src.name}"}
+    manifest["files"] = dict(sorted(manifest["files"].items()))
+    manifest["counts"]["fuzz"] = sum(
+        1 for k in manifest["files"] if k.startswith("fuzz/")
+    )
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    print(f"  adopted {rel}")
+    print("  now run `waxdiff.py golden` to record what the reference does with it")
+    return 0
+
+
+def cmd_fuzz(args) -> int:
+    need_reference()
+    impl = args.impl.split()
+    policy = load_policy(args.scope)
+    oracles = args.oracle or [1, 2, 3]
+    seed = args.seed if args.seed is not None else random.randrange(1 << 30)
+    rng = random.Random(seed)
+    print(f"  seed {seed} (reproduce with --seed {seed})")
+
+    seeds = sorted(load_index().items())
+    if args.filter:
+        seeds = [(r, m) for r, m in seeds if args.filter in r]
+    if not seeds:
+        sys.exit("waxdiff: no seed files")
+
+    FUZZ_FINDS.mkdir(parents=True, exist_ok=True)
+    found = 0
+    for n in range(args.count):
+        rel, _meta = seeds[rng.randrange(len(seeds))]
+        tokens = tokenize((CORPUS / rel).read_text(encoding="utf-8"))
+        if len(tokens) < 2:
+            continue
+        for _ in range(rng.randint(1, args.edits)):
+            tokens = mutate(tokens, rng)
+        failures = grade(impl, render_tokens(tokens), policy, oracles)
+        if not failures:
+            continue
+        found += 1
+        # Minimize before reporting: an unminimized find is a wall of tokens,
+        # and the point of a find is to become a corpus file someone can read.
+        small = minimize(impl, tokens, policy, oracles)
+        dest = FUZZ_FINDS / f"find-{seed}-{n}.wax"
+        dest.write_text(render_tokens(small), encoding="utf-8")
+        print(f"\n  FIND {dest.relative_to(ROOT)}  (from {rel})")
+        for f in failures:
+            print(f"    {f.oracle}: {f.detail.splitlines()[0][:120]}")
+
+    print(f"\n  {args.count} mutants, {found} finding(s)")
+    if found:
+        print(f"  Minimized inputs in {FUZZ_FINDS.relative_to(ROOT)}. A real find")
+        print("  belongs in test/corpus/ with a regenerated golden, so it stays a")
+        print("  test after the bug is fixed.")
+    return 1 if found else 0
 
 # --------------------------------------------------------------------------
 # classify-cram -- select the cram tests this port can run
@@ -1175,6 +1462,39 @@ def main() -> int:
     c = sub.add_parser("classify", help="show bucket counts for the corpus")
     c.add_argument("-j", "--jobs", type=int, default=default_jobs())
     c.set_defaults(fn=cmd_classify)
+
+    c = sub.add_parser(
+        "fuzz", help="mutate corpus files and grade the mutants with the oracles"
+    )
+    c.add_argument(
+        "--impl", default="tools/wax-mb", help="the implementation under test"
+    )
+    c.add_argument("--count", type=int, default=100, help="mutants to try (default 100)")
+    c.add_argument(
+        "--edits",
+        type=int,
+        default=3,
+        help="at most this many token edits per mutant (default 3)",
+    )
+    c.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="PRNG seed; printed on every run so a find can be reproduced",
+    )
+    c.add_argument("--filter", help="only seed from files whose path contains this")
+    c.add_argument("--oracle", type=int, action="append", choices=[1, 2, 3])
+    c.add_argument("--scope", choices=["front-end", "full"], default=None)
+    c.set_defaults(fn=cmd_fuzz)
+
+    c = sub.add_parser(
+        "adopt", help="move a fuzz find into test/corpus/ as a permanent test"
+    )
+    c.add_argument("file", help="the find, e.g. test/report/fuzz/find-7-2.wax")
+    c.add_argument("--name", help="corpus name (default: the file's stem)")
+    c.add_argument("--origin", help="provenance line for the manifest")
+    c.add_argument("--force", action="store_true", help="replace an existing entry")
+    c.set_defaults(fn=cmd_adopt)
 
     c = sub.add_parser(
         "classify-cram",

@@ -268,7 +268,7 @@ reproducible on demand:
 This port reports the string's true span. It is the one place where it
 deliberately does NOT reproduce the reference's spans, because the divergence
 exists only in the diagnostic and copying it would mean pointing users at the
-wrong character. The seven affected corpus files are listed in
+wrong character. The four affected corpus files are listed in
 `SPAN_DIVERGENCE_UPSTREAM` in `tools/waxdiff.py`, which fails if one of them
 ever starts agreeing -- so an upstream fix surfaces as a failing test rather
 than as silent drift.
@@ -328,3 +328,56 @@ engine's control flow, which a released version could invalidate silently — th
 test is what catches that. Exposing the state (and ideally the stack) on
 `UnexpectedToken` would delete all of it, and every grammar that wants good
 error messages needs the same thing.
+
+## 12. A semantic check in an action fires at a different moment
+
+Menhir performs a **default reduction** in a state with a single action: it
+reduces without consulting the lookahead, so the semantic action runs — and any
+check inside it raises — before the parser discovers that the lookahead is
+erroneous. MoonYacc consults the lookahead first, so on the same input the
+action never runs and the syntax error is reported instead.
+
+```
+$ cat fn f() {
+  #[export] fn
+}
+$ wax check --error-format json t.wax                     # reference
+... "startOffset":11,"endOffset":20 ... "Expected a hint attribute: '#[likely]', …"
+$ wax-mb check --error-format json t.wax                  # this port
+... "startOffset":21,"endOffset":23 ... "Expecting '!', '#', …"
+```
+
+`#[export]` in statement position is not a hint attribute, and both grammars
+check that in the action for the same rule. The reference reduces it on the
+erroneous `fn` lookahead, runs the check, and reports it at the attribute; we
+error at `fn` first.
+
+This is the same root as finding 3 (an action cannot raise), one step further
+on: even recording the error instead of raising it does not help, because the
+action never runs. `parse_string` already prefers whichever error comes FIRST in
+the file when both exist, which is what makes the rest of this class agree —
+this case is the residue where one of the two errors is never produced at all.
+
+It runs in the other direction too. Where OUR automaton reduces and the
+reference's does not, we report a check the reference never runs:
+
+```
+$ cat t.wax
+fn f 'h: do { }
+$ wax check --error-format json t.wax                     # reference
+... "startOffset":9,"endOffset":11 ... "Expecting '{'."
+$ wax-mb check --error-format json t.wax                  # this port
+... "startOffset":0,"endOffset":4 ... "A parameter list is required."
+```
+
+So the class is not fixable by preferring one error over the other: an error
+that is never produced cannot be preferred. `parse_string`'s first-in-the-file
+rule is still the right emulation of finding 3 — it reports what THIS parser
+would have reported if its actions could raise — and it is what makes the rest
+of the class agree.
+
+Both directions were found by diff-fuzzing. The minimized inputs are committed
+as `test/corpus/fuzz/hint-attr-then-syntax-error.wax` and
+`test/corpus/fuzz/missing-params-then-syntax-error.wax` and listed in
+`SPAN_EXEMPT`, so the harness fails if the two implementations ever start
+agreeing.

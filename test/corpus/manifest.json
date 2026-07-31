@@ -4,7 +4,8 @@
     "cram": 308,
     "docs": 391,
     "wat": 258,
-    "spec": 1155
+    "spec": 1155,
+    "fuzz": 2
   },
   "files": {
     "cram/all-errors-semantic-raise__module-else.wax": {
@@ -2103,6 +2104,12 @@
     },
     "docs/reference__218_checked.wax": {
       "origin": "skills/wax/reference.md block 218"
+    },
+    "fuzz/hint-attr-then-syntax-error.wax": {
+      "origin": "diff-fuzzing find, minimized: a statement-position attribute that is not a hint, followed by a syntax error"
+    },
+    "fuzz/missing-params-then-syntax-error.wax": {
+      "origin": "diff-fuzzing find, minimized: an action-recorded error before a syntax error the reference reaches first"
     },
     "spec/wasm-test-suite__core__address__address.0.wax": {
       "origin": "test/wasm-test-suite/core/address.wast -> address.0.wasm (wasm->wax)"

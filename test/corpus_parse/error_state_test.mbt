@@ -64,7 +64,7 @@ test "the replay stops on the token the parse rejected" {
   }
   // Not zero: the count is the coverage, and it dropping would mean the
   // corpus stopped exercising this.
-  inspect(checked, content="191")
+  inspect(checked, content="193")
 }
 
 ///|
@@ -94,5 +94,5 @@ test "a resolved label points at real source" {
     }
   }
   // The count is the coverage; it falling means the table stopped resolving.
-  inspect(labelled, content="6")
+  inspect(labelled, content="5")
 }

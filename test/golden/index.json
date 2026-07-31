@@ -2,7 +2,7 @@
   "_comment": "The reference's expected behaviour for every corpus file. Committed, so `waxdiff.py run` needs neither the reference binary nor the wax/ checkout. A diff here is either your behaviour change or upstream's -- never edit it to make a test pass.",
   "reference": "28c17cc3b867e34f77c4163b6c1ff2619ed9b61059a65512b5eb81f7cca7dca5",
   "counts": {
-    "syntax-bad": 209,
+    "syntax-bad": 211,
     "compiles-clean": 1592,
     "type-bad": 311
   },
@@ -4200,6 +4200,18 @@
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "e1adcf1879fab1f5e1dafad6c8eab96830b71d81391209860d41e8b441c2376b"
+    },
+    "fuzz/hint-attr-then-syntax-error.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "fuzz/missing-params-then-syntax-error.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
     },
     "spec/wasm-test-suite__core__address__address.0.wax": {
       "bucket": "compiles-clean",

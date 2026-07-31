@@ -16,7 +16,7 @@ order it makes sense to do it.
 
 - [x] 4. Reproduce the `Assuming that … is complete` subject phrase
 - [x] 5. Reproduce the related labels (`this statement`, `This '{' opens …`)
-- [ ] 6. Diff-fuzzing
+- [x] 6. Diff-fuzzing
 - [ ] 7. Error recovery and `--all-errors` *(research)*
 
 **Phase 6 — the type checker**
@@ -44,11 +44,12 @@ order it makes sense to do it.
 | MoonBit source | ~34.5k lines across 16 packages (`basic` `tokens` `lexer` `trivia` `wasm_types` `ast` `grammar` `unicode` `colors` `message` `warning` `printer` `output` `diagnostic` `io` `cmd/wax-mb`) |
 | Oracle 1 — reprint parity | 1903 / 1903 byte-exact, idempotence gated alongside |
 | Oracle 2 — same wasm | 1592 / 1592 identical binaries |
-| Oracle 3 — same errors | 2112 / 2112 on severity, file, spans, offsets, exit code |
-| Unit tests | 152 |
-| Message drift | 75 entries: 29 message text, 20 related labels, 26 span (the 7 finding-9 exemptions) |
-| Upstream findings | 11, in `test/UPSTREAM-FINDINGS.md` |
+| Oracle 3 — same errors | 2114 / 2114 on severity, file, spans, offsets, exit code |
+| Unit tests | 155 |
+| Message drift | 64 entries: 28 message text, 19 related labels, 16 span (the 6 exempted files), 1 edit |
+| Upstream findings | 12, in `test/UPSTREAM-FINDINGS.md` |
 | Cram tests in scope | 2 of 328; the other 326 are listed with reasons in `test/cram-scope.md` |
+| Corpus | 2114 files: 2112 collected, 2 adopted fuzz finds |
 
 The three oracles are the gate for everything below. Any task that changes
 behaviour has to leave them green, and `tools/waxdiff.py run --impl tools/wax-mb`
@@ -377,7 +378,53 @@ spine test); `grammar/driver.mbt` (where `related: []` is currently hard-coded);
 
 ---
 
-## 6. Diff-fuzzing
+## 6. Diff-fuzzing — done
+
+**Done.** `waxdiff.py fuzz` mutates corpus files at TOKEN level (swap, delete,
+duplicate, and "borrow" — replace a token with another from the same file) and
+grades each mutant with the **same three oracles**, by running the reference on
+it to say what the answer should be. Reusing `check_oracle{1,2,3}` verbatim (by
+pointing `CORPUS`/`GOLDEN` at a scratch directory) was the point: a second
+implementation of what agreement means would be a bug farm.
+
+Byte-level noise was deliberately not used — it mostly produces something the
+lexer rejects, which only ever exercises oracle 3. The tokenizer is a regex, not
+the port's own lexer: a mutator sharing a lexer with the implementation under
+test can only produce inputs that lexer already understands.
+
+A find is minimized (delta debugging by chunks — halves, then quarters, down to
+single tokens, under a budget) and written to `test/report/fuzz/`.
+`waxdiff.py adopt` moves one into `test/corpus/fuzz/`, where `golden` records
+the reference's answer and every future run grades it. The nightly `fuzz` CI job
+runs 400 mutants; it is not a gate, because a search that blocks a pull request
+blocks it for reasons the author did not introduce.
+
+**It found three things in the first 400 mutants.**
+
+1. **We lexed the whole file before parsing.** The reference's parser pulls
+   tokens one at a time, so a syntax error early in a file is reported before
+   its lexer ever reaches a stray character later on. Ours reported the stray
+   character. Fixed: on a lexical error, the tokens that did lex are parsed and
+   an error strictly before the lexical one wins.
+2. **A semantic error an action records lost to a later syntax error.** Same
+   rule, same fix — MoonYacc's actions cannot raise (finding 3), so the parse
+   runs on past the recorded error.
+3. **The exemption list was hiding two of these.** `SPAN_DIVERGENCE_UPSTREAM`
+   listed seven files "where the offending token is a STRING" (finding 9).
+   Three of them were nothing of the sort: two were the lexing-order bug and one
+   was the semantic-ordering bug — both ours. Fixing them made all three agree
+   exactly, and the list is now `SPAN_EXEMPT`, a file → reason map.
+
+**And one genuine divergence, recorded as finding 12** with both its directions
+and a corpus file each. Menhir performs a *default reduction* in a state with a
+single action — it reduces without consulting the lookahead — so an action's
+check fires before the syntax error is discovered. MoonYacc consults the
+lookahead first. Neither preference rule can fix it: an error that is never
+produced cannot be preferred.
+
+Net: oracle 3 went from 2112 to 2114 files with zero failures, drift 75 → 64,
+and the span exemptions from 7 files under one wrong cause to 6 under two right
+ones.
 
 **Summary.** The corpus is fixed: 2112 files, all hand-written, generated from
 the spec suite, or extracted from docs. It exercises what someone thought to
@@ -641,8 +688,8 @@ default to hidden; this is what makes them reachable.
 - **`wax/` and `parser/` are reference checkouts, never build inputs.** They are
   gitignored. The moment CI needs them, the hermetic property is gone.
 - **Divergences are recorded, not absorbed.** `test/UPSTREAM-FINDINGS.md` holds
-  11 findings. Two of them (7 and 8) are exemptions in the idempotence gate and
-  one (9) in the span gate — and each is written so the harness *fails* if
+  12 findings. Two of them (7 and 8) are exemptions in the idempotence gate and
+  two (9 and 12) in the span gate — and each is written so the harness *fails* if
   upstream fixes it, rather than drifting silently.
 - **Run memory-hungry commands under a cap.** Upstream finding 1 is a fixture
   that makes the reference allocate 2.1 GB. `tools/waxdiff.py` wraps every

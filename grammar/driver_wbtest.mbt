@@ -165,3 +165,37 @@ fn labels_of(report : @basic.Report) -> String {
   }
   out.join("\n")
 }
+
+///|
+test "a syntax error earlier in the file beats a lexical one later" {
+  // The reference's parser pulls tokens, so its lexer never reaches the `…`.
+  // Ours lexes first, and without the prefix re-parse would report the stray
+  // character three lines below the real problem.
+  let r = parse_string("x;\ndo { … }\n")
+  inspect(r.errors.length(), content="1")
+  inspect(r.errors[0].loc.start.cnum, content="0")
+  inspect(
+    r.errors[0].message,
+    content="Assuming that the attributes are complete, expecting a definition.",
+  )
+}
+
+///|
+test "a lexical error still wins when nothing precedes it" {
+  // The prefix parses, so there is no earlier error to prefer.
+  let r = parse_string("fn f() { … }\n")
+  inspect(r.errors[0].message, content="Unexpected character '…'.")
+  inspect(r.errors[0].loc.start.cnum, content="9")
+}
+
+///|
+test "a semantic error earlier in the file beats a syntax error later" {
+  // MoonYacc's actions cannot raise, so the `#[else]` check records and the
+  // parse runs on into the malformed parameter list. First in the file wins.
+  let r = parse_string("fn a() { #[else] { 1; } }\nfn b( { }\n")
+  inspect(
+    r.errors[0].message,
+    content="An '#[else]' must directly follow an '#[if(...)]' group.",
+  )
+  inspect(r.errors[0].loc.start.cnum, content="9")
+}
