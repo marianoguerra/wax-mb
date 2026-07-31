@@ -50,10 +50,8 @@ pub fn target_percent(
   p : (Position, Position),
   n : String,
 ) -> Int raise SyntaxError {
-  let f = match (try? @strconv.parse_double(n)) {
-    Ok(v) => v
-    Err(_) =>
-      fail_at(loc_of(p), "A call-target frequency must be between 0 and 1.")
+  let f = @string.parse_double(n) catch {
+    _ => fail_at(loc_of(p), "A call-target frequency must be between 0 and 1.")
   }
   if f < 0.0 || f > 1.0 {
     fail_at(loc_of(p), "A call-target frequency must be between 0 and 1.")
@@ -83,12 +81,7 @@ pub fn hint_of_attr(
       match v.desc {
         Int(n) | Float(n) =>
           Freq(
-            freq_of_ratio(
-              match (try? @strconv.parse_double(n)) {
-                Ok(d) => d
-                Err(_) => return bad()
-              },
-            ),
+            freq_of_ratio(@string.parse_double(n) catch { _ => return bad() }),
           )
         _ => bad()
       }
