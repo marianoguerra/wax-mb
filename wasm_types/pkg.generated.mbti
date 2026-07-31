@@ -1,0 +1,121 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/wasm_types"
+
+import {
+  "moonbitlang/core/debug",
+  "waxmb/wax/basic",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) enum AddressType {
+  I32
+  I64
+} derive(Eq, @debug.Debug)
+
+pub(all) enum CmpOp {
+  Eq
+  Ne
+  Lt
+  Gt
+  Le
+  Ge
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Cond {
+  Var(@basic.Annotated[String, @basic.Location])
+  Str(@basic.Annotated[String, @basic.Location])
+  Version(Int, Int, Int)
+  And(Array[Cond])
+  Or(Array[Cond])
+  Not(Cond)
+  Cmp(CmpOp, Cond, Cond)
+} derive(Eq, @debug.Debug)
+
+pub(all) enum HeapType[Idx] {
+  Func
+  NoFunc
+  Exn
+  NoExn
+  Cont
+  NoCont
+  Extern
+  NoExtern
+  Any
+  Eq
+  I31
+  Struct
+  Array
+  None_
+  Type(Idx)
+  Exact(Idx)
+} derive(Eq, @debug.Debug)
+pub fn[Idx] HeapType::keyword(Self[Idx]) -> String?
+
+pub(all) struct Limits {
+  mi : UInt64
+  ma : UInt64?
+  address_type : AddressType
+  page_size_log2 : Int?
+  shared : Bool
+} derive(Eq, @debug.Debug)
+
+pub(all) struct MutType[T] {
+  mut_ : Bool
+  typ : T
+} derive(Eq, @debug.Debug)
+
+pub(all) enum PackedType {
+  I8
+  I16
+} derive(Eq, @debug.Debug)
+
+pub(all) struct RefType[Idx] {
+  nullable : Bool
+  typ : HeapType[Idx]
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Signage {
+  Signed
+  Unsigned
+} derive(Eq, @debug.Debug)
+
+pub(all) enum StorageType[Idx] {
+  Value(ValType[Idx])
+  Packed(PackedType)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct V128 {
+  shape : V128Shape
+  components : Array[String]
+} derive(Eq, @debug.Debug)
+
+pub(all) enum V128Shape {
+  I8x16
+  I16x8
+  I32x4
+  I64x2
+  F32x4
+  F64x2
+} derive(Eq, @debug.Debug)
+pub fn V128Shape::to_str(Self) -> String
+
+pub(all) enum ValType[Idx] {
+  I32
+  I64
+  F32
+  F64
+  V128
+  Ref(RefType[Idx])
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+pub type FieldType[Idx] = MutType[StorageType[Idx]]
+
+pub type GlobalType[Idx] = MutType[ValType[Idx]]
+
+// Traits
+
