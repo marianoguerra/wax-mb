@@ -42,11 +42,11 @@ pub fn[Info] Ctx::print_trivia(
         // this line, ahead of the comment.
         self.p.defer_eol(() => {
           self.p.string(" ")
-          self.styled(Punctuation, content.trim_space().to_string())
+          self.styled(Punctuation, content.trim().to_owned())
         })
       (Item(content~, kind=LineComment, ..), LineStart) => {
         self.newline()
-        self.styled(Punctuation, content.trim_space().to_string())
+        self.styled(Punctuation, content.trim().to_owned())
         self.newline()
       }
       (Item(content~, kind=Annotation, ..), _) => {
@@ -77,7 +77,9 @@ pub fn[Info] Ctx::atomic_node(
 ///|
 /// Print `l` separated by `sep`.
 pub fn[Info, T] Ctx::list(
-  self : Ctx[Info],
+  // A method purely for call-site readability -- the separator and the element
+  // printer are both closures that capture their own context.
+  _self : Ctx[Info],
   l : Array[T],
   f : (T) -> Unit,
   sep? : () -> Unit = () => (),

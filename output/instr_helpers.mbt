@@ -218,11 +218,24 @@ fn Ctx::struct_field_kv(
 /// The receiver of a field access.
 ///
 /// Printed at CallAndFieldAccess so `(a + b).x` keeps its parentheses.
+///
+/// A bare numeric literal receiver is parenthesised whatever its precedence
+/// says: `2.rotl(3)` would lex `2.` as a float, so the printed form has to be
+/// `(2).rotl(3)`.
 fn Ctx::field_receiver(
   self : Ctx[@basic.Location],
   i : @ast.Instr[@basic.Location],
 ) -> Unit {
-  self.instr(CallAndFieldAccess, i)
+  match i.desc {
+    Int(_) | Float(_) => {
+      self.punct("(")
+      self.p.box(() => {
+        self.instr(Instruction, i)
+        self.punct(")")
+      })
+    }
+    _ => self.instr(CallAndFieldAccess, i)
+  }
 }
 
 ///|
@@ -270,6 +283,12 @@ fn Ctx::label_seq(
 ///|
 /// A bracketed label list, indented and with its `]` dedented to the
 /// construct's own column.
+///
+/// The brackets are padded with SOFT SPACES, not zero-width cuts, so an
+/// inline list reads `[ 'a, else 'out ]`; when it does not fit, those same
+/// separators become the breaks that put the labels on their own indented
+/// line. The head and the `]`-plus-suffix are each glued into an hbox so
+/// neither `dispatch x [` nor `] {` can be split.
 fn Ctx::bracketed_labels(
   self : Ctx[@basic.Location],
   before : () -> Unit,
@@ -278,17 +297,19 @@ fn Ctx::bracketed_labels(
   after? : () -> Unit = () => (),
 ) -> Unit {
   self.p.hvbox(() => {
-    self.p.box(() => {
+    self.p.hbox(() => {
       before()
       self.punct("[")
     })
     self.p.indent(indent_level, () => {
-      self.cut()
+      self.space()
       self.p.box(() => self.label_seq(cases, default))
     })
-    self.cut()
-    self.punct("]")
-    after()
+    self.space()
+    self.p.hbox(() => {
+      self.punct("]")
+      after()
+    })
   })
 }
 
@@ -337,4 +358,120 @@ fn drop_last(
   } else {
     l[:l.length() - 1].to_owned()
   }
+}
+
+///|
+/// A continuation CONSTRUCTOR, `t::new(x)` / `t::bind(a, b)`.
+fn Ctx::cont_construct_instr(
+  self : Ctx[@basic.Location],
+  ct : @ast.Ident,
+  member_name : String,
+  l : Array[@ast.Instr[@basic.Location]],
+) -> Unit {
+  self.p.box(indent=indent_level, () => {
+    self.p.hbox(() => {
+      self.ident(ct.name)
+      self.op("::")
+      self.ident(member_name)
+    })
+    self.arg_list(l, i => self.instr(Instruction, i))
+  })
+}
+
+///|
+/// A stack-switching METHOD call, `recv.meth(args...) on [handlers]`.
+///
+/// The receiver is the LAST operand of `l` -- wasm stack order, so it compiles
+/// last, exactly as `call_ref`'s callee does -- and prints first. `args` is a
+/// list of thunks rather than instructions, so `resume_throw`'s `tag(payload)`
+/// and `switch`'s `tag: t` need no AST form of their own.
+fn Ctx::cont_method_instr(
+  self : Ctx[@basic.Location],
+  meth : String,
+  l : Array[@ast.Instr[@basic.Location]],
+  args : Array[() -> Unit],
+  handlers : Array[@ast.OnClause],
+) -> Unit {
+  self.p.box(indent=indent_level, () => {
+    self.p.hvbox(() => {
+      self.p.hbox(() => {
+        if l.length() > 0 {
+          self.instr(CallAndFieldAccess, l[l.length() - 1])
+        } else {
+          // An ill-formed operand list: print a hole rather than nothing, so
+          // recovery output stays readable.
+          self.op("_")
+        }
+        self.punct(".")
+        self.ident(meth)
+      })
+      self.arg_list(args, g => g())
+    })
+    if handlers.length() > 0 {
+      self.space()
+      self.kw("on")
+      self.space()
+      self.on_clauses(handlers)
+    }
+  })
+}
+
+///|
+/// The head of a `try`-family construct: `'label try [blocktype] {`.
+fn Ctx::try_head(
+  self : Ctx[@basic.Location],
+  label : @ast.Ident?,
+  kw : String,
+  typ : @ast.FuncType,
+) -> Unit {
+  self.p.box(() => {
+    self.block_label(label)
+    self.kw(kw)
+    self.space()
+    if need_blocktype(typ) {
+      self.blocktype(typ)
+      self.space()
+    }
+    self.punct("{")
+  })
+}
+
+///|
+/// The `} catch <open>` hinge between a try body and its handlers.
+///
+/// The body's trailing comments print between the `}` and the `catch`, where
+/// they were written.
+fn Ctx::catch_hinge(
+  self : Ctx[@basic.Location],
+  block_after : Array[@trivia.Entry],
+  opening : String,
+) -> Unit {
+  self.p.box(() => {
+    self.punct("}")
+    self.print_trivia(block_after)
+    self.space()
+    self.kw("catch")
+    self.space()
+    self.punct(opening)
+  })
+}
+
+///|
+/// One `pattern => { ... }` arm.
+fn Ctx::braced_arm(
+  self : Ctx[@basic.Location],
+  head : () -> Unit,
+  body : @ast.Body[@basic.Location],
+) -> Unit {
+  self.p.hvbox(() => {
+    self.p.box(() => {
+      head()
+      self.space()
+      self.punct("=>")
+      self.space()
+      self.punct("{")
+    })
+    let after = self.located_block_contents(body)
+    self.close_block(after)
+  })
 }

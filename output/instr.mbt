@@ -408,6 +408,7 @@ fn Ctx::instr_desc(
           None => ()
         }
       })
+    // Call-like: `throw tag(x, y)`.
     Throw(tag, args) =>
       self.p.hvbox(() => {
         self.p.hbox(() => {
@@ -504,10 +505,321 @@ fn Ctx::instr_desc(
         self.on_clauses(handlers)
       })
 
-    // Anything not yet ported prints as a marker rather than silently emitting
-    // nothing, so an unported form shows up as a diff rather than as valid-
-    // looking output that is quietly missing an instruction.
-    _ => self.p.string("<<unported>>")
+    // -- exception handling --------------------------------------------------
+    TryCatch(label~, typ~, block~, arms~) =>
+      self.p.hvbox(() => {
+        self.try_head(label, "try", typ)
+        let block_after = self.located_block_contents(block)
+        self.p.hvbox(() => {
+          self.catch_hinge(block_after, "{")
+          // Like a block body, a non-empty `catch` always lays its arms out
+          // vertically with hard newlines, matching `match` and `dispatch`; an
+          // empty one stays `{}`.
+          if arms.length() > 0 {
+            self.p.indent(indent_level, () => {
+              for arm in arms {
+                self.newline()
+                self.braced_arm(
+                  () => {
+                    match arm.arm_tag {
+                      Some(tag) => self.ident(tag.name)
+                      None => self.op("_")
+                    }
+                    // A `&` arm, which is delivered the exception reference above
+                    // the payload.
+                    if arm.arm_ref {
+                      self.space()
+                      self.op("&")
+                    }
+                  },
+                  arm.arm_body,
+                )
+              }
+            })
+            // The break before the closing `}` sits OUTSIDE the indent above,
+            // so it lands at the catch block's own column.
+            self.newline()
+          }
+          self.punct("}")
+        })
+      })
+    Try(label~, typ~, block~, catches~, catch_all~) =>
+      self.p.hvbox(() => {
+        self.try_head(label, "try_legacy", typ)
+        let block_after = self.located_block_contents(block)
+        self.p.hvbox(() => {
+          self.catch_hinge(block_after, "{")
+          if catches.length() > 0 || catch_all is Some(_) {
+            self.p.indent(indent_level, () => {
+              for c in catches {
+                let (tag, body) = c
+                self.newline()
+                self.braced_arm(() => self.ident(tag.name), body)
+              }
+              match catch_all {
+                Some(body) => {
+                  self.newline()
+                  self.braced_arm(() => self.op("_"), body)
+                }
+                None => ()
+              }
+            })
+            self.newline()
+          }
+          self.punct("}")
+        })
+      })
+    TryTable(label~, typ~, catches~, block~) =>
+      self.p.hvbox(() => {
+        self.try_head(label, "try", typ)
+        let block_after = self.located_block_contents(block)
+        self.p.hvbox(() => {
+          self.catch_hinge(block_after, "[")
+          self.p.indent(indent_level, () => {
+            let last = catches.length() - 1
+            for i, c in catches {
+              self.space()
+              self.p.box(() => {
+                // A `&` handler takes the exception reference as well as the
+                // payload; `_` is the catch-all.
+                let (tag, ref_, label2) = match c {
+                  Catch(t, l2) => (Some(t), false, l2)
+                  CatchRef(t, l2) => (Some(t), true, l2)
+                  CatchAll(l2) => (None, false, l2)
+                  CatchAllRef(l2) => (None, true, l2)
+                }
+                match tag {
+                  Some(t) => self.ident(t.name)
+                  None => self.op("_")
+                }
+                self.space()
+                if ref_ {
+                  self.op("&")
+                  self.space()
+                }
+                self.punct("->")
+                self.space()
+                self.ident("'")
+                self.ident(label2.name)
+                if i < last {
+                  self.punct(",")
+                }
+              })
+            }
+          })
+          // Break before the closing `]` so a wrapped handler list dedents it
+          // to the `try`'s column rather than hugging the last handler.
+          self.cut()
+          self.punct("]")
+        })
+      })
+    // -- multi-way branches --------------------------------------------------
+    BrTable(labels, v) => {
+      // The default is the LAST label; the rest are the indexed cases.
+      let default = labels[labels.length() - 1]
+      let cases = labels[:labels.length() - 1].to_owned()
+      self.p.box(indent=indent_level, () => {
+        self.bracketed_labels(
+          () => {
+            self.kw("br_table")
+            self.space()
+          },
+          cases,
+          default,
+        )
+        self.space()
+        self.instr(Branch, v)
+      })
+    }
+    Dispatch(index~, cases~, default~, arms~) =>
+      self.p.hvbox(() => {
+        // Head: `dispatch <index> [ <labels> else <default> ] {`, on one line
+        // or, when too wide, with the labels filled and indented and the `]`
+        // dedented to the `dispatch` column.
+        self.bracketed_labels(
+          () => {
+            self.kw("dispatch")
+            self.space()
+            // A non-atomic index is parenthesised: the following `[` would
+            // otherwise bind to its last atom as an array access.
+            self.instr(Atom, index)
+            self.space()
+          },
+          cases,
+          default,
+          after=() => {
+            self.space()
+            self.punct("{")
+          },
+        )
+        if arms.length() > 0 {
+          self.p.indent(indent_level, () => {
+            for a in arms {
+              let (l, body) = a
+              self.newline()
+              self.block(Some(l), None, { params: [], results: [] }, body)
+            }
+          })
+          self.newline()
+        }
+        self.punct("}")
+      })
+    Match(scrutinee~, arms~, default~) => {
+      let arm = fn(
+        head : () -> Unit,
+        body : @ast.Body[@basic.Location],
+      ) -> Unit {
+        self.newline()
+        self.braced_arm(head, body)
+      }
+      self.p.hvbox(() => {
+        self.p.box(() => {
+          self.kw("match")
+          self.space()
+          // A non-atomic scrutinee is parenthesised: the following `{` would
+          // otherwise read as a struct literal or block continuation.
+          self.instr(Atom, scrutinee)
+          self.space()
+          self.punct("{")
+        })
+        self.p.indent(indent_level, () => {
+          for a in arms {
+            let (pat, body) = a
+            arm(() => self.match_pattern(pat), body)
+          }
+          // The default arm is compulsory, so it is always printed.
+          arm(() => self.op("_"), default)
+        })
+        self.newline()
+        self.punct("}")
+      })
+    }
+    IfAnnotation(cond~, then_body~, else_body~) => {
+      let branch = fn(body : @ast.Body[@basic.Location]) -> Unit {
+        self.space()
+        self.punct("{")
+        let after = self.located_block_contents(body)
+        self.close_block(after)
+      }
+      self.p.hvbox(() => {
+        self.attr("#[if(" + cond_to_string(cond) + ")]")
+        branch(then_body)
+        match else_body {
+          Some(b) => {
+            self.newline()
+            self.attr("#[else]")
+            branch(b)
+          }
+          None => ()
+        }
+      })
+    }
+
+    // -- array literals ------------------------------------------------------
+    Array(nm, elem, n) =>
+      self.array_instr(nm, () => {
+        self.instr(array_element_precedence(nm, true, elem), elem)
+        self.punct(";")
+        self.space()
+        self.instr(Instruction, n)
+      })
+    ArrayDefault(nm, n) =>
+      self.array_instr(nm, () => {
+        self.punct("..;")
+        self.space()
+        self.instr(Instruction, n)
+      })
+    ArrayFixed(nm, elems) =>
+      self.array_instr(nm, () => {
+        self.list_commasep_trailing(elems.mapi((n, i) => (n == 0, i)), pair => {
+          let (first, i) = pair
+          self.instr(array_element_precedence(nm, first, i), i)
+        })
+      })
+    ArraySegment(nm, d, off, len) =>
+      self.p.hvbox(() => {
+        self.p.box(() => {
+          self.punct("[")
+          match nm {
+            Some(t) => {
+              self.ident(t.name)
+              self.punct("|")
+            }
+            None => ()
+          }
+          self.space()
+          self.ident(d.name)
+          self.space()
+          self.op("@")
+        })
+        self.p.indent(indent_level, () => {
+          self.space()
+          self.instr(Instruction, off)
+        })
+        self.punct(";")
+        self.p.indent(indent_level, () => {
+          self.space()
+          self.instr(Instruction, len)
+        })
+        self.cut()
+        self.punct("]")
+      })
+
+    // -- stack switching -----------------------------------------------------
+    ContNew(ct, v) => self.cont_construct_instr(ct, "new", [v])
+    // The SOURCE continuation type is inferred from the last operand's static
+    // type, so only the destination -- the namespace -- is written.
+    ContBind(_, dst, l) => self.cont_construct_instr(dst, "bind", l)
+    Suspend(tag, l) =>
+      self.p.box(indent=indent_level, () => {
+        self.kw("suspend")
+        self.space()
+        self.ident(tag.name)
+        self.cut()
+        self.paren_list(l, i => self.instr(Instruction, i))
+      })
+    // The type immediate of the resume family and of `switch` is inferred from
+    // the receiver's static type, so it is never written.
+    Resume(_, handlers, l) =>
+      self.cont_method_instr(
+        "resume",
+        l,
+        drop_last(l).map(a => () => self.instr(Instruction, a)),
+        handlers,
+      )
+    ResumeThrow(_, tag, handlers, l) =>
+      // The tag is invoked with its payload, `c.resume_throw(exc(p))`, exactly
+      // as `throw exc(p)` spells it.
+      self.cont_method_instr(
+        "resume_throw",
+        l,
+        [
+          () => {
+            self.p.box(indent=indent_level, () => {
+              self.ident(tag.name)
+              self.arg_list(drop_last(l), a => self.instr(Instruction, a))
+            })
+          },
+        ],
+        handlers,
+      )
+    ResumeThrowRef(_, handlers, l) =>
+      self.cont_method_instr(
+        "resume_throw_ref",
+        l,
+        drop_last(l).map(a => () => self.instr(Instruction, a)),
+        handlers,
+      )
+    Switch(_, tag, l) =>
+      self.cont_method_instr(
+        "switch",
+        l,
+        [
+          ..drop_last(l).map(a => () => self.instr(Instruction, a)),
+          () => self.key_value("tag", tag, t => self.ident(t.name)),
+        ],
+        [],
+      )
   }
 }
 

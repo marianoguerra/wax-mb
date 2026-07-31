@@ -303,7 +303,10 @@ fn Ctx::fundecl(
       self.kw(if tag { "tag" } else { "fn" })
       self.space()
       self.ident(name.name)
-      if exact {
+      // An exact declaration with an inline signature marks the NAME
+      // (`fn f!(...)`); with a named type the marker hugs the TYPE
+      // (`fn f: !t`), so it is emitted below instead.
+      if exact && typ is None {
         self.punct("!")
       }
     })
@@ -311,7 +314,13 @@ fn Ctx::fundecl(
       Some(t) => {
         self.punct(":")
         self.space()
+        if exact {
+          self.punct("!")
+        }
         self.typ(t.name)
+        // A trailing space, so `fn f: t ()` keeps the type off the
+        // parameter list.
+        self.space()
       }
       None => ()
     }
