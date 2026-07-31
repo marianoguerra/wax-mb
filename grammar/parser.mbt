@@ -218,8 +218,11 @@ priv enum YYSymbol {
   NT_expression_list
   NT_argument
   NT_argument_list
-  NT_parse
+  NT_plaininstr
+  NT_branch_expr
+  NT_array_body
   NT_expression
+  NT_parse
   NT_statement_list
   NT_hinted_statement
   NT_condition
@@ -272,7 +275,7 @@ fn init {
 }
 
 // file:///./parser.mbty
-// 899|    EOF { () }
+// 1043|    EOF { () }
 fn yy_action_0(_last_pos : Position, _args : ArrayView[(YYObj, Position, Position)]) -> YYObj {
   YYObj_Unit({();  () })
 }

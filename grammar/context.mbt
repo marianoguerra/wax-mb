@@ -106,3 +106,29 @@ pub fn blocktype(bt : FuncType?) -> FuncType {
     None => { params: [], results: [] }
   }
 }
+
+///|
+/// Build a binary-operator node.
+///
+/// The operator gets a span of its own (`oploc`, its token) rather than only
+/// the whole expression's, so a comment written between an operand and the
+/// operator attaches where it was written.
+pub fn binop(
+  sloc : (Position, Position),
+  oploc : (Position, Position),
+  op : @ast.BinOp,
+  i : Instr[Location],
+  j : Instr[Location],
+) -> Instr[Location] {
+  with_loc(sloc, BinOpI(annot(oploc, op), i, j))
+}
+
+///|
+pub fn unop(
+  sloc : (Position, Position),
+  oploc : (Position, Position),
+  op : @ast.UnOp,
+  i : Instr[Location],
+) -> Instr[Location] {
+  with_loc(sloc, UnOpI(annot(oploc, op), i))
+}

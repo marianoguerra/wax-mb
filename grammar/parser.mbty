@@ -26,6 +26,20 @@
 // MoonYacc also has no error recovery, so `--all-errors` / panic-mode recovery
 // is out of scope. That matches the reference's DEFAULT behaviour, which stops
 // at the first syntax error.
+//
+// CONFLICTS ARE NOT VISIBLE. MoonYacc tracks them internally -- its
+// lr1/resolve_conflicts.mbt has a Shift_reduce_conflict_resolved_without_
+// precedence case -- but nothing surfaces them through `moon build`. Verified
+// by deleting the `%left "+" "-"` precedence level, which makes `a + b + c`
+// genuinely ambiguous: the build still succeeded silently, with no diagnostic
+// even under `moon build -v`.
+//
+// So "zero conflicts" cannot be gated on the build. Two things stand in for it:
+// the precedence declarations here are transcribed verbatim from the
+// reference's (which Menhir accepts without conflicts, and both generators use
+// Pager LR(1), so the same declarations should resolve the same way), and the
+// corpus test parses every file the reference can parse -- a misresolved
+// conflict shows up there as a wrong parse rather than a silent one.
 
 %position<Position>
 
@@ -894,13 +908,153 @@ argument_list -> Array[Instr[Location]]
   : sep_trailing(",", argument) { $1 }
   ;
 
-// TEMPORARY: placeholder while the remaining sections are translated.
-parse -> Unit
-  : EOF { () }
+// ===========================================================================
+// Plain instructions
+// ===========================================================================
+
+plaininstr -> Instr[Location]
+  : NULL { with_loc($sloc, Null) }
+  | "_" { with_loc($sloc, Hole) }
+  | ident %prec prec_ident { with_loc($sloc, Get($1)) }
+  | ident "::" ident { with_loc($sloc, Path($1, $3)) }
+  | "(" parenthesized_expression ")" { $2 }
+  | "(" expression "," expression_list ")" {
+      with_loc($sloc, Sequence([$2, ..$4]))
+    }
+  | expression "(" argument_list ")" { with_loc($sloc, Call($1, $3)) }
+  | CHAR { with_loc($sloc, Char($1)) }
+  | STRING { with_loc($sloc, Str(None, $1.desc)) }
+  | ident "#" STRING { with_loc($sloc, Str(Some($1), $3.desc)) }
+  | INT { with_loc($sloc, Int($1)) }
+  | FLOAT { with_loc($sloc, Float($1)) }
+  | INF { with_loc($sloc, Float("inf")) }
+  | NAN { with_loc($sloc, Float("nan")) }
+  | "{" ident "|" structure "}" { with_loc($sloc, Struct(Some($2), $4)) }
+  | "{" structure_field "," structure "}" {
+      with_loc($sloc, Struct(None, [$2, ..$4]))
+    }
+  | "{" structure_field "}" { with_loc($sloc, Struct(None, [$2])) }
+  | "{" "}" { with_loc($sloc, Struct(None, [])) }
+  | "{" ident "|" ".." "}" { with_loc($sloc, StructDefault(Some($2))) }
+  | "{" ".." "}" { with_loc($sloc, StructDefault(None)) }
+  | "{" descriptor_operand "|" structure "}" {
+      with_loc($sloc, StructDesc($2, $4))
+    }
+  | "{" descriptor_operand "|" ".." "}" {
+      with_loc($sloc, StructDefaultDesc($2))
+    }
+  | "[" array_body "]" { with_loc($sloc, $2(None)) }
+  | "[" ident "|" array_body "]" { with_loc($sloc, $4(Some($2))) }
+  | ident ":=" expression { with_loc($sloc, Tee($1, $3)) }
+  | expression AS cast_type { with_loc($sloc, Cast($1, $3)) }
+  | expression AS boption("?") descriptor_operand {
+      with_loc($sloc, CastDesc($1, $3, $4))
+    }
+  | expression IS reference_type { with_loc($sloc, Test($1, $3)) }
+  | expression "." ident { with_loc($sloc, StructGet($1, $3)) }
+  | expression "." DESCRIPTOR { with_loc($sloc, GetDescriptor($1)) }
+  | expression "." ident "=" expression {
+      with_loc($sloc, StructSet($1, $3, $5))
+    }
+  | expression "+" expression { binop($sloc, $loc($2), Add, $1, $3) }
+  | expression "-" expression { binop($sloc, $loc($2), Sub, $1, $3) }
+  | expression "*" expression { binop($sloc, $loc($2), Mul, $1, $3) }
+  | expression "/" expression { binop($sloc, $loc($2), Div(None), $1, $3) }
+  | expression "/s" expression { binop($sloc, $loc($2), Div(Some(Signed)), $1, $3) }
+  | expression "/u" expression { binop($sloc, $loc($2), Div(Some(Unsigned)), $1, $3) }
+  | expression "%s" expression { binop($sloc, $loc($2), Rem(Signed), $1, $3) }
+  | expression "%u" expression { binop($sloc, $loc($2), Rem(Unsigned), $1, $3) }
+  | expression "&" expression { binop($sloc, $loc($2), And, $1, $3) }
+  | expression "^" expression { binop($sloc, $loc($2), Xor, $1, $3) }
+  | expression "|" expression { binop($sloc, $loc($2), Or, $1, $3) }
+  | expression "<<" expression { binop($sloc, $loc($2), Shl, $1, $3) }
+  | expression ">>s" expression { binop($sloc, $loc($2), Shr(Signed), $1, $3) }
+  | expression ">>u" expression { binop($sloc, $loc($2), Shr(Unsigned), $1, $3) }
+  | expression "==" expression { binop($sloc, $loc($2), Eq, $1, $3) }
+  | expression "!=" expression { binop($sloc, $loc($2), Ne, $1, $3) }
+  | expression ">" expression { binop($sloc, $loc($2), Gt(None), $1, $3) }
+  | expression ">s" expression { binop($sloc, $loc($2), Gt(Some(Signed)), $1, $3) }
+  | expression ">u" expression { binop($sloc, $loc($2), Gt(Some(Unsigned)), $1, $3) }
+  | expression "<" expression { binop($sloc, $loc($2), Lt(None), $1, $3) }
+  | expression "<s" expression { binop($sloc, $loc($2), Lt(Some(Signed)), $1, $3) }
+  | expression "<u" expression { binop($sloc, $loc($2), Lt(Some(Unsigned)), $1, $3) }
+  | expression ">=" expression { binop($sloc, $loc($2), Ge(None), $1, $3) }
+  | expression ">=s" expression { binop($sloc, $loc($2), Ge(Some(Signed)), $1, $3) }
+  | expression ">=u" expression { binop($sloc, $loc($2), Ge(Some(Unsigned)), $1, $3) }
+  | expression "<=" expression { binop($sloc, $loc($2), Le(None), $1, $3) }
+  | expression "<=s" expression { binop($sloc, $loc($2), Le(Some(Signed)), $1, $3) }
+  | expression "<=u" expression { binop($sloc, $loc($2), Le(Some(Unsigned)), $1, $3) }
+  | branch_expr { $1 }
+  | SUSPEND tag_name "(" expression_list ")" {
+      with_loc($sloc, Suspend($2, $4))
+    }
+  // The postfix handler clause of a resume-family method call, binding tightly
+  // like `as`/`is`. Grammatically it attaches to any expression; the typer
+  // accepts it only on the resume forms.
+  | expression ON on_clauses { with_loc($sloc, On($1, $3)) }
+  | expression "[" index_expression "]" { with_loc($sloc, ArrayGet($1, $3)) }
+  | expression "?" then_branch ":" expression {
+      with_loc($sloc, Select($1, $3, $5))
+    }
+  | "!" expression %prec prec_unary { unop($sloc, $loc($1), Not, $2) }
+  | "+" expression %prec prec_unary { unop($sloc, $loc($1), Pos, $2) }
+  | "-" expression %prec prec_unary { unop($sloc, $loc($1), Neg, $2) }
+  | expression "!" { with_loc($sloc, NonNull($1)) }
+  | expression "[" index_expression "]" "=" expression {
+      with_loc($sloc, ArraySet($1, $3, $6))
+    }
+  ;
+
+// The conditional branches that carry an operand. `if` is a blockinstr and is
+// handled separately. Grouped so their shared prec_branch is declared once.
+branch_expr -> Instr[Location]
+  : BR_IF label expression %prec prec_branch { with_loc($sloc, BrIf($2, $3)) }
+  | BR_ON_NULL label expression %prec prec_branch {
+      with_loc($sloc, BrOnNull($2, $3))
+    }
+  | BR_ON_NON_NULL label expression %prec prec_branch {
+      with_loc($sloc, BrOnNonNull($2, $3))
+    }
+  | BR_ON_CAST label reference_type expression %prec prec_branch {
+      with_loc($sloc, BrOnCast($2, $3, $4))
+    }
+  | BR_ON_CAST_FAIL label reference_type expression %prec prec_branch {
+      with_loc($sloc, BrOnCastFail($2, $3, $4))
+    }
+  | BR_ON_CAST label boption("?") descriptor_operand expression %prec prec_branch {
+      with_loc($sloc, BrOnCastDescEq($2, $3, $5, $4))
+    }
+  | BR_ON_CAST_FAIL label boption("?") descriptor_operand expression %prec prec_branch {
+      with_loc($sloc, BrOnCastDescEqFail($2, $3, $5, $4))
+    }
+  ;
+
+// An array literal's contents, parameterised over the optional element type
+// written before the `|`, which the caller supplies.
+array_body -> (Ident?) -> InstrDesc[Location]
+  : expression_list { fn(t) { ArrayFixed(t, $1) } }
+  | expression ";" length_expression { fn(t) { Array(t, $1, $3) } }
+  | ".." ";" length_expression { fn(t) { ArrayDefault(t, $3) } }
+  | ident "@" expression ";" length_expression {
+      fn(t) { ArraySegment(t, $1, $3, $5) }
+    }
   ;
 
 expression -> Instr[Location]
-  : EOF { with_loc($sloc, Nop) }
+  : blockinstr %prec prec_block { $1 }
+  | plaininstr { $1 }
+  // A hint attribute prefixing an expression is deliberately GREEDY:
+  // prec_block is the lowest precedence, so every operator shifts and the hint
+  // takes the WHOLE expression. A placement whose extent a reader could not
+  // guess -- `#[freq = 4] f(x) + 1` -- therefore lands on the BinOp and is
+  // rejected by `hinted`'s target check, rather than silently binding to one
+  // of the two readings. Rust refuses the same case in stmt_expr_attributes.
+  | hint_attr expression %prec prec_block { hinted($1.0, [$1.1], $2) }
+  ;
+
+// TEMPORARY: placeholder while the remaining sections are translated.
+parse -> Unit
+  : EOF { () }
   ;
 
 statement_list -> Array[Instr[Location]]
