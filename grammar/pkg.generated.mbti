@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/grammar"
+
+import {
+  "moonbitlang/core/debug",
+  "waxmb/wax/ast",
+  "waxmb/wax/basic",
+  "waxmb/wax/tokens",
+  "waxmb/wax/trivia",
+}
+
+// Values
+pub fn[T] annot((@basic.Position, @basic.Position), T) -> @basic.Annotated[T, @basic.Location]
+
+pub fn blocktype(@ast.FuncType?) -> @ast.FuncType
+
+pub fn[T] fail_at(@basic.Location, String, hint? : String?, fix? : @basic.Edit?) -> T raise SyntaxError
+
+pub fn loc_of((@basic.Position, @basic.Position)) -> @basic.Location
+
+pub fn parse(Array[(@tokens.Token, @basic.Position, @basic.Position)], initial_pos? : @basic.Position) -> Unit raise ParseError
+
+pub fn[T] respan(@basic.Annotated[T, @basic.Location], (@basic.Position, @basic.Position)) -> @basic.Annotated[T, @basic.Location]
+
+pub fn set_context(@trivia.Context) -> Unit
+
+pub fn with_loc((@basic.Position, @basic.Position), @ast.InstrDesc[@basic.Location]) -> @ast.Instr[@basic.Location]
+
+// Errors
+pub suberror ParseError {
+  UnexpectedToken(@tokens.Token, (@basic.Position, @basic.Position), Array[@tokens.TokenKind])
+  UnexpectedEndOfInput(@basic.Position, Array[@tokens.TokenKind])
+}
+
+pub suberror SyntaxError {
+  SyntaxError(loc~ : @basic.Location, message~ : String, hint~ : String?, fix~ : @basic.Edit?)
+} derive(@debug.Debug)
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

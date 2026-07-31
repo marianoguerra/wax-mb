@@ -1,0 +1,195 @@
+// The Wax grammar, translated from wax/src/lib-wax/parser.mly (Menhir).
+//
+// This file is the single source of truth for BOTH the parser and the token
+// definitions: tokens/ generates its Token / TokenKind enums from this same
+// file with `moonyacc --mode only-tokens`, exactly as moonbitlang/parser
+// generates lexer/tokens/tokens.mbt from yacc_parser/parser.mbty. Keeping one
+// grammar file means a token can never be declared here and missing there.
+//
+// MoonYacc is ocamlyacc-compatible and, like Menhir, is built on Pager's LR(1)
+// algorithm, so most of the translation is mechanical: $loc, $loc($n), $sloc,
+// %prec, %inline, %left/%right/%nonassoc and `%token X "alias"` all carry over
+// unchanged. Three things do not:
+//
+//   * %parameter<Context> -- Menhir functorises the grammar over the trivia
+//     context so every semantic action can register its span. MoonBit has no
+//     functors; the context becomes a package-level Ref set at parse entry.
+//     (Consequence: parsing is not reentrant. Documented, and fine for a CLI.)
+//
+//   * %on_error_reduce -- no MoonYacc equivalent. It only shapes WHICH state an
+//     error is reported from, so dropping it costs message quality, not
+//     correctness, and message wording is explicitly not gated yet.
+//
+//   * Every rule must state its result type (`nonterm -> Type`), which Menhir
+//     infers from the OCaml actions.
+//
+// MoonYacc also has no error recovery, so `--all-errors` / panic-mode recovery
+// is out of scope. That matches the reference's DEFAULT behaviour, which stops
+// at the first syntax error.
+
+%position<Position>
+
+// TokenKind is given Debug by MoonYacc itself; asking for it again is a
+// duplicate-method error.
+%derive<Debug> Token
+%derive<Eq> TokenKind
+%derive<Hash> TokenKind
+%derive<Compare> TokenKind
+
+// ---------------------------------------------------------------------------
+// Terminals
+// ---------------------------------------------------------------------------
+
+// Numeric literals stay RAW STRINGS through the whole front end -- they are
+// never converted to numbers here. That is what makes byte-exact round-tripping
+// possible (0x1_0 must print back as written, not as 16), and it is also what
+// the type checker's flexible-literal inference will need later.
+%token<String> IDENT
+%token<String> INT
+%token<String> FLOAT
+
+// A string literal carries its own span, not just its text: a data segment is
+// written as a run of adjacent literals whose bytes are concatenated, and a
+// diagnostic has to be able to point at the individual piece that is wrong.
+%token<LocString> STRING
+%token<Char> CHAR
+
+%token EOF
+%token INF NAN
+
+%token SEMI ";"
+%token SHARP "#"
+%token QUESTIONMARK "?"
+%token LPAREN "("
+%token RPAREN ")"
+%token LBRACE "{"
+%token RBRACE "}"
+%token LBRACKET "["
+%token RBRACKET "]"
+%token COMMA ","
+%token COLON ":"
+%token COLONCOLON "::"
+%token ARROW "->"
+%token FATARROW "=>"
+%token EQUAL "="
+%token COLONEQUAL ":="
+%token AT "@"
+%token QUOTE "'"
+%token DOT "."
+%token DOTDOT ".."
+%token BANG "!"
+
+%token PLUS "+"
+%token PLUSPLUS "++"
+%token PLUSEQUAL "+="
+%token MINUS "-"
+%token MINUSEQUAL "-="
+%token STAR "*"
+%token STAREQUAL "*="
+
+// Wasm distinguishes signed and unsigned division, remainder, shift and
+// comparison, so Wax spells the signedness on the operator itself (`/s`, `>>u`,
+// `<=s`). Each has a compound-assignment form.
+%token SLASH "/"
+%token SLASHEQUAL "/="
+%token SLASHS "/s"
+%token SLASHSEQUAL "/s="
+%token SLASHU "/u"
+%token SLASHUEQUAL "/u="
+%token PERCENTS "%s"
+%token PERCENTSEQUAL "%s="
+%token PERCENTU "%u"
+%token PERCENTUEQUAL "%u="
+
+%token AMPERSAND "&"
+%token AMPERSANDEQUAL "&="
+%token PIPE "|"
+%token PIPEEQUAL "|="
+%token CARET "^"
+%token CARETEQUAL "^="
+%token SHL "<<"
+%token SHLEQUAL "<<="
+%token SHRS ">>s"
+%token SHRSEQUAL ">>s="
+%token SHRU ">>u"
+%token SHRUEQUAL ">>u="
+
+%token EQUALEQUAL "=="
+%token BANGEQUAL "!="
+%token GT ">"
+%token GTS ">s"
+%token GTU ">u"
+%token LT "<"
+%token LTS "<s"
+%token LTU "<u"
+%token GE ">="
+%token GES ">=s"
+%token GEU ">=u"
+%token LE "<="
+%token LES "<=s"
+%token LEU "<=u"
+
+%token UNDERSCORE "_"
+
+// Keywords.
+%token FN
+%token TAG
+%token MUT
+%token TYPE
+%token REC
+%token OPEN
+%token NOP UNREACHABLE NULL
+%token DO WHILE LOOP IF ELSE
+%token CONST LET AS IS
+%token BECOME
+%token BR BR_IF BR_TABLE RETURN THROW THROW_REF
+%token BR_ON_CAST BR_ON_CAST_FAIL
+%token BR_ON_NULL BR_ON_NON_NULL
+%token TRY TRY_LEGACY CATCH
+%token CONT
+%token SUSPEND ON
+%token DISPATCH
+%token MATCH
+%token MEMORY DATA TABLE ELEM PAGESIZE SHARED
+%token DESCRIPTOR DESCRIBES
+%token IMPORT
+
+// ---------------------------------------------------------------------------
+// Precedence, lowest first
+// ---------------------------------------------------------------------------
+//
+// Transcribed unchanged from parser.mly:119-133. The ordering is load-bearing
+// and subtle -- see the reference's own notes at parser.mly:135 for the cases
+// it is tuned against, e.g. `br 'foo 1 + 2` parsing as `br 'foo (1 + 2)`, and
+// `{a| b:}` resolving as a struct.
+//
+// prec_ident, prec_block, prec_branch and prec_unary are precedence-only
+// pseudo-symbols used by %prec; they are not real terminals and do not appear
+// in the generated Token enum.
+
+%nonassoc prec_ident prec_block
+%right prec_branch
+%right ":=" "="
+%right "?" ":"
+%nonassoc "==" "!=" "<" "<u" "<s" ">" ">u" ">s" "<=" "<=u" "<=s" ">=" ">=u" ">=s"
+%left "|"
+%left "^"
+%left "&"
+%left "<<" ">>u" ">>s"
+%left "+" "-"
+%left "*" "/" "/u" "/s" "%u" "%s"
+%left AS IS ON
+%nonassoc prec_unary
+%nonassoc "!"
+%left "." "(" "["
+
+%start parse
+
+%%
+
+// PLACEHOLDER. The 104 real productions arrive in phase 2; this exists only so
+// the grammar is well-formed enough for `--mode only-tokens` to emit the Token
+// and TokenKind enums, which the lexer is written against.
+parse -> Unit
+  : EOF { () }
+  ;
