@@ -1,0 +1,83 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/colors"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub let blue : String
+
+pub let bold : String
+
+pub let cyan : String
+
+pub let green : String
+
+pub let grey : String
+
+pub let high_red : String
+
+pub let high_yellow : String
+
+pub let magenta : String
+
+pub let no_color : Theme
+
+pub let red : String
+
+pub let reset : String
+
+pub fn should_use_color(Flag, is_tty? : Bool) -> Bool
+
+pub let wat_theme : Theme
+
+pub let wax_theme : Theme
+
+pub let white : String
+
+pub let yellow : String
+
+// Errors
+
+// Types and methods
+pub(all) enum Flag {
+  Never
+  Always
+  Auto
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Style {
+  Keyword
+  Instruction
+  Attribute
+  Type
+  Identifier
+  Constant
+  Str
+  Operator
+  Annotation
+  Comment
+  Punctuation
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Theme {
+  keyword : String
+  instruction : String
+  attribute : String
+  type_ : String
+  identifier : String
+  constant : String
+  str : String
+  operator : String
+  annotation : String
+  comment : String
+  punctuation : String
+  reset : String
+}
+pub fn Theme::escape_sequence(Self, Style) -> String
+
+// Type aliases
+
+// Traits
+

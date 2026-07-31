@@ -19,21 +19,6 @@ pub let width : Int = 100
 pub let indent_level : Int = 4
 
 ///|
-/// What kind of atom a piece of text is.
-///
-/// Only names today; a coloured renderer would map them to a theme.
-pub(all) enum Style {
-  Punctuation
-  Operator
-  Identifier
-  Constant
-  Keyword
-  Type
-  Str
-  Attribute
-} derive(Eq, Debug)
-
-///|
 /// The printing context.
 ///
 /// `locate` extracts a source span from a node's annotation, to look up its
@@ -41,6 +26,8 @@ pub(all) enum Style {
 /// there are no comments to attach.
 pub struct Ctx[Info] {
   p : @printer.Printer
+  /// The palette styled atoms are rendered with.
+  theme : @colors.Theme
   trivia : @trivia.Table
   /// The dry pass fills this instead of printing; see `associate`.
   collect : @trivia.Locations?
@@ -53,13 +40,26 @@ pub fn Ctx::new(
   trivia~ : @trivia.Table,
   collect? : @trivia.Locations? = None,
   locate? : (@basic.Location) -> @basic.Location? = l => Some(l),
+  theme? : @colors.Theme = @colors.no_color,
 ) -> Ctx[@basic.Location] {
-  { p, trivia, collect, locate }
+  { p, theme, trivia, collect, locate }
 }
 
 ///|
-pub fn[Info] Ctx::styled(self : Ctx[Info], _style : Style, s : String) -> Unit {
+/// Emit `s` in the theme's colour for `style`.
+///
+/// The escape sequences go through `string_as 0`: they occupy no columns, so
+/// colouring never changes a line-breaking decision. Uncoloured themes emit no
+/// sequence at all rather than an empty one.
+pub fn[Info] Ctx::styled(self : Ctx[Info], style : Style, s : String) -> Unit {
+  let seq = self.theme.escape_sequence(style)
+  if seq != "" {
+    self.p.string_as(0, seq)
+  }
   self.p.string(s)
+  if seq != "" {
+    self.p.string_as(0, self.theme.reset)
+  }
 }
 
 ///|

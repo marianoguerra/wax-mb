@@ -5,6 +5,7 @@ import {
   "moonbitlang/core/debug",
   "waxmb/wax/ast",
   "waxmb/wax/basic",
+  "waxmb/wax/colors",
   "waxmb/wax/printer",
   "waxmb/wax/trivia",
   "waxmb/wax/wasm_types",
@@ -41,7 +42,7 @@ pub fn ocaml_escaped(Bytes) -> String
 
 pub fn prec_op(@ast.BinOp) -> (Prec, Prec, Prec)
 
-pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context) -> String
+pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context, theme? : @colors.Theme) -> String
 
 pub fn run_string((@printer.Printer) -> Unit) -> String
 
@@ -73,6 +74,7 @@ pub(all) enum BinopKind {
 
 pub struct Ctx[Info] {
   p : @printer.Printer
+  theme : @colors.Theme
   trivia : @trivia.Table
   collect : @trivia.Locations?
   locate : (Info) -> @basic.Location?
@@ -101,7 +103,7 @@ pub fn[Info, T] Ctx::list_commasep(Self[Info], Array[T], (T) -> Unit) -> Unit
 pub fn[Info, T] Ctx::list_commasep_trailing(Self[Info], Array[T], (T) -> Unit) -> Unit
 pub fn Ctx::module_(Self[@basic.Location], Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@trivia.Entry]) -> Unit
 pub fn Ctx::modulefield(Self[@basic.Location], @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]) -> Unit
-pub fn Ctx::new(@printer.Printer, trivia~ : @trivia.Table, collect? : @trivia.Locations?, locate? : (@basic.Location) -> @basic.Location?) -> Self[@basic.Location]
+pub fn Ctx::new(@printer.Printer, trivia~ : @trivia.Table, collect? : @trivia.Locations?, locate? : (@basic.Location) -> @basic.Location?, theme? : @colors.Theme) -> Self[@basic.Location]
 pub fn[Info] Ctx::newline(Self[Info]) -> Unit
 pub fn[Info] Ctx::op(Self[Info], String) -> Unit
 pub fn[Info] Ctx::packedtype(Self[Info], @wasm_types.PackedType) -> Unit
@@ -117,7 +119,7 @@ pub fn[Info] Ctx::simple_pat(Self[Info], @ast.Ident?) -> Unit
 pub fn[Info] Ctx::space(Self[Info]) -> Unit
 pub fn[Info] Ctx::storagetype(Self[Info], @wasm_types.StorageType[@ast.Ident]) -> Unit
 pub fn[Info] Ctx::str(Self[Info], String) -> Unit
-pub fn[Info] Ctx::styled(Self[Info], Style, String) -> Unit
+pub fn[Info] Ctx::styled(Self[Info], @colors.Style, String) -> Unit
 pub fn Ctx::subtype(Self[@basic.Location], @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]) -> Unit
 pub fn[Info, T] Ctx::trailing_comma(Self[Info], Array[T]) -> Unit
 pub fn[Info] Ctx::tuple(Self[Info], Bool, Array[@wasm_types.ValType[@ast.Ident]]) -> Unit
@@ -143,17 +145,6 @@ pub(all) enum Prec {
   CallAndFieldAccess
   Atom
 } derive(Compare, Eq, @debug.Debug)
-
-pub(all) enum Style {
-  Punctuation
-  Operator
-  Identifier
-  Constant
-  Keyword
-  Type
-  Str
-  Attribute
-} derive(Eq, @debug.Debug)
 
 // Type aliases
 

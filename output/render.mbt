@@ -7,7 +7,14 @@
 /// output discarded, purely to record which spans it looks up; `associate` then
 /// restricts comment attachment to exactly those. Attaching first and printing
 /// second would let a comment land on a node the printer skips, and vanish.
-pub fn render(m : @ast.LocModule, trivia_ctx : @trivia.Context) -> String {
+/// The dry pass takes no theme: it emits nothing, so colouring it would only
+/// cost work. Width is irrelevant there too -- the traversal looks up the same
+/// spans however the lines break.
+pub fn render(
+  m : @ast.LocModule,
+  trivia_ctx : @trivia.Context,
+  theme? : @colors.Theme = @colors.no_color,
+) -> String {
   let (table, tail) = @trivia.associate(trivia_ctx, only => {
     @printer.run_discard(p => {
       let dry = Ctx::new(p, trivia=@trivia.Table::empty(), collect=Some(only))
@@ -15,7 +22,7 @@ pub fn render(m : @ast.LocModule, trivia_ctx : @trivia.Context) -> String {
     })
   })
   run_string(p => {
-    let ctx = Ctx::new(p, trivia=table)
+    let ctx = Ctx::new(p, trivia=table, theme~)
     ctx.module_(m, tail)
   })
 }
