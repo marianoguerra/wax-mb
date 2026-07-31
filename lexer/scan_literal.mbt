@@ -3,17 +3,18 @@
 ///|
 /// Scan a `"..."` string literal.
 ///
-/// The token carries the DECODED text plus its span. Escapes are resolved here
+/// The token carries the DECODED BYTES plus its span. Escapes are resolved here
 /// rather than left raw, because the value is what a data segment or an export
 /// name means; the printer re-escapes on the way out.
 ///
-/// `\xNN` denotes a raw BYTE, which is why the decoded value is a byte string
-/// in the reference. MoonBit strings are UTF-16, so a byte escape above 0x7F
-/// cannot be represented as a character here -- see the note in `push_byte`.
+/// Bytes, not a String, because `\xNN` denotes a RAW BYTE: a Wax string literal
+/// is a byte string that need not be valid UTF-8 at all. Decoding it into a
+/// MoonBit string would turn `\xff` into U+00FF and re-encode it as the two
+/// bytes `c3 bf`, silently corrupting binary data segments.
 fn scan_string(cur : Cursor, fail : (LexError, Location) -> Unit) -> Token? {
   let start = cur.pos()
   cur.eat("\"")
-  let buf = StringBuilder::new()
+  let buf = Buffer()
   while true {
     let c = match cur.peek() {
       Some(c) => c
@@ -26,7 +27,7 @@ fn scan_string(cur : Cursor, fail : (LexError, Location) -> Unit) -> Token? {
     if c == '"' {
       cur.bump() |> ignore
       let loc = cur.span(start)
-      return Some(STRING({ desc: buf.to_string(), info: loc }))
+      return Some(STRING({ desc: buf.to_bytes(), info: loc }))
     }
     if c == '\\' {
       if !scan_escape(cur, buf, fail) {
@@ -43,8 +44,12 @@ fn scan_string(cur : Cursor, fail : (LexError, Location) -> Unit) -> Token? {
       fail(MalformedString, cur.span(from))
       return None
     }
-    buf.write_char(c)
+    // Consume by SCALAR, not by code unit: `bump` steps over both halves of a
+    // surrogate pair, so writing `c` directly would encode the high half alone
+    // and drop the low one.
+    let from = cur.idx
     cur.bump() |> ignore
+    buf.write_char_utf8(decode_scalar(cur.slice(from, cur.idx)))
   }
   None
 }
@@ -53,7 +58,7 @@ fn scan_string(cur : Cursor, fail : (LexError, Location) -> Unit) -> Token? {
 /// Consume one backslash escape, appending its value to `buf`.
 fn scan_escape(
   cur : Cursor,
-  buf : StringBuilder,
+  buf : @buffer.Buffer,
   fail : (LexError, Location) -> Unit,
 ) -> Bool {
   let start = cur.pos()
@@ -61,27 +66,27 @@ fn scan_escape(
   match cur.peek() {
     Some('t') => {
       cur.bump() |> ignore
-      buf.write_char('\t')
+      buf.write_char_utf8('\t')
     }
     Some('n') => {
       cur.bump() |> ignore
-      buf.write_char('\n')
+      buf.write_char_utf8('\n')
     }
     Some('r') => {
       cur.bump() |> ignore
-      buf.write_char('\r')
+      buf.write_char_utf8('\r')
     }
     Some('\'') => {
       cur.bump() |> ignore
-      buf.write_char('\'')
+      buf.write_char_utf8('\'')
     }
     Some('"') => {
       cur.bump() |> ignore
-      buf.write_char('"')
+      buf.write_char_utf8('"')
     }
     Some('\\') => {
       cur.bump() |> ignore
-      buf.write_char('\\')
+      buf.write_char_utf8('\\')
     }
     Some('x') => {
       cur.bump() |> ignore
@@ -90,7 +95,9 @@ fn scan_escape(
       if d0 is Some(a) && d1 is Some(b) && is_hex_digit(a) && is_hex_digit(b) {
         cur.bump() |> ignore
         cur.bump() |> ignore
-        buf.write_char((hex_val(a) * 16 + hex_val(b)).unsafe_to_char())
+        // ONE raw byte, not a code point: this is how a literal carries
+        // arbitrary binary data.
+        buf.write_byte((hex_val(a) * 16 + hex_val(b)).to_byte())
       } else {
         fail(MalformedString, cur.span(start))
         return false
@@ -110,7 +117,9 @@ fn scan_escape(
         }
         cur.bump() |> ignore
         match scalar_of_hex(digits) {
-          Some(u) => buf.write_char(u)
+          // A Unicode escape names a SCALAR, so it contributes that scalar's
+          // UTF-8 encoding -- unlike `\xNN`, which contributes one byte.
+          Some(u) => buf.write_char_utf8(u)
           None => {
             fail(MalformedUnicodeEscape, cur.span(start))
             return false
@@ -126,6 +135,21 @@ fn scan_escape(
     }
   }
   true
+}
+
+///|
+/// The single scalar a consumed slice denotes.
+///
+/// MoonBit strings are UTF-16, so one scalar above the BMP arrives as two code
+/// units; this puts the pair back together.
+fn decode_scalar(text : String) -> Char {
+  let hi = text.unsafe_get(0).to_int()
+  if text.length() == 2 {
+    let lo = text.unsafe_get(1).to_int()
+    (0x10000 + ((hi - 0xD800) << 10) + (lo - 0xDC00)).unsafe_to_char()
+  } else {
+    hi.unsafe_to_char()
+  }
 }
 
 ///|
@@ -278,13 +302,7 @@ fn scan_char(cur : Cursor, fail : (LexError, Location) -> Unit) -> Token? {
         return None
       }
       cur.bump() |> ignore
-      // Re-decode so a surrogate pair becomes one code point.
-      let mut scalar = text.unsafe_get(0).to_int()
-      if text.length() == 2 {
-        let lo = text.unsafe_get(1).to_int()
-        scalar = 0x10000 + ((scalar - 0xD800) << 10) + (lo - 0xDC00)
-      }
-      return Some(CHAR(scalar.unsafe_to_char()))
+      return Some(CHAR(decode_scalar(text)))
     }
     None => {
       rewind()

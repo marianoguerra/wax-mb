@@ -207,7 +207,7 @@ pub(all) enum CmpOp {
 pub(all) enum Cond {
   /// A variable, written `$name`.
   Var(@basic.Annotated[String, @basic.Location])
-  Str(@basic.Annotated[String, @basic.Location])
+  Str(@basic.Annotated[Bytes, @basic.Location])
   Version(Int, Int, Int)
   And(Array[Cond])
   Or(Array[Cond])

@@ -172,7 +172,7 @@ fn Ctx::attr_prefix(
 
 ///|
 /// A byte string, re-escaped and quoted.
-fn Ctx::data_bytes(self : Ctx[@basic.Location], s : String) -> Unit {
+fn Ctx::data_bytes(self : Ctx[@basic.Location], s : Bytes) -> Unit {
   self.str(string_literal(s))
 }
 
@@ -406,7 +406,9 @@ fn Ctx::import_decl(
               self.space()
               self.kw("pagesize")
               self.space()
-              self.constant((1UL << pl).to_string())
+              // A SIGNED shift, matching the reference; see the note in
+              // `modulefield_desc`.
+              self.constant((1L << pl).to_string())
             }
             None => ()
           }

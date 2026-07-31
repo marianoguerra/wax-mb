@@ -62,7 +62,7 @@ pub(all) struct ImportDecl {
 /// little-endian -- raw for the same round-tripping reason as numeric literals.
 pub(all) enum DataElem {
   /// A string literal's raw bytes.
-  Str(String)
+  Str(Bytes)
   /// A scalar numeric run, `[f32: 1.5, nan, ...]`.
   Run(StorageType, Array[Annotated[String, Location]])
   /// A v128 run, `[v128: i32x4(1,2,3,4), ...]`.
@@ -141,14 +141,14 @@ pub(all) enum ModuleField[Info] {
   )
   /// A single import, `import "module" fn f();`.
   Import(
-    module_~ : Annotated[String, Location],
+    module_~ : Annotated[Bytes, Location],
     decl~ : Annotated[ImportDecl, Location]
   )
   /// A grouped import block: several imports sharing one module name. Kept
   /// distinct from a run of single imports because the text form is
   /// authoritative for import layout, and the binary encoder reproduces it.
   ImportGroup(
-    module_~ : Annotated[String, Location],
+    module_~ : Annotated[Bytes, Location],
     decls~ : Array[Annotated[ImportDecl, Location]]
   )
   /// A module-level inner attribute, `#![module = "name"]`. Attached to the

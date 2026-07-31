@@ -174,3 +174,26 @@ accounted for all 6 of the shift-reduce conflicts the generator was reporting.
 
 Match the reference's recursion direction unless there is a specific reason not
 to.
+
+## 7. `pagesize` is printed through a signed shift
+
+`wax/src/lib-wax/output.ml:1860` computes the page size as
+`Int64.to_string (Int64.shift_left 1L p)` from the stored base-2 logarithm.
+For `p = 63` that overflows into the sign bit, so
+
+```wax
+memory m: i32 [1] pagesize 9223372036854775808;
+```
+
+reprints as
+
+```wax
+memory m: i32 [1] pagesize -9223372036854775808;
+```
+
+which is not accepted as input — the reference's own reprint does not round
+trip. `test/corpus/cram/custom-page-sizes__huge-pow2.wax` is the fixture.
+
+The port reproduces it, since Oracle 1 gates on byte-exact agreement with the
+reference and this is what the reference emits. Should upstream switch to an
+unsigned rendering, this port has to follow in the same commit.

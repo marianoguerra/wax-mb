@@ -15,7 +15,7 @@ pub(all) enum Token {
   IDENT(String)
   INT(String)
   FLOAT(String)
-  STRING(@basic.Annotated[String, @basic.Location])
+  STRING(@basic.Annotated[Bytes, @basic.Location])
   CHAR(Char)
   EOF
   INF
@@ -261,7 +261,7 @@ pub impl Show for TokenKind
 pub impl @debug.Debug for TokenKind
 
 // Type aliases
-pub type LocString = @basic.Annotated[String, @basic.Location]
+pub type LocString = @basic.Annotated[Bytes, @basic.Location]
 
 pub type Triple = (Token, @basic.Position, @basic.Position)
 

@@ -4,6 +4,7 @@ import {
   "waxmb/wax/printer",
   "waxmb/wax/trivia",
   "waxmb/wax/unicode",
+  "moonbitlang/core/encoding/utf8",
   "waxmb/wax/wasm_types",
 }
 

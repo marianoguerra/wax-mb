@@ -1,5 +1,6 @@
 import {
   "waxmb/wax/unicode/widths",
+  "moonbitlang/core/encoding/utf8",
 }
 
 import {

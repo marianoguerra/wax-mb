@@ -829,13 +829,18 @@ fn Ctx::instr_desc(
 /// Escaped by the same all-or-nothing rule as a string, with `x` hex prefixes:
 /// `escape_string` is what decides, not a hand-rolled table.
 pub fn char_literal(c : Char) -> String {
-  let (_, body) = @unicode.escape_string(c.to_string(), hex_prefix="x")
+  // A char is a SCALAR, so it contributes its UTF-8 encoding -- the same bytes
+  // the lexer would have produced for it inside a string.
+  let (_, body) = @unicode.escape_string(
+    @utf8.encode(c.to_string()),
+    hex_prefix="x",
+  )
   "'" + body + "'"
 }
 
 ///|
-/// A string literal.
-pub fn string_literal(s : String) -> String {
+/// A string literal, from its raw bytes.
+pub fn string_literal(s : Bytes) -> String {
   let (_, body) = @unicode.escape_string(s, hex_prefix="x")
   "\"" + body + "\""
 }

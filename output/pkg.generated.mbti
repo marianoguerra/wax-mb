@@ -49,7 +49,7 @@ pub fn[Info] starts_with_block(@ast.Instr[Info]) -> Bool
 
 pub fn[Info] starts_with_block_prec(Prec, @ast.Instr[Info]) -> Bool
 
-pub fn string_literal(String) -> String
+pub fn string_literal(Bytes) -> String
 
 pub fn suffix_string(@wasm_types.StorageType[@ast.Ident]) -> String
 

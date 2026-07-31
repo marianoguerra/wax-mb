@@ -108,41 +108,56 @@ fn hex2(n : Int) -> String {
 }
 
 ///|
-/// Escape a string for printing, and report its display width.
+/// The text `b` denotes, or `None` when it is not valid UTF-8.
 ///
-/// ALL-OR-NOTHING. If any character needs a hex escape, EVERY byte is dumped as
-/// one -- `a\x01b` prints as `\x61\x01\x62`, not as a readable `a` and `b`
-/// around an escape. The reference does this deliberately: such a string is
-/// binary data, and interleaving decoded text with byte escapes reads as though
-/// the text part were meaningful.
+/// `decode` raising IS the validity test; there is no separate check.
+pub fn utf8_text(b : Bytes) -> String? {
+  Some(@utf8.decode(b[:])) catch {
+    _ => None
+  }
+}
+
+///|
+/// Escape a BYTE STRING for printing, and report its display width.
 ///
-/// Otherwise the string stays readable, with only the quote, the backslash and
+/// Bytes, not a String: a Wax string literal is a byte string that need not be
+/// valid UTF-8, and that validity is precisely what selects the branch below.
+///
+/// ALL-OR-NOTHING. If the bytes are not valid UTF-8, or any character needs a
+/// hex escape, EVERY byte is dumped as one -- `a\x01b` prints as
+/// `\x61\x01\x62`, not as a readable `a` and `b` around an escape. The
+/// reference does this deliberately: such a string is binary data, and
+/// interleaving decoded text with byte escapes reads as though the text part
+/// were meaningful.
+///
+/// Otherwise the text stays readable, with only the quote, the backslash and
 /// the three whitespace escapes touched.
 ///
 /// The width is returned alongside because the escaped form is what occupies
 /// columns, and it is not the width of the original.
-pub fn escape_string(s : String, hex_prefix? : String = "") -> (Int, String) {
+pub fn escape_string(s : Bytes, hex_prefix? : String = "") -> (Int, String) {
   let buf = StringBuilder::new()
-  if !has_hex_escape(s) {
-    for c in s {
-      let n = c.to_int()
-      if n >= 32 && n != 127 && n != 34 && n != 92 {
-        buf.write_char(c)
-      } else {
-        match n {
-          9 => buf.write_string("\\t")
-          10 => buf.write_string("\\n")
-          13 => buf.write_string("\\r")
-          34 => buf.write_string("\\\"")
-          92 => buf.write_string("\\\\")
-          _ => buf.write_string("\\" + hex_prefix + hex2(n))
+  match utf8_text(s) {
+    Some(t) if !has_hex_escape(t) =>
+      for c in t {
+        let n = c.to_int()
+        if n >= 32 && n != 127 && n != 34 && n != 92 {
+          buf.write_char(c)
+        } else {
+          match n {
+            9 => buf.write_string("\\t")
+            10 => buf.write_string("\\n")
+            13 => buf.write_string("\\r")
+            34 => buf.write_string("\\\"")
+            92 => buf.write_string("\\\\")
+            _ => buf.write_string("\\" + hex_prefix + hex2(n))
+          }
         }
       }
-    }
-  } else {
-    for b in utf8_bytes(s) {
-      buf.write_string("\\" + hex_prefix + hex2(b))
-    }
+    _ =>
+      for b in s {
+        buf.write_string("\\" + hex_prefix + hex2(b.to_int()))
+      }
   }
   let out = buf.to_string()
   (terminal_width(out), out)

@@ -104,7 +104,9 @@ fn Ctx::modulefield_desc(
                 self.kw("pagesize")
                 self.space()
                 // Stored as the base-2 logarithm; printed as the size itself.
-                self.constant((1UL << pl).to_string())
+                // A SIGNED shift, matching the reference; see the note in
+                // `modulefield_desc`.
+                self.constant((1L << pl).to_string())
               }
               None => ()
             }

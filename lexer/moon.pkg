@@ -3,6 +3,7 @@ import {
   "waxmb/wax/tokens",
   "waxmb/wax/trivia",
   "waxmb/wax/unicode/xid",
+  "moonbitlang/core/buffer",
 }
 
 import {

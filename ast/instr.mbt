@@ -91,7 +91,7 @@ pub(all) enum InstrDesc[Info] {
   // -- literals -------------------------------------------------------------
   Char(Char)
   /// A string literal, optionally prefixed by a type (`t#"..."`).
-  Str(Ident?, String)
+  Str(Ident?, Bytes)
   /// Numeric literals stay RAW TEXT all the way through the front end. That is
   /// what lets the printer reproduce `0x1_0` as written, and what the typer's
   /// flexible-literal inference will need.

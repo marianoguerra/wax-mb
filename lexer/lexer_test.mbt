@@ -283,7 +283,7 @@ test "string escapes are decoded" {
       #|[
       #|  STRING(
       #|    {
-      #|      desc: "a\tb",
+      #|      desc: <Bytes: [0x61, 0x09, 0x62]>,
       #|      info: {
       #|        start: { fname: "", lnum: 1, bol: 0, cnum: 0 },
       #|        end: { fname: "", lnum: 1, bol: 0, cnum: 6 },
@@ -300,7 +300,7 @@ test "string escapes are decoded" {
       #|[
       #|  STRING(
       #|    {
-      #|      desc: "Hi",
+      #|      desc: <Bytes: [0x48, 0x69]>,
       #|      info: {
       #|        start: { fname: "", lnum: 1, bol: 0, cnum: 0 },
       #|        end: { fname: "", lnum: 1, bol: 0, cnum: 9 },
@@ -460,4 +460,32 @@ test "the token stream is always EOF-terminated" {
       #|[EOF]
     ),
   )
+}
+
+///|
+/// A string literal is a BYTE string, and the distinctions below are exactly
+/// the ones that were lost while it was being decoded into a MoonBit string.
+test "string literals carry raw bytes, not decoded text" {
+  fn bytes_of(src : String) -> Bytes {
+    match toks(src)[0] {
+      STRING(s) => s.desc
+      _ => abort("expected a string token")
+    }
+  }
+
+  // `\xff` is ONE byte and is not valid UTF-8 on its own. Decoding it to
+  // U+00FF and re-encoding would have produced the two bytes c3 bf.
+  assert_eq(bytes_of("\"\\xff\""), b"\xff")
+
+  // A Unicode escape names a scalar, so it contributes that scalar's UTF-8
+  // encoding -- two bytes here, against the one above.
+  assert_eq(bytes_of("\"\\u{ff}\""), b"\xc3\xbf")
+
+  // A scalar above the BMP arrives from the cursor as a surrogate PAIR. Both
+  // halves have to be recombined: encoding the high half alone would give the
+  // three bytes ed a0 bd and silently drop the rest.
+  assert_eq(bytes_of("\"\u{1F600}\""), b"\xf0\x9f\x98\x80")
+
+  // Byte escapes and text can be interleaved, and the bytes stay adjacent.
+  assert_eq(bytes_of("\"a\\x00b\""), b"\x61\x00\x62")
 }

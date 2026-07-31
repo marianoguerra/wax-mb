@@ -106,7 +106,7 @@ pub fn[Info] InstrDesc::to_json(self : InstrDesc[Info]) -> Json {
     Str(t, s) =>
       tagged("string", {
         "prefix": opt(t, i => i.to_json()),
-        "value": Json::string(s),
+        "value": bytes_json(s),
       })
     Block(label~, block~, ..) =>
       tagged("block", {
@@ -265,12 +265,12 @@ pub fn[Info] ModuleField::to_json(self : ModuleField[Info]) -> Json {
     Elem(name~, ..) => tagged("elem", { "name": name.to_json() })
     Import(module_~, decl~) =>
       tagged("import", {
-        "module": Json::string(module_.desc),
+        "module": bytes_json(module_.desc),
         "name": decl.desc.id.to_json(),
       })
     ImportGroup(module_~, decls~) =>
       tagged("import_group", {
-        "module": Json::string(module_.desc),
+        "module": bytes_json(module_.desc),
         "items": arr(decls, d => d.desc.id.to_json()),
       })
     ModuleAnnotation(attrs) =>
@@ -289,4 +289,29 @@ pub fn[Info] ModuleField::to_json(self : ModuleField[Info]) -> Json {
 /// The whole module.
 pub fn[Info] module_to_json(m : Module[Info]) -> Json {
   arr(m, f => f.desc.to_json())
+}
+
+///|
+/// A byte string, rendered for a snapshot.
+///
+/// Valid UTF-8 renders as its text, so the common case stays readable in a
+/// diff. Anything else renders as `hex:<...>`, because a snapshot that decoded
+/// binary lossily would compare equal for two segments that differ.
+fn bytes_json(b : Bytes) -> Json {
+  match (Some(@utf8.decode(b[:])) catch { _ => None }) {
+    Some(t) => Json::string(t)
+    None => {
+      let out = StringBuilder::new()
+      out.write_string("hex:")
+      for byte in b {
+        let digits = "0123456789abcdef"
+        let n = byte.to_int()
+        out.write_char(
+          digits.unsafe_get((n >> 4) & 0xF).to_int().unsafe_to_char(),
+        )
+        out.write_char(digits.unsafe_get(n & 0xF).to_int().unsafe_to_char())
+      }
+      Json::string(out.to_string())
+    }
+  }
 }

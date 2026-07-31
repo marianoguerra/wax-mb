@@ -78,7 +78,7 @@ pub(all) enum CompType {
 } derive(Eq, @debug.Debug)
 
 pub(all) enum DataElem {
-  Str(String)
+  Str(Bytes)
   Run(@wasm_types.StorageType[Ident], Array[@basic.Annotated[String, @basic.Location]])
   V128Run(Array[@basic.Annotated[@wasm_types.V128, @basic.Location]])
 } derive(Eq, @debug.Debug)
@@ -160,7 +160,7 @@ pub(all) enum InstrDesc[Info] {
   TailCall(Instr[Info], Array[Instr[Info]])
   Labelled(Ident, Instr[Info])
   Char(Char)
-  Str(Ident?, String)
+  Str(Ident?, Bytes)
   Int(String)
   Float(String)
   Cast(Instr[Info], CastType)
@@ -231,8 +231,8 @@ pub(all) enum ModuleField[Info] {
   Data(name~ : Ident?, mode~ : DataMode[Info], init~ : Array[DataElem], attributes~ : Array[Attribute])
   Table(name~ : Ident, address_type~ : @wasm_types.AddressType, reftype~ : @wasm_types.RefType[Ident], limits~ : (UInt64, UInt64?)?, init~ : Instr[Info]?, attributes~ : Array[Attribute])
   Elem(name~ : Ident, reftype~ : @wasm_types.RefType[Ident], mode~ : ElemMode[Info], init~ : Array[Instr[Info]], attributes~ : Array[Attribute])
-  Import(module_~ : @basic.Annotated[String, @basic.Location], decl~ : @basic.Annotated[ImportDecl, @basic.Location])
-  ImportGroup(module_~ : @basic.Annotated[String, @basic.Location], decls~ : Array[@basic.Annotated[ImportDecl, @basic.Location]])
+  Import(module_~ : @basic.Annotated[Bytes, @basic.Location], decl~ : @basic.Annotated[ImportDecl, @basic.Location])
+  ImportGroup(module_~ : @basic.Annotated[Bytes, @basic.Location], decls~ : Array[@basic.Annotated[ImportDecl, @basic.Location]])
   ModuleAnnotation(Array[Attribute])
   Conditional(cond~ : @wasm_types.Cond, then_fields~ : @basic.Annotated[Array[@basic.Annotated[ModuleField[Info], @basic.Location]], @basic.Location], else_fields~ : @basic.Annotated[Array[@basic.Annotated[ModuleField[Info], @basic.Location]], @basic.Location]?)
 } derive(Eq, @debug.Debug)
