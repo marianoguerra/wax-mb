@@ -85,15 +85,71 @@ fn report_of_parse_error(e : ParseError) -> @basic.Report {
 /// Render the automaton's acceptable-token set.
 ///
 /// MoonYacc hands back the exact set of token kinds that could have been
-/// shifted, which is the same input the reference's message generator works
-/// from -- so this is where a future push for message parity would start.
+/// shifted. The reference's generator (`stele`) works from a richer set -- the
+/// acceptable *symbols*, nonterminals included, so it says "an expression"
+/// where we can only enumerate what an expression may start with -- but the
+/// rendering of the list itself is reproduced here: the class collapse, then
+/// sort-and-dedupe on the rendered text, then the Oxford-comma join.
+///
+/// Two pieces of the reference's rendering are deliberately absent:
+///
+///   * its `<=5` cap, which degrades a longer list to a bare "Syntax error".
+///     Without nonterminal names our lists routinely exceed 5 -- a set the
+///     reference renders as "an expression" reaches us as its 31-token FIRST
+///     set -- so applying the cap would erase almost every message we have.
+///     It belongs with the nonterminal names, not before them.
+///   * the `Assuming that the X is complete` subject, which needs the error
+///     state's item set. See task 4 of implementation-plan.md.
 fn expecting_message(expected : Array[TokenKind]) -> String {
   if expected.is_empty() {
     return "Syntax error."
   }
+  // A class collapses only when >=2 of its members are legal here, so count
+  // before rendering. Counting distinct SPELLINGS, since the collapse is about
+  // how many entries the list would otherwise carry.
+  let counts : Map[String, Int] = Map([])
+  let seen_spellings = []
+  for k in expected {
+    let spelling = k.to_expect_string()
+    if seen_spellings.contains(spelling) {
+      continue
+    }
+    seen_spellings.push(spelling)
+    match k.expect_class() {
+      Some(c) => counts[c] = counts.get(c).unwrap_or(0) + 1
+      None => ()
+    }
+  }
   let names = []
   for k in expected {
-    names.push(k.to_expect_string())
+    let name = match k.expect_class() {
+      Some(c) if counts.get(c).unwrap_or(0) >= 2 => c
+      _ => k.to_expect_string()
+    }
+    if !names.contains(name) {
+      names.push(name)
+    }
   }
-  "Expecting \{names.join(", ")}."
+  // Sorted by the RENDERED text, as the reference does: quoted spellings sort
+  // ahead of readable phrases because `'` precedes every letter.
+  //
+  // NOT `sort()`: MoonBit's `Compare` for String is SHORTLEX -- it orders by
+  // length first -- which would put `'{'` before `'do'`. OCaml's
+  // `String.compare`, which the reference sorts with, is plain lexicographic,
+  // and that is `lexical_compare` here.
+  names.sort_by((a, b) => a.lexical_compare(b))
+  "Expecting \{human_list(names)}."
+}
+
+///|
+/// Join as English, with the Oxford comma: `a`, `a, or b`, `a, b, or c`.
+///
+/// Mirrors `format_human_list` in the reference's generator, including the
+/// comma before `or` in the two-item case.
+fn human_list(items : Array[String]) -> String {
+  match items {
+    [] => ""
+    [x] => x
+    [.. rest, last] => rest.join(", ") + ", or " + last
+  }
 }

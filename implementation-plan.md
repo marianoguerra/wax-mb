@@ -10,7 +10,7 @@ order it makes sense to do it.
 
 - [x] 1. Point CI at the port, not at the reference
 - [x] 2. Run the cram suite in CI
-- [ ] 3. Readable token names for the `Expecting …` list
+- [x] 3. Readable token names for the `Expecting …` list
 
 **Phase 5 — harden the front end**
 
@@ -137,7 +137,59 @@ fixtures into its sandbox the way dune's cram runner does — hence the wrapper)
 
 ---
 
-## 3. Readable token names for the `Expecting …` list
+## 3. Readable token names for the `Expecting …` list — done
+
+**Done.** The `[names]` table turned out to be already ported (the value-carrying
+tokens read "an identifier", not `'ident'`, in `tokens/expect_string.mbt` — it
+was built from the same config in Phase 1). What was missing was everything
+*around* the names, and that is what landed:
+
+- **`tokens/expect_class.mbt`** — the two `[class …]` sections of
+  `parser_messages.config`. `TokenKind::expect_class` returns the label; the
+  collapse itself is `expecting_message`'s, since it fires only when **≥2**
+  members are legal (a lone legal `+` rendered "an operator" would claim the
+  other 26 are legal too).
+- **`grammar/driver.mbt:expecting_message`** — collapse, dedupe, sort, and the
+  Oxford-comma join (`a`, `a, or b`, `a, b, or c` — with the comma, as the
+  reference's `format_human_list` writes it).
+- **`grammar/driver_wbtest.mbt`** — 8 tests. Whitebox because the sharpest case
+  (a class that must *not* collapse) needs a state no input reliably produces.
+
+Two things deliberately left out, both blocked on the same missing information:
+the `≤5` cap (without nonterminal names our lists routinely exceed 5 — what the
+reference renders "an expression" reaches us as its 31-token FIRST set — so
+capping would degrade nearly every message to a bare "Syntax error"), and the
+`Assuming …` subject, which is task 4.
+
+**The sort was the bug worth having found.** MoonBit's `Compare` for `String` is
+**shortlex** — length first — so `sort()` put `'{'` ahead of `'do'`. OCaml's
+`String.compare` is plain lexicographic, and matching it needs
+`lexical_compare`. Anything in this port that sorts strings for parity with the
+reference has the same trap.
+
+**Effect.** `Expecting ';', '?', '(', '}', '[', '.', '!', '+', '-', '*', '/',
+'/s', … 'as', 'is', 'on'.` (38 entries, declaration order) became
+`Expecting '!', '(', '.', ';', '?', '[', 'as', 'is', 'on', '}', a comparison
+operator, or an operator.` (12, sorted). Across the corpus the mean list is
+14.8 → 13.8 entries: the collapse fires only where operators can follow (~10 of
+the 180 messages, cutting those by two thirds), while the commonest message —
+the 14-way module-field set, 144 of the 180 — has no class members and only
+gains the ordering and the join.
+
+**Drift is unchanged at 231, as expected**, and the plan's gate ("watch the
+message count fall") turns out to be the wrong gate for this task: 153 of the
+160 captured messages need the `Assuming …` clause before their text can match
+at all. This work is the list-rendering half that task 4 then embeds.
+
+**A caveat for task 4, found here.** MoonYacc's acceptable set is not always
+Menhir's. On `#[if(VERSION 1)]` the reference says
+`Expecting '(', ')', ',', or a comparison operator.` and we say
+`Expecting '(', ')', '=', or a comparison operator.` — and *ours is the accurate
+one*: after `ident` in a `condition`, `=` is a `condition_relop` and `,` is only
+legal inside `ident "(" … ")"`. The reference's list is a merged state's union
+(the "unblended contexts" case its own stele README describes). So even a
+perfect port of the subject phrase will not reach 100 % message parity, and the
+residue is not all ours.
 
 **Summary.** Of the reference's syntax messages, 7 are a bare
 `Expecting X, Y, or Z.` and the port already produces that shape. What differs
