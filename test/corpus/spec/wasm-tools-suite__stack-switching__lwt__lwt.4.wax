@@ -1,0 +1,29 @@
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(&?cont_2);
+type t_2 = fn(i32);
+import "scheduler" {
+    fn sync(&?cont_2);
+    fn kt(&?cont_2);
+    fn tk(&?cont_2);
+    fn ykt(&?cont_2);
+    fn ytk(&?cont_2);
+}
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+import "example" fn main();
+#[export]
+fn run() {
+    log(-1);
+    sync(cont_2::new(main));
+    log(-2);
+    kt(cont_2::new(main));
+    log(-3);
+    tk(cont_2::new(main));
+    log(-4);
+    ykt(cont_2::new(main));
+    log(-5);
+    ytk(cont_2::new(main));
+    log(-6);
+}

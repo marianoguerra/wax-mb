@@ -1,0 +1,64 @@
+type t = fn();
+type t_2 = fn() -> &?any;
+type t_3 = fn() -> &?none;
+type t_4 = fn() -> &?func;
+type t_5 = fn() -> &?nofunc;
+type t_6 = fn() -> &?exn;
+type t_7 = fn() -> &?noexn;
+type t_8 = fn() -> &?extern;
+type t_9 = fn() -> &?noextern;
+type t_10 = fn() -> &?t;
+#[export]
+fn anyref() -> &?any {
+    null_2;
+}
+#[export]
+fn nullref() -> &?none {
+    null_2;
+}
+#[export]
+fn funcref() -> &?func {
+    nullfunc;
+}
+#[export]
+fn nullfuncref() -> &?nofunc {
+    nullfunc;
+}
+#[export]
+fn exnref() -> &?exn {
+    nullexn;
+}
+#[export]
+fn nullexnref() -> &?noexn {
+    nullexn;
+}
+#[export]
+fn externref() -> &?extern {
+    nullextern;
+}
+#[export]
+fn nullexternref() -> &?noextern {
+    nullextern;
+}
+#[export]
+fn ref() -> &?t {
+    nullfunc;
+}
+const null_2 = null;
+const nullfunc: &?nofunc = null;
+const nullexn: &?noexn = null;
+const nullextern: &?noextern = null;
+const g: &?any = null;
+const g_2: &?any = null as &?none;
+const g_3: &?func = null;
+const g_4: &?func = null as &?nofunc;
+const g_5: &?exn = null;
+const g_6: &?exn = null as &?noexn;
+const g_7: &?extern = null;
+const g_8: &?extern = null as &?noextern;
+const g_9 = null;
+const g_10: &?nofunc = null;
+const g_11: &?noexn = null;
+const g_12: &?noextern = null;
+const g_13: &?t = null;
+const g_14: &?t = null as &?nofunc;

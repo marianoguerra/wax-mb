@@ -1,0 +1,1 @@
+memory m: i32 [0]; memory m_2: i32 [1]; data d @ m_2 [0] = "";

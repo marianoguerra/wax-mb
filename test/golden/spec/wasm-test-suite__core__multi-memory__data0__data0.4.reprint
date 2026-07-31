@@ -1,0 +1,6 @@
+import "spectest" {
+    const global_i32: i32;
+    #[import = "memory"]
+    memory m: i32 [1];
+}
+data d @ m [global_i32] = "a";

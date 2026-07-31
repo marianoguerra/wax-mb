@@ -1,0 +1,3 @@
+fn name(param: type, ...) -> return_type {
+    body
+}

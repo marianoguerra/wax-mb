@@ -1,0 +1,99 @@
+#![feature = "custom-descriptors"]
+rec {
+    type empty = descriptor t { };
+    type one = descriptor t_2 { f: i32 };
+    type pair = descriptor t_3 { f: i32, f_2: i64 };
+    type t = describes empty { };
+    type t_2 = describes one { };
+    type t_3 = describes pair { };
+}
+type t_4 = fn(&?!t) -> &!empty;
+type t_5 = fn(&!t) -> &!empty;
+type t_6 = fn() -> &!empty;
+type t_7 = fn(&?!t_2) -> &!one;
+type t_8 = fn(&!t_2) -> &!one;
+type t_9 = fn() -> &!one;
+type t_10 = fn(&?!t_3) -> &!pair;
+type t_11 = fn(&!t_3) -> &!pair;
+type t_12 = fn() -> &!pair;
+fn f(x: &?!t) -> &!empty {
+    { descriptor(x)| };
+}
+fn f_2(x: &?!t) -> &!empty {
+    { descriptor(x)| .. };
+}
+fn f_3(x: &!t) -> &!empty {
+    { descriptor(x)| };
+}
+fn f_4(x: &!t) -> &!empty {
+    { descriptor(x)| .. };
+}
+fn f_5() -> &!empty {
+    { descriptor(null as &?!t)| };
+}
+fn f_6() -> &!empty {
+    { descriptor(null as &?!t)| .. };
+}
+fn f_7() -> &!empty {
+    unreachable;
+    { descriptor(_ as &?!t)| };
+}
+fn f_8() -> &!empty {
+    unreachable;
+    { descriptor(_ as &?!t)| .. };
+}
+fn f_9(x: &?!t_2) -> &!one {
+    { descriptor(x)| f: 0 };
+}
+fn f_10(x: &?!t_2) -> &!one {
+    { descriptor(x)| .. };
+}
+fn f_11(x: &!t_2) -> &!one {
+    { descriptor(x)| f: 0 };
+}
+fn f_12(x: &!t_2) -> &!one {
+    { descriptor(x)| .. };
+}
+fn f_13() -> &!one {
+    { descriptor(null as &?!t_2)| f: 0 };
+}
+fn f_14() -> &!one {
+    { descriptor(null as &?!t_2)| .. };
+}
+fn f_15() -> &!one {
+    0;
+    unreachable;
+    { descriptor(_ as &?!t_2)| f: _ };
+}
+fn f_16() -> &!one {
+    unreachable;
+    { descriptor(_ as &?!t_2)| .. };
+}
+fn f_17(x: &?!t_3) -> &!pair {
+    { descriptor(x)| f: 1, f_2: 2 };
+}
+fn f_18(x: &?!t_3) -> &!pair {
+    { descriptor(x)| .. };
+}
+fn f_19(x: &!t_3) -> &!pair {
+    { descriptor(x)| f: 1, f_2: 2 };
+}
+fn f_20(x: &!t_3) -> &!pair {
+    { descriptor(x)| .. };
+}
+fn f_21() -> &!pair {
+    { descriptor(null as &?!t_3)| f: 1, f_2: 2 };
+}
+fn f_22() -> &!pair {
+    { descriptor(null as &?!t_3)| .. };
+}
+fn f_23() -> &!pair {
+    1;
+    2 as i64;
+    unreachable;
+    { descriptor(_ as &?!t_3)| f: _, f_2: _ };
+}
+fn f_24() -> &!pair {
+    unreachable;
+    { descriptor(_ as &?!t_3)| .. };
+}

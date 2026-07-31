@@ -1,0 +1,233 @@
+type t = fn();
+type t_2 = fn(i32);
+type t_3 = fn(f32);
+type t_4 = fn(i64);
+type t_5 = fn(f64);
+type t_6 = fn(i32) -> i32;
+type t_7 = fn(i32, i32) -> i32;
+type t_8 = fn(f32) -> f32;
+type t_9 = fn(i64) -> i64;
+type t_10 = fn(f64) -> f64;
+type t_11 = fn() -> i32;
+import "test" {
+    tag e0: t ;
+    #[import = "throw"]
+    fn f();
+}
+fn f_2(x: i32) -> i32 {
+    if x != 0 {
+        throw e0_2();
+    }
+    0;
+}
+#[export = "empty-catch"]
+fn f_3() {
+    try_legacy {
+    } catch {
+        e0_2 => {}
+    }
+}
+#[export = "simple-throw-catch"]
+fn f_4(x: i32) -> i32 {
+    try_legacy {
+        if !x {
+            throw e0_2();
+        }
+        42;
+    } catch {
+        e0_2 => {
+            23;
+        }
+    }
+}
+#[export = "unreachable-not-caught"]
+fn f_5() {
+    try_legacy {
+        unreachable;
+    } catch {
+        _ => {}
+    }
+}
+fn div(x: i32, x_2: i32) -> i32 {
+    x /u x_2;
+}
+#[export = "trap-in-callee"]
+fn f_6(x: i32, x_2: i32) -> i32 {
+    try_legacy {
+        div(x, x_2);
+    } catch {
+        _ => {
+            11;
+        }
+    }
+}
+#[export = "catch-complex-1"]
+fn f_7(x: i32) -> i32 {
+    try_legacy {
+        try_legacy {
+            if !x {
+                throw e0_2();
+            } else {
+                if x == 1 {
+                    throw e1();
+                } else {
+                    throw e2();
+                }
+            }
+            2;
+        } catch {
+            e0_2 => {
+                3;
+            }
+        }
+    } catch {
+        e1 => {
+            4;
+        }
+    }
+}
+#[export = "catch-complex-2"]
+fn f_8(x: i32) -> i32 {
+    try_legacy {
+        if !x {
+            throw e0_2();
+        } else {
+            if x == 1 {
+                throw e1();
+            } else {
+                throw e2();
+            }
+        }
+        2;
+    } catch {
+        e0_2 => {
+            3;
+        }
+        e1 => {
+            4;
+        }
+    }
+}
+#[export = "throw-catch-param-i32"]
+fn f_9(x: i32) -> i32 {
+    try_legacy {
+        throw t(x);
+        2;
+    } catch {
+        t => {
+            return _;
+        }
+    }
+}
+#[export = "throw-catch-param-f32"]
+fn f_10(x: f32) -> f32 {
+    try_legacy {
+        throw t_2(x);
+        0x0p+0;
+    } catch {
+        t_2 => {
+            return _;
+        }
+    }
+}
+#[export = "throw-catch-param-i64"]
+fn f_11(x: i64) -> i64 {
+    try_legacy {
+        throw t_3(x);
+        2;
+    } catch {
+        t_3 => {
+            return _;
+        }
+    }
+}
+#[export = "throw-catch-param-f64"]
+fn f_12(x: f64) -> f64 {
+    try_legacy {
+        throw t_4(x);
+        0x0p+0;
+    } catch {
+        t_4 => {
+            return _;
+        }
+    }
+}
+fn f_13(x: i32) {
+    throw t(x);
+}
+#[export = "catch-param-i32"]
+fn f_14(x: i32) -> i32 {
+    try_legacy {
+        0;
+        f_13(x);
+    } catch {
+        t => {}
+    }
+}
+#[export = "catch-imported"]
+fn f_15() -> i32 {
+    try_legacy {
+        1;
+        f();
+    } catch {
+        e0 => {
+            2;
+        }
+    }
+}
+#[export = "catchless-try"]
+fn f_16(x: i32) -> i32 {
+    try_legacy {
+        try_legacy {
+            f_2(x);
+        } catch {}
+    } catch {
+        e0_2 => {
+            1;
+        }
+    }
+}
+fn f_17() {
+    throw e0_2();
+}
+#[export = "return-call-in-try-catch"]
+fn f_18() {
+    try_legacy {
+        become f_17();
+    } catch {
+        e0_2 => {}
+    }
+}
+#[export = "return-call-indirect-in-try-catch"]
+fn f_19() {
+    try_legacy {
+        become (t[0] as &?t)();
+    } catch {
+        e0_2 => {}
+    }
+}
+#[export = "break-try-catch"]
+fn f_20() {
+    'l: try_legacy {
+        br 'l;
+    } catch {
+        e0_2 => {}
+    }
+}
+#[export = "break-try-catch_all"]
+fn f_21() {
+    'l: try_legacy {
+        br 'l;
+    } catch {
+        _ => {}
+    }
+}
+table t: &?func [1, 1];
+elem e: &func @ t [0] = [f_17];
+tag e0_2: t ;
+tag e1: t ;
+tag e2: t ;
+tag t: t_2 ;
+tag t_2: t_3 ;
+tag t_3: t_4 ;
+tag t_4: t_5 ;

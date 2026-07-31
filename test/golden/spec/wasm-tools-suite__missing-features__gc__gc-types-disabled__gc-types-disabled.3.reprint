@@ -1,0 +1,1 @@
+type t = fn(); table t: &?t [1];

@@ -1,0 +1,396 @@
+type t = fn() -> i32;
+type t_2 = fn() -> i64;
+type t_3 = fn() -> f32;
+type t_4 = fn() -> f64;
+#[export = "f32.nan"]
+fn f() -> i32 {
+    (nan:0x400000 as f32).to_bits();
+}
+#[export = "f32.positive_nan"]
+fn f_2() -> i32 {
+    (nan:0x400000 as f32).to_bits();
+}
+#[export = "f32.negative_nan"]
+fn f_3() -> i32 {
+    (-nan:0x400000 as f32).to_bits();
+}
+#[export = "f32.plain_nan"]
+fn f_4() -> i32 {
+    (nan:0x400000 as f32).to_bits();
+}
+#[export = "f32.informally_known_as_plain_snan"]
+fn f_5() -> i32 {
+    (nan:0x200000 as f32).to_bits();
+}
+#[export = "f32.all_ones_nan"]
+fn f_6() -> i32 {
+    (-nan:0x7fffff as f32).to_bits();
+}
+#[export = "f32.misc_nan"]
+fn f_7() -> i32 {
+    (nan:0x12345 as f32).to_bits();
+}
+#[export = "f32.misc_positive_nan"]
+fn f_8() -> i32 {
+    (nan:0x304050 as f32).to_bits();
+}
+#[export = "f32.misc_negative_nan"]
+fn f_9() -> i32 {
+    (-nan:0x2abcde as f32).to_bits();
+}
+#[export = "f32.infinity"]
+fn f_10() -> i32 {
+    (inf as f32).to_bits();
+}
+#[export = "f32.positive_infinity"]
+fn f_11() -> i32 {
+    (inf as f32).to_bits();
+}
+#[export = "f32.negative_infinity"]
+fn f_12() -> i32 {
+    (-inf as f32).to_bits();
+}
+#[export = "f32.zero"]
+fn f_13() -> i32 {
+    (0x0p+0 as f32).to_bits();
+}
+#[export = "f32.positive_zero"]
+fn f_14() -> i32 {
+    (0x0p+0 as f32).to_bits();
+}
+#[export = "f32.negative_zero"]
+fn f_15() -> i32 {
+    (-0x0p+0 as f32).to_bits();
+}
+#[export = "f32.misc"]
+fn f_16() -> i32 {
+    (0x1.921fb6p+2 as f32).to_bits();
+}
+#[export = "f32.min_positive"]
+fn f_17() -> i32 {
+    (0x1p-149 as f32).to_bits();
+}
+#[export = "f32.min_normal"]
+fn f_18() -> i32 {
+    (0x1p-126 as f32).to_bits();
+}
+#[export = "f32.max_finite"]
+fn f_19() -> i32 {
+    (0x1.fffffep+127 as f32).to_bits();
+}
+#[export = "f32.max_subnormal"]
+fn f_20() -> i32 {
+    (0x1.fffffcp-127 as f32).to_bits();
+}
+#[export = "f32.trailing_dot"]
+fn f_21() -> i32 {
+    (0x1p+10 as f32).to_bits();
+}
+#[export = "f32.misc_int"]
+fn f_22() -> i32 {
+    (0x1.2345p+16 as f32).to_bits();
+}
+#[export = "f32.large_int"]
+fn f_23() -> i32 {
+    (0x1p+80 as f32).to_bits();
+}
+#[export = "f32.min_int32"]
+fn f_24() -> i32 {
+    (-0x1p+31 as f32).to_bits();
+}
+#[export = "f32.min_int64"]
+fn f_25() -> i32 {
+    (-0x1p+63 as f32).to_bits();
+}
+#[export = "f32_dec.zero"]
+fn f_26() -> i32 {
+    (0x0p+0 as f32).to_bits();
+}
+#[export = "f32_dec.positive_zero"]
+fn f_27() -> i32 {
+    (0x0p+0 as f32).to_bits();
+}
+#[export = "f32_dec.negative_zero"]
+fn f_28() -> i32 {
+    (-0x0p+0 as f32).to_bits();
+}
+#[export = "f32_dec.misc"]
+fn f_29() -> i32 {
+    (0x1.921fb6p+2 as f32).to_bits();
+}
+#[export = "f32_dec.min_positive"]
+fn f_30() -> i32 {
+    (0x1p-149 as f32).to_bits();
+}
+#[export = "f32_dec.min_normal"]
+fn f_31() -> i32 {
+    (0x1p-126 as f32).to_bits();
+}
+#[export = "f32_dec.max_subnormal"]
+fn f_32() -> i32 {
+    (0x1.fffffcp-127 as f32).to_bits();
+}
+#[export = "f32_dec.max_finite"]
+fn f_33() -> i32 {
+    (0x1.fffffep+127 as f32).to_bits();
+}
+#[export = "f32_dec.trailing_dot"]
+fn f_34() -> i32 {
+    (0x1.2a05f2p+33 as f32).to_bits();
+}
+#[export = "f32_dec.misc_int"]
+fn f_35() -> i32 {
+    (0x1.81c8p+13 as f32).to_bits();
+}
+#[export = "f32_dec.large_int"]
+fn f_36() -> i32 {
+    (0x1.5af1d8p+66 as f32).to_bits();
+}
+#[export = "f32_dec.min_int32"]
+fn f_37() -> i32 {
+    (-0x1p+31 as f32).to_bits();
+}
+#[export = "f32_dec.min_int64"]
+fn f_38() -> i32 {
+    (-0x1p+63 as f32).to_bits();
+}
+#[export = "f32_dec.root_beer_float"]
+fn f_39() -> i32 {
+    (0x1.000002p+0 as f32).to_bits();
+}
+#[export = "f64.nan"]
+fn f_40() -> i64 {
+    (nan:0x8000000000000).to_bits();
+}
+#[export = "f64.positive_nan"]
+fn f_41() -> i64 {
+    (nan:0x8000000000000).to_bits();
+}
+#[export = "f64.negative_nan"]
+fn f_42() -> i64 {
+    (-nan:0x8000000000000).to_bits();
+}
+#[export = "f64.plain_nan"]
+fn f_43() -> i64 {
+    (nan:0x8000000000000).to_bits();
+}
+#[export = "f64.informally_known_as_plain_snan"]
+fn f_44() -> i64 {
+    (nan:0x4000000000000).to_bits();
+}
+#[export = "f64.all_ones_nan"]
+fn f_45() -> i64 {
+    (-nan:0xfffffffffffff).to_bits();
+}
+#[export = "f64.misc_nan"]
+fn f_46() -> i64 {
+    (nan:0x123456789abc).to_bits();
+}
+#[export = "f64.misc_positive_nan"]
+fn f_47() -> i64 {
+    (nan:0x3040506070809).to_bits();
+}
+#[export = "f64.misc_negative_nan"]
+fn f_48() -> i64 {
+    (-nan:0x2abcdef012345).to_bits();
+}
+#[export = "f64.infinity"]
+fn f_49() -> i64 {
+    (inf).to_bits();
+}
+#[export = "f64.positive_infinity"]
+fn f_50() -> i64 {
+    (inf).to_bits();
+}
+#[export = "f64.negative_infinity"]
+fn f_51() -> i64 {
+    (-inf).to_bits();
+}
+#[export = "f64.zero"]
+fn f_52() -> i64 {
+    (0x0p+0).to_bits();
+}
+#[export = "f64.positive_zero"]
+fn f_53() -> i64 {
+    (0x0p+0).to_bits();
+}
+#[export = "f64.negative_zero"]
+fn f_54() -> i64 {
+    (-0x0p+0).to_bits();
+}
+#[export = "f64.misc"]
+fn f_55() -> i64 {
+    (0x1.921fb54442d18p+2).to_bits();
+}
+#[export = "f64.min_positive"]
+fn f_56() -> i64 {
+    (0x0.0000000000001p-1022).to_bits();
+}
+#[export = "f64.min_normal"]
+fn f_57() -> i64 {
+    (0x1p-1022).to_bits();
+}
+#[export = "f64.max_subnormal"]
+fn f_58() -> i64 {
+    (0x0.fffffffffffffp-1022).to_bits();
+}
+#[export = "f64.max_finite"]
+fn f_59() -> i64 {
+    (0x1.fffffffffffffp+1023).to_bits();
+}
+#[export = "f64.trailing_dot"]
+fn f_60() -> i64 {
+    (0x1p+100).to_bits();
+}
+#[export = "f64.misc_int"]
+fn f_61() -> i64 {
+    (0x1.2345p+16).to_bits();
+}
+#[export = "f64.large_int"]
+fn f_62() -> i64 {
+    (0x1p+80).to_bits();
+}
+#[export = "f64.min_int32"]
+fn f_63() -> i64 {
+    (-0x1p+31).to_bits();
+}
+#[export = "f64.min_int64"]
+fn f_64() -> i64 {
+    (-0x1p+63).to_bits();
+}
+#[export = "f64_dec.zero"]
+fn f_65() -> i64 {
+    (0x0p+0).to_bits();
+}
+#[export = "f64_dec.positive_zero"]
+fn f_66() -> i64 {
+    (0x0p+0).to_bits();
+}
+#[export = "f64_dec.negative_zero"]
+fn f_67() -> i64 {
+    (-0x0p+0).to_bits();
+}
+#[export = "f64_dec.misc"]
+fn f_68() -> i64 {
+    (0x1.921fb54442d18p+2).to_bits();
+}
+#[export = "f64_dec.min_positive"]
+fn f_69() -> i64 {
+    (0x0.0000000000001p-1022).to_bits();
+}
+#[export = "f64_dec.min_normal"]
+fn f_70() -> i64 {
+    (0x1p-1022).to_bits();
+}
+#[export = "f64_dec.max_subnormal"]
+fn f_71() -> i64 {
+    (0x0.fffffffffffffp-1022).to_bits();
+}
+#[export = "f64_dec.max_finite"]
+fn f_72() -> i64 {
+    (0x1.fffffffffffffp+1023).to_bits();
+}
+#[export = "f64_dec.trailing_dot"]
+fn f_73() -> i64 {
+    (0x1.249ad2594c37dp+332).to_bits();
+}
+#[export = "f64_dec.misc_int"]
+fn f_74() -> i64 {
+    (0x1.81c8p+13).to_bits();
+}
+#[export = "f64_dec.large_int"]
+fn f_75() -> i64 {
+    (0x1.5af1d78b58c4p+66).to_bits();
+}
+#[export = "f64_dec.min_int32"]
+fn f_76() -> i64 {
+    (-0x1p+31).to_bits();
+}
+#[export = "f64_dec.min_int64"]
+fn f_77() -> i64 {
+    (-0x1p+63).to_bits();
+}
+#[export = "f64_dec.root_beer_float"]
+fn f_78() -> i64 {
+    (0x1.000001ff19e24p+0).to_bits();
+}
+#[export = "f32-dec-sep1"]
+fn f_79() -> f32 {
+    0x1.e848p+19;
+}
+#[export = "f32-dec-sep2"]
+fn f_80() -> f32 {
+    0x1.f4p+9;
+}
+#[export = "f32-dec-sep3"]
+fn f_81() -> f32 {
+    0x1.f5922p+9;
+}
+#[export = "f32-dec-sep4"]
+fn f_82() -> f32 {
+    0x1.c2332cp+49;
+}
+#[export = "f32-dec-sep5"]
+fn f_83() -> f32 {
+    0x1.3b5ce8p+93;
+}
+#[export = "f32-hex-sep1"]
+fn f_84() -> f32 {
+    0x1.41e014p+27;
+}
+#[export = "f32-hex-sep2"]
+fn f_85() -> f32 {
+    0x1.aa0fp+16;
+}
+#[export = "f32-hex-sep3"]
+fn f_86() -> f32 {
+    0x1.41ffe2p+15;
+}
+#[export = "f32-hex-sep4"]
+fn f_87() -> f32 {
+    0x1.ep+20;
+}
+#[export = "f32-hex-sep5"]
+fn f_88() -> f32 {
+    0x1.57805p+44;
+}
+#[export = "f64-dec-sep1"]
+fn f_89() -> f64 {
+    0x1.e848p+19;
+}
+#[export = "f64-dec-sep2"]
+fn f_90() -> f64 {
+    0x1.f4p+9;
+}
+#[export = "f64-dec-sep3"]
+fn f_91() -> f64 {
+    0x1.f5921fafc8bp+9;
+}
+#[export = "f64-dec-sep4"]
+fn f_92() -> f64 {
+    0x1.05c735bb7cc45p-402;
+}
+#[export = "f64-dec-sep5"]
+fn f_93() -> f64 {
+    0x1.3b5ce725bde9cp+93;
+}
+#[export = "f64-hex-sep1"]
+fn f_94() -> f64 {
+    0x1.5e01e00013332p+51;
+}
+#[export = "f64-hex-sep2"]
+fn f_95() -> f64 {
+    0x1.aa0fp+16;
+}
+#[export = "f64-hex-sep3"]
+fn f_96() -> f64 {
+    0x1.41ffe2834b34p+15;
+}
+#[export = "f64-hex-sep4"]
+fn f_97() -> f64 {
+    0x1.ep+20;
+}
+#[export = "f64-hex-sep5"]
+fn f_98() -> f64 {
+    0x1.578050f9f7p+44;
+}

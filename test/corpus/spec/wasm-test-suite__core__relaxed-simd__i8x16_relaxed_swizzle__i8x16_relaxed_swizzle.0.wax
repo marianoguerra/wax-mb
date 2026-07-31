@@ -1,0 +1,9 @@
+type t = fn(v128, v128) -> v128;
+#[export = "i8x16.relaxed_swizzle"]
+fn f(x: v128, x_2: v128) -> v128 {
+    x.relaxed_swizzle_i8x16(x_2);
+}
+#[export = "i8x16.relaxed_swizzle_cmp"]
+fn f_2(x: v128, x_2: v128) -> v128 {
+    x.relaxed_swizzle_i8x16(x_2).eq_i8x16(x.relaxed_swizzle_i8x16(x_2));
+}

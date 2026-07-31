@@ -1,0 +1,9 @@
+rec {
+    type f = fn(&g);
+    type g = fn();
+}
+type t = fn(&f, &g);
+#[export]
+fn run(x: &f, x_2: &g) {
+    x(x_2);
+}

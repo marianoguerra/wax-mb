@@ -1,0 +1,1 @@
+{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/compilation-hints-wax__notarget.wax","startLine":2,"startColumn":4,"endLine":2,"endColumn":15,"startOffset":13,"endOffset":24,"message":"A frequency hint may only prefix a call or a control instruction.","warning":null,"hint":null,"related":[]}

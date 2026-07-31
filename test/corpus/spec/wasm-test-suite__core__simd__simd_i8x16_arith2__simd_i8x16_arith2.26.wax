@@ -1,0 +1,199 @@
+type t = fn(v128, v128, v128) -> v128;
+type t_2 = fn(v128, v128) -> v128;
+type t_3 = fn(v128) -> v128;
+#[export = "i8x16.min_s-i8x16.avgr_u"]
+fn f(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.avgr_u_i8x16(x_2).min_s_i8x16(x_3);
+}
+#[export = "i8x16.min_s-i8x16.max_u"]
+fn f_2(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_u_i8x16(x_2).min_s_i8x16(x_3);
+}
+#[export = "i8x16.min_s-i8x16.max_s"]
+fn f_3(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_s_i8x16(x_2).min_s_i8x16(x_3);
+}
+#[export = "i8x16.min_s-i8x16.min_u"]
+fn f_4(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_u_i8x16(x_2).min_s_i8x16(x_3);
+}
+#[export = "i8x16.min_s-i8x16.min_s"]
+fn f_5(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_s_i8x16(x_2).min_s_i8x16(x_3);
+}
+#[export = "i8x16.min_s-i8x16.abs"]
+fn f_6(x: v128, x_2: v128) -> v128 {
+    x.abs_i8x16().min_s_i8x16(x_2);
+}
+#[export = "i8x16.abs-i8x16.min_s"]
+fn f_7(x: v128, x_2: v128) -> v128 {
+    x.min_s_i8x16(x_2).abs_i8x16();
+}
+#[export = "i8x16.min_s-i8x16.popcnt"]
+fn f_8(x: v128, x_2: v128) -> v128 {
+    x.popcnt_i8x16().min_s_i8x16(x_2);
+}
+#[export = "i8x16.popcnt-i8x16.min_s"]
+fn f_9(x: v128, x_2: v128) -> v128 {
+    x.min_s_i8x16(x_2).popcnt_i8x16();
+}
+#[export = "i8x16.min_u-i8x16.avgr_u"]
+fn f_10(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.avgr_u_i8x16(x_2).min_u_i8x16(x_3);
+}
+#[export = "i8x16.min_u-i8x16.max_u"]
+fn f_11(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_u_i8x16(x_2).min_u_i8x16(x_3);
+}
+#[export = "i8x16.min_u-i8x16.max_s"]
+fn f_12(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_s_i8x16(x_2).min_u_i8x16(x_3);
+}
+#[export = "i8x16.min_u-i8x16.min_u"]
+fn f_13(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_u_i8x16(x_2).min_u_i8x16(x_3);
+}
+#[export = "i8x16.min_u-i8x16.min_s"]
+fn f_14(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_s_i8x16(x_2).min_u_i8x16(x_3);
+}
+#[export = "i8x16.min_u-i8x16.abs"]
+fn f_15(x: v128, x_2: v128) -> v128 {
+    x.abs_i8x16().min_u_i8x16(x_2);
+}
+#[export = "i8x16.abs-i8x16.min_u"]
+fn f_16(x: v128, x_2: v128) -> v128 {
+    x.min_u_i8x16(x_2).abs_i8x16();
+}
+#[export = "i8x16.min_u-i8x16.popcnt"]
+fn f_17(x: v128, x_2: v128) -> v128 {
+    x.popcnt_i8x16().min_u_i8x16(x_2);
+}
+#[export = "i8x16.popcnt-i8x16.min_u"]
+fn f_18(x: v128, x_2: v128) -> v128 {
+    x.min_u_i8x16(x_2).popcnt_i8x16();
+}
+#[export = "i8x16.max_s-i8x16.avgr_u"]
+fn f_19(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.avgr_u_i8x16(x_2).max_s_i8x16(x_3);
+}
+#[export = "i8x16.max_s-i8x16.max_u"]
+fn f_20(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_u_i8x16(x_2).max_s_i8x16(x_3);
+}
+#[export = "i8x16.max_s-i8x16.max_s"]
+fn f_21(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_s_i8x16(x_2).max_s_i8x16(x_3);
+}
+#[export = "i8x16.max_s-i8x16.min_u"]
+fn f_22(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_u_i8x16(x_2).max_s_i8x16(x_3);
+}
+#[export = "i8x16.max_s-i8x16.min_s"]
+fn f_23(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_s_i8x16(x_2).max_s_i8x16(x_3);
+}
+#[export = "i8x16.max_s-i8x16.abs"]
+fn f_24(x: v128, x_2: v128) -> v128 {
+    x.abs_i8x16().max_s_i8x16(x_2);
+}
+#[export = "i8x16.abs-i8x16.max_s"]
+fn f_25(x: v128, x_2: v128) -> v128 {
+    x.max_s_i8x16(x_2).abs_i8x16();
+}
+#[export = "i8x16.max_s-i8x16.popcnt"]
+fn f_26(x: v128, x_2: v128) -> v128 {
+    x.popcnt_i8x16().max_s_i8x16(x_2);
+}
+#[export = "i8x16.popcnt-i8x16.max_s"]
+fn f_27(x: v128, x_2: v128) -> v128 {
+    x.max_s_i8x16(x_2).popcnt_i8x16();
+}
+#[export = "i8x16.max_u-i8x16.avgr_u"]
+fn f_28(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.avgr_u_i8x16(x_2).max_u_i8x16(x_3);
+}
+#[export = "i8x16.max_u-i8x16.max_u"]
+fn f_29(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_u_i8x16(x_2).max_u_i8x16(x_3);
+}
+#[export = "i8x16.max_u-i8x16.max_s"]
+fn f_30(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_s_i8x16(x_2).max_u_i8x16(x_3);
+}
+#[export = "i8x16.max_u-i8x16.min_u"]
+fn f_31(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_u_i8x16(x_2).max_u_i8x16(x_3);
+}
+#[export = "i8x16.max_u-i8x16.min_s"]
+fn f_32(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_s_i8x16(x_2).max_u_i8x16(x_3);
+}
+#[export = "i8x16.max_u-i8x16.abs"]
+fn f_33(x: v128, x_2: v128) -> v128 {
+    x.abs_i8x16().max_u_i8x16(x_2);
+}
+#[export = "i8x16.abs-i8x16.max_u"]
+fn f_34(x: v128, x_2: v128) -> v128 {
+    x.max_u_i8x16(x_2).abs_i8x16();
+}
+#[export = "i8x16.max_u-i8x16.popcnt"]
+fn f_35(x: v128, x_2: v128) -> v128 {
+    x.popcnt_i8x16().max_u_i8x16(x_2);
+}
+#[export = "i8x16.popcnt-i8x16.max_u"]
+fn f_36(x: v128, x_2: v128) -> v128 {
+    x.max_u_i8x16(x_2).popcnt_i8x16();
+}
+#[export = "i8x16.avgr_u-i8x16.avgr_u"]
+fn f_37(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.avgr_u_i8x16(x_2).avgr_u_i8x16(x_3);
+}
+#[export = "i8x16.avgr_u-i8x16.max_u"]
+fn f_38(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_u_i8x16(x_2).avgr_u_i8x16(x_3);
+}
+#[export = "i8x16.avgr_u-i8x16.max_s"]
+fn f_39(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_s_i8x16(x_2).avgr_u_i8x16(x_3);
+}
+#[export = "i8x16.avgr_u-i8x16.min_u"]
+fn f_40(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_u_i8x16(x_2).avgr_u_i8x16(x_3);
+}
+#[export = "i8x16.avgr_u-i8x16.min_s"]
+fn f_41(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_s_i8x16(x_2).avgr_u_i8x16(x_3);
+}
+#[export = "i8x16.avgr_u-i8x16.abs"]
+fn f_42(x: v128, x_2: v128) -> v128 {
+    x.abs_i8x16().avgr_u_i8x16(x_2);
+}
+#[export = "i8x16.abs-i8x16.avgr_u"]
+fn f_43(x: v128, x_2: v128) -> v128 {
+    x.avgr_u_i8x16(x_2).abs_i8x16();
+}
+#[export = "i8x16.avgr_u-i8x16.popcnt"]
+fn f_44(x: v128, x_2: v128) -> v128 {
+    x.popcnt_i8x16().avgr_u_i8x16(x_2);
+}
+#[export = "i8x16.popcnt-i8x16.avgr_u"]
+fn f_45(x: v128, x_2: v128) -> v128 {
+    x.avgr_u_i8x16(x_2).popcnt_i8x16();
+}
+#[export = "i8x16.abs-i8x16.popcnt"]
+fn f_46(x: v128) -> v128 {
+    x.popcnt_i8x16().abs_i8x16();
+}
+#[export = "i8x16.abs-i8x16.abs"]
+fn f_47(x: v128) -> v128 {
+    x.abs_i8x16().abs_i8x16();
+}
+#[export = "i8x16.popcnt-i8x16.popcnt"]
+fn f_48(x: v128) -> v128 {
+    x.popcnt_i8x16().popcnt_i8x16();
+}
+#[export = "i8x16.popcnt-i8x16.abs"]
+fn f_49(x: v128) -> v128 {
+    x.abs_i8x16().popcnt_i8x16();
+}

@@ -1,0 +1,5 @@
+type t = fn() -> f64;
+#[export = "4294967249"]
+fn f() -> f64 {
+    0x1.ffffffa2p+31;
+}

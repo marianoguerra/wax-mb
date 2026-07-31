@@ -1,0 +1,483 @@
+type check = fn(i32, i32, i32) -> i32;
+type t = fn();
+type t_2 = fn() -> i32;
+type t_3 = fn() -> i64;
+type t_4 = fn() -> f32;
+type t_5 = fn() -> f64;
+type t_6 = fn(i32) -> i32;
+type t_7 = fn(i32);
+type t_8 = fn(i32, i32);
+fn dummy() {}
+#[export = "type-i32"]
+fn f() {
+    'l: do {
+        0;
+        br_if 'l 1;
+        _ = (_ as i32).ctz();
+    }
+}
+#[export = "type-i64"]
+fn f_2() {
+    'l: do {
+        0;
+        br_if 'l 1;
+        _ = (_ as i64).ctz();
+    }
+}
+#[export = "type-f32"]
+fn f_3() {
+    'l: do {
+        0x0p+0;
+        br_if 'l 1;
+        _ = -(_ as f32);
+    }
+}
+#[export = "type-f64"]
+fn f_4() {
+    'l: do {
+        0x0p+0;
+        br_if 'l 1;
+        _ = -(_ as f64);
+    }
+}
+#[export = "type-i32-value"]
+fn f_5() -> i32 {
+    'l: do {
+        (br_if 'l (1, 1)).ctz();
+    }
+}
+#[export = "type-i64-value"]
+fn f_6() -> i64 {
+    'l: do {
+        (br_if 'l (2, 1)).ctz();
+    }
+}
+#[export = "type-f32-value"]
+fn f_7() -> f32 {
+    'l: do {
+        -(br_if 'l (0x1.8p+1, 1));
+    }
+}
+#[export = "type-f64-value"]
+fn f_8() -> f64 {
+    'l: do {
+        -(br_if 'l (0x1p+2, 1));
+    }
+}
+#[export = "as-block-first"]
+fn f_9(x: i32) -> i32 {
+    'l: do {
+        br_if 'l x;
+        return 2;
+    }
+    3;
+}
+#[export = "as-block-mid"]
+fn f_10(x: i32) -> i32 {
+    'l: do {
+        dummy();
+        br_if 'l x;
+        return 2;
+    }
+    3;
+}
+#[export = "as-block-last"]
+fn f_11(x: i32) {
+    'l: do {
+        dummy();
+        dummy();
+        br_if 'l x;
+    }
+}
+#[export = "as-block-first-value"]
+fn f_12(x: i32) -> i32 {
+    'l: do {
+        _ = br_if 'l (10, x);
+        return 11;
+    }
+}
+#[export = "as-block-mid-value"]
+fn f_13(x: i32) -> i32 {
+    'l: do {
+        dummy();
+        _ = br_if 'l (20, x);
+        return 21;
+    }
+}
+#[export = "as-block-last-value"]
+fn f_14(x: i32) -> i32 {
+    'l: do {
+        dummy();
+        dummy();
+        br_if 'l (11, x);
+    }
+}
+#[export = "as-loop-first"]
+fn f_15(x: i32) -> i32 {
+    'l: do {
+        loop {
+            br_if 'l x;
+            return 2;
+        }
+    }
+    3;
+}
+#[export = "as-loop-mid"]
+fn f_16(x: i32) -> i32 {
+    'l: do {
+        loop {
+            dummy();
+            br_if 'l x;
+            return 2;
+        }
+    }
+    4;
+}
+#[export = "as-loop-last"]
+fn f_17(x: i32) 'l: {
+    loop {
+        dummy();
+        br_if 'l x;
+    }
+}
+#[export = "as-br-value"]
+fn f_18() -> i32 {
+    'l: do {
+        br 'l br_if 'l (1, 2);
+    }
+}
+#[export = "as-br_if-cond"]
+fn f_19() {
+    'l: do {
+        1;
+        br_if 'l 1;
+        br_if 'l _;
+    }
+}
+#[export = "as-br_if-value"]
+fn f_20() -> i32 {
+    'l: do {
+        _ = br_if 'l (br_if 'l (1, 2), 3);
+        4;
+    }
+}
+#[export = "as-br_if-value-cond"]
+fn f_21(x: i32) -> i32 {
+    'l: do {
+        _ = br_if 'l (2, br_if 'l (1, x));
+        4;
+    }
+}
+#[export = "as-br_table-index"]
+fn f_22() {
+    'l: do {
+        1;
+        br_if 'l 2;
+        br_table [ 'l, 'l, else 'l ] _;
+    }
+}
+#[export = "as-br_table-value"]
+fn f_23() -> i32 {
+    'l: do {
+        br_table [ 'l, 'l, else 'l ] (br_if 'l (1, 2), 3);
+        4;
+    }
+}
+#[export = "as-br_table-value-index"]
+fn f_24() -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ] (2, br_if 'l (1, 3));
+        4;
+    }
+}
+#[export = "as-return-value"]
+fn f_25() -> i64 {
+    'l: do {
+        return br_if 'l (1, 2);
+    }
+}
+#[export = "as-if-cond"]
+fn f_26(x: i32) -> i32 {
+    'l: do {
+        if br_if 'l (1, x) {
+            2;
+        } else {
+            3;
+        }
+    }
+}
+#[export = "as-if-then"]
+fn f_27(x: i32, x_2: i32) {
+    'l: do {
+        if x {
+            br_if 'l x_2;
+        } else {
+            dummy();
+        }
+    }
+}
+#[export = "as-if-else"]
+fn f_28(x: i32, x_2: i32) {
+    'l: do {
+        if x {
+            dummy();
+        } else {
+            br_if 'l x_2;
+        }
+    }
+}
+#[export = "as-select-first"]
+fn f_29(x: i32) -> i32 {
+    'l: do {
+        x?(br_if 'l (3, 10)):2;
+    }
+}
+#[export = "as-select-second"]
+fn f_30(x: i32) -> i32 {
+    'l: do {
+        x?1:(br_if 'l (3, 10));
+    }
+}
+#[export = "as-select-cond"]
+fn f_31() -> i32 {
+    'l: do {
+        (br_if 'l (3, 10))?1:2;
+    }
+}
+fn f_32(i32, i32, i32) -> i32 {
+    -1;
+}
+#[export = "as-call-first"]
+fn f_33() -> i32 {
+    'l: do {
+        f_32(br_if 'l (12, 1), 2, 3);
+    }
+}
+#[export = "as-call-mid"]
+fn f_34() -> i32 {
+    'l: do {
+        f_32(1, br_if 'l (13, 1), 3);
+    }
+}
+#[export = "as-call-last"]
+fn f_35() -> i32 {
+    'l: do {
+        f_32(1, 2, br_if 'l (14, 1));
+    }
+}
+fn func(x: i32, i32, i32) -> i32 {
+    x;
+}
+#[export = "as-call_indirect-func"]
+fn f_36() -> i32 {
+    'l: do {
+        (t[0] as &?check)(br_if 'l (4, 10), 1, 2);
+    }
+}
+#[export = "as-call_indirect-first"]
+fn f_37() -> i32 {
+    'l: do {
+        (t[0] as &?check)(1, br_if 'l (4, 10), 2);
+    }
+}
+#[export = "as-call_indirect-mid"]
+fn f_38() -> i32 {
+    'l: do {
+        (t[0] as &?check)(1, 2, br_if 'l (4, 10));
+    }
+}
+#[export = "as-call_indirect-last"]
+fn f_39() -> i32 {
+    'l: do {
+        (t[br_if 'l (4, 10)] as &?check)(1, 2, 3);
+    }
+}
+#[export = "as-local.set-value"]
+fn f_40(x: i32) -> i32 {
+    let x_2: i32;
+    'l: do {
+        x = br_if 'l (17, x);
+        -1;
+    }
+}
+#[export = "as-local.tee-value"]
+fn f_41(x: i32) -> i32 {
+    'l: do {
+        x := br_if 'l (1, x);
+        return -1;
+    }
+}
+#[export = "as-global.set-value"]
+fn f_42(x: i32) -> i32 {
+    'l: do {
+        a = br_if 'l (1, x);
+        return -1;
+    }
+}
+#[export = "as-load-address"]
+fn f_43() -> i32 {
+    'l: do {
+        m.load32(br_if 'l (1, 1));
+    }
+}
+#[export = "as-loadN-address"]
+fn f_44() -> i32 {
+    'l: do {
+        m.load8(br_if 'l (30, 1)) as i32_s;
+    }
+}
+#[export = "as-store-address"]
+fn f_45() -> i32 {
+    'l: do {
+        m.store32(br_if 'l (30, 1), 7);
+        -1;
+    }
+}
+#[export = "as-store-value"]
+fn f_46() -> i32 {
+    'l: do {
+        m.store32(2, br_if 'l (31, 1));
+        -1;
+    }
+}
+#[export = "as-storeN-address"]
+fn f_47() -> i32 {
+    'l: do {
+        m.store8(br_if 'l (32, 1), 7);
+        -1;
+    }
+}
+#[export = "as-storeN-value"]
+fn f_48() -> i32 {
+    'l: do {
+        m.store16(2, br_if 'l (33, 1));
+        -1;
+    }
+}
+#[export = "as-unary-operand"]
+fn f_49() -> f64 {
+    'l: do {
+        -(br_if 'l (0x1p+0, 1));
+    }
+}
+#[export = "as-binary-left"]
+fn f_50() -> i32 {
+    'l: do {
+        (br_if 'l (1, 1)) + 10;
+    }
+}
+#[export = "as-binary-right"]
+fn f_51() -> i32 {
+    'l: do {
+        10 - (br_if 'l (1, 1));
+    }
+}
+#[export = "as-test-operand"]
+fn f_52() -> i32 {
+    'l: do {
+        !(br_if 'l (0, 1));
+    }
+}
+#[export = "as-compare-left"]
+fn f_53() -> i32 {
+    'l: do {
+        (br_if 'l (1, 1)) <=u 10;
+    }
+}
+#[export = "as-compare-right"]
+fn f_54() -> i32 {
+    'l: do {
+        10 != (br_if 'l (1, 42));
+    }
+}
+#[export = "as-memory.grow-size"]
+fn f_55() -> i32 {
+    'l: do {
+        m.grow(br_if 'l (1, 1));
+    }
+}
+#[export = "nested-block-value"]
+fn f_56(x: i32) -> i32 {
+    1
+        + 'l: do i32 {
+              _ = 2;
+              4
+                  + do {
+                        _ = br_if 'l (8, x);
+                        16;
+                    };
+          };
+}
+#[export = "nested-br-value"]
+fn f_57(x: i32) -> i32 {
+    1
+        + 'l: do i32 {
+              _ = 2;
+              br 'l
+                  do {
+                      _ = br_if 'l (8, x);
+                      4;
+                  };
+              16;
+          };
+}
+#[export = "nested-br_if-value"]
+fn f_58(x: i32) -> i32 {
+    1
+        + 'l: do i32 {
+              _ = 2;
+              _ =
+                  br_if 'l
+                      (do {
+                           _ = br_if 'l (8, x);
+                           4;
+                       }, 1);
+              16;
+          };
+}
+#[export = "nested-br_if-value-cond"]
+fn f_59(x: i32) -> i32 {
+    1
+        + 'l: do i32 {
+              _ = 2;
+              _ =
+                  br_if 'l
+                      (4,
+                       do {
+                           _ = br_if 'l (8, x);
+                           1;
+                       });
+              16;
+          };
+}
+#[export = "nested-br_table-value"]
+fn f_60(x: i32) -> i32 {
+    1
+        + 'l: do i32 {
+              _ = 2;
+              br_table [ else 'l ]
+                  (do {
+                       _ = br_if 'l (8, x);
+                       4;
+                   }, 1);
+              16;
+          };
+}
+#[export = "nested-br_table-value-index"]
+fn f_61(x: i32) -> i32 {
+    1
+        + 'l: do i32 {
+              _ = 2;
+              br_table [ else 'l ]
+                  (4,
+                   do {
+                       _ = br_if 'l (8, x);
+                       1;
+                   });
+              16;
+          };
+}
+table t: &?func [1, 1];
+memory m: i32 [1];
+let a = 10;
+elem e: &func @ t [0] = [func];

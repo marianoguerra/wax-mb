@@ -1,0 +1,19 @@
+type point = { f: i32, f_2: i32 };
+type pair = { f: i32, f_2: i32 };
+type vec3 = { f: i32, f_2: i32, f_3: i32 };
+#[export]
+fn unique(a: i32) -> &vec3 {
+    let x =
+        do {
+            { f: a, f_2: a, f_3: a };
+        };
+    x;
+}
+#[export]
+fn ambiguous(a: i32) -> &point {
+    let x: &point =
+        do {
+            { f: a, f_2: a };
+        };
+    x;
+}

@@ -1,0 +1,7 @@
+type t = fn();
+fn f(r: &?t) -> &t {
+    'l: do {
+        br_on_non_null 'l r;
+        unreachable;
+    }
+}

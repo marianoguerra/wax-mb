@@ -1,0 +1,9 @@
+x == y      // Equal
+x != y      // Not equal
+x < y       // Less than (float)
+x <s y      // Less than signed (integer)
+x <u y      // Less than unsigned (integer)
+x <= y      // Less or equal (float)
+x <=s y     // Less or equal signed
+x <=u y     // Less or equal unsigned
+// Similarly: >, >=, >s, >u, >=s, >=u

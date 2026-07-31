@@ -1,0 +1,13 @@
+#![module = "module2"]
+type t = fn() -> i32;
+import "module1"
+#[import = "shared-table"]
+table t: &?func [10];
+fn f() -> i32 {
+    67;
+}
+fn f_2() -> i32 {
+    68;
+}
+elem e: &func @ t [7] = [f];
+elem e_2: &func @ t [8] = [f_2];

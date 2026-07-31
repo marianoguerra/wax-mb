@@ -1,0 +1,17 @@
+#![module = "recursive"]
+rec {
+    type ft0 = fn() -> &ct_rec;
+    type ft1 = fn(i32) -> &ct_rec;
+    type ct_rec = cont ft1;
+}
+type ct0 = cont ft0;
+rec {
+    type ft0' = fn() -> &ct_rec';
+    type ft1' = fn(i32) -> &ct_rec';
+    type ct_rec' = cont ft1';
+}
+type ct1 = cont ft1';
+type t = fn(&ct1);
+fn test(x: &ct1) {
+    _ = ct0::bind(123, x);
+}

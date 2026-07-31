@@ -1,0 +1,6 @@
+type t = [i32];
+type t_2 = fn();
+fn f() {
+    _ = [t| d @ 0; 0];
+}
+data d = "xxx";

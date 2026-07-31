@@ -1,0 +1,8 @@
+type point = { x: i32, y: mut i32 };     // struct (mut = assignable)
+{point| x: 1, y: 2}   {x, y}   {..}      // create (name optional; punned; defaulted)
+p.x        p.x = 1;                      // field access
+
+type bytes = [mut i8];                   // array
+[bytes| 0; n]   [1, 2, 3]   [t| seg @ off; n]   // create (last is new_data/new_elem)
+a[i]   a[i] = v;   a.length()            // element access
+a.fill(i, v, n)   a.copy(i, src, si, n)   a.init(seg, i, si, n)

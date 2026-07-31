@@ -1,0 +1,5 @@
+type t = fn(i64) -> i64;
+#[export = "i64.no_fold_wrap_extend_s"]
+fn f(x: i64) -> i64 {
+    x as i32 as i64_s;
+}

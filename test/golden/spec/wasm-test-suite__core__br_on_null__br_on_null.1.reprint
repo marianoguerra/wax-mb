@@ -1,0 +1,13 @@
+type t = fn();
+type t_2 = fn(&?t);
+type t_3 = fn(&?func);
+type t_4 = fn(&?extern);
+fn f(r: &?t) 'l: {
+    _ = br_on_null 'l r;
+}
+fn f_2(r: &?func) 'l: {
+    _ = br_on_null 'l r;
+}
+fn f_3(r: &?extern) 'l: {
+    _ = br_on_null 'l r;
+}

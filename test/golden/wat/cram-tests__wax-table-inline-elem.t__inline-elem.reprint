@@ -1,0 +1,1 @@
+fn a() {} fn b() {} table t: &?func [2, 2]; elem e: &?func @ t [0] = [a, b];

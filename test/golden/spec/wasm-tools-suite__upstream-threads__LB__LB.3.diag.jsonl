@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-tools-suite__upstream-threads__LB__LB.3.wax","startLine":2,"startColumn":5,"endLine":2,"endColumn":6,"startOffset":26,"endOffset":27,"message":"The type 't' is never used.","warning":"unused-field","hint":null,"related":[]}

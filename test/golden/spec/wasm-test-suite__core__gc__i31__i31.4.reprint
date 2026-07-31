@@ -1,0 +1,10 @@
+#![module = "i31ref_of_global_global_initializer"]
+type t = fn() -> i32;
+import "env"
+#[import = "g"]
+const g0: i32;
+#[export]
+fn get() -> i32 {
+    g1 as i32_u;
+}
+const g1 = g0 as &i31;

@@ -1,0 +1,1 @@
+{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/duplicate-diagnostic-chains__test_chain.wax","startLine":4,"startColumn":5,"endLine":4,"endColumn":20,"startOffset":61,"endOffset":76,"message":"This expression has type 'i32' but is expected to have type '&?any'.","warning":null,"hint":null,"related":[]}

@@ -1,0 +1,50 @@
+type t = fn();
+type t_2 = fn(i32);
+type t_3 = fn(f32);
+type t_4 = fn(i64);
+type t_5 = fn(f64);
+type t_6 = fn(i32, i32);
+type t_7 = fn(i32) -> i32;
+#[export = "throw-if"]
+fn f(x: i32) -> i32 {
+    if x != 0 {
+        throw e0();
+    }
+    0;
+}
+#[export = "throw-param-f32"]
+fn f_2(x: f32) {
+    throw t_2(x);
+}
+#[export = "throw-param-i64"]
+fn f_3(x: i64) {
+    throw t_3(x);
+}
+#[export = "throw-param-f64"]
+fn f_4(x: f64) {
+    throw t_4(x);
+}
+fn f_5() {
+    throw t_5(1, 2);
+}
+#[export = "test-throw-1-2"]
+fn f_6() {
+    try_legacy {
+        f_5();
+    } catch {
+        t_5 => {
+            if _ != 2 {
+                unreachable;
+            }
+            if _ != 1 {
+                unreachable;
+            }
+        }
+    }
+}
+tag e0: t ;
+tag t: t_2 ;
+tag t_2: t_3 ;
+tag t_3: t_4 ;
+tag t_4: t_5 ;
+tag t_5: t_6 ;

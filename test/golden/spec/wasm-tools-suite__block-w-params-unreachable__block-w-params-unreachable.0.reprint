@@ -1,0 +1,11 @@
+type t = fn(i32, i32);
+fn f(i32, x: i32) {
+    unreachable;
+    x;
+    loop (i32, i32) {
+        loop (i32, i32) {
+            f(_, _);
+        }
+    }
+    unreachable;
+}

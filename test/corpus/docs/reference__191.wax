@@ -1,0 +1,3 @@
+fn example() -> i32 'label: {
+    // body can use 'label
+}

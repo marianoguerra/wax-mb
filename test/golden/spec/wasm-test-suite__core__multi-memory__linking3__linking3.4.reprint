@@ -1,0 +1,14 @@
+#![module = "Ms"]
+type t = fn() -> i32;
+#[export = "get memory[0]"]
+fn f() -> i32 {
+    m.load8(0) as i32_u;
+}
+#[export = "get table[0]"]
+fn f_2() -> i32 {
+    (t[0] as &?t)();
+}
+#[export = "table"]
+table t: &?func [1];
+#[export = "memory"]
+memory m: i32 [1];

@@ -1,0 +1,20 @@
+type t = fn(i32) -> i32;
+type t_2 = fn() -> i32;
+#[export]
+fn grow1(x: i32) -> i32 {
+    mem1.grow(x);
+}
+#[export]
+fn grow2(x: i32) -> i32 {
+    mem2.grow(x);
+}
+#[export]
+fn size1() -> i32 {
+    mem1.size();
+}
+#[export]
+fn size2() -> i32 {
+    mem2.size();
+}
+memory mem1: i32 [1];
+memory mem2: i32 [2];

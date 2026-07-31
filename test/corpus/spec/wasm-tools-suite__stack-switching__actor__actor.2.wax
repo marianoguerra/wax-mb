@@ -1,0 +1,75 @@
+#![module = "queue"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(i32);
+type t_2 = fn() -> i32;
+type t_3 = fn() -> &?cont_2;
+type t_4 = fn(&cont_2);
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+#[export = "queue-empty"]
+fn f() -> i32 {
+    g_2 == g;
+}
+#[export = "dequeue-k"]
+fn f_2() -> &?cont_2 {
+    if f() {
+        return null;
+    }
+    let i = g_2;
+    g_2 = i + 1;
+    queue[i];
+}
+#[export = "enqueue-k"]
+fn f_3(k: &cont_2) {
+    if g == queue.size() {
+        if g_2 <u qdelta {
+            _ = queue.grow(null as &?cont_2, qdelta);
+        } else {
+            g -= g_2;
+            queue.copy(0, g_2, g);
+            queue.fill(g, null as &?cont_2, g_2);
+            g_2 = 0;
+        }
+    }
+    queue[g] = k;
+    g += 1;
+}
+#[export = "queue-empty-mb"]
+fn f_4() -> i32 {
+    g_4 == g_3;
+}
+#[export = "dequeue-mb"]
+fn f_5() -> i32 {
+    if f_4() {
+        return -1;
+    }
+    let i = g_4;
+    g_4 = i + 1;
+    let mb = m.load32(i * 4);
+    return mb;
+}
+#[export = "enqueue-mb"]
+fn f_6(mb: i32) {
+    if g_3 == 16383 {
+        if g_4 <u qdelta {
+            throw t();
+        } else {
+            g_3 -= g_4;
+            m.copy(0, g_4 * 4, g_3 * 4);
+            m.fill(g_3 * 4, -1, g_4 * 4);
+            g_4 = 0;
+        }
+    }
+    m.store32(g_3 * 4, mb);
+    g_3 += 1;
+}
+table queue: &?cont_2 [0];
+memory m: i32 [1];
+const qdelta = 10;
+let g = 0;
+let g_2 = 0;
+let g_3 = 0;
+let g_4 = 0;
+tag t: func_2 ;

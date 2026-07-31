@@ -1,0 +1,9 @@
+#![module = "Check"]
+type t = fn() -> i32;
+import "mem"
+#[import = "shared"]
+memory m: i32 [1, 1] shared;
+#[export]
+fn check() -> i32 {
+    return m.load32(0);
+}

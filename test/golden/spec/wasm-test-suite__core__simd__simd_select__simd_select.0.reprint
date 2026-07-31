@@ -1,0 +1,5 @@
+type t = fn(v128, v128, i32) -> v128;
+#[export]
+fn select_v128_i32(x: v128, x_2: v128, x_3: i32) -> v128 {
+    x_3?x:x_2;
+}

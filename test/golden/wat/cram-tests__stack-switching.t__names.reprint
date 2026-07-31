@@ -1,0 +1,5 @@
+type resume = { f: &eq };
+type switch = fn(&resume) -> &eq;
+fn suspend_2: switch (x: &resume) -> &eq {
+    x.f;
+}

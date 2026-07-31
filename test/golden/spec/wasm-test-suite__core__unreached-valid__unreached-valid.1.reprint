@@ -1,0 +1,13 @@
+type t = fn();
+#[export = "meet-bottom"]
+fn f() {
+    _ =
+        'l: do {
+            _ =
+                'l_2: do f32 {
+                    unreachable;
+                    br_table [ 'l_2, 'l, else 'l ] (_, 1);
+                };
+            0x0p+0;
+        };
+}

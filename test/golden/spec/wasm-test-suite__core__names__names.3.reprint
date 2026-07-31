@@ -1,0 +1,12 @@
+type t = fn(i32);
+type t_2 = fn(i32, i32);
+import "spectest" {
+    fn print_i32(i32);
+    #[import = "print_i32"]
+    fn print_i32_2(i32);
+}
+#[export]
+fn print32(x: i32, x_2: i32) {
+    print_i32(x);
+    print_i32_2(x_2);
+}

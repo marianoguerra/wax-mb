@@ -1,0 +1,6 @@
+#![feature = "custom-descriptors"]
+type t = fn();
+type t_2 = fn(&nofunc) -> &!t;
+fn f(x: &nofunc) -> &!t {
+    x;
+}

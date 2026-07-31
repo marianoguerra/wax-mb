@@ -1,0 +1,126 @@
+type t = fn(i32, i32) -> i32;
+type t_2 = fn(i32) -> i32;
+#[export]
+fn add(x: i32, y: i32) -> i32 {
+    x + y;
+}
+#[export]
+fn sub(x: i32, y: i32) -> i32 {
+    x - y;
+}
+#[export]
+fn mul(x: i32, y: i32) -> i32 {
+    x * y;
+}
+#[export]
+fn div_s(x: i32, y: i32) -> i32 {
+    x /s y;
+}
+#[export]
+fn div_u(x: i32, y: i32) -> i32 {
+    x /u y;
+}
+#[export]
+fn rem_s(x: i32, y: i32) -> i32 {
+    x %s y;
+}
+#[export]
+fn rem_u(x: i32, y: i32) -> i32 {
+    x %u y;
+}
+#[export]
+fn and(x: i32, y: i32) -> i32 {
+    x & y;
+}
+#[export]
+fn or(x: i32, y: i32) -> i32 {
+    x | y;
+}
+#[export]
+fn xor(x: i32, y: i32) -> i32 {
+    x ^ y;
+}
+#[export]
+fn shl(x: i32, y: i32) -> i32 {
+    x << y;
+}
+#[export]
+fn shr_s(x: i32, y: i32) -> i32 {
+    x >>s y;
+}
+#[export]
+fn shr_u(x: i32, y: i32) -> i32 {
+    x >>u y;
+}
+#[export]
+fn rotl(x: i32, y: i32) -> i32 {
+    x.rotl(y);
+}
+#[export]
+fn rotr(x: i32, y: i32) -> i32 {
+    x.rotr(y);
+}
+#[export]
+fn clz(x: i32) -> i32 {
+    x.clz();
+}
+#[export]
+fn ctz(x: i32) -> i32 {
+    x.ctz();
+}
+#[export]
+fn popcnt(x: i32) -> i32 {
+    x.popcnt();
+}
+#[export]
+fn extend8_s(x: i32) -> i32 {
+    x.extend8_s();
+}
+#[export]
+fn extend16_s(x: i32) -> i32 {
+    x.extend16_s();
+}
+#[export]
+fn eqz(x: i32) -> i32 {
+    !x;
+}
+#[export]
+fn eq(x: i32, y: i32) -> i32 {
+    x == y;
+}
+#[export]
+fn ne(x: i32, y: i32) -> i32 {
+    x != y;
+}
+#[export]
+fn lt_s(x: i32, y: i32) -> i32 {
+    x <s y;
+}
+#[export]
+fn lt_u(x: i32, y: i32) -> i32 {
+    x <u y;
+}
+#[export]
+fn le_s(x: i32, y: i32) -> i32 {
+    x <=s y;
+}
+#[export]
+fn le_u(x: i32, y: i32) -> i32 {
+    x <=u y;
+}
+#[export]
+fn gt_s(x: i32, y: i32) -> i32 {
+    x >s y;
+}
+#[export]
+fn gt_u(x: i32, y: i32) -> i32 {
+    x >u y;
+}
+#[export]
+fn ge_s(x: i32, y: i32) -> i32 {
+    x >=s y;
+}
+#[export]
+fn ge_u(x: i32, y: i32) -> i32 {
+    x >=u y;
+}

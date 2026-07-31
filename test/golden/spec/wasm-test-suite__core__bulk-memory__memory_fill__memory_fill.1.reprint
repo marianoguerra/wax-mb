@@ -1,0 +1,20 @@
+type t = fn(i32, i32, i32) -> i32;
+type t_2 = fn();
+#[export]
+fn checkRange(from: i32, to: i32, expected: i32) -> i32 {
+    'cont: loop {
+        if from == to {
+            return -1;
+        }
+        if m.load8(from) as i32_u == expected {
+            from += 1;
+            br 'cont;
+        }
+    }
+    return from;
+}
+#[export]
+fn test() {
+    m.fill(65280, 85, 257);
+}
+memory m: i32 [1, 1];

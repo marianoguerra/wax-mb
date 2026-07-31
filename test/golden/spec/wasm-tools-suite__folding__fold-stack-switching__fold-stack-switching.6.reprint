@@ -1,0 +1,18 @@
+type ft0 = fn() -> i32;
+type ct0 = cont ft0;
+type ft1 = fn(i32) -> i32;
+type ct1 = cont ft1;
+type ft2 = fn(i64, i32) -> i32;
+type ct2 = cont ft2;
+type t = fn(&?ct1) -> &ct0;
+type t_2 = fn(&ct2) -> &ct1;
+type t_3 = fn(&ct1) -> &ct1;
+fn test1(p_ct1: &?ct1) -> &ct0 {
+    ct0::bind(123, p_ct1);
+}
+fn test2(p_ct2: &ct2) -> &ct1 {
+    ct1::bind(123, p_ct2);
+}
+fn test3(p_ct1: &ct1) -> &ct1 {
+    ct1::bind(p_ct1);
+}

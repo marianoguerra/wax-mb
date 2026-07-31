@@ -1,0 +1,2 @@
+data seg = "raw\x00bytes";
+data init @ mem0 [0] = "hello";

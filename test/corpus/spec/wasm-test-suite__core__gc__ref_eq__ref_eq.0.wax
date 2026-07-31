@@ -1,0 +1,26 @@
+type st = open { };
+type st' = open { f: i32 };
+type at = [i8];
+type t: st = open { };
+type t_2: st = open { };
+type t_3: st' = open { .. };
+type t_4: st' = open { .. };
+type t_5 = fn();
+type t_6 = fn(i32, i32) -> i32;
+#[export]
+fn init() {
+    t[0] = null;
+    t[1] = null as &?i31;
+    t[2] = 7 as &i31;
+    t[3] = 7 as &i31;
+    t[4] = 8 as &i31;
+    t[5] = {st| .. };
+    t[6] = {st| .. };
+    t[7] = [at|..; 0];
+    t[8] = [at|..; 0];
+}
+#[export]
+fn eq(i: i32, j: i32) -> i32 {
+    t[i] == t[j];
+}
+table t: &?eq [20];

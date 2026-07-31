@@ -1,0 +1,5 @@
+type ft = fn();
+type ct = cont ft;
+fn g() {}
+#[export]
+const c = ct::new(g);

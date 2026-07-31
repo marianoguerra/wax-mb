@@ -1,0 +1,5 @@
+fn example() -> i32 {
+    1;
+    2;
+    _ + _; // Equivalent to: let a = 1; let b = 2; a + b
+}

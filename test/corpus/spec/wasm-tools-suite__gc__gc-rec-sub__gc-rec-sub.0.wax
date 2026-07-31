@@ -1,0 +1,32 @@
+type t = fn();
+rec {
+    type t_2 = fn();
+    type t_3 = fn();
+}
+type t_4 = { };
+rec {
+    type t_5 = { };
+    type t_6 = { };
+}
+type t_7 = [i32];
+rec {
+    type t_8 = [i32];
+    type t_9 = [i32];
+}
+rec {
+    type t_10 = fn();
+    type t_11 = { };
+    type t_12 = [i32];
+}
+rec {
+    type a = open fn();
+    type t_13: a = open fn();
+}
+type t_14: a = open fn();
+type t_15: a = fn();
+type t_16: a = open fn();
+rec {
+    type t1 = { f: &t2 };
+    type t2 = open { f: &t1 };
+}
+rec {}

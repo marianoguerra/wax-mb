@@ -1,0 +1,13 @@
+type t = fn();
+memory m: i32 [1];
+data d = "a";
+data d_2 = "bbbb";
+table t: &?func [2];
+elem e: &func = [];
+elem e_2: &func = [f];
+fn f() {}
+fn f_2() {
+    m.init(d_2, 0, 0, 0);
+    t.init(e_2, 0, 0, 0);
+    (t[0] as &?t)();
+}

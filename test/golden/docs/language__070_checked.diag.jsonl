@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/language__070_checked.wax","startLine":1,"startColumn":16,"endLine":1,"endColumn":21,"startOffset":16,"endOffset":21,"message":"The imported function 'trace' is never used.","warning":"unused-import","hint":null,"related":[]}

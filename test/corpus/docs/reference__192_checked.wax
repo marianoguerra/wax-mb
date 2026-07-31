@@ -1,0 +1,2 @@
+const PI: f64 = 3.14159;
+const MAX_SIZE: i32 = 1024;

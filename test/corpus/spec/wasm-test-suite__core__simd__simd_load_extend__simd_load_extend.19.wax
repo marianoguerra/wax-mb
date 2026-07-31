@@ -1,0 +1,114 @@
+type t = fn() -> v128;
+type t_2 = fn() -> i32;
+#[export = "v128.load8x8_s-in-block"]
+fn f() -> v128 {
+    do {
+        do {
+            m.load8x8_s(0);
+        }
+    }
+}
+#[export = "v128.load8x8_u-in-block"]
+fn f_2() -> v128 {
+    do {
+        do {
+            m.load8x8_u(1);
+        }
+    }
+}
+#[export = "v128.load16x4_s-in-block"]
+fn f_3() -> v128 {
+    do {
+        do {
+            m.load16x4_s(2);
+        }
+    }
+}
+#[export = "v128.load16x4_u-in-block"]
+fn f_4() -> v128 {
+    do {
+        do {
+            m.load16x4_u(3);
+        }
+    }
+}
+#[export = "v128.load32x2_s-in-block"]
+fn f_5() -> v128 {
+    do {
+        do {
+            m.load32x2_s(4);
+        }
+    }
+}
+#[export = "v128.load32x2_u-in-block"]
+fn f_6() -> v128 {
+    do {
+        do {
+            m.load32x2_u(5);
+        }
+    }
+}
+#[export = "v128.load8x8_s-as-br-value"]
+fn f_7() -> v128 {
+    'l: do {
+        br 'l m.load8x8_s(6);
+    }
+}
+#[export = "v128.load8x8_u-as-br-value"]
+fn f_8() -> v128 {
+    'l: do {
+        br 'l m.load8x8_u(7);
+    }
+}
+#[export = "v128.load16x4_s-as-br-value"]
+fn f_9() -> v128 {
+    'l: do {
+        br 'l m.load16x4_s(8);
+    }
+}
+#[export = "v128.load16x4_u-as-br-value"]
+fn f_10() -> v128 {
+    'l: do {
+        br 'l m.load16x4_u(9);
+    }
+}
+#[export = "v128.load32x2_s-as-br-value"]
+fn f_11() -> v128 {
+    'l: do {
+        br 'l m.load32x2_s(10);
+    }
+}
+#[export = "v128.load32x2_u-as-br-value"]
+fn f_12() -> v128 {
+    'l: do {
+        br 'l m.load32x2_u(11);
+    }
+}
+#[export = "v128.load8x8_s-extract_lane_s-operand"]
+fn f_13() -> i32 {
+    m.load8x8_s(12).extract_lane_s_i8x16(0);
+}
+#[export = "v128.load8x8_u-extract_lane_s-operand"]
+fn f_14() -> i32 {
+    m.load8x8_u(13).extract_lane_s_i8x16(0);
+}
+#[export = "v128.load16x4_s-extract_lane_s-operand"]
+fn f_15() -> i32 {
+    m.load16x4_s(14).extract_lane_s_i8x16(0);
+}
+#[export = "v128.load16x4_u-extract_lane_s-operand"]
+fn f_16() -> i32 {
+    m.load16x4_u(15).extract_lane_s_i8x16(0);
+}
+#[export = "v128.load32x2_s-extract_lane_s-operand"]
+fn f_17() -> i32 {
+    m.load32x2_s(16).extract_lane_s_i8x16(0);
+}
+#[export = "v128.load32x2_u-extract_lane_s-operand"]
+fn f_18() -> i32 {
+    m.load32x2_u(17).extract_lane_s_i8x16(0);
+}
+memory m: i32 [1];
+data d @ m [0] =
+    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x80\x81\x82\x83"
+        ++ "\x84\x85\x86\x87\x88\x89";

@@ -1,0 +1,15 @@
+type t = fn() -> i32;
+type t_2 = fn();
+import "mem"
+#[import = "shared"]
+memory m: i32 [1, 1] shared;
+#[export = "notify-0"]
+fn f() -> i32 {
+    m.atomic_notify(0, 0);
+}
+#[export = "notify-1-while"]
+fn f_2() {
+    'l: loop {
+        br_if 'l 1 != m.atomic_notify(0, 1);
+    }
+}

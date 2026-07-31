@@ -1,0 +1,40 @@
+type pfun = fn() -> i32;
+type cfun = fn(i32) -> i32;
+type producer = cont pfun;
+type consumer = cont cfun;
+type t = fn(i32);
+type t_2 = fn(&producer, &consumer);
+import "pipes" {
+    tag send: t ;
+    tag receive: pfun ;
+    fn pipe(&producer, &consumer);
+}
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+fn nats(n: i32) -> i32 {
+    'l: loop {
+        log(-1);
+        log(n);
+        suspend send(n);
+        n += 1;
+        br 'l;
+    }
+    unreachable;
+}
+fn sum(dummy: i32) -> i32 {
+    let i = 10;
+    let a = 0;
+    'l: loop {
+        a += suspend receive();
+        log(-2);
+        log(a);
+        i -= 1;
+        br_if 'l i != 0;
+    }
+    return a;
+}
+#[export]
+fn run(n: i32) {
+    pipe(producer::bind(n, consumer::new(nats)), consumer::new(sum));
+}

@@ -1,0 +1,9 @@
+type ft = fn(i32) -> i32;
+type ct = cont ft;
+fn g(x: i32) -> i32 {
+    x;
+}
+#[export]
+fn f(x: i32) -> i32 {
+    ct::new(g).resume(x);
+}

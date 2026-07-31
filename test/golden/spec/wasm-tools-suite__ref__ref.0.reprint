@@ -1,0 +1,31 @@
+type t = fn();
+type t_2 = fn(&?func);
+fn f() {
+    let x: &?extern = null;
+    let x_2: &?func = null;
+}
+fn f_2(x: &?func) {
+    _ = !g;
+    _ = !x;
+}
+fn f_3() {
+    _ = 0?null as &?func:null as &?func;
+    _ = 0?null as &?extern:null as &?extern;
+    do {
+        unreachable;
+        _ = _?_ as &?extern:_;
+    }
+    do {
+        unreachable;
+        _ = 0?_ as &?extern:_;
+    }
+    do {
+        unreachable;
+        _ = 0?_:null as &?extern;
+    }
+    do {
+        unreachable;
+        _ = 0?null as &?extern:null as &?extern;
+    }
+}
+const g: &?extern = null;

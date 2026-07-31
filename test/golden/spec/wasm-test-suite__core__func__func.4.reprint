@@ -1,0 +1,20 @@
+type proc = fn() -> i32;
+type sig = fn(i32) -> i32;
+#[export]
+fn f(i32) -> i32 {
+    let var: i32;
+    var;
+}
+fn g(i32) -> i32 {
+    let var: i32;
+    var;
+}
+#[export = "g"]
+fn g_2(x: i32) -> i32 {
+    g(x);
+}
+#[export]
+fn p() -> i32 {
+    let var = 42;
+    var;
+}

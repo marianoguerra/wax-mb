@@ -1,0 +1,40 @@
+type pair = { f: i32, f_2: i32 };
+fn shift(x: i32) -> i32 {
+    x << 40;
+}
+fn divzero(x: i32) -> i32 {
+    x /s 0;
+}
+fn trunc() -> i32 {
+    1e30 as i32_s_strict;
+}
+fn taut(x: i32) -> i32 {
+    x >=u 0;
+}
+fn self(x: i32) -> i32 {
+    x == x;
+}
+fn constcond(x: i32) -> i32 {
+    if 0 {
+        return 1;
+    }
+    x;
+}
+fn droppure() {
+    _ = 5;
+}
+fn dropstruct() {
+    _ = { f: 1, f_2: 2 };
+}
+fn dead() -> i32 {
+    return 1;
+    2;
+}
+fn wide(x: i64, x_2: i64) {
+    i64::mul_wide_s(x, x_2);
+    _ = _;
+    _ = _;
+}
+fn flat(x: i32) -> i32 {
+    x << 40;
+}

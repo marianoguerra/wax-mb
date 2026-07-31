@@ -1,0 +1,10 @@
+type t = fn(i32) -> i32;
+type t_2 = fn(i64) -> i64;
+#[export = "i32.no_fold_rem_s_2"]
+fn f(x: i32) -> i32 {
+    x %s 2;
+}
+#[export = "i64.no_fold_rem_s_2"]
+fn f_2(x: i64) -> i64 {
+    x %s 2;
+}

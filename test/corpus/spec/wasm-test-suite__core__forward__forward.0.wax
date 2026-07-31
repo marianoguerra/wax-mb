@@ -1,0 +1,17 @@
+type t = fn(i32) -> i32;
+#[export]
+fn even(n: i32) -> i32 {
+    if n == 0 {
+        1;
+    } else {
+        odd(n - 1);
+    }
+}
+#[export]
+fn odd(n: i32) -> i32 {
+    if n == 0 {
+        0;
+    } else {
+        even(n - 1);
+    }
+}

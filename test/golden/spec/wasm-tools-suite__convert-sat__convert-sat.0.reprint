@@ -1,0 +1,11 @@
+type t = fn();
+fn f() {
+    _ = 0x0p+0 as f32 as i32_s;
+    _ = 0x0p+0 as f32 as i32_u;
+    _ = 0x0p+0 as i32_s;
+    _ = 0x0p+0 as i32_u;
+    _ = 0x0p+0 as f32 as i64_s;
+    _ = 0x0p+0 as f32 as i64_u;
+    _ = 0x0p+0 as i64_s;
+    _ = 0x0p+0 as i64_u;
+}

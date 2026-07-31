@@ -1,0 +1,1 @@
+type t = fn(); import "spectest" fn print();

@@ -1,0 +1,6 @@
+type t = fn();
+fn f() {
+    1;
+    become (t[0] as &?t)();
+}
+table t: &?func [0];

@@ -1,0 +1,13 @@
+#[export = "hash_mix_int"]
+fn hash_mix_int(h: i32, d: i32) -> i32 {
+    ((d * 0xcc9e2d51).rotl(15) * 0x1b873593 ^ h).rotl(13) * 5 + 0xe6546b64;
+}
+
+#[export = "hash_finalize"]
+fn hash_finalize(h: i32) -> i32 {
+    h ^= h >>u 16;
+    h *= 0x85ebca6b;
+    h ^= h >>u 13;
+    h *= 0xc2b2ae35;
+    h ^ h >>u 16;
+}

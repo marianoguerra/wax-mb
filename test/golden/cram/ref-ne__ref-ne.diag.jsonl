@@ -1,0 +1,2 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/ref-ne__ref-ne.wax","startLine":1,"startColumn":3,"endLine":1,"endColumn":5,"startOffset":3,"endOffset":5,"message":"The function 'eq' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/ref-ne__ref-ne.wax","startLine":4,"startColumn":3,"endLine":4,"endColumn":5,"startOffset":48,"endOffset":50,"message":"The function 'ne' is never used.","warning":"unused-field","hint":null,"related":[]}

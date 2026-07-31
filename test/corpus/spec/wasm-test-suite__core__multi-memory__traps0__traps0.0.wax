@@ -1,0 +1,60 @@
+type t = fn(i32);
+#[export = "no_dce.i32.load"]
+fn f(i: i32) {
+    _ = mem1.load32(i);
+}
+#[export = "no_dce.i32.load16_s"]
+fn f_2(i: i32) {
+    _ = mem1.load16(i) as i32_s;
+}
+#[export = "no_dce.i32.load16_u"]
+fn f_3(i: i32) {
+    _ = mem1.load16(i) as i32_u;
+}
+#[export = "no_dce.i32.load8_s"]
+fn f_4(i: i32) {
+    _ = mem1.load8(i) as i32_s;
+}
+#[export = "no_dce.i32.load8_u"]
+fn f_5(i: i32) {
+    _ = mem1.load8(i) as i32_u;
+}
+#[export = "no_dce.i64.load"]
+fn f_6(i: i32) {
+    _ = mem1.load64(i);
+}
+#[export = "no_dce.i64.load32_s"]
+fn f_7(i: i32) {
+    _ = mem1.load32(i) as i64_s;
+}
+#[export = "no_dce.i64.load32_u"]
+fn f_8(i: i32) {
+    _ = mem2.load32(i) as i64_u;
+}
+#[export = "no_dce.i64.load16_s"]
+fn f_9(i: i32) {
+    _ = mem2.load16(i) as i64_s;
+}
+#[export = "no_dce.i64.load16_u"]
+fn f_10(i: i32) {
+    _ = mem2.load16(i) as i64_u;
+}
+#[export = "no_dce.i64.load8_s"]
+fn f_11(i: i32) {
+    _ = mem2.load8(i) as i64_s;
+}
+#[export = "no_dce.i64.load8_u"]
+fn f_12(i: i32) {
+    _ = mem2.load8(i) as i64_u;
+}
+#[export = "no_dce.f32.load"]
+fn f_13(i: i32) {
+    _ = mem2.loadf32(i);
+}
+#[export = "no_dce.f64.load"]
+fn f_14(i: i32) {
+    _ = mem2.loadf64(i);
+}
+memory mem0: i32 [1];
+memory mem1: i32 [1];
+memory mem2: i32 [1];

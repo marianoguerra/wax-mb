@@ -1,0 +1,21 @@
+type t = fn(i64) -> &?extern;
+type t_2 = fn(i64, &?extern);
+type t_3 = fn(i64, &?extern) -> i64;
+type t_4 = fn() -> i64;
+#[export = "get-t64"]
+fn f(i: i64) -> &?extern {
+    t64[i];
+}
+#[export = "set-t64"]
+fn f_2(i: i64, r: &?extern) {
+    t64[i] = r;
+}
+#[export = "grow-t64"]
+fn f_3(sz: i64, init: &?extern) -> i64 {
+    t64.grow(init, sz);
+}
+#[export = "size-t64"]
+fn f_4() -> i64 {
+    t64.size();
+}
+table t64: i64 &?extern [0];

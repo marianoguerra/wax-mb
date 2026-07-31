@@ -1,0 +1,85 @@
+type t = fn(i32) -> v128;
+type t_2 = fn() -> v128;
+type t_3 = fn(i32);
+#[export]
+fn load_data_1(i: i32) -> v128 {
+    m.loadv128(i);
+}
+#[export]
+fn load_data_2(i: i32) -> v128 {
+    m.loadv128(i, align: 1);
+}
+#[export]
+fn load_data_3(i: i32) -> v128 {
+    m.loadv128(i, offset: 1, align: 1);
+}
+#[export]
+fn load_data_4(i: i32) -> v128 {
+    m.loadv128(i, offset: 2, align: 1);
+}
+#[export]
+fn load_data_5(i: i32) -> v128 {
+    m.loadv128(i, offset: 15, align: 1);
+}
+#[export]
+fn store_data_0() -> v128 {
+    m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 64, 0, 0, 64, 64));
+    m.loadv128(0);
+}
+#[export]
+fn store_data_1() -> v128 {
+    m.storev128(0, v128::i8x16(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0), align: 1);
+    m.loadv128(0, align: 1);
+}
+#[export]
+fn store_data_2() -> v128 {
+    m.storev128(
+        0,
+        v128::i8x16(0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0),
+        offset: 1,
+        align: 1,
+    );
+    m.loadv128(0, offset: 1, align: 1);
+}
+#[export]
+fn store_data_3() -> v128 {
+    m.storev128(
+        0,
+        v128::i8x16(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
+        offset: 2,
+        align: 1,
+    );
+    m.loadv128(0, offset: 2, align: 1);
+}
+#[export]
+fn store_data_4() -> v128 {
+    m.storev128(
+        0,
+        v128::i8x16(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0),
+        offset: 15,
+        align: 1,
+    );
+    m.loadv128(0, offset: 15);
+}
+#[export]
+fn store_data_5() -> v128 {
+    m.storev128(
+        0,
+        v128::i8x16(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0),
+        offset: 65520,
+        align: 1,
+    );
+    m.loadv128(0, offset: 65520);
+}
+#[export]
+fn store_data_6(i: i32) {
+    m.storev128(
+        i,
+        v128::i8x16(0, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0),
+        offset: 1,
+        align: 1,
+    );
+}
+memory m: i32 [1];
+data d @ m [0] = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x10\x11\x12\x13\x14\x15";
+data d_2 @ m [65505] = "\x16\x17\x18\x19\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x30\x31";

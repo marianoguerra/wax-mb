@@ -1,0 +1,91 @@
+type t = fn(i32) -> i32;
+type t_2 = fn(i64) -> i64;
+type t_3 = fn() -> i32;
+#[export]
+fn stmt(i: i32) -> i32 {
+    let j = 100;
+    'switch: do {
+        dispatch i [ '_0, '_1, '_2, '_3, '_4, '_5, '_6, '_7, else 'default ] {
+            '_0: {
+                return i;
+            }
+            '_1: {
+                nop;
+            }
+            '_2: {}
+            '_3: {
+                j = 0 - i;
+                br 'switch;
+            }
+            '_4: {
+                br 'switch;
+            }
+            '_5: {
+                j = 101;
+                br 'switch;
+            }
+            '_6: {
+                j = 101;
+            }
+            'default: {
+                j = 102;
+            }
+            '_7: {}
+        }
+    }
+    return j;
+}
+#[export]
+fn expr(i: i64) -> i64 {
+    let j: i64 = 100;
+    return
+        'switch: do {
+            dispatch (i as i32) [ '_0, '_1, '_2, '_3, '_4, '_5, '_6, '_7, else 'default ] {
+                '_0: {
+                    return i;
+                }
+                '_1: {
+                    nop;
+                }
+                '_2: {}
+                '_3: {
+                    br 'switch 0 - i;
+                }
+                '_6: {
+                    j = 101;
+                }
+                '_5: {}
+                '_4: {}
+                'default: {
+                    br 'switch j;
+                }
+                '_7: {
+                    -5;
+                }
+            }
+        };
+}
+#[export]
+fn arg(i: i32) -> i32 {
+    return
+        '_2: do {
+            10
+                + '_1: do {
+                      100
+                          + '_0: do {
+                                1000
+                                    + 'default: do {
+                                          br_table [ '_0, '_1, '_2, else 'default ] (2 * i, 3 & i);
+                                      };
+                            };
+                  };
+        };
+}
+#[export]
+fn corner() -> i32 {
+    dispatch 0 [ else 'l ] {
+        'l: {
+            1;
+        }
+    }
+}

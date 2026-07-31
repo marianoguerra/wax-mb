@@ -1,0 +1,35 @@
+type sig = fn();
+type t = fn();
+type t_2 = fn(i64, i64, f64, i64, f64, i64, f32, i32);
+type t_3 = fn(f64, i64, f64, i64, f64, i64, f32, i32);
+fn f() {}
+fn f_2(f64, i64, f64, i64, f64, i64, f32, i32) {}
+fn f_3() {}
+fn f_4(f64, i64, f64, i64, f64, i64, f32, i32) {}
+fn f_5(f64, i64, f64, i64, f64, i64, f32, i32) {}
+fn f_6(i64, i64, f64, i64, f64, i64, f32, i32) {}
+fn f_7(i64, i64, f64, i64, f64, i64, f32, i32) {}
+#[export = "signature-explicit-reused"]
+fn f_8() {
+    (t[1] as &?sig)();
+    (t[4] as &?sig)();
+}
+#[export = "signature-implicit-reused"]
+fn f_9() {
+    (t[0] as &?t_3)(0x0p+0, 0, 0x0p+0, 0, 0x0p+0, 0, 0x0p+0, 0);
+    (t[2] as &?t_3)(0x0p+0, 0, 0x0p+0, 0, 0x0p+0, 0, 0x0p+0, 0);
+    (t[3] as &?t_3)(0x0p+0, 0, 0x0p+0, 0, 0x0p+0, 0, 0x0p+0, 0);
+}
+#[export = "signature-explicit-duplicate"]
+fn f_10() {
+    (t[1] as &?t)();
+}
+#[export = "signature-implicit-duplicate"]
+fn f_11() {
+    (t[5] as &?t_2)(0, 0, 0x0p+0, 0, 0x0p+0, 0, 0x0p+0, 0);
+    (t[6] as &?t_2)(0, 0, 0x0p+0, 0, 0x0p+0, 0, 0x0p+0, 0);
+}
+table t: &?func [7, 7];
+elem e: &func @ t [0] = [
+        f_5, f_3, f_2, f_5, f, f_6, f_7
+    ];

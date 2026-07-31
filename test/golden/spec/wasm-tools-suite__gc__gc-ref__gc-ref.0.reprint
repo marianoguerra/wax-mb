@@ -1,0 +1,71 @@
+type a = { };
+type b = { };
+type f1 = fn(&a);
+type f2 = fn() -> &b;
+type t = fn(&a);
+type t_2 = fn() -> &a;
+type t_3 = fn();
+fn f(&a) {}
+fn f_2(&a) {}
+fn f_3(&a) {}
+fn f_4(&a) {}
+fn f_5() -> &a {
+    unreachable;
+}
+fn f_6() {
+    let x: &a;
+}
+fn f_7() {
+    unreachable;
+    unreachable;
+    0?_ as &a:_;
+    do (&a) {
+        unreachable;
+    }
+    do &b {
+        unreachable;
+    }
+    'f1: do (&a) {
+        unreachable;
+    }
+    'f2: do &b {
+        unreachable;
+    }
+    loop (&a) {
+        unreachable;
+    }
+    loop &b {
+        unreachable;
+    }
+    'f1_1: loop (&a) {
+        unreachable;
+    }
+    _ =
+        'f2_1: loop &b {
+            unreachable;
+        };
+    if _ => (&a) {
+        unreachable;
+    } else {
+        unreachable;
+    }
+    _ =
+        if _ => &b {
+            unreachable;
+        } else {
+            unreachable;
+        };
+    'f1_2: if _ => (&a) {
+        unreachable;
+    } else {
+        unreachable;
+    }
+    _ =
+        'f2_2: if _ => &b {
+            unreachable;
+        } else {
+            unreachable;
+        };
+}
+const g: &?a = null;
+const g_2: &?b = null;

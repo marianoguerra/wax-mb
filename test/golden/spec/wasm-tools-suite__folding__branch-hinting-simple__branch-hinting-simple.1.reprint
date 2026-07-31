@@ -1,0 +1,8 @@
+type t = fn();
+import ""
+#[import = ""]
+fn f();
+fn f_2() {
+    #[unlikely]
+    if 0 {}
+}

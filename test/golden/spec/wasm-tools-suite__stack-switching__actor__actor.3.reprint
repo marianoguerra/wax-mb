@@ -1,0 +1,49 @@
+#![module = "mailboxes"]
+type t = fn(i32);
+type t_2 = fn();
+type t_3 = fn(i32) -> i32;
+type t_4 = fn() -> i32;
+type t_5 = fn(i32, i32);
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+#[export]
+fn init() {
+    msize = 0;
+    m.fill(0, -1, mmax * 4);
+}
+#[export = "empty-mb"]
+fn f(mb: i32) -> i32 {
+    let offset = mb * 4;
+    m.load32(offset) == -1;
+}
+#[export = "new-mb"]
+fn f_2() -> i32 {
+    if msize >=u mmax {
+        throw t();
+    }
+    let mb = msize;
+    msize += 1;
+    return mb;
+}
+#[export = "send-to-mb"]
+fn f_3(v: i32, mb: i32) {
+    let offset = mb * 4;
+    if f(mb) {
+        m.store32(offset, v);
+    } else {
+        throw t_2();
+    }
+}
+#[export = "recv-from-mb"]
+fn f_4(mb: i32) -> i32 {
+    let offset = mb * 4;
+    let v = m.load32(offset);
+    m.store32(offset, -1);
+    v;
+}
+memory m: i32 [1];
+let msize = 0;
+const mmax = 1024;
+tag t: t_2 ;
+tag t_2: t_2 ;

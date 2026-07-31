@@ -1,0 +1,1 @@
+elem a: &?extern = []; elem b: &?extern = [null as &?extern];

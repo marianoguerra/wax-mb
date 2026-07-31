@@ -1,0 +1,13 @@
+#![module = "copy_between_memories"]
+type t = fn();
+fn f() {
+    _ = a.load32(0);
+    _ = b.load32(0);
+    _ = c.load32(0);
+}
+memory a: i32 [1, 1];
+memory b: i32 [1, 1];
+memory c: i64 [1, 1];
+data d @ a [0] = "...";
+data d_2 @ b [0] = "...";
+data d_3 @ c [0] = "...";

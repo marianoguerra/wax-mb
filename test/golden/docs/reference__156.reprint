@@ -1,0 +1,15 @@
+type list = { value: i32, next: &?list };
+
+#[export = "make_node"]
+fn make_node(value: i32, next: &?list) -> &list {
+    {list| value, next };
+}
+
+#[export = "sum_list"]
+fn sum_list(head: &?list) -> i32 {
+    if !head {
+        return 0;
+    }
+    let n = head!;
+    n.value + sum_list(n.next);
+}

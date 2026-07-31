@@ -1,0 +1,7 @@
+fn factorial_helper(n: i32, acc: i32) -> i32 {
+    if n <=s 1 => i32 {
+        acc;
+    } else {
+        become factorial_helper(n - 1, n * acc);
+    }
+}

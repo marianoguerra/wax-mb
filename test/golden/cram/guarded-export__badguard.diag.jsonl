@@ -1,0 +1,1 @@
+{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/guarded-export__badguard.wax","startLine":2,"startColumn":20,"endLine":2,"endColumn":22,"startOffset":33,"endOffset":35,"message":"A conditional guard is only allowed on an export or start annotation, not on import.","warning":null,"hint":null,"related":[]}

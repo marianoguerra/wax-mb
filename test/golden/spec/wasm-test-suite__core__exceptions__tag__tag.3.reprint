@@ -1,0 +1,7 @@
+rec {
+    type t1 = fn();
+    type t2 = fn();
+}
+import "M"
+#[import = "tag"]
+tag t: t1 ;

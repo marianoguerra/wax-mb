@@ -1,0 +1,11 @@
+x.abs()       // Absolute value
+x.sqrt()      // Square root
+x.floor()     // Floor
+x.ceil()      // Ceiling
+x.trunc()     // Truncate
+x.nearest()   // Round to nearest
+x.clz()       // Count leading zeros
+x.ctz()       // Count trailing zeros
+x.popcnt()    // Population count
+x.extend8_s()   // Sign-extend the low 8 bits
+x.extend16_s()  // Sign-extend the low 16 bits

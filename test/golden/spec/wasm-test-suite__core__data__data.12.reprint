@@ -1,0 +1,5 @@
+import "spectest"
+#[import = "memory"]
+memory m: i32 [1];
+data d @ m [0] = "a";
+data d_2 @ m [65535] = "b";

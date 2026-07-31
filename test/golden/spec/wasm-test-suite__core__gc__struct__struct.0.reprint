@@ -1,0 +1,19 @@
+type t = { };
+type t_2 = { };
+type t_3 = { f: i8 };
+type t_4 = { f: i8, f_2: i8, f_3: i8, f_4: i8 };
+type t_5 = { x1: i32, y1: i32 };
+type t_6 = {
+    f: i8,
+    f_2: i16,
+    f_3: i32,
+    f_4: i64,
+    f_5: f32,
+    f_6: f64,
+    f_7: &?any,
+    f_8: &?func,
+    f_9: &t,
+    f_10: &?t_2
+};
+type t_7 = { f: i32, f_2: i64, f_3: i8, f_4: &?i31, f_5: &?any };
+type t_8 = { x2: i32, f: f32, f_2: f64, y2: i32 };

@@ -1,0 +1,20 @@
+type t = fn();
+#[export]
+fn drop_passive() {
+    d.drop();
+}
+#[export]
+fn init_passive() {
+    m.init(d, 0, 0, 0);
+}
+#[export]
+fn drop_active() {
+    d_2.drop();
+}
+#[export]
+fn init_active() {
+    m.init(d_2, 0, 0, 0);
+}
+memory m: i64 [1];
+data d = "";
+data d_2 @ m [0] = "";

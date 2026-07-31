@@ -1,0 +1,10 @@
+type s0 = fn(i32) -> f32;
+type s1 = fn(i32, &s0) -> &s0;
+type s2 = fn(i32, &s0) -> &s0;
+type t1 = fn(&s1) -> &s2;
+type t2 = fn(&s2) -> &s1;
+type t = fn(&t1);
+#[export]
+fn f1(&t1) {}
+#[export]
+fn f2(&t1) {}

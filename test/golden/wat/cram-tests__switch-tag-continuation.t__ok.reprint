@@ -1,0 +1,8 @@
+type ft = fn() -> i32;
+type ct = cont ft;
+type tag_ft = fn() -> i32;
+tag t: tag_ft ;
+#[export]
+fn f() -> i32 {
+    (null as &?ct).resume() on [t -> switch];
+}

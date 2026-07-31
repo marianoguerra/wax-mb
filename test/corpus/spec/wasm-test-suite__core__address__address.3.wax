@@ -1,0 +1,28 @@
+type t = fn(i32) -> f32;
+type t_2 = fn(i32);
+#[export = "32_good1"]
+fn f(i: i32) -> f32 {
+    m.loadf32(i);
+}
+#[export = "32_good2"]
+fn f_2(i: i32) -> f32 {
+    m.loadf32(i, align: 1);
+}
+#[export = "32_good3"]
+fn f_3(i: i32) -> f32 {
+    m.loadf32(i, offset: 1, align: 1);
+}
+#[export = "32_good4"]
+fn f_4(i: i32) -> f32 {
+    m.loadf32(i, offset: 2, align: 2);
+}
+#[export = "32_good5"]
+fn f_5(i: i32) -> f32 {
+    m.loadf32(i, offset: 8);
+}
+#[export = "32_bad"]
+fn f_6(i: i32) {
+    _ = m.loadf32(i, offset: 4294967295);
+}
+memory m: i32 [1];
+data d @ m [0] = "\x00\x00\x00\x00\x00\x00\xa0\x7f\x01\x00\xd0\x7f";

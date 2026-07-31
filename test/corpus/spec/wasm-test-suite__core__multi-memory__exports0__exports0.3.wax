@@ -1,0 +1,21 @@
+#[export = "a"]
+#[export = "za"]
+memory mem0: i32 [0];
+#[export = "b"]
+#[export = "zb"]
+memory mem1: i32 [0];
+#[export = "ac"]
+#[export = "zac"]
+memory mem2: i32 [0];
+#[export = "bc"]
+#[export = "zbc"]
+memory mem3: i32 [0];
+#[export = "ad"]
+#[export = "zad"]
+memory mem4: i32 [0];
+#[export = "bd"]
+#[export = "zbd"]
+memory mem5: i32 [0];
+#[export = "be"]
+#[export = "zbe"]
+memory mem6: i32 [0];

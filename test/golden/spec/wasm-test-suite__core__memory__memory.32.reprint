@@ -1,0 +1,74 @@
+type t = fn() -> i32;
+type t_2 = fn() -> f64;
+type t_3 = fn(i32) -> i32;
+type t_4 = fn(i64) -> i64;
+#[export = "data"]
+fn f() -> i32 {
+    (m.load8(0) as i32_u == 65) & (m.load8(3) as i32_u == 167)
+        & ((m.load8(6) as i32_u == 0) & (m.load8(19) as i32_u == 0))
+        & ((m.load8(20) as i32_u == 87) & (m.load8(23) as i32_u == 77)
+               & ((m.load8(24) as i32_u == 0) & (m.load8(1023) as i32_u == 0)));
+}
+#[export]
+fn cast() -> f64 {
+    m.store64(8, -12345);
+    if m.loadf64(8) == (-12345 as i64).from_bits() {
+        return 0x0p+0;
+    }
+    m.store64(9, 0, align: 1);
+    m.store16(15, 16453, align: 1);
+    m.loadf64(9, align: 1);
+}
+#[export]
+fn i32_load8_s(i: i32) -> i32 {
+    m.store8(8, i);
+    m.load8(8) as i32_s;
+}
+#[export]
+fn i32_load8_u(i: i32) -> i32 {
+    m.store8(8, i);
+    m.load8(8) as i32_u;
+}
+#[export]
+fn i32_load16_s(i: i32) -> i32 {
+    m.store16(8, i);
+    m.load16(8) as i32_s;
+}
+#[export]
+fn i32_load16_u(i: i32) -> i32 {
+    m.store16(8, i);
+    m.load16(8) as i32_u;
+}
+#[export]
+fn i64_load8_s(i: i64) -> i64 {
+    m.store8(8, i);
+    m.load8(8) as i64_s;
+}
+#[export]
+fn i64_load8_u(i: i64) -> i64 {
+    m.store8(8, i);
+    m.load8(8) as i64_u;
+}
+#[export]
+fn i64_load16_s(i: i64) -> i64 {
+    m.store16(8, i);
+    m.load16(8) as i64_s;
+}
+#[export]
+fn i64_load16_u(i: i64) -> i64 {
+    m.store16(8, i);
+    m.load16(8) as i64_u;
+}
+#[export]
+fn i64_load32_s(i: i64) -> i64 {
+    m.store32(8, i);
+    m.load32(8) as i64_s;
+}
+#[export]
+fn i64_load32_u(i: i64) -> i64 {
+    m.store32(8, i);
+    m.load32(8) as i64_u;
+}
+memory m: i32 [1];
+data d @ m [0] = "\x41\x42\x43\xa7\x44";
+data d_2 @ m [20] = "WASM";

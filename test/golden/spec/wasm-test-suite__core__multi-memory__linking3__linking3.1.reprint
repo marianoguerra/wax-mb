@@ -1,0 +1,9 @@
+type t = fn();
+import "spectest"
+#[import = "print"]
+fn host();
+import "Mm" {
+    memory mem1: i32 [1];
+    table tab: &?func [0];
+}
+data d @ mem1 [0] = "abc";

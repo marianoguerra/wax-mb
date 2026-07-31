@@ -1,0 +1,7 @@
+import "env" {
+    fn a();
+    fn b(i32);
+    const c: i32;
+}
+import "other" fn x();
+import "env" memory d: i32 [1];

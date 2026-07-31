@@ -1,0 +1,28 @@
+#![module = "scheduler"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn() -> i32;
+type t_2 = fn() -> &?cont_2;
+type t_3 = fn(&cont_2);
+import "lwt" tag yield: func_2 ;
+import "queue" {
+    #[import = "queue-empty"]
+    fn f() -> i32;
+    fn dequeue() -> &?cont_2;
+    fn enqueue(&cont_2);
+}
+#[export]
+fn run() {
+    'l: loop {
+        if f() {
+            return;
+        }
+        enqueue(
+            'on_yield: do {
+                dequeue().resume() on [yield -> 'on_yield];
+                br 'l;
+            },
+        );
+        br 'l;
+    }
+}

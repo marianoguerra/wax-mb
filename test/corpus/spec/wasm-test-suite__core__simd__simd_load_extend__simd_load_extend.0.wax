@@ -1,0 +1,199 @@
+type t = fn(i32) -> v128;
+type t_2 = fn() -> v128;
+#[export = "v128.load8x8_s"]
+fn f(x: i32) -> v128 {
+    m.load8x8_s(x);
+}
+#[export = "v128.load8x8_u"]
+fn f_2(x: i32) -> v128 {
+    m.load8x8_u(x);
+}
+#[export = "v128.load16x4_s"]
+fn f_3(x: i32) -> v128 {
+    m.load16x4_s(x);
+}
+#[export = "v128.load16x4_u"]
+fn f_4(x: i32) -> v128 {
+    m.load16x4_u(x);
+}
+#[export = "v128.load32x2_s"]
+fn f_5(x: i32) -> v128 {
+    m.load32x2_s(x);
+}
+#[export = "v128.load32x2_u"]
+fn f_6(x: i32) -> v128 {
+    m.load32x2_u(x);
+}
+#[export = "v128.load8x8_s_const0"]
+fn f_7() -> v128 {
+    m.load8x8_s(0);
+}
+#[export = "v128.load8x8_u_const8"]
+fn f_8() -> v128 {
+    m.load8x8_u(8);
+}
+#[export = "v128.load16x4_s_const10"]
+fn f_9() -> v128 {
+    m.load16x4_s(10);
+}
+#[export = "v128.load16x4_u_const20"]
+fn f_10() -> v128 {
+    m.load16x4_u(20);
+}
+#[export = "v128.load32x2_s_const65520"]
+fn f_11() -> v128 {
+    m.load32x2_s(65520);
+}
+#[export = "v128.load32x2_u_const65526"]
+fn f_12() -> v128 {
+    m.load32x2_u(65526);
+}
+#[export = "v128.load8x8_s_offset0"]
+fn f_13(x: i32) -> v128 {
+    m.load8x8_s(x);
+}
+#[export = "v128.load8x8_s_align1"]
+fn f_14(x: i32) -> v128 {
+    m.load8x8_s(x, align: 1);
+}
+#[export = "v128.load8x8_s_offset0_align1"]
+fn f_15(x: i32) -> v128 {
+    m.load8x8_s(x, align: 1);
+}
+#[export = "v128.load8x8_s_offset1_align1"]
+fn f_16(x: i32) -> v128 {
+    m.load8x8_s(x, offset: 1, align: 1);
+}
+#[export = "v128.load8x8_s_offset10_align4"]
+fn f_17(x: i32) -> v128 {
+    m.load8x8_s(x, offset: 10, align: 4);
+}
+#[export = "v128.load8x8_s_offset20_align8"]
+fn f_18(x: i32) -> v128 {
+    m.load8x8_s(x, offset: 20);
+}
+#[export = "v128.load8x8_u_offset0"]
+fn f_19(x: i32) -> v128 {
+    m.load8x8_u(x);
+}
+#[export = "v128.load8x8_u_align1"]
+fn f_20(x: i32) -> v128 {
+    m.load8x8_u(x, align: 1);
+}
+#[export = "v128.load8x8_u_offset0_align1"]
+fn f_21(x: i32) -> v128 {
+    m.load8x8_u(x, align: 1);
+}
+#[export = "v128.load8x8_u_offset1_align1"]
+fn f_22(x: i32) -> v128 {
+    m.load8x8_u(x, offset: 1, align: 1);
+}
+#[export = "v128.load8x8_u_offset10_align4"]
+fn f_23(x: i32) -> v128 {
+    m.load8x8_u(x, offset: 10, align: 4);
+}
+#[export = "v128.load8x8_u_offset20_align8"]
+fn f_24(x: i32) -> v128 {
+    m.load8x8_u(x, offset: 20);
+}
+#[export = "v128.load16x4_s_offset0"]
+fn f_25(x: i32) -> v128 {
+    m.load16x4_s(x);
+}
+#[export = "v128.load16x4_s_align1"]
+fn f_26(x: i32) -> v128 {
+    m.load16x4_s(x, align: 1);
+}
+#[export = "v128.load16x4_s_offset0_align1"]
+fn f_27(x: i32) -> v128 {
+    m.load16x4_s(x, align: 1);
+}
+#[export = "v128.load16x4_s_offset1_align1"]
+fn f_28(x: i32) -> v128 {
+    m.load16x4_s(x, offset: 1, align: 1);
+}
+#[export = "v128.load16x4_s_offset10_align4"]
+fn f_29(x: i32) -> v128 {
+    m.load16x4_s(x, offset: 10, align: 4);
+}
+#[export = "v128.load16x4_s_offset20_align8"]
+fn f_30(x: i32) -> v128 {
+    m.load16x4_s(x, offset: 20);
+}
+#[export = "v128.load16x4_u_offset0"]
+fn f_31(x: i32) -> v128 {
+    m.load16x4_u(x);
+}
+#[export = "v128.load16x4_u_align1"]
+fn f_32(x: i32) -> v128 {
+    m.load16x4_u(x, align: 1);
+}
+#[export = "v128.load16x4_u_offset0_align1"]
+fn f_33(x: i32) -> v128 {
+    m.load16x4_u(x, align: 1);
+}
+#[export = "v128.load16x4_u_offset1_align1"]
+fn f_34(x: i32) -> v128 {
+    m.load16x4_u(x, offset: 1, align: 1);
+}
+#[export = "v128.load16x4_u_offset10_align4"]
+fn f_35(x: i32) -> v128 {
+    m.load16x4_u(x, offset: 10, align: 4);
+}
+#[export = "v128.load16x4_u_offset20_align8"]
+fn f_36(x: i32) -> v128 {
+    m.load16x4_u(x, offset: 20);
+}
+#[export = "v128.load32x2_s_offset0"]
+fn f_37(x: i32) -> v128 {
+    m.load32x2_s(x);
+}
+#[export = "v128.load32x2_s_align1"]
+fn f_38(x: i32) -> v128 {
+    m.load32x2_s(x, align: 1);
+}
+#[export = "v128.load32x2_s_offset0_align1"]
+fn f_39(x: i32) -> v128 {
+    m.load32x2_s(x, align: 1);
+}
+#[export = "v128.load32x2_s_offset1_align1"]
+fn f_40(x: i32) -> v128 {
+    m.load32x2_s(x, offset: 1, align: 1);
+}
+#[export = "v128.load32x2_s_offset10_align4"]
+fn f_41(x: i32) -> v128 {
+    m.load32x2_s(x, offset: 10, align: 4);
+}
+#[export = "v128.load32x2_s_offset20_align8"]
+fn f_42(x: i32) -> v128 {
+    m.load32x2_s(x, offset: 20);
+}
+#[export = "v128.load32x2_u_offset0"]
+fn f_43(x: i32) -> v128 {
+    m.load32x2_u(x);
+}
+#[export = "v128.load32x2_u_align1"]
+fn f_44(x: i32) -> v128 {
+    m.load32x2_u(x, align: 1);
+}
+#[export = "v128.load32x2_u_offset0_align1"]
+fn f_45(x: i32) -> v128 {
+    m.load32x2_u(x, align: 1);
+}
+#[export = "v128.load32x2_u_offset1_align1"]
+fn f_46(x: i32) -> v128 {
+    m.load32x2_u(x, offset: 1, align: 1);
+}
+#[export = "v128.load32x2_u_offset10_align4"]
+fn f_47(x: i32) -> v128 {
+    m.load32x2_u(x, offset: 10, align: 4);
+}
+#[export = "v128.load32x2_u_offset20_align8"]
+fn f_48(x: i32) -> v128 {
+    m.load32x2_u(x, offset: 20);
+}
+memory m: i32 [1];
+data d @ m [0] =
+    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x80\x81\x82\x83"
+        ++ "\x84\x85\x86\x87\x88\x89";
+data d_2 @ m [65520] = "\x0a\x0b\x0c\x0d\x0e\x0f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89";

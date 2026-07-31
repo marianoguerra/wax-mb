@@ -1,0 +1,145 @@
+type t = fn(i32, f32);
+type t_2 = fn() -> i32;
+type t_3 = fn() -> i64;
+type t_4 = fn() -> f32;
+type t_5 = fn() -> f64;
+type t_6 = fn(i32) -> i32;
+type t_7 = fn(i64) -> i64;
+type t_8 = fn(f32) -> f32;
+type t_9 = fn(f64) -> f64;
+type t_10 = fn(f32, i32) -> i32;
+type t_11 = fn(i32, i64) -> i64;
+type t_12 = fn(f64, f32) -> f32;
+type t_13 = fn(i64, f64) -> f64;
+type t_14 = fn(i64, i64) -> i64;
+type t_15 = fn(i64) -> i32;
+type t_16 = fn(f64, i64) -> (i32, f32);
+import "spectest" fn print_i32_f32(i32, f32);
+fn f() -> i32 {
+    306;
+}
+fn f_2() -> i64 {
+    356;
+}
+fn f_3() -> f32 {
+    0x1.e64p+11;
+}
+fn f_4() -> f64 {
+    0x1.ec8p+11;
+}
+fn f_5(x: i32) -> i32 {
+    x;
+}
+fn f_6(x: i64) -> i64 {
+    x;
+}
+fn f_7(x: f32) -> f32 {
+    x;
+}
+fn f_8(x: f64) -> f64 {
+    x;
+}
+fn f_9(f32, x: i32) -> i32 {
+    x;
+}
+fn f_10(i32, x: i64) -> i64 {
+    x;
+}
+fn f_11(f64, x: f32) -> f32 {
+    x;
+}
+fn f_12(i64, x: f64) -> f64 {
+    x;
+}
+#[export = "type-i32"]
+fn f_13() -> i32 {
+    become f();
+}
+#[export = "type-i64"]
+fn f_14() -> i64 {
+    become f_2();
+}
+#[export = "type-f32"]
+fn f_15() -> f32 {
+    become f_3();
+}
+#[export = "type-f64"]
+fn f_16() -> f64 {
+    become f_4();
+}
+#[export = "type-first-i32"]
+fn f_17() -> i32 {
+    become f_5(32);
+}
+#[export = "type-first-i64"]
+fn f_18() -> i64 {
+    become f_6(64);
+}
+#[export = "type-first-f32"]
+fn f_19() -> f32 {
+    become f_7(0x1.51eb86p+0);
+}
+#[export = "type-first-f64"]
+fn f_20() -> f64 {
+    become f_8(0x1.a3d70a3d70a3dp+0);
+}
+#[export = "type-second-i32"]
+fn f_21() -> i32 {
+    become f_9(0x1.00ccccp+5, 32);
+}
+#[export = "type-second-i64"]
+fn f_22() -> i64 {
+    become f_10(32, 64);
+}
+#[export = "type-second-f32"]
+fn f_23() -> f32 {
+    become f_11(0x1p+6, 0x1p+5);
+}
+#[export = "type-second-f64"]
+fn f_24() -> f64 {
+    become f_12(64, 0x1.0066666666666p+6);
+}
+#[export = "fac-acc"]
+fn f_25(x: i64, x_2: i64) -> i64 {
+    if !x {
+        x_2;
+    } else {
+        become f_25(x - 1, x * x_2);
+    }
+}
+#[export]
+fn count(x: i64) -> i64 {
+    if !x {
+        x;
+    } else {
+        become count(x - 1);
+    }
+}
+#[export]
+fn even(x: i64) -> i32 {
+    if !x {
+        44;
+    } else {
+        become odd(x - 1);
+    }
+}
+#[export]
+fn odd(x: i64) -> i32 {
+    if !x {
+        99;
+    } else {
+        become even(x - 1);
+    }
+}
+#[export]
+fn tailprint_i32_f32(x: i32, x_2: f32) {
+    become print_i32_f32(x, x_2);
+}
+fn swizzle(x: f64, x_2: i64) -> (i32, f32) {
+    x_2 as i32;
+    x as f32;
+}
+#[export = "type-f64-i64-to-i32-f32"]
+fn f_26(x: f64, x_2: i64) -> (i32, f32) {
+    become swizzle(x, x_2);
+}

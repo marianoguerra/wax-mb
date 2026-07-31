@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-tools-suite__folding__array_init_data__array_init_data.3.wax","startLine":3,"startColumn":5,"endLine":3,"endColumn":6,"startOffset":49,"endOffset":50,"message":"The type 't' is never used.","warning":"unused-field","hint":null,"related":[]}

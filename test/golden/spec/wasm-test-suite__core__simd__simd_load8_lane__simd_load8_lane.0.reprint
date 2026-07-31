@@ -1,0 +1,196 @@
+type t = fn(i32, v128) -> v128;
+type t_2 = fn(v128) -> v128;
+#[export = "v128.load8_lane_0"]
+fn f(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 0);
+}
+#[export = "v128.load8_lane_1"]
+fn f_2(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 1);
+}
+#[export = "v128.load8_lane_2"]
+fn f_3(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 2);
+}
+#[export = "v128.load8_lane_3"]
+fn f_4(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 3);
+}
+#[export = "v128.load8_lane_4"]
+fn f_5(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 4);
+}
+#[export = "v128.load8_lane_5"]
+fn f_6(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 5);
+}
+#[export = "v128.load8_lane_6"]
+fn f_7(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 6);
+}
+#[export = "v128.load8_lane_7"]
+fn f_8(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 7);
+}
+#[export = "v128.load8_lane_8"]
+fn f_9(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 8);
+}
+#[export = "v128.load8_lane_9"]
+fn f_10(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 9);
+}
+#[export = "v128.load8_lane_10"]
+fn f_11(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 10);
+}
+#[export = "v128.load8_lane_11"]
+fn f_12(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 11);
+}
+#[export = "v128.load8_lane_12"]
+fn f_13(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 12);
+}
+#[export = "v128.load8_lane_13"]
+fn f_14(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 13);
+}
+#[export = "v128.load8_lane_14"]
+fn f_15(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 14);
+}
+#[export = "v128.load8_lane_15"]
+fn f_16(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 15);
+}
+#[export = "v128.load8_lane_0_offset_0"]
+fn f_17(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 0);
+}
+#[export = "v128.load8_lane_1_offset_1"]
+fn f_18(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 1, offset: 1);
+}
+#[export = "v128.load8_lane_2_offset_2"]
+fn f_19(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 2, offset: 2);
+}
+#[export = "v128.load8_lane_3_offset_3"]
+fn f_20(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 3, offset: 3);
+}
+#[export = "v128.load8_lane_4_offset_4"]
+fn f_21(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 4, offset: 4);
+}
+#[export = "v128.load8_lane_5_offset_5"]
+fn f_22(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 5, offset: 5);
+}
+#[export = "v128.load8_lane_6_offset_6"]
+fn f_23(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 6, offset: 6);
+}
+#[export = "v128.load8_lane_7_offset_7"]
+fn f_24(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 7, offset: 7);
+}
+#[export = "v128.load8_lane_8_offset_8"]
+fn f_25(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 8, offset: 8);
+}
+#[export = "v128.load8_lane_9_offset_9"]
+fn f_26(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 9, offset: 9);
+}
+#[export = "v128.load8_lane_10_offset_10"]
+fn f_27(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 10, offset: 10);
+}
+#[export = "v128.load8_lane_11_offset_11"]
+fn f_28(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 11, offset: 11);
+}
+#[export = "v128.load8_lane_12_offset_12"]
+fn f_29(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 12, offset: 12);
+}
+#[export = "v128.load8_lane_13_offset_13"]
+fn f_30(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 13, offset: 13);
+}
+#[export = "v128.load8_lane_14_offset_14"]
+fn f_31(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 14, offset: 14);
+}
+#[export = "v128.load8_lane_15_offset_15"]
+fn f_32(x: v128) -> v128 {
+    m.load8_lane(0, x, lane: 15, offset: 15);
+}
+#[export = "v128.load8_lane_0_align_1"]
+fn f_33(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 0);
+}
+#[export = "v128.load8_lane_1_align_1"]
+fn f_34(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 1);
+}
+#[export = "v128.load8_lane_2_align_1"]
+fn f_35(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 2);
+}
+#[export = "v128.load8_lane_3_align_1"]
+fn f_36(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 3);
+}
+#[export = "v128.load8_lane_4_align_1"]
+fn f_37(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 4);
+}
+#[export = "v128.load8_lane_5_align_1"]
+fn f_38(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 5);
+}
+#[export = "v128.load8_lane_6_align_1"]
+fn f_39(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 6);
+}
+#[export = "v128.load8_lane_7_align_1"]
+fn f_40(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 7);
+}
+#[export = "v128.load8_lane_8_align_1"]
+fn f_41(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 8);
+}
+#[export = "v128.load8_lane_9_align_1"]
+fn f_42(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 9);
+}
+#[export = "v128.load8_lane_10_align_1"]
+fn f_43(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 10);
+}
+#[export = "v128.load8_lane_11_align_1"]
+fn f_44(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 11);
+}
+#[export = "v128.load8_lane_12_align_1"]
+fn f_45(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 12);
+}
+#[export = "v128.load8_lane_13_align_1"]
+fn f_46(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 13);
+}
+#[export = "v128.load8_lane_14_align_1"]
+fn f_47(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 14);
+}
+#[export = "v128.load8_lane_15_align_1"]
+fn f_48(address: i32, x: v128) -> v128 {
+    m.load8_lane(address, x, lane: 15);
+}
+memory m: i32 [1];
+data d @ m [0] = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f";

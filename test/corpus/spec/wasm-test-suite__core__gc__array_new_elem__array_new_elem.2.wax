@@ -1,0 +1,22 @@
+type arr = [&?func];
+type t = fn() -> i32;
+type t_2 = fn(i32, i32) -> &arr;
+fn aa() -> i32 {
+    170;
+}
+fn bb() -> i32 {
+    187;
+}
+fn cc() -> i32 {
+    204;
+}
+fn dd() -> i32 {
+    221;
+}
+#[export = "array-new-elem"]
+fn f(x: i32, x_2: i32) -> &arr {
+    [ e @ x; x_2];
+}
+elem e: &func = [
+        aa, bb, cc, dd
+    ];

@@ -1,0 +1,6 @@
+#[priority = 3]
+#[run_once]
+#[export]
+fn f() {
+    nop;
+}

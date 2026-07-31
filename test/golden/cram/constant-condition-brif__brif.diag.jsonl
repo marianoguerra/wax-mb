@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/constant-condition-brif__brif.wax","startLine":4,"startColumn":25,"endLine":4,"endColumn":26,"startOffset":70,"endOffset":71,"message":"This condition is always true.","warning":"constant-condition","hint":null,"related":[]}

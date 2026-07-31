@@ -1,0 +1,16 @@
+type t = fn();
+type t2 = fn(f32, f32) -> f32;
+type t_2 = fn() -> f32;
+fn f() {
+    become f();
+}
+fn f2(f32, f32) -> f32 {
+    become f2(0x0p+0, 0x0p+0);
+}
+fn f_2() {
+    become (t[0] as &?t)();
+}
+fn f_3() -> f32 {
+    become (t[0] as &?t2)(0x0p+0, 0x0p+0);
+}
+table t: &?func [1];

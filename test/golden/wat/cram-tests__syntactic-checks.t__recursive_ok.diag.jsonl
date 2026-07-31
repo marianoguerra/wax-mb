@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/wat/cram-tests__syntactic-checks.t__recursive_ok.wax","startLine":1,"startColumn":5,"endLine":1,"endColumn":9,"startOffset":5,"endOffset":9,"message":"The type 'node' is never used.","warning":"unused-field","hint":null,"related":[]}

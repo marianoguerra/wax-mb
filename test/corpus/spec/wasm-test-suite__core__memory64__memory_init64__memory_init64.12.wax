@@ -1,0 +1,7 @@
+type t = fn();
+#[export]
+fn test() {
+    m.init(d, 1234, 0, 5);
+}
+memory m: i64 [1];
+data d = "7";

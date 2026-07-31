@@ -1,0 +1,9 @@
+type t = fn(i32);
+fn f(x: i32) {
+    let x_2: i32;
+    -64;
+    'l: loop (i32) {
+        x = _;
+        _ = br_if 'l (0, x);
+    }
+}

@@ -1,0 +1,13 @@
+type t = fn();
+type t_2 = fn(&t);
+type t_3 = fn(&func);
+type t_4 = fn(&extern);
+fn f(r: &t) {
+    _ = r!;
+}
+fn f_2(r: &func) {
+    _ = r!;
+}
+fn f_3(r: &extern) {
+    _ = r!;
+}

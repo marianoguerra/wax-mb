@@ -1,0 +1,10 @@
+#![module = "Mgm"]
+type t = fn() -> i32;
+#[export]
+fn grow() -> i32 {
+    m_3.grow(1);
+}
+memory m: i32 [0];
+memory m_2: i32 [0];
+#[export = "memory"]
+memory m_3: i32 [1];

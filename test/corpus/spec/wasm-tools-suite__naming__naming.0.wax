@@ -1,0 +1,128 @@
+type t = fn(i32, i32);
+type t_2 = fn(i32) -> i32;
+type t_3 = fn() -> i32;
+type t_4 = fn(i32);
+type t_5 = fn();
+import "env" {
+    const DYNAMICTOP_PTR: i32;
+    const tempDoublePtr: i32;
+    const ABORT: i32;
+    const STACKTOP: i32;
+    const STACK_MAX: i32;
+    const gb: i32;
+    const fb: i32;
+}
+import "global" {
+    const NaN: f64;
+    const Infinity: f64;
+}
+import "env" {
+    #[import = "memory"]
+    memory m: i32 [256, 256];
+    #[import = "table"]
+    table t: &?func [0, 0];
+    const memoryBase: i32;
+    const tableBase: i32;
+}
+#[export]
+fn stackAlloc(x: i32) -> i32 {
+    do {
+        let x_2 = g_4;
+        g_4 += x;
+        g_4 = g_4 + 15 & -16;
+        return x_2;
+        unreachable;
+    }
+    unreachable;
+}
+#[export]
+fn stackSave() -> i32 {
+    return g_4;
+}
+#[export]
+fn stackRestore(x: i32) {
+    g_4 = x;
+}
+#[export]
+fn establishStackSpace(x: i32, x_2: i32) {
+    do {
+        g_4 = x;
+        g_5 = x_2;
+    }
+}
+#[export]
+fn setThrew(x: i32, x_2: i32) {
+    if g_8 == 0 {
+        g_8 = x;
+        g_9 = x_2;
+    }
+}
+#[export]
+fn _fib(x: i32) -> i32 {
+    let x_11: i32;
+    do {
+        let x_12 = g_4;
+        let x_7 = x >s 0;
+        let x_2: i32;
+        let x_5: i32;
+        let x_6: i32;
+        let x_9: i32;
+        if x_7 {
+            x_2 = 0;
+            x_6 = 1;
+            x_9 = 0;
+        } else {
+            x_5 = 1;
+            return x_5;
+        }
+        'l: loop {
+            'l_2: do {
+                let x_4 = x_6 + x_2;
+                let x_10 = x_9 + 1;
+                let x_8 = x_10 == x;
+                if x_8 {
+                    x_5 = x_4;
+                    br 'l_2;
+                } else {
+                    let x_3 = x_6;
+                    x_6 = x_4;
+                    x_9 = x_10;
+                    x_2 = x_3;
+                }
+                br 'l;
+            }
+        }
+        return x_5;
+        unreachable;
+    }
+    unreachable;
+}
+#[export]
+fn runPostSets() {
+    let x: i32;
+    nop;
+}
+let g = DYNAMICTOP_PTR;
+let g_2 = tempDoublePtr;
+let g_3 = ABORT;
+let g_4 = STACKTOP;
+let g_5 = STACK_MAX;
+let g_6 = gb;
+let g_7 = fb;
+let g_8 = 0;
+let g_9 = 0;
+let g_10 = 0;
+let g_11 = 0;
+let g_12 = NaN;
+let g_13 = Infinity;
+let g_14 = 0;
+let g_15 = 0;
+let g_16 = 0;
+let g_17 = 0;
+let g_18 = 0x0p+0;
+let g_19 = 0;
+let g_20 = 0;
+let g_21 = 0;
+let g_22 = 0x0p+0;
+let g_23 = 0;
+let g_24 = 0x0p+0;

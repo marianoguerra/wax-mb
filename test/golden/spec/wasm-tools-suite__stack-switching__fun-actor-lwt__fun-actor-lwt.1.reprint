@@ -1,0 +1,37 @@
+#![module = "chain"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(i32);
+type t_2 = cont t;
+type t_3 = fn() -> i32;
+type t_4 = fn(&cont_2) -> i32;
+type t_5 = fn(i32, i32);
+import "actor" {
+    tag self: t_3 ;
+    tag spawn: t_4 ;
+    tag send: t_5 ;
+    tag recv: t_3 ;
+}
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+fn next(p: i32) {
+    let s = suspend recv();
+    log(-1);
+    suspend send(s, p);
+}
+#[export]
+fn chain(n: i32) {
+    let p = suspend self();
+    'l: loop {
+        if !n {
+            suspend send(42, p);
+        } else {
+            p = suspend spawn(cont_2::bind(p, t_2::new(next)));
+            n -= 1;
+            br 'l;
+        }
+    }
+    let s = suspend recv();
+    log(s);
+}

@@ -1,0 +1,3 @@
+type point = { x: i32, y: i32 };                  // final by default
+type open_point = open { x: i32 };                // non-final: extensible
+type sub_point : open_point = { x: i32, y: i32 }; // extends open_point

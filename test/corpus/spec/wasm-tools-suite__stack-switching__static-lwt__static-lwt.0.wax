@@ -1,0 +1,4 @@
+#![module = "lwt"]
+type t = fn();
+#[export]
+tag yield: t ;

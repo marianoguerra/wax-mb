@@ -1,0 +1,7 @@
+type arr = [mut i8];
+type t = fn(i32, i32) -> &arr;
+#[export = "array-new-data"]
+fn f(x: i32, x_2: i32) -> &arr {
+    [ d @ x; x_2];
+}
+data d = "abcd";

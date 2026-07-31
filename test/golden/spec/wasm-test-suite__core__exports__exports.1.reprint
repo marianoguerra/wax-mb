@@ -1,0 +1,4 @@
+type t = fn();
+#[export]
+#[export = "a"]
+fn b() {}

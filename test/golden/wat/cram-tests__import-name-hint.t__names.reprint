@@ -1,0 +1,12 @@
+import "env" {
+    fn malloc(i32) -> i32;
+    let counter: i32;
+    #[import = "memory"]
+    memory m: i32 [1];
+    #[import = "some.fn"]
+    fn f();
+}
+#[export = "loop"]
+fn f_2() -> i32 {
+    0;
+}

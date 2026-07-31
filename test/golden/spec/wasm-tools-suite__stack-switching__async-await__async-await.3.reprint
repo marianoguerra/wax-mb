@@ -1,0 +1,55 @@
+#![module = "promise"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(i32);
+type t_2 = cont t;
+type t_3 = fn() -> i32;
+type t_4 = fn(i32) -> i32;
+type t_5 = fn(i32, &t_2);
+type t_6 = fn(i32, i32) -> &?cont_2;
+#[export]
+fn new() -> i32 {
+    if g == g_2 {
+        throw t();
+    }
+    let p = g;
+    let offset = p * 4;
+    observers[p] = null;
+    m.store32(offset, -1);
+    g = p + 1;
+    return p;
+}
+#[export]
+fn fulfilled(p: i32) -> i32 {
+    let offset = p * 4;
+    m.load32(offset) != -1;
+}
+#[export]
+fn read(p: i32) -> i32 {
+    let offset = p * 4;
+    m.load32(offset);
+}
+#[export]
+fn await(p: i32, k: &t_2) {
+    if !observers[p] {
+        observers[p] = k;
+    } else {
+        throw t_2();
+    }
+}
+#[export]
+fn fulfill(p: i32, v: i32) -> &?cont_2 {
+    let offset = p * 4;
+    m.store32(offset, v);
+    let k = observers[p];
+    if !k {
+        return null;
+    }
+    return cont_2::bind(v, k);
+}
+table observers: &?t_2 [1000];
+memory m: i32 [1];
+let g = 0;
+const g_2 = 1000;
+tag t: func_2 ;
+tag t_2: func_2 ;

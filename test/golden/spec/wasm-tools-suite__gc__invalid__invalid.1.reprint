@@ -1,0 +1,8 @@
+type t = fn(&?any) -> &?any;
+fn f(x: &?any) -> &?any 'l: {
+    null as &?struct;
+    unreachable;
+    br_on_null 'l (_, x);
+    _ = _;
+    br_on_cast_fail 'l &?struct _;
+}

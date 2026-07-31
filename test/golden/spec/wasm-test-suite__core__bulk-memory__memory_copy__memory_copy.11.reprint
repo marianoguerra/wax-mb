@@ -1,0 +1,14 @@
+type t = fn(i32, i32, i32);
+type t_2 = fn(i32) -> i32;
+#[export]
+fn run(targetOffs: i32, srcOffs: i32, len: i32) {
+    mem.copy(targetOffs, srcOffs, len);
+}
+#[export]
+fn load8_u(x: i32) -> i32 {
+    mem.load8(x) as i32_u;
+}
+#[export]
+memory mem: i32 [1, 1];
+data d @ mem [65515] =
+    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13" ++ "\x14";

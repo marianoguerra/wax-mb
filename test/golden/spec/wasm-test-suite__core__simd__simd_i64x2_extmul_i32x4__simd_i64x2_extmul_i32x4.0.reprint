@@ -1,0 +1,17 @@
+type t = fn(v128, v128) -> v128;
+#[export = "i64x2.extmul_low_i32x4_s"]
+fn f(x: v128, x_2: v128) -> v128 {
+    x.extmul_low_i32x4_s_i64x2(x_2);
+}
+#[export = "i64x2.extmul_high_i32x4_s"]
+fn f_2(x: v128, x_2: v128) -> v128 {
+    x.extmul_high_i32x4_s_i64x2(x_2);
+}
+#[export = "i64x2.extmul_low_i32x4_u"]
+fn f_3(x: v128, x_2: v128) -> v128 {
+    x.extmul_low_i32x4_u_i64x2(x_2);
+}
+#[export = "i64x2.extmul_high_i32x4_u"]
+fn f_4(x: v128, x_2: v128) -> v128 {
+    x.extmul_high_i32x4_u_i64x2(x_2);
+}

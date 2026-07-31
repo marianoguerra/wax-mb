@@ -1,0 +1,4 @@
+rec {
+    type tree = { value: i32, children: &forest };
+    type forest = [&?tree];
+}

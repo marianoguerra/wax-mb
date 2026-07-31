@@ -1,0 +1,21 @@
+#![feature = "compact-import-section"]
+type t = fn() -> i32;
+type t_2 = fn() -> i64;
+import "test" {
+    #[import = "fi32"]
+    fn beep() -> i32;
+    #[import = "fi64"]
+    fn boop() -> i64;
+    const g1: i32;
+    const g20: i32;
+    const g300: i32;
+    const g4000: i32;
+}
+#[export]
+fn testFuncs() -> i32 {
+    beep() + boop() as i32;
+}
+#[export]
+fn testGlobals() -> i32 {
+    g1 + (g20 + (g300 + g4000));
+}

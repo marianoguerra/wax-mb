@@ -1,0 +1,56 @@
+type vec = { f: f32, y: mut f32, z: f32 };
+type t = fn() -> &?any;
+type t_2 = fn(&vec) -> f32;
+type t_3 = fn() -> f32;
+type t_4 = fn(&vec, f32) -> f32;
+type t_5 = fn(f32) -> f32;
+#[export]
+fn new() -> &?any {
+    {vec| .. };
+}
+fn get_0_0(v: &vec) -> f32 {
+    v.f;
+}
+#[export = "get_0_0"]
+fn get_0_0_2() -> f32 {
+    get_0_0({ .. });
+}
+fn get_vec_0(v: &vec) -> f32 {
+    v.f;
+}
+#[export = "get_vec_0"]
+fn get_vec_0_2() -> f32 {
+    get_vec_0({ .. });
+}
+fn get_0_y(v: &vec) -> f32 {
+    v.y;
+}
+#[export = "get_0_y"]
+fn get_0_y_2() -> f32 {
+    get_0_y({ .. });
+}
+fn get_vec_y(v: &vec) -> f32 {
+    v.y;
+}
+#[export = "get_vec_y"]
+fn get_vec_y_2() -> f32 {
+    get_vec_y({ .. });
+}
+fn set_get_y(v: &vec, y: f32) -> f32 {
+    v.y = y;
+    v.y;
+}
+#[export = "set_get_y"]
+fn set_get_y_2(y: f32) -> f32 {
+    set_get_y({ .. }, y);
+}
+fn set_get_1(v: &vec, y: f32) -> f32 {
+    v.y = y;
+    v.y;
+}
+#[export = "set_get_1"]
+fn set_get_1_2(y: f32) -> f32 {
+    set_get_1({ .. }, y);
+}
+const g = { f: 0x1p+0, y: 0x1p+1, z: 0x1.8p+1 };
+const g_2: &vec = { .. };

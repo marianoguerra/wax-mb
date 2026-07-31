@@ -1,0 +1,1 @@
+type t2 = fn(f32, f32) -> f32; type t = fn(&t2); import "M" fn f(&t2);

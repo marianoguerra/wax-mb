@@ -1,0 +1,114 @@
+type t = fn(i32, i32);
+type t_2 = fn(i32, i64);
+type t_3 = fn(i32) -> i32;
+type t_4 = fn(i32) -> i64;
+type t_5 = fn(i64) -> i64;
+type t_6 = fn(f32) -> f32;
+type t_7 = fn(f64) -> f64;
+fn i16_store_little(address: i32, value: i32) {
+    m.store8(address, value);
+    m.store8(address + 1, value >>u 8);
+}
+fn i32_store_little(address: i32, value: i32) {
+    i16_store_little(address, value);
+    i16_store_little(address + 2, value >>u 16);
+}
+fn i64_store_little(address: i32, value: i64) {
+    i32_store_little(address, value as i32);
+    i32_store_little(address + 4, (value >>u 32) as i32);
+}
+fn i16_load_little(address: i32) -> i32 {
+    m.load8(address) as i32_u | m.load8(address + 1) as i32_u << 8;
+}
+fn i32_load_little(address: i32) -> i32 {
+    i16_load_little(address) | i16_load_little(address + 2) << 16;
+}
+fn i64_load_little(address: i32) -> i64 {
+    i32_load_little(address) as i64_u | i32_load_little(address + 4) as i64_u << 32;
+}
+#[export]
+fn i32_load16_s(value: i32) -> i32 {
+    i16_store_little(0, value);
+    m.load16(0) as i32_s;
+}
+#[export]
+fn i32_load16_u(value: i32) -> i32 {
+    i16_store_little(0, value);
+    m.load16(0) as i32_u;
+}
+#[export]
+fn i32_load(value: i32) -> i32 {
+    i32_store_little(0, value);
+    m.load32(0);
+}
+#[export]
+fn i64_load16_s(value: i64) -> i64 {
+    i16_store_little(0, value as i32);
+    m.load16(0) as i64_s;
+}
+#[export]
+fn i64_load16_u(value: i64) -> i64 {
+    i16_store_little(0, value as i32);
+    m.load16(0) as i64_u;
+}
+#[export]
+fn i64_load32_s(value: i64) -> i64 {
+    i32_store_little(0, value as i32);
+    m.load32(0) as i64_s;
+}
+#[export]
+fn i64_load32_u(value: i64) -> i64 {
+    i32_store_little(0, value as i32);
+    m.load32(0) as i64_u;
+}
+#[export]
+fn i64_load(value: i64) -> i64 {
+    i64_store_little(0, value);
+    m.load64(0);
+}
+#[export]
+fn f32_load(value: f32) -> f32 {
+    i32_store_little(0, value.to_bits());
+    m.loadf32(0);
+}
+#[export]
+fn f64_load(value: f64) -> f64 {
+    i64_store_little(0, value.to_bits());
+    m.loadf64(0);
+}
+#[export]
+fn i32_store16(value: i32) -> i32 {
+    m.store16(0, value);
+    i16_load_little(0);
+}
+#[export]
+fn i32_store(value: i32) -> i32 {
+    m.store32(0, value);
+    i32_load_little(0);
+}
+#[export]
+fn i64_store16(value: i64) -> i64 {
+    m.store16(0, value);
+    i16_load_little(0) as i64_u;
+}
+#[export]
+fn i64_store32(value: i64) -> i64 {
+    m.store32(0, value);
+    i32_load_little(0) as i64_u;
+}
+#[export]
+fn i64_store(value: i64) -> i64 {
+    m.store64(0, value);
+    i64_load_little(0);
+}
+#[export]
+fn f32_store(value: f32) -> f32 {
+    m.storef32(0, value);
+    i32_load_little(0).from_bits();
+}
+#[export]
+fn f64_store(value: f64) -> f64 {
+    m.storef64(0, value);
+    i64_load_little(0).from_bits();
+}
+memory m: i32 [1];

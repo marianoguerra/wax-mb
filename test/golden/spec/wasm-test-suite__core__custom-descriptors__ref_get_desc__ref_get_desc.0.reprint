@@ -1,0 +1,36 @@
+#![feature = "custom-descriptors"]
+rec {
+    type a = descriptor b { };
+    type b = describes a { };
+}
+type t = fn(&a) -> &b;
+type t_2 = fn(&?a) -> &b;
+type t_3 = fn(&!a) -> &!b;
+type t_4 = fn(&?!a) -> &!b;
+type t_5 = fn() -> &!b;
+type t_6 = fn() -> &b;
+fn f(x: &a) -> &b {
+    x.descriptor;
+}
+fn f_2(x: &?a) -> &b {
+    x.descriptor;
+}
+fn f_3(x: &!a) -> &!b {
+    x.descriptor;
+}
+fn f_4(x: &?!a) -> &!b {
+    x.descriptor;
+}
+fn f_5() -> &!b {
+    unreachable;
+    (_ as &?!a).descriptor;
+}
+fn f_6() -> &!b {
+    (null as &?!a).descriptor;
+}
+fn f_7() -> &!b {
+    (null as &?!a).descriptor;
+}
+fn f_8() -> &b {
+    (null as &?a).descriptor;
+}

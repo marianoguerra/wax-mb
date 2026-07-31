@@ -1,0 +1,4 @@
+'next: loop {
+    total = total - 1;
+    br_if 'next total >s 0;
+}

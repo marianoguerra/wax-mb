@@ -1,0 +1,10 @@
+type ft0 = open fn(i32) -> i32;
+type k0 = open cont ft0;
+type ft1: ft0 = fn(i32) -> i32;
+type k1: k0 = cont ft1;
+fn up(c: &k1, x: i32) -> i32 {
+    (c as &?k0).resume(x);
+}
+fn own(c: &k1, x: i32) -> i32 {
+    c.resume(x);
+}

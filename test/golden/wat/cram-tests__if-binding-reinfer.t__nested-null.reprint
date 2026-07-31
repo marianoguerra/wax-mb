@@ -1,0 +1,14 @@
+type t = { };
+fn f(y: i32, z: &?t) {
+    let x: &?t =
+        if y {
+            if y {
+                null;
+            } else {
+                null;
+            }
+        } else {
+            null;
+        };
+    x = z;
+}

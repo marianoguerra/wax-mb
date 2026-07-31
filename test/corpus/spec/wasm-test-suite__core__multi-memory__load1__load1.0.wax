@@ -1,0 +1,8 @@
+#![module = "M"]
+type t = fn(i32) -> i32;
+#[export]
+fn read(x: i32) -> i32 {
+    mem.load8(x) as i32_u;
+}
+#[export]
+memory mem: i32 [2];

@@ -1,0 +1,22 @@
+type t = fn() -> i32;
+type t_2 = fn(i32);
+#[export]
+fn size() -> i32 {
+    m_3.size();
+}
+#[export]
+fn grow(sz: i32) {
+    _ = m_3.grow(sz);
+}
+#[export]
+fn sizen() -> i32 {
+    n.size();
+}
+#[export]
+fn grown(sz: i32) {
+    _ = n.grow(sz);
+}
+memory m: i32 [0, 0];
+memory m_2: i32 [0, 0];
+memory n: i32 [0, 0];
+memory m_3: i32 [0, 2];

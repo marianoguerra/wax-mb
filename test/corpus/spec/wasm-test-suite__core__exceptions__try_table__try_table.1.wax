@@ -1,0 +1,284 @@
+type t = fn();
+type t_2 = fn(i32);
+type t_3 = fn(f32);
+type t_4 = fn(i64);
+type t_5 = fn(f64);
+type t_6 = fn(i32) -> i32;
+type t_7 = fn(i32, i32) -> i32;
+type t_8 = fn(f32) -> f32;
+type t_9 = fn(i64) -> i64;
+type t_10 = fn(f64) -> f64;
+type t_11 = fn() -> (i32, &?exn);
+type t_12 = fn() -> (f32, &?exn);
+type t_13 = fn() -> (i64, &?exn);
+type t_14 = fn() -> (f64, &?exn);
+type t_15 = fn() -> i32;
+import "test" {
+    tag e0: t ;
+    #[import = "e0"]
+    tag e0_2: t ;
+    #[import = "throw"]
+    fn f();
+}
+fn f_2(x: i32) -> i32 {
+    if x != 0 {
+        throw e0_3();
+    }
+    0;
+}
+#[export = "simple-throw-catch"]
+fn f_3(x: i32) -> i32 {
+    'h: do {
+        return
+            try {
+                if !x {
+                    throw e0_3();
+                }
+                42;
+            } catch [ e0_3 -> 'h];
+    }
+    23;
+}
+#[export = "unreachable-not-caught"]
+fn f_4() {
+    'h: do {
+        try {
+            unreachable;
+        } catch [ _ -> 'h]
+        return;
+    }
+}
+fn div(x: i32, x_2: i32) -> i32 {
+    x /u x_2;
+}
+#[export = "trap-in-callee"]
+fn f_5(x: i32, x_2: i32) -> i32 {
+    'h: do {
+        return
+            try {
+                div(x, x_2);
+            } catch [ _ -> 'h];
+    }
+    11;
+}
+#[export = "catch-complex-1"]
+fn f_6(x: i32) -> i32 {
+    'h1: do {
+        return
+            'l: try {
+                'h0: do {
+                    br 'l
+                        try {
+                            if !x {
+                                throw e0_3();
+                            } else {
+                                if x == 1 {
+                                    throw e1();
+                                } else {
+                                    throw e2();
+                                }
+                            }
+                            2;
+                        } catch [ e0_3 -> 'h0];
+                }
+                3;
+            } catch [ e1 -> 'h1];
+    }
+    4;
+}
+#[export = "catch-complex-2"]
+fn f_7(x: i32) -> i32 {
+    'h0: do {
+        'h1: do {
+            return
+                try {
+                    if !x {
+                        throw e0_3();
+                    } else {
+                        if x == 1 {
+                            throw e1();
+                        } else {
+                            throw e2();
+                        }
+                    }
+                    2;
+                } catch [ e0_3 -> 'h0, e1 -> 'h1];
+        }
+        return 4;
+    }
+    3;
+}
+#[export = "throw-catch-param-i32"]
+fn f_8(x: i32) -> i32 {
+    return
+        'h: do {
+            return
+                try {
+                    throw t(x);
+                    2;
+                } catch [ t -> 'h];
+        };
+}
+#[export = "throw-catch-param-f32"]
+fn f_9(x: f32) -> f32 {
+    return
+        'h: do {
+            return
+                try {
+                    throw t_2(x);
+                    0x0p+0;
+                } catch [ t_2 -> 'h];
+        };
+}
+#[export = "throw-catch-param-i64"]
+fn f_10(x: i64) -> i64 {
+    return
+        'h: do {
+            return
+                try {
+                    throw t_3(x);
+                    2;
+                } catch [ t_3 -> 'h];
+        };
+}
+#[export = "throw-catch-param-f64"]
+fn f_11(x: f64) -> f64 {
+    return
+        'h: do {
+            return
+                try {
+                    throw t_4(x);
+                    0x0p+0;
+                } catch [ t_4 -> 'h];
+        };
+}
+#[export = "throw-catch_ref-param-i32"]
+fn f_12(x: i32) -> i32 {
+    'h: do () -> (i32, &?exn) {
+        return
+            try {
+                throw t(x);
+                2;
+            } catch [ t & -> 'h];
+    }
+    _ = _;
+    return _;
+}
+#[export = "throw-catch_ref-param-f32"]
+fn f_13(x: f32) -> f32 {
+    'h: do () -> (f32, &?exn) {
+        return
+            try {
+                throw t_2(x);
+                0x0p+0;
+            } catch [ t_2 & -> 'h];
+    }
+    _ = _;
+    return _;
+}
+#[export = "throw-catch_ref-param-i64"]
+fn f_14(x: i64) -> i64 {
+    'h: do () -> (i64, &?exn) {
+        return
+            try {
+                throw t_3(x);
+                2;
+            } catch [ t_3 & -> 'h];
+    }
+    _ = _;
+    return _;
+}
+#[export = "throw-catch_ref-param-f64"]
+fn f_15(x: f64) -> f64 {
+    'h: do () -> (f64, &?exn) {
+        return
+            try {
+                throw t_4(x);
+                0x0p+0;
+            } catch [ t_4 & -> 'h];
+    }
+    _ = _;
+    return _;
+}
+fn f_16(x: i32) {
+    throw t(x);
+}
+#[export = "catch-param-i32"]
+fn f_17(x: i32) -> i32 {
+    'h: do {
+        return
+            try {
+                0;
+                f_16(x);
+            } catch [ t -> 'h];
+    }
+}
+#[export = "catch-imported"]
+fn f_18() -> i32 {
+    'h: do {
+        return
+            try {
+                1;
+                f();
+            } catch [ e0 -> 'h];
+    }
+    2;
+}
+#[export = "catch-imported-alias"]
+fn f_19() -> i32 {
+    'h: do {
+        return
+            try {
+                1;
+                throw e0_2();
+            } catch [ e0 -> 'h];
+    }
+    2;
+}
+#[export = "catchless-try"]
+fn f_20(x: i32) -> i32 {
+    'h: do {
+        return
+            try {
+                try {
+                    f_2(x);
+                } catch []
+            } catch [ e0_3 -> 'h];
+    }
+    1;
+}
+fn f_21() {
+    throw e0_3();
+}
+#[export = "return-call-in-try-catch"]
+fn f_22() {
+    'h: do {
+        try {
+            become f_21();
+        } catch [ e0_3 -> 'h]
+    }
+}
+#[export = "return-call-indirect-in-try-catch"]
+fn f_23() {
+    'h: do {
+        try {
+            become (t[0] as &?t)();
+        } catch [ e0_3 -> 'h]
+    }
+}
+#[export = "try-with-param"]
+fn f_24() {
+    0;
+    try (i32) {
+        _ = _;
+    } catch []
+}
+table t: &?func [1, 1];
+elem e: &func @ t [0] = [f_21];
+tag e0_3: t ;
+tag e1: t ;
+tag e2: t ;
+tag t: t_2 ;
+tag t_2: t_3 ;
+tag t_3: t_4 ;
+tag t_4: t_5 ;

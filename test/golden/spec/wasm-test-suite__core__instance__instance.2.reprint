@@ -1,0 +1,50 @@
+type t = fn();
+type t_2 = fn() -> i32;
+type t_3 = fn() -> &?func;
+import "I1" {
+    #[import = "glob"]
+    let glob1: i32;
+    #[import = "glob"]
+    let glob2: i32;
+    #[import = "tab"]
+    table tab1: &?func [10];
+    #[import = "tab"]
+    table tab2: &?func [10];
+    #[import = "mem"]
+    memory mem1: i32 [1];
+    #[import = "mem"]
+    memory mem2: i32 [1];
+    #[import = "tag"]
+    tag tag1: t ;
+    #[import = "tag"]
+    tag tag2: t ;
+}
+fn f() {}
+#[export]
+fn glob() -> i32 {
+    glob1 = 1;
+    glob2;
+}
+#[export]
+fn tab() -> &?func {
+    tab1[0] = f;
+    tab2[0];
+}
+#[export]
+fn mem() -> i32 {
+    mem1.store32(0, 1);
+    mem2.load32(0);
+}
+#[export = "tag"]
+fn f_2() -> i32 {
+    'on_tag1: do {
+        'on_other: do {
+            try {
+                throw tag2();
+            } catch [ tag1 -> 'on_tag1, _ -> 'on_other]
+            unreachable;
+        }
+        return 0;
+    }
+    return 1;
+}

@@ -1,0 +1,8 @@
+type t = fn(&func) -> &any;
+fn f(x: &func) -> &any 'l: {
+    do {
+        x;
+        unreachable;
+        br_on_cast_fail 'l &any _;
+    }
+}

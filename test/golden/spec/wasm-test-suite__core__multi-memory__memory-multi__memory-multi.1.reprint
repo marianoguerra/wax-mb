@@ -1,0 +1,13 @@
+type t = fn() -> i32;
+#[export]
+fn fill1() -> i32 {
+    mem1.fill(1, 1, 4);
+    mem1.load32(1);
+}
+#[export]
+fn fill2() -> i32 {
+    mem2.fill(1, 2, 2);
+    mem2.load32(1);
+}
+memory mem1: i32 [1];
+memory mem2: i32 [1];

@@ -1,0 +1,5 @@
+import ""
+#[import = ""]
+let g: i32;
+#[export = ""]
+let g_2 = 0;

@@ -1,0 +1,1 @@
+{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/custom-page-sizes__bad-pow2.wax","startLine":1,"startColumn":27,"endLine":1,"endColumn":28,"startOffset":27,"endOffset":28,"message":"The page size must be a power of two.","warning":null,"hint":null,"related":[]}

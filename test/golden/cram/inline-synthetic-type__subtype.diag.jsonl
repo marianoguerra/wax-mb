@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/inline-synthetic-type__subtype.wax","startLine":5,"startColumn":5,"endLine":5,"endColumn":25,"startOffset":59,"endOffset":79,"message":"This cast always traps: the value can never have this type.","warning":"cast-always-fails","hint":null,"related":[]}

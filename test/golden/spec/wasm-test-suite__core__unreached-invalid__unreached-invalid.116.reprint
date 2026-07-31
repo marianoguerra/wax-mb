@@ -1,0 +1,5 @@
+type t = fn() -> i32;
+fn f() -> i32 {
+    unreachable;
+    1?_:1;
+}

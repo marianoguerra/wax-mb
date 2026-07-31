@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {
+    let x: f32;
+    let x_2: f32;
+}

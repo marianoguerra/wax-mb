@@ -1,0 +1,4 @@
+type t = fn() -> f64;
+fn f() -> f64 {
+    nan:0xfffffffffffff;
+}

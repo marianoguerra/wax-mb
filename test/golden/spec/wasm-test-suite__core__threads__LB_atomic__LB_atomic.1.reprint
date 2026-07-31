@@ -1,0 +1,10 @@
+type t = fn();
+import "mem"
+#[import = "shared"]
+memory m: i32 [1, 1] shared;
+#[export]
+fn run() {
+    let x = m.atomic_load32(4);
+    m.atomic_store32(0, 1);
+    m.store32(24, x);
+}

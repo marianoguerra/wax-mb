@@ -1,0 +1,14 @@
+#[export]
+memory mem: i32 [1, 1] shared;
+#[export]
+fn l(x: i32) -> i32 {
+    mem.atomic_load32(x);
+}
+#[export]
+fn s(x: i32, x_2: i64) {
+    mem.atomic_store8(x, x_2);
+}
+#[export]
+fn f() {
+    atomic::fence();
+}

@@ -1,0 +1,410 @@
+type t = fn();
+type t_2 = fn() -> i32;
+#[export = "func-unwind-by-unreachable"]
+fn f() {
+    3;
+    1 as i64;
+    unreachable;
+}
+#[export = "func-unwind-by-br"]
+fn f_2() 'l: {
+    3;
+    1 as i64;
+    br 'l;
+}
+#[export = "func-unwind-by-br-value"]
+fn f_3() -> i32 'l: {
+    3;
+    1 as i64;
+    br 'l 9;
+}
+#[export = "func-unwind-by-br_if"]
+fn f_4() 'l: {
+    3;
+    1 as i64;
+    br_if 'l 1;
+    _ = _;
+    _ = _;
+}
+#[export = "func-unwind-by-br_if-value"]
+fn f_5() -> i32 'l: {
+    3;
+    1 as i64;
+    _ = br_if 'l (9, 1);
+    _ = _;
+}
+#[export = "func-unwind-by-br_table"]
+fn f_6() 'l: {
+    3;
+    1 as i64;
+    br_table [ else 'l ] 0;
+}
+#[export = "func-unwind-by-br_table-value"]
+fn f_7() -> i32 'l: {
+    3;
+    1 as i64;
+    br_table [ else 'l ] (9, 0);
+}
+#[export = "func-unwind-by-return"]
+fn f_8() -> i32 {
+    3;
+    1 as i64;
+    return 9;
+}
+#[export = "block-unwind-by-unreachable"]
+fn f_9() {
+    do {
+        3;
+        1 as i64;
+        unreachable;
+    }
+}
+#[export = "block-unwind-by-br"]
+fn f_10() -> i32 {
+    'l: do {
+        3;
+        1 as i64;
+        br 'l;
+    }
+    9;
+}
+#[export = "block-unwind-by-br-value"]
+fn f_11() -> i32 {
+    'l: do {
+        3;
+        1 as i64;
+        br 'l 9;
+    }
+}
+#[export = "block-unwind-by-br_if"]
+fn f_12() -> i32 {
+    'l: do {
+        3;
+        1 as i64;
+        br_if 'l 1;
+        _ = _;
+        _ = _;
+    }
+    9;
+}
+#[export = "block-unwind-by-br_if-value"]
+fn f_13() -> i32 {
+    'l: do {
+        3;
+        1 as i64;
+        _ = br_if 'l (9, 1);
+        _ = _;
+    }
+}
+#[export = "block-unwind-by-br_table"]
+fn f_14() -> i32 {
+    'l: do {
+        3;
+        1 as i64;
+        br_table [ else 'l ] 0;
+    }
+    9;
+}
+#[export = "block-unwind-by-br_table-value"]
+fn f_15() -> i32 {
+    'l: do {
+        3;
+        1 as i64;
+        br_table [ else 'l ] (9, 0);
+    }
+}
+#[export = "block-unwind-by-return"]
+fn f_16() -> i32 {
+    do {
+        3;
+        1 as i64;
+        return 9;
+    }
+}
+#[export = "block-nested-unwind-by-unreachable"]
+fn f_17() -> i32 {
+    do {
+        3;
+        do {
+            1 as i64;
+            unreachable;
+        }
+    }
+}
+#[export = "block-nested-unwind-by-br"]
+fn f_18() -> i32 {
+    'l: do {
+        3;
+        do {
+            1 as i64;
+            br 'l;
+        }
+        _ = _;
+    }
+    9;
+}
+#[export = "block-nested-unwind-by-br-value"]
+fn f_19() -> i32 {
+    'l: do {
+        3;
+        do {
+            1 as i64;
+            br 'l 9;
+        }
+    }
+}
+#[export = "block-nested-unwind-by-br_if"]
+fn f_20() -> i32 {
+    'l: do {
+        3;
+        do {
+            1 as i64;
+            br_if 'l 1;
+            _ = _;
+        }
+        _ = _;
+    }
+    9;
+}
+#[export = "block-nested-unwind-by-br_if-value"]
+fn f_21() -> i32 {
+    'l: do {
+        3;
+        do {
+            1 as i64;
+            _ = br_if 'l (9, 1);
+            _ = _;
+        }
+    }
+}
+#[export = "block-nested-unwind-by-br_table"]
+fn f_22() -> i32 {
+    'l: do {
+        3;
+        do {
+            1 as i64;
+            br_table [ else 'l ] 1;
+        }
+        _ = _;
+    }
+    9;
+}
+#[export = "block-nested-unwind-by-br_table-value"]
+fn f_23() -> i32 {
+    'l: do {
+        3;
+        do {
+            1 as i64;
+            br_table [ else 'l ] (9, 1);
+        }
+    }
+}
+#[export = "block-nested-unwind-by-return"]
+fn f_24() -> i32 {
+    do {
+        3;
+        do {
+            1 as i64;
+            return 9;
+        }
+    }
+}
+#[export = "unary-after-unreachable"]
+fn f_25() -> i32 {
+    0x0p+0 as f32;
+    unreachable;
+    !(_ as i64);
+}
+#[export = "unary-after-br"]
+fn f_26() -> i32 {
+    'l: do {
+        0x0p+0 as f32;
+        br 'l 9;
+        !(_ as i64);
+    }
+}
+#[export = "unary-after-br_if"]
+fn f_27() -> i32 {
+    'l: do {
+        0;
+        _ = br_if 'l (9, 1);
+        !(_ as i64);
+    }
+}
+#[export = "unary-after-br_table"]
+fn f_28() -> i32 {
+    'l: do {
+        0x0p+0 as f32;
+        br_table [ 'l, else 'l ] (9, 0);
+        !(_ as i64);
+    }
+}
+#[export = "unary-after-return"]
+fn f_29() -> i32 {
+    0x0p+0 as f32;
+    return 9;
+    !(_ as i64);
+}
+#[export = "binary-after-unreachable"]
+fn f_30() -> i32 {
+    0x0p+0 as f32;
+    0x1p+0;
+    unreachable;
+    _ as i64 == _;
+}
+#[export = "binary-after-br"]
+fn f_31() -> i32 {
+    'l: do {
+        0x0p+0 as f32;
+        0x1p+0;
+        br 'l 9;
+        _ as i64 == _;
+    }
+}
+#[export = "binary-after-br_if"]
+fn f_32() -> i32 {
+    'l: do {
+        0 as i64;
+        1;
+        _ = br_if 'l (9, 1);
+        _ == _;
+    }
+}
+#[export = "binary-after-br_table"]
+fn f_33() -> i32 {
+    'l: do {
+        0x0p+0 as f32;
+        0x1p+0;
+        br_table [ else 'l ] (9, 0);
+        _ as i64 == _;
+    }
+}
+#[export = "binary-after-return"]
+fn f_34() -> i32 {
+    0x0p+0 as f32;
+    0x1p+0;
+    return 9;
+    _ as i64 == _;
+}
+#[export = "select-after-unreachable"]
+fn f_35() -> i32 {
+    0x0p+0 as f32;
+    0x1p+0;
+    0 as i64;
+    unreachable;
+    _?_:_;
+}
+#[export = "select-after-br"]
+fn f_36() -> i32 {
+    'l: do {
+        0x0p+0 as f32;
+        0x1p+0;
+        0 as i64;
+        br 'l 9;
+        _?_:_;
+    }
+}
+#[export = "select-after-br_if"]
+fn f_37() -> i32 {
+    'l: do {
+        0;
+        1;
+        0;
+        _ = br_if 'l (9, 1);
+        _?_:_;
+    }
+}
+#[export = "select-after-br_table"]
+fn f_38() -> i32 {
+    'l: do {
+        0x0p+0 as f32;
+        0x1p+0;
+        0 as i64;
+        br_table [ else 'l ] (9, 0);
+        _?_:_;
+    }
+}
+#[export = "select-after-return"]
+fn f_39() -> i32 {
+    0x0p+0 as f32;
+    0x1p+0;
+    1 as i64;
+    return 9;
+    _?_:_;
+}
+#[export = "block-value-after-unreachable"]
+fn f_40() -> i32 {
+    do {
+        0x0p+0 as f32;
+        unreachable;
+    }
+}
+#[export = "block-value-after-br"]
+fn f_41() -> i32 {
+    'l: do {
+        0x0p+0 as f32;
+        br 'l 9;
+    }
+}
+#[export = "block-value-after-br_if"]
+fn f_42() -> i32 {
+    'l: do {
+        0;
+        _ = br_if 'l (9, 1);
+    }
+}
+#[export = "block-value-after-br_table"]
+fn f_43() -> i32 {
+    'l: do {
+        0x0p+0 as f32;
+        br_table [ 'l, else 'l ] (9, 0);
+    }
+}
+#[export = "block-value-after-return"]
+fn f_44() -> i32 {
+    do {
+        0x0p+0 as f32;
+        return 9;
+    }
+}
+#[export = "loop-value-after-unreachable"]
+fn f_45() -> i32 {
+    loop {
+        0x0p+0 as f32;
+        unreachable;
+    }
+}
+#[export = "loop-value-after-br"]
+fn f_46() -> i32 {
+    'l: do {
+        loop i32 {
+            0x0p+0 as f32;
+            br 'l 9;
+        }
+    }
+}
+#[export = "loop-value-after-br_if"]
+fn f_47() -> i32 {
+    'l: do {
+        loop {
+            0;
+            _ = br_if 'l (9, 1);
+        }
+    }
+}
+#[export = "loop-value-after-br_table"]
+fn f_48() -> i32 {
+    'l: do {
+        loop i32 {
+            0x0p+0 as f32;
+            br_table [ 'l, else 'l ] (9, 0);
+        }
+    }
+}
+#[export = "loop-value-after-return"]
+fn f_49() -> i32 {
+    loop {
+        0x0p+0 as f32;
+        return 9;
+    }
+}

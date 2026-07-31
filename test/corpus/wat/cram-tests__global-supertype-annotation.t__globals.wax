@@ -1,0 +1,8 @@
+type s = open { f: i32 };
+fn f() -> i32 {
+    0;
+}
+const gc = f;
+const gstruct = { f: 7 };
+let gm: &?func = f;
+const gnull: &?any = null;

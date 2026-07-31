@@ -1,0 +1,6 @@
+type t = fn(i64, i64);
+fn f(x: i64, x_2: i64) {
+    i64::mul_wide_u(x, x_2);
+    _ = _;
+    _ = _;
+}

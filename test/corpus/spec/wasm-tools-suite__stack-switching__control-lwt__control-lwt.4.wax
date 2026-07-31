@@ -1,0 +1,33 @@
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(&cont_2);
+type t_2 = cont t;
+type t_3 = fn(&func_2, &t);
+type t_4 = cont t_3;
+type t_5 = fn(&t_4);
+type t_6 = fn(i32);
+import "scheduler" {
+    fn sync(&t_4);
+    fn kt(&t_4);
+    fn tk(&t_4);
+    fn ykt(&t_4);
+    fn ytk(&t_4);
+}
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+import "example" fn main(&func_2, &t);
+#[export]
+fn run() {
+    log(-1);
+    sync(t_4::new(main));
+    log(-2);
+    kt(t_4::new(main));
+    log(-3);
+    tk(t_4::new(main));
+    log(-4);
+    ykt(t_4::new(main));
+    log(-5);
+    ytk(t_4::new(main));
+    log(-6);
+}

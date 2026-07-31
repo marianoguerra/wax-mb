@@ -1,0 +1,3 @@
+#![module = "env"]
+#[export]
+const g = 42;

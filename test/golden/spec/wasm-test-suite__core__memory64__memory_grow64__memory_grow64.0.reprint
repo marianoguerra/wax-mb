@@ -1,0 +1,29 @@
+type t = fn() -> i32;
+type t_2 = fn();
+type t_3 = fn(i64) -> i64;
+type t_4 = fn() -> i64;
+#[export]
+fn load_at_zero() -> i32 {
+    m.load32(0);
+}
+#[export]
+fn store_at_zero() {
+    m.store32(0, 2);
+}
+#[export]
+fn load_at_page_size() -> i32 {
+    m.load32(65536);
+}
+#[export]
+fn store_at_page_size() {
+    m.store32(65536, 3);
+}
+#[export]
+fn grow(sz: i64) -> i64 {
+    m.grow(sz);
+}
+#[export]
+fn size() -> i64 {
+    m.size();
+}
+memory m: i64 [0];

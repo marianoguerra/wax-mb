@@ -1,0 +1,2 @@
+#[export = "table-10-inf"]
+table t: &?func [10];

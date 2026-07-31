@@ -1,0 +1,22 @@
+#![feature = "custom-descriptors"]
+type a1 = [i8];
+type a2 = [mut &?func];
+type t = fn() -> &!a1;
+type t_2 = fn() -> &!a2;
+fn f() -> &!a1 {
+    [0; 0];
+}
+fn f_2() -> &!a1 {
+    [..; 0];
+}
+fn f_3() -> &!a1 {
+    [0, 1, 2];
+}
+fn f_4() -> &!a1 {
+    [ d @ 0; 0];
+}
+fn f_5() -> &!a2 {
+    [ e @ 0; 0];
+}
+elem e: &?func = [];
+data d = "abc";

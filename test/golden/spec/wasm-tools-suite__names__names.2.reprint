@@ -1,0 +1,1 @@
+type t = fn(); fn foo() {} fn foo_1() {} fn foo_1_1() {}

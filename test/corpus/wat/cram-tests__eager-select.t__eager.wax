@@ -1,0 +1,12 @@
+#[export]
+fn div(c: i32, x: i32) -> i32 {
+    c?1 /s x:0;
+}
+#[export]
+fn pure(c: i32, x: i32) -> i32 {
+    c?x + 1:0;
+}
+#[export]
+fn unfolded(c: i32, x: i32) -> i32 {
+    c?1 /s x:0;
+}

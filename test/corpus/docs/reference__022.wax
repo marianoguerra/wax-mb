@@ -1,0 +1,8 @@
+x + y       // Add
+x - y       // Subtract
+x * y       // Multiply
+x / y       // Divide (float)
+x /s y      // Divide signed (integer)
+x /u y      // Divide unsigned (integer)
+x %s y      // Remainder signed
+x %u y      // Remainder unsigned

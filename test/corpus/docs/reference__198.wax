@@ -1,0 +1,4 @@
+let x: i32 = mem0.load32(p);
+let b: i32 = mem0.load8(p) as i32_u;
+mem0.store16(p, v);
+mem0.store32(p, v, offset: 16, align: 1);

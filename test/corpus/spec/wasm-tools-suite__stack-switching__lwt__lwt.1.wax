@@ -1,0 +1,43 @@
+#![module = "example"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(&cont_2);
+type t_2 = fn(i32);
+import "lwt" {
+    tag yield: func_2 ;
+    tag fork: t ;
+}
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+#[export]
+fn main() {
+    log(0);
+    suspend fork(cont_2::new(thread1));
+    log(1);
+    suspend fork(cont_2::new(thread2));
+    log(2);
+    suspend fork(cont_2::new(thread3));
+    log(3);
+}
+fn thread1() {
+    log(10);
+    suspend yield();
+    log(11);
+    suspend yield();
+    log(12);
+}
+fn thread2() {
+    log(20);
+    suspend yield();
+    log(21);
+    suspend yield();
+    log(22);
+}
+fn thread3() {
+    log(30);
+    suspend yield();
+    log(31);
+    suspend yield();
+    log(32);
+}

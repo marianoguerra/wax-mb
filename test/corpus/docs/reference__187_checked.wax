@@ -1,0 +1,2 @@
+type shape = open { x: i32, y: i32 };
+type circle : shape = { x: i32, y: i32, radius: i32 };

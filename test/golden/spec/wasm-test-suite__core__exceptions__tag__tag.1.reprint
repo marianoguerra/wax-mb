@@ -1,0 +1,8 @@
+type t = fn(i32);
+type t_2 = fn(i32, f32);
+import "test" {
+    #[import = "t2"]
+    tag t0: t ;
+    #[import = "t3"]
+    tag t1: t_2 ;
+}

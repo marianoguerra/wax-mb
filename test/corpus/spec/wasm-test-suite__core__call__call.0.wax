@@ -1,0 +1,592 @@
+type check = fn(i32, i32) -> i32;
+type t = fn() -> i32;
+type t_2 = fn() -> i64;
+type t_3 = fn() -> f32;
+type t_4 = fn() -> f64;
+type t_5 = fn() -> (i32, i64);
+type t_6 = fn(i32) -> i32;
+type t_7 = fn(i64) -> i64;
+type t_8 = fn(f32) -> f32;
+type t_9 = fn(f64) -> f64;
+type t_10 = fn(i32, f64) -> (i32, f64);
+type t_11 = fn(i32, i32) -> (i32, i32);
+type t_12 = fn(f32, f64) -> (f64, f32);
+type t_13 = fn(f64, i32) -> (i32, f64);
+type t_14 = fn(f32, i32) -> i32;
+type t_15 = fn(i32, i64) -> i64;
+type t_16 = fn(f64, f32) -> f32;
+type t_17 = fn(i64, f64) -> f64;
+type t_18 = fn() -> (i32, f64);
+type t_19 = fn() -> (i32, i32);
+type t_20 = fn() -> (f64, f32);
+type t_21 = fn(i64, i64) -> i64;
+type t_22 = fn(i64) -> i32;
+type t_23 = fn();
+type t_24 =
+fn(f32, i32, i32, f64, f32, f32, f32, f64, f32, i32, i32, f32, f64, i64, i64, i32, i64, i64, f32,
+        i64, i64, i64, i32, f32, f32, f32, f64, f32, i32, i64, f32, f64, f64, f32, i32, f32, f32,
+        f64, i64, f64, i32, i64, f32, f64, i32, i32, i32, i64, f64, i32, i64, i64, f64, f64, f64,
+        f64, f64, f64, i32, f32, f64, f64, i32, i64, f32, f32, f32, i32, f64, f64, f64, f64, f64,
+        f32, i64, i64, i32, i32, i32, f32, f64, i32, i64, f32, f32, f32, i32, i32, f32, f64, i64,
+        f32, f64, f32, f32, f32, i32, f32, i64, i32) -> i32;
+fn f() -> i32 {
+    306;
+}
+fn f_2() -> i64 {
+    356;
+}
+fn f_3() -> f32 {
+    0x1.e64p+11;
+}
+fn f_4() -> f64 {
+    0x1.ec8p+11;
+}
+fn f_5() -> (i32, i64) {
+    306;
+    356;
+}
+fn f_6(x: i32) -> i32 {
+    x;
+}
+fn f_7(x: i64) -> i64 {
+    x;
+}
+fn f_8(x: f32) -> f32 {
+    x;
+}
+fn f_9(x: f64) -> f64 {
+    x;
+}
+fn f_10(x: i32, x_2: f64) -> (i32, f64) {
+    x;
+    x_2;
+}
+fn f_11(x: i32, x_2: i32) -> (i32, i32) {
+    x_2;
+    x;
+}
+fn f_12(x: f32, x_2: f64) -> (f64, f32) {
+    x_2;
+    x;
+}
+fn f_13(x: f64, x_2: i32) -> (i32, f64) {
+    x_2;
+    x;
+}
+fn f_14(f32, x: i32) -> i32 {
+    x;
+}
+fn f_15(i32, x: i64) -> i64 {
+    x;
+}
+fn f_16(f64, x: f32) -> f32 {
+    x;
+}
+fn f_17(i64, x: f64) -> f64 {
+    x;
+}
+#[export = "type-i32"]
+fn f_18() -> i32 {
+    f();
+}
+#[export = "type-i64"]
+fn f_19() -> i64 {
+    f_2();
+}
+#[export = "type-f32"]
+fn f_20() -> f32 {
+    f_3();
+}
+#[export = "type-f64"]
+fn f_21() -> f64 {
+    f_4();
+}
+#[export = "type-i32-i64"]
+fn f_22() -> (i32, i64) {
+    f_5();
+}
+#[export = "type-first-i32"]
+fn f_23() -> i32 {
+    f_6(32);
+}
+#[export = "type-first-i64"]
+fn f_24() -> i64 {
+    f_7(64);
+}
+#[export = "type-first-f32"]
+fn f_25() -> f32 {
+    f_8(0x1.51eb86p+0);
+}
+#[export = "type-first-f64"]
+fn f_26() -> f64 {
+    f_9(0x1.a3d70a3d70a3dp+0);
+}
+#[export = "type-second-i32"]
+fn f_27() -> i32 {
+    f_14(0x1.00ccccp+5, 32);
+}
+#[export = "type-second-i64"]
+fn f_28() -> i64 {
+    f_15(32, 64);
+}
+#[export = "type-second-f32"]
+fn f_29() -> f32 {
+    f_16(0x1p+6, 0x1p+5);
+}
+#[export = "type-second-f64"]
+fn f_30() -> f64 {
+    f_17(64, 0x1.0066666666666p+6);
+}
+#[export = "type-all-i32-f64"]
+fn f_31() -> (i32, f64) {
+    f_10(32, 0x1.a3d70a3d70a3dp+0);
+}
+#[export = "type-all-i32-i32"]
+fn f_32() -> (i32, i32) {
+    f_11(1, 2);
+}
+#[export = "type-all-f32-f64"]
+fn f_33() -> (f64, f32) {
+    f_12(0x1p+0, 0x1p+1);
+}
+#[export = "type-all-f64-i32"]
+fn f_34() -> (i32, f64) {
+    f_13(0x1p+0, 2);
+}
+#[export = "as-binary-all-operands"]
+fn f_35() -> i32 {
+    f_11(3, 4);
+    _ + _;
+}
+#[export = "as-mixed-operands"]
+fn f_36() -> i32 {
+    f_11(3, 4);
+    _ * (_ + 5);
+}
+#[export = "as-call-all-operands"]
+fn f_37() -> (i32, i32) {
+    f_11(3, 4);
+    f_11(_, _);
+}
+#[export]
+fn fac(x: i64) -> i64 {
+    if !x {
+        1;
+    } else {
+        x * fac(x - 1);
+    }
+}
+#[export = "fac-acc"]
+fn f_38(x: i64, x_2: i64) -> i64 {
+    if !x {
+        x_2;
+    } else {
+        f_38(x - 1, x * x_2);
+    }
+}
+#[export]
+fn fib(x: i64) -> i64 {
+    if x <=u 1 {
+        1;
+    } else {
+        fib(x - 2) + fib(x - 1);
+    }
+}
+#[export]
+fn even(x: i64) -> i32 {
+    if !x {
+        44;
+    } else {
+        odd(x - 1);
+    }
+}
+#[export]
+fn odd(x: i64) -> i32 {
+    if !x {
+        99;
+    } else {
+        even(x - 1);
+    }
+}
+#[export]
+fn runaway() {
+    runaway();
+}
+#[export = "mutual-runaway"]
+fn f_39() {
+    f_40();
+}
+fn f_40() {
+    f_39();
+}
+#[export = "as-select-first"]
+fn f_41() -> i32 {
+    3?f():2;
+}
+#[export = "as-select-mid"]
+fn f_42() -> i32 {
+    3?2:f();
+}
+#[export = "as-select-last"]
+fn f_43() -> i32 {
+    f()?2:3;
+}
+#[export = "as-if-condition"]
+fn f_44() -> i32 {
+    if f() {
+        1;
+    } else {
+        2;
+    }
+}
+#[export = "as-br_if-first"]
+fn f_45() -> i32 {
+    'l: do {
+        br_if 'l (f(), 2);
+    }
+}
+#[export = "as-br_if-last"]
+fn f_46() -> i32 {
+    'l: do {
+        br_if 'l (2, f());
+    }
+}
+#[export = "as-br_table-first"]
+fn f_47() -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ] (f(), 2);
+    }
+}
+#[export = "as-br_table-last"]
+fn f_48() -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ] (2, f());
+    }
+}
+fn func(x: i32, i32) -> i32 {
+    x;
+}
+#[export = "as-call_indirect-first"]
+fn f_49() -> i32 {
+    do {
+        (t[0] as &?check)(f(), 2);
+    }
+}
+#[export = "as-call_indirect-mid"]
+fn f_50() -> i32 {
+    do {
+        (t[0] as &?check)(2, f());
+    }
+}
+#[export = "as-call_indirect-last"]
+fn f_51() -> i32 {
+    do {
+        (t[f()] as &?check)(1, 2);
+    }
+}
+#[export = "as-store-first"]
+fn f_52() {
+    m.store32(f(), 1);
+}
+#[export = "as-store-last"]
+fn f_53() {
+    m.store32(10, f());
+}
+#[export = "as-memory.grow-value"]
+fn f_54() -> i32 {
+    m.grow(f());
+}
+#[export = "as-return-value"]
+fn f_55() -> i32 {
+    return f();
+}
+#[export = "as-drop-operand"]
+fn f_56() {
+    _ = f();
+}
+#[export = "as-br-value"]
+fn f_57() -> i32 {
+    'l: do {
+        br 'l f();
+    }
+}
+#[export = "as-local.set-value"]
+fn f_58() -> i32 {
+    let x = f();
+    x;
+}
+#[export = "as-local.tee-value"]
+fn f_59() -> i32 {
+    let x: i32;
+    x := f();
+}
+#[export = "as-global.set-value"]
+fn f_60() -> i32 {
+    a = f();
+    a;
+}
+#[export = "as-load-operand"]
+fn f_61() -> i32 {
+    m.load32(f());
+}
+fn dummy(x: i32) -> i32 {
+    x;
+}
+fn du(x: f32) -> f32 {
+    x;
+}
+#[export = "as-unary-operand"]
+fn f_62() -> f32 {
+    do {
+        du(0x0p+0).sqrt();
+    }
+}
+#[export = "as-binary-left"]
+fn f_63() -> i32 {
+    do {
+        dummy(1) + 10;
+    }
+}
+#[export = "as-binary-right"]
+fn f_64() -> i32 {
+    do {
+        10 - dummy(1);
+    }
+}
+#[export = "as-test-operand"]
+fn f_65() -> i32 {
+    do {
+        !dummy(1);
+    }
+}
+#[export = "as-compare-left"]
+fn f_66() -> i32 {
+    do {
+        dummy(1) <=u 10;
+    }
+}
+#[export = "as-compare-right"]
+fn f_67() -> i32 {
+    do {
+        10 != dummy(1);
+    }
+}
+#[export = "as-convert-operand"]
+fn f_68() -> i64 {
+    do {
+        dummy(1) as i64_s;
+    }
+}
+fn f_69(
+    f32,
+    i32,
+    i32,
+    f64,
+    f32,
+    f32,
+    f32,
+    f64,
+    f32,
+    i32,
+    i32,
+    f32,
+    f64,
+    i64,
+    i64,
+    i32,
+    i64,
+    i64,
+    f32,
+    i64,
+    i64,
+    i64,
+    i32,
+    f32,
+    f32,
+    f32,
+    f64,
+    f32,
+    i32,
+    i64,
+    f32,
+    f64,
+    f64,
+    f32,
+    i32,
+    f32,
+    f32,
+    f64,
+    i64,
+    f64,
+    i32,
+    i64,
+    f32,
+    f64,
+    i32,
+    i32,
+    i32,
+    i64,
+    f64,
+    i32,
+    i64,
+    i64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    i32,
+    f32,
+    f64,
+    f64,
+    i32,
+    i64,
+    f32,
+    f32,
+    f32,
+    i32,
+    f64,
+    f64,
+    f64,
+    f64,
+    f64,
+    f32,
+    i64,
+    i64,
+    i32,
+    i32,
+    i32,
+    f32,
+    f64,
+    i32,
+    i64,
+    f32,
+    f32,
+    f32,
+    i32,
+    i32,
+    f32,
+    f64,
+    i64,
+    f32,
+    f64,
+    f32,
+    f32,
+    f32,
+    i32,
+    f32,
+    i64,
+    x: i32,
+) -> i32 {
+    x;
+}
+#[export = "return-from-long-argument-list"]
+fn f_70(x: i32) -> i32 {
+    f_69(
+        0x0p+0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0x0p+0,
+        0,
+        0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0x0p+0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0,
+        0,
+        0,
+        0x0p+0,
+        0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0x0p+0,
+        0,
+        0x0p+0,
+        0,
+        x,
+    );
+}
+table t: &?func [1, 1];
+memory m: i32 [1];
+let a = 10;
+elem e: &func @ t [0] = [func];

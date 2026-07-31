@@ -1,0 +1,12 @@
+#[export]
+fn top() {}
+#[if(FOO)]
+{
+    #[export]
+    fn a() {
+        b();
+    }
+    import "env" {
+        fn b();
+    }
+}

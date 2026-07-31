@@ -1,0 +1,13 @@
+// Import a function and a global from the host environment
+import "env" {
+    fn log(value: i32);
+    const base_value: i32;
+}
+
+// Export a function that uses the imports
+#[export = "compute_and_log"]
+fn compute_and_log(x: i32) -> i32 {
+    let result = x + base_value;
+    log(result);
+    result;
+}

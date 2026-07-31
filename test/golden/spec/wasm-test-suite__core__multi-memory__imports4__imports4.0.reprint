@@ -1,0 +1,4 @@
+#[export = "memory-2-inf"]
+memory m: i32 [2];
+#[export = "memory-2-4"]
+memory m_2: i32 [2, 4];

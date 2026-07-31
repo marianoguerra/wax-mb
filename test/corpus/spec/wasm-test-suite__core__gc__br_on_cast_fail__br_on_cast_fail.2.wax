@@ -1,0 +1,18 @@
+type t = { };
+type t_2 = fn(&any) -> &any;
+type t_3 = fn(&?any) -> &?any;
+fn f(x: &any) -> &any 'l: {
+    do &t {
+        br_on_cast_fail 'l &t x;
+    }
+}
+fn f_2(x: &?any) -> &?any 'l: {
+    do &t {
+        br_on_cast_fail 'l &t x;
+    }
+}
+fn f_3(x: &?any) -> &?any 'l: {
+    do &?t {
+        br_on_cast_fail 'l &?t x;
+    }
+}

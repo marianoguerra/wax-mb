@@ -1,0 +1,19 @@
+# Reference checkouts, cloned for porting and differential testing
+wax/
+parser/
+
+# MoonBit build output
+_build/
+target/
+.mooncakes/
+*.mbt.map.json
+
+# Pinned reference binary (13 MB; restore with tools/fetch-reference.sh,
+# which verifies it against the sha256 in tools/reference.json)
+tools/wax-linux-x86_64
+tools/SHA256SUMS
+
+# Harness output. test/corpus/ and test/golden/ are deliberately COMMITTED:
+# they make the differential suite hermetic (no wax checkout, no npm reference
+# needed to run it) and turn reference drift into a reviewable diff.
+test/report/

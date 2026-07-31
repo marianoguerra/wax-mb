@@ -1,0 +1,11 @@
+#![module = "Check"]
+type t = fn() -> i32;
+import "mem"
+#[import = "shared"]
+memory m: i32 [1, 1] shared;
+#[export]
+fn check() -> i32 {
+    let x = m.load32(24);
+    let x_2 = m.load32(32);
+    return ((x == 1) | (x == 0)) & ((x_2 == 42) | (x_2 == 0));
+}

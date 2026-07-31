@@ -1,0 +1,228 @@
+type t = fn(i32, v128) -> i64;
+type t_2 = fn(v128) -> i64;
+#[export = "v128.store16_lane_0"]
+fn f(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 0);
+    let ret = m.load64(address);
+    m.storev128(address, zero);
+    ret;
+}
+#[export = "v128.store16_lane_1"]
+fn f_2(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 1);
+    let ret = m.load64(address);
+    m.storev128(address, zero);
+    ret;
+}
+#[export = "v128.store16_lane_2"]
+fn f_3(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 2);
+    let ret = m.load64(address);
+    m.storev128(address, zero);
+    ret;
+}
+#[export = "v128.store16_lane_3"]
+fn f_4(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 3);
+    let ret = m.load64(address);
+    m.storev128(address, zero);
+    ret;
+}
+#[export = "v128.store16_lane_4"]
+fn f_5(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 4);
+    let ret = m.load64(address);
+    m.storev128(address, zero);
+    ret;
+}
+#[export = "v128.store16_lane_5"]
+fn f_6(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 5);
+    let ret = m.load64(address);
+    m.storev128(address, zero);
+    ret;
+}
+#[export = "v128.store16_lane_6"]
+fn f_7(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 6);
+    let ret = m.load64(address);
+    m.storev128(address, zero);
+    ret;
+}
+#[export = "v128.store16_lane_7"]
+fn f_8(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 7);
+    let ret = m.load64(address);
+    m.storev128(address, zero);
+    ret;
+}
+#[export = "v128.store16_lane_0_offset_0"]
+fn f_9(x: v128) -> i64 {
+    m.store16_lane(0, x, lane: 0);
+    let ret = m.load64(0);
+    m.storev128(0, zero);
+    ret;
+}
+#[export = "v128.store16_lane_1_offset_1"]
+fn f_10(x: v128) -> i64 {
+    m.store16_lane(0, x, lane: 1, offset: 1);
+    let ret = m.load64(0, offset: 1);
+    m.storev128(0, zero, offset: 1);
+    ret;
+}
+#[export = "v128.store16_lane_2_offset_2"]
+fn f_11(x: v128) -> i64 {
+    m.store16_lane(0, x, lane: 2, offset: 2);
+    let ret = m.load64(0, offset: 2);
+    m.storev128(0, zero, offset: 2);
+    ret;
+}
+#[export = "v128.store16_lane_3_offset_3"]
+fn f_12(x: v128) -> i64 {
+    m.store16_lane(0, x, lane: 3, offset: 3);
+    let ret = m.load64(0, offset: 3);
+    m.storev128(0, zero, offset: 3);
+    ret;
+}
+#[export = "v128.store16_lane_4_offset_4"]
+fn f_13(x: v128) -> i64 {
+    m.store16_lane(0, x, lane: 4, offset: 4);
+    let ret = m.load64(0, offset: 4);
+    m.storev128(0, zero, offset: 4);
+    ret;
+}
+#[export = "v128.store16_lane_5_offset_5"]
+fn f_14(x: v128) -> i64 {
+    m.store16_lane(0, x, lane: 5, offset: 5);
+    let ret = m.load64(0, offset: 5);
+    m.storev128(0, zero, offset: 5);
+    ret;
+}
+#[export = "v128.store16_lane_6_offset_6"]
+fn f_15(x: v128) -> i64 {
+    m.store16_lane(0, x, lane: 6, offset: 6);
+    let ret = m.load64(0, offset: 6);
+    m.storev128(0, zero, offset: 6);
+    ret;
+}
+#[export = "v128.store16_lane_7_offset_7"]
+fn f_16(x: v128) -> i64 {
+    m.store16_lane(0, x, lane: 7, offset: 7);
+    let ret = m.load64(0, offset: 7);
+    m.storev128(0, zero, offset: 7);
+    ret;
+}
+#[export = "v128.store16_lane_0_align_1"]
+fn f_17(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 0, align: 1);
+    let ret = m.load64(address);
+    m.storev128(0, zero);
+    ret;
+}
+#[export = "v128.store16_lane_0_align_2"]
+fn f_18(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 0);
+    let ret = m.load64(address);
+    m.storev128(0, zero);
+    ret;
+}
+#[export = "v128.store16_lane_1_align_1"]
+fn f_19(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 1, align: 1);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 1);
+    ret;
+}
+#[export = "v128.store16_lane_1_align_2"]
+fn f_20(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 1);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 1);
+    ret;
+}
+#[export = "v128.store16_lane_2_align_1"]
+fn f_21(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 2, align: 1);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 2);
+    ret;
+}
+#[export = "v128.store16_lane_2_align_2"]
+fn f_22(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 2);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 2);
+    ret;
+}
+#[export = "v128.store16_lane_3_align_1"]
+fn f_23(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 3, align: 1);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 3);
+    ret;
+}
+#[export = "v128.store16_lane_3_align_2"]
+fn f_24(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 3);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 3);
+    ret;
+}
+#[export = "v128.store16_lane_4_align_1"]
+fn f_25(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 4, align: 1);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 4);
+    ret;
+}
+#[export = "v128.store16_lane_4_align_2"]
+fn f_26(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 4);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 4);
+    ret;
+}
+#[export = "v128.store16_lane_5_align_1"]
+fn f_27(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 5, align: 1);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 5);
+    ret;
+}
+#[export = "v128.store16_lane_5_align_2"]
+fn f_28(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 5);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 5);
+    ret;
+}
+#[export = "v128.store16_lane_6_align_1"]
+fn f_29(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 6, align: 1);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 6);
+    ret;
+}
+#[export = "v128.store16_lane_6_align_2"]
+fn f_30(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 6);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 6);
+    ret;
+}
+#[export = "v128.store16_lane_7_align_1"]
+fn f_31(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 7, align: 1);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 7);
+    ret;
+}
+#[export = "v128.store16_lane_7_align_2"]
+fn f_32(address: i32, x: v128) -> i64 {
+    m.store16_lane(address, x, lane: 7);
+    let ret = m.load64(address);
+    m.storev128(0, zero, offset: 7);
+    ret;
+}
+memory m: i32 [1];
+let zero = v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);

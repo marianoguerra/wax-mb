@@ -1,0 +1,608 @@
+type sig = fn(i32, i32, i32) -> i32;
+type t = fn();
+type t_2 = fn() -> i32;
+type t_3 = fn() -> i64;
+type t_4 = fn() -> f32;
+type t_5 = fn() -> f64;
+type t_6 = fn() -> (f64, f64);
+type t_7 = fn() -> (i32, i64);
+type t_8 = fn(i32, i32) -> i32;
+fn dummy() {}
+#[export = "type-i32"]
+fn f() {
+    'l: do {
+        br 'l;
+        _ = (_ as i32).ctz();
+    }
+}
+#[export = "type-i64"]
+fn f_2() {
+    'l: do {
+        br 'l;
+        _ = (_ as i64).ctz();
+    }
+}
+#[export = "type-f32"]
+fn f_3() {
+    'l: do {
+        br 'l;
+        _ = -(_ as f32);
+    }
+}
+#[export = "type-f64"]
+fn f_4() {
+    'l: do {
+        br 'l;
+        _ = -(_ as f64);
+    }
+}
+#[export = "type-i32-i32"]
+fn f_5() {
+    'l: do {
+        br 'l;
+        _ = _ + _;
+    }
+}
+#[export = "type-i64-i64"]
+fn f_6() {
+    'l: do {
+        br 'l;
+        _ = (_ + _) as i64;
+    }
+}
+#[export = "type-f32-f32"]
+fn f_7() {
+    'l: do {
+        br 'l;
+        _ = (_ + _) as f32;
+    }
+}
+#[export = "type-f64-f64"]
+fn f_8() {
+    'l: do {
+        br 'l;
+        _ = (_ + _) as f64;
+    }
+}
+#[export = "type-i32-value"]
+fn f_9() -> i32 {
+    'l: do {
+        br 'l 1;
+        (_ as i32).ctz();
+    }
+}
+#[export = "type-i64-value"]
+fn f_10() -> i64 {
+    'l: do {
+        br 'l 2;
+        (_ as i64).ctz();
+    }
+}
+#[export = "type-f32-value"]
+fn f_11() -> f32 {
+    'l: do {
+        br 'l 0x1.8p+1;
+        -(_ as f32);
+    }
+}
+#[export = "type-f64-value"]
+fn f_12() -> f64 {
+    'l: do {
+        br 'l 0x1p+2;
+        -(_ as f64);
+    }
+}
+#[export = "type-f64-f64-value"]
+fn f_13() -> (f64, f64) {
+    'l: do () -> (f64, f64) {
+        br 'l (0x1p+2, 0x1.4p+2);
+        _ + _;
+        0x1.8p+2;
+    }
+}
+#[export = "as-block-first"]
+fn f_14() {
+    'l: do {
+        br 'l;
+        dummy();
+    }
+}
+#[export = "as-block-mid"]
+fn f_15() {
+    'l: do {
+        dummy();
+        br 'l;
+        dummy();
+    }
+}
+#[export = "as-block-last"]
+fn f_16() {
+    'l: do {
+        nop;
+        dummy();
+        br 'l;
+    }
+}
+#[export = "as-block-value"]
+fn f_17() -> i32 {
+    'l: do {
+        nop;
+        dummy();
+        br 'l 2;
+    }
+}
+#[export = "as-loop-first"]
+fn f_18() -> i32 {
+    'l: do {
+        loop {
+            br 'l 3;
+            2;
+        }
+    }
+}
+#[export = "as-loop-mid"]
+fn f_19() -> i32 {
+    'l: do {
+        loop {
+            dummy();
+            br 'l 4;
+            2;
+        }
+    }
+}
+#[export = "as-loop-last"]
+fn f_20() -> i32 {
+    'l: do {
+        loop i32 {
+            nop;
+            dummy();
+            br 'l 5;
+        }
+    }
+}
+#[export = "as-br-value"]
+fn f_21() -> i32 {
+    'l: do {
+        br 'l 9;
+        br 'l _;
+    }
+}
+#[export = "as-br_if-cond"]
+fn f_22() {
+    'l: do {
+        br 'l;
+        br_if 'l _;
+    }
+}
+#[export = "as-br_if-value"]
+fn f_23() -> i32 {
+    'l: do {
+        br 'l 8;
+        _ = br_if 'l (_, 1);
+        7;
+    }
+}
+#[export = "as-br_if-value-cond"]
+fn f_24() -> i32 {
+    'l: do {
+        6;
+        br 'l 9;
+        _ = br_if 'l (_, _);
+        7;
+    }
+}
+#[export = "as-br_table-index"]
+fn f_25() {
+    'l: do {
+        br 'l;
+        br_table [ 'l, 'l, else 'l ] _;
+    }
+}
+#[export = "as-br_table-value"]
+fn f_26() -> i32 {
+    'l: do {
+        br 'l 10;
+        br_table [ 'l, 'l, else 'l ] (_, 1);
+        7;
+    }
+}
+#[export = "as-br_table-value-index"]
+fn f_27() -> i32 {
+    'l: do {
+        6;
+        br 'l 11;
+        br_table [ 'l, else 'l ] (_, _);
+        7;
+    }
+}
+#[export = "as-return-value"]
+fn f_28() -> i64 {
+    'l: do {
+        br 'l 7;
+        return _;
+    }
+}
+#[export = "as-return-values"]
+fn f_29() -> (i32, i64) {
+    2;
+    'l: do i64 {
+        1;
+        br 'l 7;
+        return (_, _);
+    }
+}
+#[export = "as-if-cond"]
+fn f_30() -> i32 {
+    'l: do {
+        br 'l 2;
+        if _ => i32 {
+            0;
+        } else {
+            1;
+        }
+    }
+}
+#[export = "as-if-then"]
+fn f_31(x: i32, x_2: i32) -> i32 {
+    'l: do {
+        if x {
+            br 'l 3;
+        } else {
+            x_2;
+        }
+    }
+}
+#[export = "as-if-else"]
+fn f_32(x: i32, x_2: i32) -> i32 {
+    'l: do {
+        if x {
+            x_2;
+        } else {
+            br 'l 4;
+        }
+    }
+}
+#[export = "as-select-first"]
+fn f_33(x: i32, x_2: i32) -> i32 {
+    'l: do {
+        br 'l 5;
+        x_2?_:x;
+    }
+}
+#[export = "as-select-second"]
+fn f_34(x: i32, x_2: i32) -> i32 {
+    'l: do {
+        x;
+        br 'l 6;
+        x_2?_:_;
+    }
+}
+#[export = "as-select-cond"]
+fn f_35() -> i32 {
+    'l: do {
+        0;
+        1;
+        br 'l 7;
+        _?_:_;
+    }
+}
+#[export = "as-select-all"]
+fn f_36() -> i32 {
+    'l: do {
+        br 'l 8;
+        _?_:_;
+    }
+}
+fn f_37(i32, i32, i32) -> i32 {
+    -1;
+}
+#[export = "as-call-first"]
+fn f_38() -> i32 {
+    'l: do {
+        br 'l 12;
+        f_37(_, 2, 3);
+    }
+}
+#[export = "as-call-mid"]
+fn f_39() -> i32 {
+    'l: do {
+        1;
+        br 'l 13;
+        f_37(_, _, 3);
+    }
+}
+#[export = "as-call-last"]
+fn f_40() -> i32 {
+    'l: do {
+        1;
+        2;
+        br 'l 14;
+        f_37(_, _, _);
+    }
+}
+#[export = "as-call-all"]
+fn f_41() -> i32 {
+    'l: do {
+        br 'l 15;
+        f_37(_, _, _);
+    }
+}
+#[export = "as-call_indirect-func"]
+fn f_42() -> i32 {
+    'l: do {
+        br 'l 20;
+        (t[3] as &?sig)(_, 1, 2);
+    }
+}
+#[export = "as-call_indirect-first"]
+fn f_43() -> i32 {
+    'l: do {
+        0;
+        br 'l 21;
+        (t[3] as &?sig)(_, _, 2);
+    }
+}
+#[export = "as-call_indirect-mid"]
+fn f_44() -> i32 {
+    'l: do {
+        0;
+        1;
+        br 'l 22;
+        (t[3] as &?sig)(_, _, _);
+    }
+}
+#[export = "as-call_indirect-last"]
+fn f_45() -> i32 {
+    'l: do {
+        0;
+        1;
+        2;
+        br 'l 23;
+        (t[_] as &?sig)(_, _, _);
+    }
+}
+#[export = "as-call_indirect-all"]
+fn f_46() -> i32 {
+    'l: do {
+        br 'l 24;
+        (t[_] as &?sig)(_, _, _);
+    }
+}
+#[export = "as-local.set-value"]
+fn f_47() -> i32 {
+    'l: do {
+        br 'l 17;
+        let x: f32 = _;
+        -1;
+    }
+}
+#[export = "as-local.tee-value"]
+fn f_48() -> i32 {
+    'l: do {
+        br 'l 1;
+        let x: i32;
+        x := _;
+    }
+}
+#[export = "as-global.set-value"]
+fn f_49() -> i32 {
+    'l: do {
+        br 'l 1;
+        a = _;
+    }
+}
+#[export = "as-load-address"]
+fn f_50() -> f32 {
+    'l: do {
+        br 'l 0x1.b33334p+0;
+        m.loadf32(_);
+    }
+}
+#[export = "as-loadN-address"]
+fn f_51() -> i64 {
+    'l: do {
+        br 'l 30;
+        m.load8(_) as i64_s;
+    }
+}
+#[export = "as-store-address"]
+fn f_52() -> i32 {
+    'l: do {
+        br 'l 30;
+        m.storef64(_, 0x1.cp+2);
+        -1;
+    }
+}
+#[export = "as-store-value"]
+fn f_53() -> i32 {
+    'l: do {
+        2;
+        br 'l 31;
+        m.store64(_, _);
+        -1;
+    }
+}
+#[export = "as-store-both"]
+fn f_54() -> i32 {
+    'l: do {
+        br 'l 32;
+        m.store64(_, _);
+        -1;
+    }
+}
+#[export = "as-storeN-address"]
+fn f_55() -> i32 {
+    'l: do {
+        br 'l 32;
+        m.store8(_, 7);
+        -1;
+    }
+}
+#[export = "as-storeN-value"]
+fn f_56() -> i32 {
+    'l: do {
+        2;
+        br 'l 33;
+        m.store16(_, _ as i64);
+        -1;
+    }
+}
+#[export = "as-storeN-both"]
+fn f_57() -> i32 {
+    'l: do {
+        br 'l 34;
+        m.store16(_, _ as i64);
+        -1;
+    }
+}
+#[export = "as-unary-operand"]
+fn f_58() -> f32 {
+    'l: do {
+        br 'l 0x1.b33334p+1;
+        -(_ as f32);
+    }
+}
+#[export = "as-binary-left"]
+fn f_59() -> i32 {
+    'l: do {
+        br 'l 3;
+        _ + 10;
+    }
+}
+#[export = "as-binary-right"]
+fn f_60() -> i64 {
+    'l: do {
+        10 as i64;
+        br 'l 45;
+        _ - _;
+    }
+}
+#[export = "as-binary-both"]
+fn f_61() -> i32 {
+    'l: do {
+        br 'l 46;
+        _ + _;
+    }
+}
+#[export = "as-test-operand"]
+fn f_62() -> i32 {
+    'l: do {
+        br 'l 44;
+        !(_ as i32);
+    }
+}
+#[export = "as-compare-left"]
+fn f_63() -> i32 {
+    'l: do {
+        br 'l 43;
+        _ <= 0x1.4p+3;
+    }
+}
+#[export = "as-compare-right"]
+fn f_64() -> i32 {
+    'l: do {
+        0x1.4p+3 as f32;
+        br 'l 42;
+        _ as f32 != _;
+    }
+}
+#[export = "as-compare-both"]
+fn f_65() -> i32 {
+    'l: do {
+        br 'l 44;
+        _ as f64 <= _;
+    }
+}
+#[export = "as-convert-operand"]
+fn f_66() -> i32 {
+    'l: do {
+        br 'l 41;
+        _ as i64 as i32;
+    }
+}
+#[export = "as-memory.grow-size"]
+fn f_67() -> i32 {
+    'l: do {
+        br 'l 40;
+        m.grow(_);
+    }
+}
+#[export = "nested-block-value"]
+fn f_68() -> i32 {
+    1
+        + 'l: do {
+              dummy();
+              4;
+              br 'l 8;
+              _ + _;
+          };
+}
+#[export = "nested-br-value"]
+fn f_69() -> i32 {
+    1
+        + 'l: do {
+              _ = 2;
+              _ =
+                  'l_2: do i32 {
+                      _ = 4;
+                      br 'l 8;
+                      br 'l_2 _;
+                  };
+              16;
+          };
+}
+#[export = "nested-br_if-value"]
+fn f_70() -> i32 {
+    1
+        + 'l: do {
+              _ = 2;
+              _ =
+                  'l_2: do {
+                      _ = 4;
+                      br 'l 8;
+                      _ = br_if 'l_2 (_, 1);
+                      32;
+                  };
+              16;
+          };
+}
+#[export = "nested-br_if-value-cond"]
+fn f_71() -> i32 {
+    1
+        + 'l: do {
+              _ = 2;
+              4;
+              br 'l 8;
+              _ = br_if 'l (_, _);
+              16;
+          };
+}
+#[export = "nested-br_table-value"]
+fn f_72() -> i32 {
+    1
+        + 'l: do {
+              _ = 2;
+              _ =
+                  'l_2: do i32 {
+                      _ = 4;
+                      br 'l 8;
+                      br_table [ else 'l_2 ] (_, 1);
+                  };
+              16;
+          };
+}
+#[export = "nested-br_table-value-index"]
+fn f_73() -> i32 {
+    1
+        + 'l: do {
+              _ = 2;
+              4;
+              br 'l 8;
+              br_table [ else 'l ] (_, _);
+              16;
+          };
+}
+table t: &?func [1, 1];
+memory m: i32 [1];
+let a = 10;
+elem e: &func @ t [0] = [f_37];

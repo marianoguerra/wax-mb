@@ -1,0 +1,11 @@
+type t = fn() -> i32;
+#[export]
+fn main() -> i32 {
+    'l: do {
+        'l_2: loop i32 {
+            77;
+            br_if 'l_2 0;
+            br 'l _;
+        }
+    }
+}

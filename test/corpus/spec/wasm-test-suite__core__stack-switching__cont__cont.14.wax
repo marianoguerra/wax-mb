@@ -1,0 +1,39 @@
+#![module = "generator"]
+type gen = fn(i64);
+type geny = fn(i32);
+type cont0 = cont gen;
+type cont_2 = cont geny;
+type t = fn(i64) -> i32;
+type t_2 = fn(i64, i64) -> i64;
+type t_3 = fn(i64, &cont0) -> (i64, &cont_2);
+type t_4 = fn(i64, &cont_2);
+fn dummy(i64) {}
+#[export = "start"]
+fn gen(i: i64) 'l: {
+    'l_2: loop {
+        br_if 'l suspend yield(i);
+        hook(i);
+        i += 1;
+        br 'l_2;
+    }
+}
+#[export]
+fn sum(i: i64, j: i64) -> i64 {
+    i;
+    cont0::new(gen);
+    'on_first_yield: do (i64, &cont0) -> (i64, &cont_2) {
+        _.resume(_) on [yield -> 'on_first_yield];
+        unreachable;
+    }
+    let sum: i64;
+    'on_yield: loop (i64, &cont_2) {
+        let k = _;
+        let n = _;
+        sum += n;
+        k.resume(n == j) on [yield -> 'on_yield];
+    }
+    return sum;
+}
+#[export]
+let hook = dummy;
+tag yield: t ;

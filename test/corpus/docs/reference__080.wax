@@ -1,0 +1,2 @@
+{point| x: 10, y: 20}       // all fields given
+{point| ..}                 // every field defaulted

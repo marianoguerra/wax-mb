@@ -1,0 +1,10 @@
+type a = { x: i32, y: i32 };
+type b = { x: i32, y: i32 };
+#[export]
+fn f(c: i32) -> i32 {
+    (if c {
+         {a| x: 1, y: 2 };
+     } else {
+         {a| x: 3, y: 4 };
+     }.x);
+}

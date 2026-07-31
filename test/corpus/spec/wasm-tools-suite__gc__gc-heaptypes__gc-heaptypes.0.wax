@@ -1,0 +1,20 @@
+type t = fn(&?func, &func, &?func);
+type t_2 = fn(&?extern, &extern, &?extern);
+type t_3 = fn(&?any, &any, &?any);
+type t_4 = fn(&?eq, &eq, &?eq);
+type t_5 = fn(&?i31, &i31, &?i31);
+type t_6 = fn(&?struct, &struct, &?struct);
+type t_7 = fn(&?array, &array, &?array);
+type t_8 = fn(&?nofunc, &nofunc, &?nofunc);
+type t_9 = fn(&?noextern, &noextern, &?noextern);
+type t_10 = fn(&?none, &none, &?none);
+fn f(&?func, &func, &?func) {}
+fn f_2(&?extern, &extern, &?extern) {}
+fn f_3(&?any, &any, &?any) {}
+fn f_4(&?eq, &eq, &?eq) {}
+fn f_5(&?i31, &i31, &?i31) {}
+fn f_6(&?struct, &struct, &?struct) {}
+fn f_7(&?array, &array, &?array) {}
+fn f_8(&?nofunc, &nofunc, &?nofunc) {}
+fn f_9(&?noextern, &noextern, &?noextern) {}
+fn f_10(&?none, &none, &?none) {}

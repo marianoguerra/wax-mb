@@ -1,0 +1,1 @@
+memory m: i32 [1]; const g = 0; data d @ m [g] = "a";

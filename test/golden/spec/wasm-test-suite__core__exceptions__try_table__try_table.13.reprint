@@ -1,0 +1,59 @@
+type t = fn();
+type t_2 = fn(&t);
+type t_3 = fn() -> &?t;
+type t_4 = fn() -> (&?t, &exn);
+type t_5 = fn() -> (&?t, &?exn);
+fn dummy() {}
+fn throw_2() {
+    throw e(dummy);
+}
+#[export = "catch"]
+fn f() -> &?t {
+    'l: do {
+        try {
+            throw_2();
+        } catch [ e -> 'l]
+        unreachable;
+    }
+}
+#[export]
+fn catch_ref1() -> &?t {
+    'l: do () -> (&?t, &exn) {
+        try {
+            throw_2();
+        } catch [ e & -> 'l]
+        unreachable;
+    }
+    _ = _;
+}
+#[export]
+fn catch_ref2() -> &?t {
+    'l: do () -> (&?t, &?exn) {
+        try {
+            throw_2();
+        } catch [ e & -> 'l]
+        unreachable;
+    }
+    _ = _;
+}
+#[export]
+fn catch_all_ref1() {
+    _ =
+        'l: do {
+            try {
+                throw_2();
+            } catch [ _ & -> 'l]
+            unreachable;
+        };
+}
+#[export]
+fn catch_all_ref2() {
+    _ =
+        'l: do {
+            try {
+                throw_2();
+            } catch [ _ & -> 'l]
+            unreachable;
+        };
+}
+tag e: t_2 ;

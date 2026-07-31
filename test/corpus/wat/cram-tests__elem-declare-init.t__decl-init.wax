@@ -1,0 +1,7 @@
+table t: &?func [10];
+elem e: &func = [];
+fn f() {}
+#[export]
+fn init() {
+    t.init(e, 0, 0, 1);
+}

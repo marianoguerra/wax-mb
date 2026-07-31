@@ -1,0 +1,7 @@
+#![feature = "compact-import-section"]
+type t = fn() -> i32;
+type t_2 = fn() -> i64;
+import "test" {
+    fn fi32() -> i32;
+    fn fi64() -> i64;
+}

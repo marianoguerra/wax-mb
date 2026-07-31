@@ -1,0 +1,8 @@
+type t = fn() -> (i32, i32);
+fn f() -> (i32, i32) {
+    let c: &?i31;
+    let a = 42 as &i31;
+    let b = 0 as &i31;
+    a as i32_u;
+    b as i32_s;
+}

@@ -1,0 +1,28 @@
+type t = fn();
+type t_2 = fn(&?t);
+type t_3 = fn(&?func);
+type t_4 = fn(&?extern);
+fn f(r: &?t) {
+    match r {
+        null => {
+            unreachable;
+        }
+        _ => {}
+    }
+}
+fn f_2(r: &?func) {
+    match r {
+        null => {
+            unreachable;
+        }
+        _ => {}
+    }
+}
+fn f_3(r: &?extern) {
+    match r {
+        null => {
+            unreachable;
+        }
+        _ => {}
+    }
+}

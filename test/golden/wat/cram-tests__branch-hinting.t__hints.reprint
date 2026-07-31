@@ -1,0 +1,21 @@
+type t = { };
+fn f(x: i32) -> i32 {
+    #[likely]
+    if x {
+        1;
+    } else {
+        2;
+    }
+}
+fn f_2(x: i32) {
+    'l: do {
+        #[unlikely]
+        br_if 'l x;
+    }
+}
+// A hint on a br_on_* branch (all conditional branches are supported).
+fn f_3(x: &?any) -> &t 'l: {
+    #[likely]
+    br_on_cast 'l &t x;
+    unreachable;
+}

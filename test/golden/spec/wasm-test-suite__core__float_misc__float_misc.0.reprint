@@ -1,0 +1,116 @@
+type t = fn(f32, f32) -> f32;
+type t_2 = fn(f32) -> f32;
+type t_3 = fn(f64, f64) -> f64;
+type t_4 = fn(f64) -> f64;
+#[export = "f32.add"]
+fn f(x: f32, y: f32) -> f32 {
+    x + y;
+}
+#[export = "f32.sub"]
+fn f_2(x: f32, y: f32) -> f32 {
+    x - y;
+}
+#[export = "f32.mul"]
+fn f_3(x: f32, y: f32) -> f32 {
+    x * y;
+}
+#[export = "f32.div"]
+fn f_4(x: f32, y: f32) -> f32 {
+    x / y;
+}
+#[export = "f32.sqrt"]
+fn f_5(x: f32) -> f32 {
+    x.sqrt();
+}
+#[export = "f32.abs"]
+fn f_6(x: f32) -> f32 {
+    x.abs();
+}
+#[export = "f32.neg"]
+fn f_7(x: f32) -> f32 {
+    -x;
+}
+#[export = "f32.copysign"]
+fn f_8(x: f32, y: f32) -> f32 {
+    x.copysign(y);
+}
+#[export = "f32.ceil"]
+fn f_9(x: f32) -> f32 {
+    x.ceil();
+}
+#[export = "f32.floor"]
+fn f_10(x: f32) -> f32 {
+    x.floor();
+}
+#[export = "f32.trunc"]
+fn f_11(x: f32) -> f32 {
+    x.trunc();
+}
+#[export = "f32.nearest"]
+fn f_12(x: f32) -> f32 {
+    x.nearest();
+}
+#[export = "f32.min"]
+fn f_13(x: f32, y: f32) -> f32 {
+    x.min(y);
+}
+#[export = "f32.max"]
+fn f_14(x: f32, y: f32) -> f32 {
+    x.max(y);
+}
+#[export = "f64.add"]
+fn f_15(x: f64, y: f64) -> f64 {
+    x + y;
+}
+#[export = "f64.sub"]
+fn f_16(x: f64, y: f64) -> f64 {
+    x - y;
+}
+#[export = "f64.mul"]
+fn f_17(x: f64, y: f64) -> f64 {
+    x * y;
+}
+#[export = "f64.div"]
+fn f_18(x: f64, y: f64) -> f64 {
+    x / y;
+}
+#[export = "f64.sqrt"]
+fn f_19(x: f64) -> f64 {
+    x.sqrt();
+}
+#[export = "f64.abs"]
+fn f_20(x: f64) -> f64 {
+    x.abs();
+}
+#[export = "f64.neg"]
+fn f_21(x: f64) -> f64 {
+    -x;
+}
+#[export = "f64.copysign"]
+fn f_22(x: f64, y: f64) -> f64 {
+    x.copysign(y);
+}
+#[export = "f64.ceil"]
+fn f_23(x: f64) -> f64 {
+    x.ceil();
+}
+#[export = "f64.floor"]
+fn f_24(x: f64) -> f64 {
+    x.floor();
+}
+#[export = "f64.trunc"]
+fn f_25(x: f64) -> f64 {
+    x.trunc();
+}
+#[export = "f64.nearest"]
+fn f_26(x: f64) -> f64 {
+    x.nearest();
+}
+#[export = "f64.min"]
+fn f_27(x: f64, y: f64) -> f64 {
+    x.min(y);
+}
+#[export = "f64.max"]
+fn f_28(x: f64, y: f64) -> f64 {
+    x.max(y);
+}

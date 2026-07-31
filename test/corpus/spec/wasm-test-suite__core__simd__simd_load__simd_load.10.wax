@@ -1,0 +1,7 @@
+type t = fn() -> v128;
+#[export = "as-i32x4.trunc_sat_f32x4_s-operand"]
+fn f() -> v128 {
+    m.loadv128(0).trunc_sat_f32x4_s_i32x4();
+}
+memory m: i32 [1];
+data d @ m [0] = "\x00\x00\x00\x43\x00\x00\x80\x3f\x66\x66\xe6\x3f\x00\x00\x80\xbf";

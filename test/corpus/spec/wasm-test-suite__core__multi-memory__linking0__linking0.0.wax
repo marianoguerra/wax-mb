@@ -1,0 +1,20 @@
+#![module = "Mt"]
+type t = fn() -> i32;
+type t_2 = fn();
+type t_3 = fn(i32) -> i32;
+fn g() -> i32 {
+    4;
+}
+#[export]
+fn h() -> i32 {
+    -4;
+}
+#[export]
+fn call(x: i32) -> i32 {
+    (tab[x] as &?t)();
+}
+#[export]
+table tab: &?func [10];
+elem e: &func @ tab [2] = [
+        g, g, g, g
+    ];

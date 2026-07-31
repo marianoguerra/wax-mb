@@ -1,0 +1,5 @@
+do {
+    let x: i32;
+    x = compute();
+    use(x);
+}

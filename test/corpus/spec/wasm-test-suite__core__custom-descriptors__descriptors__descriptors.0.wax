@@ -1,0 +1,30 @@
+#![feature = "custom-descriptors"]
+rec {
+    type t = descriptor t_2 { };
+    type t_2 = describes t { };
+}
+rec {
+    type a = descriptor b { };
+    type b = describes a { };
+}
+rec {
+    type c = open descriptor d { };
+    type d = open describes c { };
+}
+rec {
+    type e = descriptor f { };
+    type f = describes e { };
+}
+rec {
+    type g: c = open descriptor h { };
+    type h: d = open describes g { };
+}
+rec {
+    type i: g = descriptor j { f: i32 };
+    type j: h = describes i { f: f32 };
+}
+rec {
+    type k = descriptor l { };
+    type l = describes k descriptor m { };
+    type m = describes l { };
+}

@@ -1,0 +1,3 @@
+import "test-table64-10-inf"
+#[import = "table64-10-inf"]
+table t: i64 &?func [10];

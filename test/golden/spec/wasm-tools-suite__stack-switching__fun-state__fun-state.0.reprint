@@ -1,0 +1,44 @@
+#![module = "state"]
+type gf = fn(i32) -> i32;
+type sf = fn() -> i32;
+type gk = cont gf;
+type sk = cont sf;
+type t = fn(i32);
+type t_2 = fn(&gk, i32) -> i32;
+type t_3 = fn() -> (i32, &sk);
+type t_4 = fn(i32, &sk) -> i32;
+fn getting(k: &gk, s: i32) -> i32 {
+    become getting(
+        'on_get: do {
+            'on_set: do () -> (i32, &sk) {
+                return k.resume(s) on [get -> 'on_get, set -> 'on_set];
+            }
+            become setting(_, _);
+        },
+        s,
+    );
+}
+fn setting(s: i32, k: &sk) -> i32 {
+    become getting(
+        'on_get: do {
+            'on_set: do () -> (i32, &sk) {
+                return k.resume() on [get -> 'on_get, set -> 'on_set];
+            }
+            become setting(_, _);
+        },
+        s,
+    );
+}
+fn f() -> i32 {
+    suspend set(7);
+    suspend get();
+    2;
+    suspend set(3);
+    _ + _ * (3 + suspend get());
+}
+#[export]
+fn run() -> i32 {
+    setting(0, sk::new(f));
+}
+tag get: sf ;
+tag set: t ;

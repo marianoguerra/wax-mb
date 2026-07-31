@@ -1,0 +1,14 @@
+#![module = "actor"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn() -> i32;
+type t_2 = fn(&cont_2) -> i32;
+type t_3 = fn(i32, i32);
+#[export]
+tag self: t ;
+#[export]
+tag spawn: t_2 ;
+#[export]
+tag send: t_3 ;
+#[export]
+tag recv: t ;

@@ -1,0 +1,3 @@
+import "m"
+#[import = "small-pages-memory"]
+memory m: i32 [0] pagesize 65536;

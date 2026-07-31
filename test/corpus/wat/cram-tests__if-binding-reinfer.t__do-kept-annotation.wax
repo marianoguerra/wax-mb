@@ -1,0 +1,7 @@
+type t = [i8];
+fn f() {
+    let x: &eq =
+        do &t {
+            [1];
+        };
+}

@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-tools-suite__shared-everything-threads__tables__tables.5.wax","startLine":1,"startColumn":24,"endLine":1,"endColumn":33,"startOffset":24,"endOffset":33,"message":"The imported table 'table_ref' is never used.","warning":"unused-import","hint":null,"related":[]}

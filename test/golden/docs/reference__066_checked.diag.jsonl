@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/reference__066_checked.wax","startLine":1,"startColumn":5,"endLine":1,"endColumn":13,"startOffset":5,"endOffset":13,"message":"The type 'callback' is never used.","warning":"unused-field","hint":null,"related":[]}

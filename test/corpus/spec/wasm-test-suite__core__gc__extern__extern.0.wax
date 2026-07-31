@@ -1,0 +1,36 @@
+type ft = fn();
+type st = { };
+type at = [i8];
+type t = fn(&?extern);
+type t_2 = fn(&?extern) -> &?any;
+type t_3 = fn(&?any) -> &?extern;
+type t_4 = fn(i32) -> &?extern;
+type t_5 = fn(i32) -> &?any;
+fn f() {}
+#[export]
+fn init(x: &?extern) {
+    t[0] = null;
+    t[1] = 7 as &i31;
+    t[2] = {st| .. };
+    t[3] = [at|..; 0];
+    t[4] = x as &?any;
+}
+#[export]
+fn internalize(x: &?extern) -> &?any {
+    x as &?any;
+}
+#[export]
+fn externalize(x: &?any) -> &?extern {
+    x as &?extern;
+}
+#[export = "externalize-i"]
+fn f_2(x: i32) -> &?extern {
+    t[x] as &?extern;
+}
+#[export = "externalize-ii"]
+fn f_3(x: i32) -> &?any {
+    t[x] as &?extern as &?any;
+}
+table t: &?any [10];
+const g = null as &?any as &?extern;
+const g_2 = null as &?extern as &?any;

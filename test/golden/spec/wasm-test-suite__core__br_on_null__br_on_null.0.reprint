@@ -1,0 +1,39 @@
+type t = fn() -> i32;
+type t_2 = fn(&t) -> i32;
+type t_3 = fn(&?t) -> i32;
+fn nn(r: &t) -> i32 {
+    'l: do {
+        return (br_on_null 'l r)();
+    }
+    -1;
+}
+fn n(r: &?t) -> i32 {
+    'l: do {
+        return (br_on_null 'l r)();
+    }
+    -1;
+}
+fn f() -> i32 {
+    7;
+}
+#[export = "nullable-null"]
+fn f_2() -> i32 {
+    n(null);
+}
+#[export = "nonnullable-f"]
+fn f_3() -> i32 {
+    nn(f);
+}
+#[export = "nullable-f"]
+fn f_4() -> i32 {
+    n(f);
+}
+#[export = "unreachable"]
+fn f_5() -> i32 {
+    'l: do {
+        unreachable;
+        return ((br_on_null 'l _) as &?t)();
+    }
+    -1;
+}
+elem e: &func = [f];

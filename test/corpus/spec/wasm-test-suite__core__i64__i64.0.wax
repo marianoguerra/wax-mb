@@ -1,0 +1,132 @@
+type t = fn(i64, i64) -> i64;
+type t_2 = fn(i64) -> i64;
+type t_3 = fn(i64) -> i32;
+type t_4 = fn(i64, i64) -> i32;
+#[export]
+fn add(x: i64, y: i64) -> i64 {
+    x + y;
+}
+#[export]
+fn sub(x: i64, y: i64) -> i64 {
+    x - y;
+}
+#[export]
+fn mul(x: i64, y: i64) -> i64 {
+    x * y;
+}
+#[export]
+fn div_s(x: i64, y: i64) -> i64 {
+    x /s y;
+}
+#[export]
+fn div_u(x: i64, y: i64) -> i64 {
+    x /u y;
+}
+#[export]
+fn rem_s(x: i64, y: i64) -> i64 {
+    x %s y;
+}
+#[export]
+fn rem_u(x: i64, y: i64) -> i64 {
+    x %u y;
+}
+#[export]
+fn and(x: i64, y: i64) -> i64 {
+    x & y;
+}
+#[export]
+fn or(x: i64, y: i64) -> i64 {
+    x | y;
+}
+#[export]
+fn xor(x: i64, y: i64) -> i64 {
+    x ^ y;
+}
+#[export]
+fn shl(x: i64, y: i64) -> i64 {
+    x << y;
+}
+#[export]
+fn shr_s(x: i64, y: i64) -> i64 {
+    x >>s y;
+}
+#[export]
+fn shr_u(x: i64, y: i64) -> i64 {
+    x >>u y;
+}
+#[export]
+fn rotl(x: i64, y: i64) -> i64 {
+    x.rotl(y);
+}
+#[export]
+fn rotr(x: i64, y: i64) -> i64 {
+    x.rotr(y);
+}
+#[export]
+fn clz(x: i64) -> i64 {
+    x.clz();
+}
+#[export]
+fn ctz(x: i64) -> i64 {
+    x.ctz();
+}
+#[export]
+fn popcnt(x: i64) -> i64 {
+    x.popcnt();
+}
+#[export]
+fn extend8_s(x: i64) -> i64 {
+    x.extend8_s();
+}
+#[export]
+fn extend16_s(x: i64) -> i64 {
+    x.extend16_s();
+}
+#[export]
+fn extend32_s(x: i64) -> i64 {
+    x as i32 as i64_s;
+}
+#[export]
+fn eqz(x: i64) -> i32 {
+    !x;
+}
+#[export]
+fn eq(x: i64, y: i64) -> i32 {
+    x == y;
+}
+#[export]
+fn ne(x: i64, y: i64) -> i32 {
+    x != y;
+}
+#[export]
+fn lt_s(x: i64, y: i64) -> i32 {
+    x <s y;
+}
+#[export]
+fn lt_u(x: i64, y: i64) -> i32 {
+    x <u y;
+}
+#[export]
+fn le_s(x: i64, y: i64) -> i32 {
+    x <=s y;
+}
+#[export]
+fn le_u(x: i64, y: i64) -> i32 {
+    x <=u y;
+}
+#[export]
+fn gt_s(x: i64, y: i64) -> i32 {
+    x >s y;
+}
+#[export]
+fn gt_u(x: i64, y: i64) -> i32 {
+    x >u y;
+}
+#[export]
+fn ge_s(x: i64, y: i64) -> i32 {
+    x >=s y;
+}
+#[export]
+fn ge_u(x: i64, y: i64) -> i32 {
+    x >=u y;
+}

@@ -1,0 +1,9 @@
+import "m" {
+    fn used() -> i32;
+    fn dead() -> i32;
+    const _ignored: i32;
+}
+#[export]
+fn main() -> i32 {
+    used();
+}

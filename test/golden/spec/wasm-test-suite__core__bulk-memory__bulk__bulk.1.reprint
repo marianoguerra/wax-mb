@@ -1,0 +1,1 @@
+type t = fn(); fn f() {} fn f_2() {} table t: &?func [3]; elem e: &?func = [f, null as &?func, f_2];

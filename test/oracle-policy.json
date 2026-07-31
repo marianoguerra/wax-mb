@@ -1,0 +1,64 @@
+{
+  "_comment": [
+    "What each corpus bucket is expected to do, per oracle. This is data, not",
+    "code, because the expectations FLIP as the port grows: today there is no",
+    "type checker, so a type-bad file must draw no complaint from us; once the",
+    "checker lands (phase 6+) that same bucket becomes a positive test that must",
+    "reproduce the reference's diagnostics exactly. Switching `scope` is then the",
+    "whole change -- the corpus, the buckets and the goldens all stay as they are.",
+    "",
+    "The three buckets are decided by the REFERENCE's own behaviour, never by",
+    "ours: `wax f.wax -f wax` re-prints without validating, so its exit status",
+    "isolates 'did it parse?' from 'did it type-check?' -- which is exactly the",
+    "line between what this port implements and what it does not."
+  ],
+
+  "scope": "front-end",
+
+  "scopes": {
+    "front-end": {
+      "_comment": "Lexer, parser, AST, trivia, printer. No type checker, no lints.",
+      "syntax-bad": {
+        "oracle1": "skip",
+        "oracle2": "skip",
+        "oracle3": "match",
+        "_why": "These fail to parse, so they are entirely within scope: our diagnostics must match the reference's on every gated field."
+      },
+      "compiles-clean": {
+        "oracle1": "match",
+        "oracle2": "match",
+        "oracle3": "no-errors",
+        "_why": "Parses and type-checks. We must reprint identically and round-trip to identical wasm. The reference may also emit lint WARNINGS here (unused-local, unused-field); we implement no lints, so warnings are ignored on both sides rather than compared."
+      },
+      "type-bad": {
+        "oracle1": "match",
+        "oracle2": "skip",
+        "oracle3": "no-errors",
+        "_why": "Parses fine but fails type checking, so it is a valid front-end test for oracle 1 and must NOT produce a syntax error from us. There is no reference wasm to compare against, hence oracle 2 skip."
+      }
+    },
+
+    "full": {
+      "_comment": "Reserved for phase 6+, once the type checker is ported. The only change is that type-bad becomes a positive error-parity test and gains a wasm comparison.",
+      "syntax-bad": { "oracle1": "skip", "oracle2": "skip", "oracle3": "match" },
+      "compiles-clean": { "oracle1": "match", "oracle2": "match", "oracle3": "match" },
+      "type-bad": { "oracle1": "match", "oracle2": "skip", "oracle3": "match" }
+    }
+  },
+
+  "gated_fields": [
+    "severity", "file",
+    "startLine", "startColumn", "endLine", "endColumn",
+    "startOffset", "endOffset",
+    "warning"
+  ],
+  "_gated_why": [
+    "Spans and severity are objective facts about where an error is, and are",
+    "gated from day one. Message wording is not: the reference derives its",
+    "'Expecting X, Y, or Z' text from its LR automaton via a generator that has",
+    "no counterpart on our side, so gating prose would block the build on the one",
+    "thing we knowingly cannot reproduce yet. Divergence is still recorded, in",
+    "test/report/message-drift.md, to be burned down deliberately."
+  ],
+  "reported_fields": ["message", "hint", "related", "edit"]
+}

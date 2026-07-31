@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {
+    unreachable;
+    _ = _ == _!;
+}

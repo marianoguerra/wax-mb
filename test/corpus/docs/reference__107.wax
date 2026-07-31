@@ -1,0 +1,9 @@
+mem0.load32(p)              // i32 load
+mem0.load64(p)              // i64 load
+mem0.load8(p) as i32_u      // narrow load, zero-extended
+mem0.load16(p) as i32_s     // narrow load, sign-extended
+mem0.load32(p) as i64_s     // load then widen to i64
+
+mem0.store32(p, v);         // store (width by method, type by value)
+mem0.store16(p, v);
+mem0.store32(p, v, offset: 16, align: 1);

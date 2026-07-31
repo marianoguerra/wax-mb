@@ -1,0 +1,14 @@
+#![module = "subtyping_resume1"]
+type ft0 = fn();
+type ct0 = cont ft0;
+type t = fn(&ft0);
+type t_2 = fn(&ct0);
+type t_3 = fn() -> (&func, &ct0);
+fn test0(p: &ct0) {
+    'handler: do () -> (&func, &ct0) {
+        p.resume() on [t -> 'handler];
+        return;
+    }
+    unreachable;
+}
+tag t: t ;

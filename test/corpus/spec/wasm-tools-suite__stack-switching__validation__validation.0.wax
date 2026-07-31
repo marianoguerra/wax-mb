@@ -1,0 +1,13 @@
+type ft1 = fn();
+type ct1 = cont ft1;
+type ft2 = fn(i32) -> i32;
+type ct2 = cont ft2;
+type t = fn(&cont, &nocont, &ct1);
+fn test(p1: &cont, p2: &nocont, p3: &ct1) {
+    let x2: &nocont;
+    let x4: &ct2;
+    let x1: &cont = p2;
+    let x3: &ct1 = p2;
+    x3 = p3;
+    let x5 = p3;
+}

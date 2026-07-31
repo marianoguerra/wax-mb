@@ -1,0 +1,266 @@
+type t = fn(i64);
+type t_2 = fn(i32) -> i32;
+type t_3 = fn(i32) -> i64;
+type t_4 = fn(i32, i32);
+type t_5 = fn(i32, i64);
+type t_6 = fn(i32, i32) -> i32;
+type t_7 = fn(i32, i64) -> i64;
+type t_8 = fn(i32, i32, i32) -> i32;
+type t_9 = fn(i32, i64, i64) -> i64;
+#[export]
+fn init(value: i64) {
+    m.store64(0, value);
+}
+#[export = "i32.atomic.load"]
+fn f(addr: i32) -> i32 {
+    m.atomic_load32(addr);
+}
+#[export = "i64.atomic.load"]
+fn f_2(addr: i32) -> i64 {
+    m.atomic_load64(addr);
+}
+#[export = "i32.atomic.load8_u"]
+fn f_3(addr: i32) -> i32 {
+    m.atomic_load8(addr) as i32_u;
+}
+#[export = "i32.atomic.load16_u"]
+fn f_4(addr: i32) -> i32 {
+    m.atomic_load16(addr) as i32_u;
+}
+#[export = "i64.atomic.load8_u"]
+fn f_5(addr: i32) -> i64 {
+    m.atomic_load8(addr) as i64_u;
+}
+#[export = "i64.atomic.load16_u"]
+fn f_6(addr: i32) -> i64 {
+    m.atomic_load16(addr) as i64_u;
+}
+#[export = "i64.atomic.load32_u"]
+fn f_7(addr: i32) -> i64 {
+    m.atomic_load32(addr) as i64_u;
+}
+#[export = "i32.atomic.store"]
+fn f_8(addr: i32, value: i32) {
+    m.atomic_store32(addr, value);
+}
+#[export = "i64.atomic.store"]
+fn f_9(addr: i32, value: i64) {
+    m.atomic_store64(addr, value);
+}
+#[export = "i32.atomic.store8"]
+fn f_10(addr: i32, value: i32) {
+    m.atomic_store8(addr, value);
+}
+#[export = "i32.atomic.store16"]
+fn f_11(addr: i32, value: i32) {
+    m.atomic_store16(addr, value);
+}
+#[export = "i64.atomic.store8"]
+fn f_12(addr: i32, value: i64) {
+    m.atomic_store8(addr, value);
+}
+#[export = "i64.atomic.store16"]
+fn f_13(addr: i32, value: i64) {
+    m.atomic_store16(addr, value);
+}
+#[export = "i64.atomic.store32"]
+fn f_14(addr: i32, value: i64) {
+    m.atomic_store32(addr, value);
+}
+#[export = "i32.atomic.rmw.add"]
+fn f_15(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_add32(addr, value);
+}
+#[export = "i64.atomic.rmw.add"]
+fn f_16(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_add64(addr, value);
+}
+#[export = "i32.atomic.rmw8.add_u"]
+fn f_17(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_add8(addr, value);
+}
+#[export = "i32.atomic.rmw16.add_u"]
+fn f_18(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_add16(addr, value);
+}
+#[export = "i64.atomic.rmw8.add_u"]
+fn f_19(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_add8(addr, value);
+}
+#[export = "i64.atomic.rmw16.add_u"]
+fn f_20(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_add16(addr, value);
+}
+#[export = "i64.atomic.rmw32.add_u"]
+fn f_21(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_add32(addr, value);
+}
+#[export = "i32.atomic.rmw.sub"]
+fn f_22(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_sub32(addr, value);
+}
+#[export = "i64.atomic.rmw.sub"]
+fn f_23(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_sub64(addr, value);
+}
+#[export = "i32.atomic.rmw8.sub_u"]
+fn f_24(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_sub8(addr, value);
+}
+#[export = "i32.atomic.rmw16.sub_u"]
+fn f_25(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_sub16(addr, value);
+}
+#[export = "i64.atomic.rmw8.sub_u"]
+fn f_26(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_sub8(addr, value);
+}
+#[export = "i64.atomic.rmw16.sub_u"]
+fn f_27(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_sub16(addr, value);
+}
+#[export = "i64.atomic.rmw32.sub_u"]
+fn f_28(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_sub32(addr, value);
+}
+#[export = "i32.atomic.rmw.and"]
+fn f_29(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_and32(addr, value);
+}
+#[export = "i64.atomic.rmw.and"]
+fn f_30(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_and64(addr, value);
+}
+#[export = "i32.atomic.rmw8.and_u"]
+fn f_31(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_and8(addr, value);
+}
+#[export = "i32.atomic.rmw16.and_u"]
+fn f_32(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_and16(addr, value);
+}
+#[export = "i64.atomic.rmw8.and_u"]
+fn f_33(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_and8(addr, value);
+}
+#[export = "i64.atomic.rmw16.and_u"]
+fn f_34(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_and16(addr, value);
+}
+#[export = "i64.atomic.rmw32.and_u"]
+fn f_35(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_and32(addr, value);
+}
+#[export = "i32.atomic.rmw.or"]
+fn f_36(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_or32(addr, value);
+}
+#[export = "i64.atomic.rmw.or"]
+fn f_37(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_or64(addr, value);
+}
+#[export = "i32.atomic.rmw8.or_u"]
+fn f_38(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_or8(addr, value);
+}
+#[export = "i32.atomic.rmw16.or_u"]
+fn f_39(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_or16(addr, value);
+}
+#[export = "i64.atomic.rmw8.or_u"]
+fn f_40(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_or8(addr, value);
+}
+#[export = "i64.atomic.rmw16.or_u"]
+fn f_41(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_or16(addr, value);
+}
+#[export = "i64.atomic.rmw32.or_u"]
+fn f_42(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_or32(addr, value);
+}
+#[export = "i32.atomic.rmw.xor"]
+fn f_43(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_xor32(addr, value);
+}
+#[export = "i64.atomic.rmw.xor"]
+fn f_44(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_xor64(addr, value);
+}
+#[export = "i32.atomic.rmw8.xor_u"]
+fn f_45(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_xor8(addr, value);
+}
+#[export = "i32.atomic.rmw16.xor_u"]
+fn f_46(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_xor16(addr, value);
+}
+#[export = "i64.atomic.rmw8.xor_u"]
+fn f_47(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_xor8(addr, value);
+}
+#[export = "i64.atomic.rmw16.xor_u"]
+fn f_48(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_xor16(addr, value);
+}
+#[export = "i64.atomic.rmw32.xor_u"]
+fn f_49(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_xor32(addr, value);
+}
+#[export = "i32.atomic.rmw.xchg"]
+fn f_50(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_xchg32(addr, value);
+}
+#[export = "i64.atomic.rmw.xchg"]
+fn f_51(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_xchg64(addr, value);
+}
+#[export = "i32.atomic.rmw8.xchg_u"]
+fn f_52(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_xchg8(addr, value);
+}
+#[export = "i32.atomic.rmw16.xchg_u"]
+fn f_53(addr: i32, value: i32) -> i32 {
+    m.atomic_rmw_xchg16(addr, value);
+}
+#[export = "i64.atomic.rmw8.xchg_u"]
+fn f_54(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_xchg8(addr, value);
+}
+#[export = "i64.atomic.rmw16.xchg_u"]
+fn f_55(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_xchg16(addr, value);
+}
+#[export = "i64.atomic.rmw32.xchg_u"]
+fn f_56(addr: i32, value: i64) -> i64 {
+    m.atomic_rmw_xchg32(addr, value);
+}
+#[export = "i32.atomic.rmw.cmpxchg"]
+fn f_57(addr: i32, expected: i32, value: i32) -> i32 {
+    m.atomic_rmw_cmpxchg32(addr, expected, value);
+}
+#[export = "i64.atomic.rmw.cmpxchg"]
+fn f_58(addr: i32, expected: i64, value: i64) -> i64 {
+    m.atomic_rmw_cmpxchg64(addr, expected, value);
+}
+#[export = "i32.atomic.rmw8.cmpxchg_u"]
+fn f_59(addr: i32, expected: i32, value: i32) -> i32 {
+    m.atomic_rmw_cmpxchg8(addr, expected, value);
+}
+#[export = "i32.atomic.rmw16.cmpxchg_u"]
+fn f_60(addr: i32, expected: i32, value: i32) -> i32 {
+    m.atomic_rmw_cmpxchg16(addr, expected, value);
+}
+#[export = "i64.atomic.rmw8.cmpxchg_u"]
+fn f_61(addr: i32, expected: i64, value: i64) -> i64 {
+    m.atomic_rmw_cmpxchg8(addr, expected, value);
+}
+#[export = "i64.atomic.rmw16.cmpxchg_u"]
+fn f_62(addr: i32, expected: i64, value: i64) -> i64 {
+    m.atomic_rmw_cmpxchg16(addr, expected, value);
+}
+#[export = "i64.atomic.rmw32.cmpxchg_u"]
+fn f_63(addr: i32, expected: i64, value: i64) -> i64 {
+    m.atomic_rmw_cmpxchg32(addr, expected, value);
+}
+memory m: i32 [1, 1] shared;

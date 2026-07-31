@@ -1,0 +1,8 @@
+type t = fn();
+fn f() {
+    t1.init(el, 0, 1, 2);
+    t1.copy(t2, 0, 1, 2);
+}
+table t1: &?func [10];
+table t2: &?t [10];
+elem el: &?func = [];

@@ -1,0 +1,32 @@
+type t = { };
+type t_2 = fn(&any) -> &any;
+type t_3 = fn(&?any) -> &?any;
+type t_4 = fn() -> &?any;
+fn f(x: &any) -> &any 'l: {
+    do &t {
+        br_on_cast_fail 'l &t x;
+    }
+}
+fn f_2(x: &?any) -> &?any 'l: {
+    do &t {
+        br_on_cast_fail 'l &t x;
+    }
+}
+fn f_3(x: &any) -> &any 'l: {
+    (do {
+         br_on_cast_fail 'l &?t x;
+     }!);
+}
+fn f_4(x: &?any) -> &?any 'l: {
+    do &?t {
+        br_on_cast_fail 'l &?t x;
+    }
+}
+fn f_5() -> &?any 'l: {
+    unreachable;
+    br_on_cast_fail 'l &?any _;
+}
+fn f_6() -> &?any 'l: {
+    unreachable;
+    br_on_cast_fail 'l &?array _;
+}

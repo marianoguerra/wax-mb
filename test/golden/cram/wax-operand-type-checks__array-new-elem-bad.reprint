@@ -1,0 +1,5 @@
+type a = [mut &?func];
+elem e: &?extern = [];
+fn f() -> &a {
+    [a| e @ 0 as i32; 0 as i32];
+}

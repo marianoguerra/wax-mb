@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {
+    _ = m.load8(0) as i32_s;
+}
+memory m: i64 [0];

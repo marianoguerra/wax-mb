@@ -1,0 +1,67 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    # Nightly, to catch the pinned reference going stale (see the `drift` job).
+    - cron: "17 4 * * *"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install moon
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+
+      - name: moon version
+        run: moon version --all
+
+      - name: moon update
+        run: moon update
+
+      - name: check
+        run: moon check --deny-warn
+
+      # A stale .mbti means an unreviewed public-API change.
+      - name: interfaces are current
+        run: |
+          moon info --target all
+          git diff --exit-code
+
+      - name: formatted
+        run: |
+          moon fmt
+          git diff --exit-code
+
+      - name: test
+        run: moon test --target all
+
+      # The differential suite runs against the COMMITTED goldens, so it needs
+      # neither the reference binary nor the wax/ checkout. Keep it that way:
+      # adding a fetch step here trades away the hermetic property. Regenerating
+      # goldens needs the reference, and is a deliberate local act.
+      #
+      # Oracle 2 is excluded because it alone needs the reference back end to
+      # compile our output; 1 and 3 compare against committed files.
+      - name: differential harness
+        run: tools/waxdiff.py run --oracle 1 --oracle 3
+
+  # `edge` upstream is rebuilt on every push to ocsigen/wax main, so the pinned
+  # oracle can go stale silently. Catch that on a schedule rather than
+  # discovering it mid-review. Non-blocking: it reports, it does not gate.
+  drift:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: check the pinned reference still matches upstream edge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: tools/fetch-reference.sh

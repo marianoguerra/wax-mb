@@ -1,0 +1,4 @@
+fn f(p: &extern) {
+    let x: &extern = p;
+    _ = x;
+}

@@ -1,0 +1,23 @@
+type t = fn();
+type t_2 = fn() -> i32;
+import "test"
+#[import = "throw"]
+fn f();
+#[export = "imported-mismatch"]
+fn f_2() -> i32 {
+    try_legacy {
+        try_legacy {
+            1;
+            f();
+        } catch {
+            e0 => {
+                2;
+            }
+        }
+    } catch {
+        _ => {
+            3;
+        }
+    }
+}
+tag e0: t ;

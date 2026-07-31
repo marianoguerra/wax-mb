@@ -1,0 +1,28 @@
+type t = fn() -> i32;
+type t_2 = fn();
+type t_3 = fn(i32) -> i32;
+#[export]
+fn load_at_zero() -> i32 {
+    m.load32(0);
+}
+#[export]
+fn store_at_zero() {
+    m.store32(0, 2);
+}
+#[export]
+fn load_at_page_size() -> i32 {
+    m.load32(65536);
+}
+#[export]
+fn store_at_page_size() {
+    m.store32(65536, 3);
+}
+#[export]
+fn grow(x: i32) -> i32 {
+    m.grow(x);
+}
+#[export]
+fn size() -> i32 {
+    m.size();
+}
+memory m: i32 [0];

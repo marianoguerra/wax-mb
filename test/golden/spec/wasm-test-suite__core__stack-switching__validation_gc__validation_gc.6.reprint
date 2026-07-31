@@ -1,0 +1,12 @@
+#![module = "subtyping0"]
+type f = fn();
+type ft0_sup = fn() -> &func;
+type ct0_sup = cont ft0_sup;
+type ft1 = fn(i32) -> &f;
+type ct1 = cont ft1;
+type ft0 = fn() -> &f;
+type ct0 = cont ft0;
+type t = fn(&ct1);
+fn test2(x: &ct1) {
+    _ = ct0_sup::bind(123, x);
+}

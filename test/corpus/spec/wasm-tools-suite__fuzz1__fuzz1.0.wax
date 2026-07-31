@@ -1,0 +1,108 @@
+type t = fn() -> i32;
+type t_2 = fn(i32);
+type t_3 = fn(i64);
+type t_4 = fn(f32);
+type t_5 = fn(f64);
+type t_6 = fn() -> i64;
+type t_7 = fn();
+import "fuzzing-support" {
+    #[import = "log-i32"]
+    fn f(i32);
+    #[import = "log-i64"]
+    fn f_2(i64);
+    #[import = "log-f32"]
+    fn f_3(f32);
+    #[import = "log-f64"]
+    fn f_4(f64);
+}
+#[export]
+fn hashMemory() -> i32 {
+    let x = 5381;
+    x = (x << 5) + x ^ m.load8(0) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 1) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 2) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 3) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 4) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 5) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 6) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 7) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 8) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 9) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 10) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 11) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 12) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 13) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 14) as i32_u;
+    x = (x << 5) + x ^ m.load8(0, offset: 15) as i32_u;
+    x;
+}
+#[export]
+fn func_5() -> i64 {
+    do {
+        if !hangLimit {
+            return 4293531749;
+        }
+        hangLimit -= 1;
+    }
+    'label_0: do {
+        nop;
+        let x_2: i64;
+        x_2 :=
+            'label_1: do {
+                let x: i32;
+                x =
+                    x :=
+                        if -2147483647 {
+                            x;
+                        } else {
+                            'label_4: do {
+                                br_if 'label_4
+                                    (if
+                                         'label_5: do {
+                                             f_3(
+                                                 if
+                                                     !'label_6: loop {
+                                                          do {
+                                                              if !hangLimit {
+                                                                  return -32766;
+                                                              }
+                                                              hangLimit -= 1;
+                                                          }
+                                                          do {
+                                                              nop;
+                                                              br_if 'label_6 !8388608;
+                                                              x;
+                                                          }
+                                                      } {
+                                                     'label_7: do {
+                                                         -nan:0x7fffda;
+                                                     }
+                                                 } else {
+                                                     0x1p+32;
+                                                 },
+                                             );
+                                             -2147483648;
+                                         } {
+                                         -1073741824;
+                                     } else {
+                                         x;
+                                     }, !g);
+                            }
+                        };
+                255;
+            };
+    }
+}
+#[export]
+fn hangLimitInitializer() {
+    hangLimit = 10;
+}
+table t: &?func [0, 0];
+#[export = "memory"]
+memory m: i32 [1, 1];
+let g = -65536;
+let g_2: f32 = 0x1.fffffep+127;
+let g_3: f32 = -0x1.744e6cp+117;
+let g_4 = -nan:0xfffffffffac1b;
+let hangLimit = 10;
+data d @ m [0] = "\x00\x00\x00\x00";

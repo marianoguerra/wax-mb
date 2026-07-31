@@ -1,0 +1,7 @@
+fn f(x: i32) {
+    #[never_opt]
+    'l: loop {
+        #[always_opt]
+        br_if 'l x;
+    }
+}

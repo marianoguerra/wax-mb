@@ -1,0 +1,6 @@
+#![module = "D"]
+type super = open fn();
+type sub: super = open fn();
+import "C"
+#[export]
+fn f: super ();

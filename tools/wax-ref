@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Run the pinned reference `wax`. Every harness invocation goes through this
+# wrapper so there is exactly one place that decides which binary is the oracle.
+set -euo pipefail
+here="$(dirname "$0")"
+bin="$here/wax-linux-x86_64"
+if [ ! -x "$bin" ]; then
+  echo "wax-ref: reference binary missing; run tools/fetch-reference.sh" >&2
+  exit 127
+fi
+exec "$bin" "$@"

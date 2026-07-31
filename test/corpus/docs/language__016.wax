@@ -1,0 +1,1 @@
+_: i64 = 1 << 40;   // discard the result, but keep it i64

@@ -1,0 +1,195 @@
+type t = fn(i32) -> i32;
+type t_2 = fn(f32) -> f32;
+type t_3 = fn(i32, i32) -> v128;
+type t_4 = fn(i64) -> i64;
+type t_5 = fn(f64) -> f64;
+type t_6 = fn(i32, i32, i32) -> v128;
+type t_7 = fn(i32, i32, i32, i32) -> v128;
+type t_8 = fn(i64, i64, i64, i64) -> v128;
+type t_9 = fn(f64, f64, f64, f64) -> v128;
+type t_10 = fn(i64) -> i32;
+type t_11 = fn(i64, i64) -> v128;
+type t_12 = fn(f32, f32) -> v128;
+type t_13 = fn(f64, f64) -> v128;
+type t_14 = fn(f32) -> v128;
+type t_15 = fn(i32) -> v128;
+#[export = "as-i8x16_extract_lane_s-operand-first"]
+fn f(x: i32) -> i32 {
+    x.splat_i8x16().extract_lane_s_i8x16(0);
+}
+#[export = "as-i8x16_extract_lane_s-operand-last"]
+fn f_2(x: i32) -> i32 {
+    x.splat_i8x16().extract_lane_s_i8x16(15);
+}
+#[export = "as-i16x8_extract_lane_s-operand-first"]
+fn f_3(x: i32) -> i32 {
+    x.splat_i16x8().extract_lane_s_i16x8(0);
+}
+#[export = "as-i16x8_extract_lane_s-operand-last"]
+fn f_4(x: i32) -> i32 {
+    x.splat_i16x8().extract_lane_s_i16x8(7);
+}
+#[export = "as-i32x4_extract_lane_s-operand-first"]
+fn f_5(x: i32) -> i32 {
+    x.splat_i32x4().extract_lane_i32x4(0);
+}
+#[export = "as-i32x4_extract_lane_s-operand-last"]
+fn f_6(x: i32) -> i32 {
+    x.splat_i32x4().extract_lane_i32x4(3);
+}
+#[export = "as-f32x4_extract_lane_s-operand-first"]
+fn f_7(x: f32) -> f32 {
+    x.splat_f32x4().extract_lane_f32x4(0);
+}
+#[export = "as-f32x4_extract_lane_s-operand-last"]
+fn f_8(x: f32) -> f32 {
+    x.splat_f32x4().extract_lane_f32x4(3);
+}
+#[export = "as-v8x16_swizzle-operands"]
+fn f_9(x: i32, x_2: i32) -> v128 {
+    x.splat_i8x16().swizzle_i8x16(x_2.splat_i8x16());
+}
+#[export = "as-i64x2_extract_lane-operand-first"]
+fn f_10(x: i64) -> i64 {
+    x.splat_i64x2().extract_lane_i64x2(0);
+}
+#[export = "as-i64x2_extract_lane-operand-last"]
+fn f_11(x: i64) -> i64 {
+    x.splat_i64x2().extract_lane_i64x2(1);
+}
+#[export = "as-f64x2_extract_lane-operand-first"]
+fn f_12(x: f64) -> f64 {
+    x.splat_f64x2().extract_lane_f64x2(0);
+}
+#[export = "as-f64x2_extract_lane-operand-last"]
+fn f_13(x: f64) -> f64 {
+    x.splat_f64x2().extract_lane_f64x2(1);
+}
+#[export = "as-i8x16_add_sub-operands"]
+fn f_14(x: i32, x_2: i32, x_3: i32) -> v128 {
+    x.splat_i8x16().add_i8x16(x_2.splat_i8x16().sub_i8x16(x_3.splat_i8x16()));
+}
+#[export = "as-i16x8_add_sub_mul-operands"]
+fn f_15(x: i32, x_2: i32, x_3: i32, x_4: i32) -> v128 {
+    x.splat_i16x8().add_i16x8(
+        x_2.splat_i16x8().sub_i16x8(x_3.splat_i16x8().mul_i16x8(x_4.splat_i16x8())),
+    );
+}
+#[export = "as-i32x4_add_sub_mul-operands"]
+fn f_16(x: i32, x_2: i32, x_3: i32, x_4: i32) -> v128 {
+    x.splat_i32x4().add_i32x4(
+        x_2.splat_i32x4().sub_i32x4(x_3.splat_i32x4().mul_i32x4(x_4.splat_i32x4())),
+    );
+}
+#[export = "as-i64x2_add_sub_mul-operands"]
+fn f_17(x: i64, x_2: i64, x_3: i64, x_4: i64) -> v128 {
+    x.splat_i64x2().add_i64x2(
+        x_2.splat_i64x2().sub_i64x2(x_3.splat_i64x2().mul_i64x2(x_4.splat_i64x2())),
+    );
+}
+#[export = "as-f64x2_add_sub_mul-operands"]
+fn f_18(x: f64, x_2: f64, x_3: f64, x_4: f64) -> v128 {
+    x.splat_f64x2().add_f64x2(
+        x_2.splat_f64x2().sub_f64x2(x_3.splat_f64x2().mul_f64x2(x_4.splat_f64x2())),
+    );
+}
+#[export = "as-i8x16_add_sat_s-operands"]
+fn f_19(x: i32, x_2: i32) -> v128 {
+    x.splat_i8x16().add_sat_s_i8x16(x_2.splat_i8x16());
+}
+#[export = "as-i16x8_add_sat_s-operands"]
+fn f_20(x: i32, x_2: i32) -> v128 {
+    x.splat_i16x8().add_sat_s_i16x8(x_2.splat_i16x8());
+}
+#[export = "as-i8x16_sub_sat_u-operands"]
+fn f_21(x: i32, x_2: i32) -> v128 {
+    x.splat_i8x16().sub_sat_u_i8x16(x_2.splat_i8x16());
+}
+#[export = "as-i16x8_sub_sat_u-operands"]
+fn f_22(x: i32, x_2: i32) -> v128 {
+    x.splat_i16x8().sub_sat_u_i16x8(x_2.splat_i16x8());
+}
+#[export = "as-i8x16_shr_s-operand"]
+fn f_23(x: i32, x_2: i32) -> v128 {
+    x.splat_i8x16().shr_s_i8x16(x_2);
+}
+#[export = "as-i16x8_shr_s-operand"]
+fn f_24(x: i32, x_2: i32) -> v128 {
+    x.splat_i16x8().shr_s_i16x8(x_2);
+}
+#[export = "as-i32x4_shr_s-operand"]
+fn f_25(x: i32, x_2: i32) -> v128 {
+    x.splat_i32x4().shr_s_i32x4(x_2);
+}
+#[export = "as-v128_and-operands"]
+fn f_26(x: i32, x_2: i32) -> v128 {
+    x.splat_i8x16().and_v128(x_2.splat_i8x16());
+}
+#[export = "as-v128_or-operands"]
+fn f_27(x: i32, x_2: i32) -> v128 {
+    x.splat_i16x8().or_v128(x_2.splat_i16x8());
+}
+#[export = "as-v128_xor-operands"]
+fn f_28(x: i32, x_2: i32) -> v128 {
+    x.splat_i32x4().xor_v128(x_2.splat_i32x4());
+}
+#[export = "as-i8x16_all_true-operand"]
+fn f_29(x: i32) -> i32 {
+    x.splat_i8x16().all_true_i8x16();
+}
+#[export = "as-i16x8_all_true-operand"]
+fn f_30(x: i32) -> i32 {
+    x.splat_i16x8().all_true_i16x8();
+}
+#[export = "as-i32x4_all_true-operand1"]
+fn f_31(x: i32) -> i32 {
+    x.splat_i32x4().all_true_i32x4();
+}
+#[export = "as-i32x4_all_true-operand2"]
+fn f_32(x: i64) -> i32 {
+    x.splat_i64x2().all_true_i32x4();
+}
+#[export = "as-i8x16_eq-operands"]
+fn f_33(x: i32, x_2: i32) -> v128 {
+    x.splat_i8x16().eq_i8x16(x_2.splat_i8x16());
+}
+#[export = "as-i16x8_eq-operands"]
+fn f_34(x: i32, x_2: i32) -> v128 {
+    x.splat_i16x8().eq_i16x8(x_2.splat_i16x8());
+}
+#[export = "as-i32x4_eq-operands1"]
+fn f_35(x: i32, x_2: i32) -> v128 {
+    x.splat_i32x4().eq_i32x4(x_2.splat_i32x4());
+}
+#[export = "as-i32x4_eq-operands2"]
+fn f_36(x: i64, x_2: i64) -> v128 {
+    x.splat_i64x2().eq_i32x4(x_2.splat_i64x2());
+}
+#[export = "as-f32x4_eq-operands"]
+fn f_37(x: f32, x_2: f32) -> v128 {
+    x.splat_f32x4().eq_f32x4(x_2.splat_f32x4());
+}
+#[export = "as-f64x2_eq-operands"]
+fn f_38(x: f64, x_2: f64) -> v128 {
+    x.splat_f64x2().eq_f64x2(x_2.splat_f64x2());
+}
+#[export = "as-f32x4_abs-operand"]
+fn f_39(x: f32) -> v128 {
+    x.splat_f32x4().abs_f32x4();
+}
+#[export = "as-f32x4_min-operands"]
+fn f_40(x: f32, x_2: f32) -> v128 {
+    x.splat_f32x4().min_f32x4(x_2.splat_f32x4());
+}
+#[export = "as-f32x4_div-operands"]
+fn f_41(x: f32, x_2: f32) -> v128 {
+    x.splat_f32x4().div_f32x4(x_2.splat_f32x4());
+}
+#[export = "as-f32x4_convert_s_i32x4-operand"]
+fn f_42(x: i32) -> v128 {
+    x.splat_i32x4().convert_i32x4_s_f32x4();
+}
+#[export = "as-i32x4_trunc_s_f32x4_sat-operand"]
+fn f_43(x: f32) -> v128 {
+    x.splat_f32x4().trunc_sat_f32x4_s_i32x4();
+}

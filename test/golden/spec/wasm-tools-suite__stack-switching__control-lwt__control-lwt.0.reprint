@@ -1,0 +1,19 @@
+#![module = "control"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(&cont_2);
+type t_2 = cont t;
+type t_3 = fn(&t_2);
+type t_4 = fn(&?cont_2);
+type t_5 = fn() -> (&t_2, &cont_2);
+#[export]
+fn prompt(nextk: &?cont_2) {
+    let (h, k) =
+        'on_control: do () -> (&t_2, &cont_2) {
+            nextk.resume() on [control -> 'on_control];
+            return;
+        };
+    h.resume(k);
+}
+#[export]
+tag control: t_3 ;

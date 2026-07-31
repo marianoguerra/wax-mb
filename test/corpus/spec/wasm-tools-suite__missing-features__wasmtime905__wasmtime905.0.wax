@@ -1,0 +1,4 @@
+type t = fn();
+fn f() {
+    let x: &?extern;
+}

@@ -1,0 +1,4 @@
+type t = fn() -> f32;
+fn f() -> f32 {
+    0 as i64 as f32_u;
+}

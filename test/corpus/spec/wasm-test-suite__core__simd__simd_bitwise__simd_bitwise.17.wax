@@ -1,0 +1,162 @@
+type t = fn();
+#[export = "v128.not-in-block"]
+fn f() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.not_v128());
+            };
+    }
+}
+#[export = "v128.and-in-block"]
+fn f_2() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.and_v128(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "v128.or-in-block"]
+fn f_3() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.or_v128(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "v128.xor-in-block"]
+fn f_4() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.xor_v128(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "v128.bitselect-in-block"]
+fn f_5() {
+    do {
+        _ =
+            do {
+                v128::bitselect(
+                    do {
+                        m.loadv128(0);
+                    },
+                    do {
+                        m.loadv128(1);
+                    },
+                    do {
+                        m.loadv128(2);
+                    },
+                );
+            };
+    }
+}
+#[export = "v128.andnot-in-block"]
+fn f_6() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.andnot_v128(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "nested-v128.not"]
+fn f_7() {
+    _ = m.loadv128(0).not_v128().not_v128().not_v128();
+}
+#[export = "nested-v128.and"]
+fn f_8() {
+    _ =
+        m.loadv128(0).and_v128(m.loadv128(1)).and_v128(
+            m.loadv128(0).and_v128(m.loadv128(1)),
+        ).and_v128(
+            m.loadv128(0).and_v128(m.loadv128(1)).and_v128(m.loadv128(0).and_v128(m.loadv128(1))),
+        );
+}
+#[export = "nested-v128.or"]
+fn f_9() {
+    _ =
+        m.loadv128(0).or_v128(m.loadv128(1)).or_v128(m.loadv128(0).or_v128(m.loadv128(1))).or_v128(
+            m.loadv128(0).or_v128(m.loadv128(1)).or_v128(m.loadv128(0).or_v128(m.loadv128(1))),
+        );
+}
+#[export = "nested-v128.xor"]
+fn f_10() {
+    _ =
+        m.loadv128(0).xor_v128(m.loadv128(1)).xor_v128(
+            m.loadv128(0).xor_v128(m.loadv128(1)),
+        ).xor_v128(
+            m.loadv128(0).xor_v128(m.loadv128(1)).xor_v128(m.loadv128(0).xor_v128(m.loadv128(1))),
+        );
+}
+#[export = "nested-v128.bitselect"]
+fn f_11() {
+    _ =
+        v128::bitselect(
+            v128::bitselect(
+                v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)),
+                v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)),
+                v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)),
+            ),
+            v128::bitselect(
+                v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)),
+                v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)),
+                v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)),
+            ),
+            v128::bitselect(
+                v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)),
+                v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)),
+                v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)),
+            ),
+        );
+}
+#[export = "nested-v128.andnot"]
+fn f_12() {
+    _ =
+        m.loadv128(0).andnot_v128(m.loadv128(1)).andnot_v128(
+            m.loadv128(0).andnot_v128(m.loadv128(1)),
+        ).andnot_v128(
+            m.loadv128(0).andnot_v128(m.loadv128(1)).andnot_v128(
+                m.loadv128(0).andnot_v128(m.loadv128(1)),
+            ),
+        );
+}
+#[export = "as-param"]
+fn f_13() {
+    _ =
+        m.loadv128(0).not_v128().and_v128(m.loadv128(1).not_v128()).or_v128(
+            v128::bitselect(m.loadv128(0), m.loadv128(1), m.loadv128(2)).xor_v128(
+                m.loadv128(0).andnot_v128(m.loadv128(1)),
+            ),
+        );
+}
+memory m: i32 [1];

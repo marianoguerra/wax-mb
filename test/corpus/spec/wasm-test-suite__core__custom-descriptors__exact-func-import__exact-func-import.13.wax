@@ -1,0 +1,27 @@
+#![feature = "custom-descriptors"]
+type super = open fn();
+type sub: super = open fn();
+type t = fn() -> i32;
+type t_2 = fn() -> &!sub;
+type t_3 = fn() -> &?func;
+import "C" fn f: super ();
+#[export = "exact-test"]
+fn f_2() -> i32 {
+    f is &!sub;
+}
+#[export = "exact-cast"]
+fn f_3() -> &!sub {
+    f as &!sub;
+}
+#[export = "exact-br-on-cast"]
+fn f_4() -> &?func 'l: {
+    br_on_cast 'l &!sub f;
+    unreachable;
+}
+#[export = "exact-br-on-cast-fail"]
+fn f_5() -> &?func {
+    'l: do &?func {
+        return br_on_cast_fail 'l &!sub f;
+    }
+    unreachable;
+}

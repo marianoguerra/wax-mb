@@ -1,0 +1,25 @@
+type t = fn() -> f32;
+type t_2 = fn() -> i32;
+type t_3 = fn();
+#[export = "f32.load"]
+fn f() -> f32 {
+    m.loadf32(0);
+}
+#[export = "i32.load"]
+fn f_2() -> i32 {
+    m.load32(0);
+}
+#[export = "f32.store"]
+fn f_3() {
+    m.storef32(0, nan:0x500001);
+}
+#[export = "i32.store"]
+fn f_4() {
+    m.store32(0, 2144337921);
+}
+#[export]
+fn reset() {
+    m.store32(0, 0);
+}
+memory m: i32 [1, 1];
+data d @ m [0] = "\x01\x00\xd0\x7f";

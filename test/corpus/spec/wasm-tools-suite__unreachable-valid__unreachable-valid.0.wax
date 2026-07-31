@@ -1,0 +1,8 @@
+type t = fn();
+#[export]
+fn f() 'l: {
+    0x1p+0 as f32;
+    0x1p+1 as f32;
+    br 'l;
+    _ = _ + _;
+}

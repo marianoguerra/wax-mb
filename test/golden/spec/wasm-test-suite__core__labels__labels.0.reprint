@@ -1,0 +1,299 @@
+type t = fn() -> i32;
+type t_2 = fn(i32) -> i32;
+#[export]
+fn block() -> i32 {
+    'exit: do {
+        br 'exit 1;
+        0;
+    }
+}
+#[export]
+fn loop1() -> i32 {
+    let i = 0;
+    'exit: do {
+        'cont: loop i32 {
+            i += 1;
+            if i == 5 {
+                br 'exit i;
+            }
+            br 'cont;
+        }
+    }
+}
+#[export]
+fn loop2() -> i32 {
+    let i = 0;
+    'exit: do {
+        'cont: loop i32 {
+            i += 1;
+            if i == 5 {
+                br 'cont;
+            }
+            if i == 8 {
+                br 'exit i;
+            }
+            i += 1;
+            br 'cont;
+        }
+    }
+}
+#[export]
+fn loop3() -> i32 {
+    let i = 0;
+    'exit: do {
+        'cont: loop {
+            i += 1;
+            if i == 5 {
+                br 'exit i;
+            }
+            i;
+        }
+    }
+}
+#[export]
+fn loop4(max: i32) -> i32 {
+    let i = 1;
+    'exit: do {
+        'cont: loop i32 {
+            i += i;
+            if i >u max {
+                br 'exit i;
+            }
+            br 'cont;
+        }
+    }
+}
+#[export]
+fn loop5() -> i32 {
+    ('l: loop {
+         1;
+     } + 1);
+}
+#[export]
+fn loop6() -> i32 {
+    'l: loop {
+        br_if 'l 0;
+        3;
+    }
+}
+#[export = "if"]
+fn f() -> i32 {
+    let i = 0;
+    do {
+        'l: if 1 {
+            br 'l;
+            i = 666;
+        }
+        i += 1;
+        'l_1: if 1 {
+            br 'l_1;
+            i = 666;
+        } else {
+            i = 888;
+        }
+        i += 1;
+        'l_2: if 1 {
+            br 'l_2;
+            i = 666;
+        } else {
+            i = 888;
+        }
+        i += 1;
+        'l_3: if 0 {
+            i = 888;
+        } else {
+            br 'l_3;
+            i = 666;
+        }
+        i += 1;
+        'l_4: if 0 {
+            i = 888;
+        } else {
+            br 'l_4;
+            i = 666;
+        }
+        i += 1;
+    }
+    i;
+}
+#[export]
+fn if2() -> i32 {
+    let i = 0;
+    do {
+        'l: if 1 {
+            br 'l;
+            i = 666;
+        }
+        i += 1;
+        'l: if 1 {
+            br 'l;
+            i = 666;
+        } else {
+            i = 888;
+        }
+        i += 1;
+        'l: if 1 {
+            br 'l;
+            i = 666;
+        } else {
+            i = 888;
+        }
+        i += 1;
+        'l: if 0 {
+            i = 888;
+        } else {
+            br 'l;
+            i = 666;
+        }
+        i += 1;
+        'l: if 0 {
+            i = 888;
+        } else {
+            br 'l;
+            i = 666;
+        }
+        i += 1;
+    }
+    i;
+}
+#[export]
+fn switch(x: i32) -> i32 {
+    'ret: do {
+        10
+            * 'exit: do {
+                  dispatch x [ '_0, '_1, '_2, '_3, else 'default ] {
+                      '_1: {}
+                      '_2: {
+                          br 'exit 2;
+                      }
+                      '_3: {
+                          br 'ret 3;
+                      }
+                      'default: {}
+                      '_0: {
+                          5;
+                      }
+                  }
+              };
+    }
+}
+#[export = "return"]
+fn f_2(x: i32) -> i32 {
+    'default: do {
+        '_1: do {
+            '_0: do {
+                br_table [ '_0, else '_1 ] x;
+                br 'default;
+            }
+            return 0;
+        }
+    }
+    2;
+}
+#[export]
+fn br_if0() -> i32 {
+    let i = 0;
+    'outer: do {
+        'inner: do {
+            br_if 'inner 0;
+            i |= 1;
+            br_if 'inner 1;
+            i |= 2;
+        }
+        _ =
+            br_if 'outer
+                (do {
+                     i |= 4;
+                     i;
+                 }, 0);
+        i |= 8;
+        _ =
+            br_if 'outer
+                (do {
+                     i |= 16;
+                     i;
+                 }, 1);
+        i |= 32;
+        i;
+    }
+}
+#[export]
+fn br_if1() -> i32 {
+    'l0: do {
+        _ =
+            br_if 'l0
+                ('l1: do {
+                     br 'l1 1;
+                 }, 1);
+        0;
+    }
+}
+#[export]
+fn br_if2() -> i32 {
+    'l0: do {
+        if 1 {
+            _ =
+                br_if 'l0
+                    ('l1: do {
+                         br 'l1 1;
+                     }, 1);
+        }
+        0;
+    }
+}
+#[export]
+fn br_if3() -> i32 {
+    let i1: i32;
+    _ =
+        'l0: do {
+            _ =
+                br_if 'l0
+                    (do {
+                         i1 = 1;
+                         i1;
+                     },
+                     do {
+                         i1 = 2;
+                         i1;
+                     });
+            0;
+        } + 0;
+    i1;
+}
+#[export = "br"]
+fn f_3() -> i32 {
+    'l0: do {
+        if 1 {
+            br 'l0
+                'l1_1: do {
+                    br 'l1_1 1;
+                };
+        } else {
+            'l1: do {
+                _ =
+                    'l: do {
+                        br 'l 1;
+                    };
+            }
+        }
+        1;
+    }
+}
+#[export]
+fn shadowing() -> i32 {
+    'l1: do {
+        br 'l1 1;
+        _ ^ 2;
+    }
+}
+#[export]
+fn redefinition() -> i32 {
+    'l1: do {
+        ('l1_1: do {
+             2;
+         }
+             + 'l1_2: do {
+                   br 'l1_2 3;
+               });
+    }
+}

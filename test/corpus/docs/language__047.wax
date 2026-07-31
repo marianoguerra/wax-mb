@@ -1,0 +1,9 @@
+#[likely] if cond {
+    // the common case
+} else {
+    // the rare case
+}
+
+'next: loop {
+    #[unlikely] br_if 'next done;   // rarely taken
+}

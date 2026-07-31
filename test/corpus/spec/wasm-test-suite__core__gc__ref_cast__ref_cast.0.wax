@@ -1,0 +1,46 @@
+type ft = fn();
+type st = { };
+type at = [i8];
+type t = fn(&?extern);
+type t_2 = fn(i32);
+fn f() {}
+#[export]
+fn init(x: &?extern) {
+    t[0] = null;
+    t[1] = 7 as &i31;
+    t[2] = {st| .. };
+    t[3] = [at|..; 0];
+    t[4] = x as &?any;
+    t[5] = null as &?i31;
+    t[6] = null as &?struct;
+    t[7] = null as &?none;
+}
+#[export]
+fn ref_cast_non_null(i: i32) {
+    _ = t[i]!;
+    _ = t[i];
+}
+#[export]
+fn ref_cast_null(i: i32) {
+    _ = t[i];
+    _ = t[i] as &?struct;
+    _ = t[i] as &?array;
+    _ = t[i] as &?i31;
+    _ = t[i] as &?none;
+}
+#[export]
+fn ref_cast_i31(i: i32) {
+    _ = t[i] as &i31;
+    _ = t[i] as &?i31;
+}
+#[export]
+fn ref_cast_struct(i: i32) {
+    _ = t[i] as &struct;
+    _ = t[i] as &?struct;
+}
+#[export]
+fn ref_cast_array(i: i32) {
+    _ = t[i] as &array;
+    _ = t[i] as &?array;
+}
+table t: &?any [10];

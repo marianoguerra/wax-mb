@@ -1,0 +1,66 @@
+type t0 = open { };
+type t1: t0 = open { f: i32 };
+type t1': t0 = open { f: i32 };
+type t2: t1 = open { .., f_2: i32 };
+type t2': t1' = open { .., f_2: i32 };
+type t3: t0 = open { f: i32, f_2: i32 };
+type t0': t0 = open { };
+type t4: t0' = open { f: i32, f_2: i32 };
+type t = fn();
+fn init() {
+    t[0] = {t0| .. };
+    t[10] = {t0| .. };
+    t[1] = {t1| .. };
+    t[11] = {t1'| .. };
+    t[2] = {t2| .. };
+    t[12] = {t2'| .. };
+    t[3] = {t3| .. };
+    t[4] = {t4| .. };
+}
+#[export = "test-sub"]
+fn f() {
+    init();
+    _ = null as &?struct as &?t0;
+    _ = t[0] as &?t0;
+    _ = t[1] as &?t0;
+    _ = t[2] as &?t0;
+    _ = t[3] as &?t0;
+    _ = t[4] as &?t0;
+    _ = null as &?struct as &?t0;
+    _ = t[1] as &?t1;
+    _ = t[2] as &?t1;
+    _ = null as &?struct as &?t0;
+    _ = t[2] as &?t2;
+    _ = null as &?struct as &?t0;
+    _ = t[3] as &?t3;
+    _ = t[4] as &?t4;
+    _ = t[0] as &t0;
+    _ = t[1] as &t0;
+    _ = t[2] as &t0;
+    _ = t[3] as &t0;
+    _ = t[4] as &t0;
+    _ = t[1] as &t1;
+    _ = t[2] as &t1;
+    _ = t[2] as &t2;
+    _ = t[3] as &t3;
+    _ = t[4] as &t4;
+}
+#[export = "test-canon"]
+fn f_2() {
+    init();
+    _ = t[0] as &t0;
+    _ = t[1] as &t0;
+    _ = t[2] as &t0;
+    _ = t[3] as &t0;
+    _ = t[4] as &t0;
+    _ = t[10] as &t0;
+    _ = t[11] as &t0;
+    _ = t[12] as &t0;
+    _ = t[1] as &t1';
+    _ = t[2] as &t1';
+    _ = t[11] as &t1;
+    _ = t[12] as &t1;
+    _ = t[2] as &t2';
+    _ = t[12] as &t2;
+}
+table t: &?struct [20];

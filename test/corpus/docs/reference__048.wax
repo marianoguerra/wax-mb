@@ -1,0 +1,4 @@
+br_on_null 'l val;          // branch if val is null; else continue with val non-null
+br_on_non_null 'l val;      // branch (passing val) if val is non-null; else continue
+br_on_cast 'l &t val;       // branch (passing val as &t) if val is a &t; else continue
+br_on_cast_fail 'l &t val;  // branch if val is not a &t; else continue with val as &t

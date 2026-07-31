@@ -1,0 +1,6 @@
+type t = fn();
+#[export = "v128.store_offset_65521"]
+fn f() {
+    m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), offset: 65521);
+}
+memory m: i32 [1];

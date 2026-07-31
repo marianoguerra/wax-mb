@@ -1,0 +1,36 @@
+#![module = "pipes"]
+type pfun = fn() -> i32;
+type cfun = fn(i32) -> i32;
+type producer = cont pfun;
+type consumer = cont cfun;
+type t = fn(i32);
+type t_2 = fn(&producer, &consumer);
+type t_3 = fn() -> (i32, &producer);
+#[export = "pipe"]
+fn piper(p: &producer, c: &consumer) {
+    let n = -1;
+    let consuming = 1;
+    'l: loop {
+        if consuming {
+            c =
+                'on_receive: do {
+                    c.resume(n) on [receive -> 'on_receive];
+                    return;
+                };
+            consuming = 0;
+            br 'l;
+        }
+        'on_send: do () -> (i32, &producer) {
+            p.resume() on [send -> 'on_send];
+            return;
+        }
+        p = _;
+        n = _;
+        consuming = 1;
+        br 'l;
+    }
+}
+#[export]
+tag send: t ;
+#[export]
+tag receive: pfun ;

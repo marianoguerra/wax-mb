@@ -1,0 +1,735 @@
+type i32_T = fn(i32, i32) -> i32;
+type i64_T = fn(i64, i64) -> i32;
+type f32_T = fn(f32, f32) -> i32;
+type f64_T = fn(f64, f64) -> i32;
+type t = fn();
+type t_2 = fn() -> i32;
+type t_3 = fn() -> i64;
+type t_4 = fn() -> f32;
+type t_5 = fn() -> f64;
+type t_6 = fn(i32, i32);
+type t_7 = fn(i64, i64);
+type t_8 = fn(f32, f32);
+type t_9 = fn(f64, f64);
+fn i32_t0(i32, i32) -> i32 {
+    -1;
+}
+fn i32_t1(i32, i32) -> i32 {
+    -2;
+}
+fn i64_t0(i64, i64) -> i32 {
+    -1;
+}
+fn i64_t1(i64, i64) -> i32 {
+    -2;
+}
+fn f32_t0(f32, f32) -> i32 {
+    -1;
+}
+fn f32_t1(f32, f32) -> i32 {
+    -2;
+}
+fn f64_t0(f64, f64) -> i32 {
+    -1;
+}
+fn f64_t1(f64, f64) -> i32 {
+    -2;
+}
+fn reset() {
+    m.store32(8, 0);
+}
+fn bump() {
+    m.store8(11, m.load8(10) as i32_u);
+    m.store8(10, m.load8(9) as i32_u);
+    m.store8(9, m.load8(8) as i32_u);
+    m.store8(8, -3);
+}
+fn get() -> i32 {
+    m.load32(8);
+}
+fn i32_left() -> i32 {
+    bump();
+    m.store8(8, 1);
+    0;
+}
+fn i32_right() -> i32 {
+    bump();
+    m.store8(8, 2);
+    1;
+}
+fn i32_another() -> i32 {
+    bump();
+    m.store8(8, 3);
+    1;
+}
+fn i32_callee() -> i32 {
+    bump();
+    m.store8(8, 4);
+    0;
+}
+fn i32_bool() -> i32 {
+    bump();
+    m.store8(8, 5);
+    0;
+}
+fn i64_left() -> i64 {
+    bump();
+    m.store8(8, 1);
+    0;
+}
+fn i64_right() -> i64 {
+    bump();
+    m.store8(8, 2);
+    1;
+}
+fn i64_another() -> i64 {
+    bump();
+    m.store8(8, 3);
+    1;
+}
+fn i64_callee() -> i32 {
+    bump();
+    m.store8(8, 4);
+    2;
+}
+fn i64_bool() -> i32 {
+    bump();
+    m.store8(8, 5);
+    0;
+}
+fn f32_left() -> f32 {
+    bump();
+    m.store8(8, 1);
+    0x0p+0;
+}
+fn f32_right() -> f32 {
+    bump();
+    m.store8(8, 2);
+    0x1p+0;
+}
+fn f32_another() -> f32 {
+    bump();
+    m.store8(8, 3);
+    0x1p+0;
+}
+fn f32_callee() -> i32 {
+    bump();
+    m.store8(8, 4);
+    4;
+}
+fn f32_bool() -> i32 {
+    bump();
+    m.store8(8, 5);
+    0;
+}
+fn f64_left() -> f64 {
+    bump();
+    m.store8(8, 1);
+    0x0p+0;
+}
+fn f64_right() -> f64 {
+    bump();
+    m.store8(8, 2);
+    0x1p+0;
+}
+fn f64_another() -> f64 {
+    bump();
+    m.store8(8, 3);
+    0x1p+0;
+}
+fn f64_callee() -> i32 {
+    bump();
+    m.store8(8, 4);
+    6;
+}
+fn f64_bool() -> i32 {
+    bump();
+    m.store8(8, 5);
+    0;
+}
+fn i32_dummy(i32, i32) {}
+fn i64_dummy(i64, i64) {}
+fn f32_dummy(f32, f32) {}
+fn f64_dummy(f64, f64) {}
+#[export]
+fn i32_add() -> i32 {
+    reset();
+    _ = i32_left() + i32_right();
+    get();
+}
+#[export]
+fn i32_sub() -> i32 {
+    reset();
+    _ = i32_left() - i32_right();
+    get();
+}
+#[export]
+fn i32_mul() -> i32 {
+    reset();
+    _ = i32_left() * i32_right();
+    get();
+}
+#[export]
+fn i32_div_s() -> i32 {
+    reset();
+    _ = i32_left() /s i32_right();
+    get();
+}
+#[export]
+fn i32_div_u() -> i32 {
+    reset();
+    _ = i32_left() /u i32_right();
+    get();
+}
+#[export]
+fn i32_rem_s() -> i32 {
+    reset();
+    _ = i32_left() %s i32_right();
+    get();
+}
+#[export]
+fn i32_rem_u() -> i32 {
+    reset();
+    _ = i32_left() %u i32_right();
+    get();
+}
+#[export]
+fn i32_and() -> i32 {
+    reset();
+    _ = i32_left() & i32_right();
+    get();
+}
+#[export]
+fn i32_or() -> i32 {
+    reset();
+    _ = i32_left() | i32_right();
+    get();
+}
+#[export]
+fn i32_xor() -> i32 {
+    reset();
+    _ = i32_left() ^ i32_right();
+    get();
+}
+#[export]
+fn i32_shl() -> i32 {
+    reset();
+    _ = i32_left() << i32_right();
+    get();
+}
+#[export]
+fn i32_shr_u() -> i32 {
+    reset();
+    _ = i32_left() >>u i32_right();
+    get();
+}
+#[export]
+fn i32_shr_s() -> i32 {
+    reset();
+    _ = i32_left() >>s i32_right();
+    get();
+}
+#[export]
+fn i32_eq() -> i32 {
+    reset();
+    _ = i32_left() == i32_right();
+    get();
+}
+#[export]
+fn i32_ne() -> i32 {
+    reset();
+    _ = i32_left() != i32_right();
+    get();
+}
+#[export]
+fn i32_lt_s() -> i32 {
+    reset();
+    _ = i32_left() <s i32_right();
+    get();
+}
+#[export]
+fn i32_le_s() -> i32 {
+    reset();
+    _ = i32_left() <=s i32_right();
+    get();
+}
+#[export]
+fn i32_lt_u() -> i32 {
+    reset();
+    _ = i32_left() <u i32_right();
+    get();
+}
+#[export]
+fn i32_le_u() -> i32 {
+    reset();
+    _ = i32_left() <=u i32_right();
+    get();
+}
+#[export]
+fn i32_gt_s() -> i32 {
+    reset();
+    _ = i32_left() >s i32_right();
+    get();
+}
+#[export]
+fn i32_ge_s() -> i32 {
+    reset();
+    _ = i32_left() >=s i32_right();
+    get();
+}
+#[export]
+fn i32_gt_u() -> i32 {
+    reset();
+    _ = i32_left() >u i32_right();
+    get();
+}
+#[export]
+fn i32_ge_u() -> i32 {
+    reset();
+    _ = i32_left() >=u i32_right();
+    get();
+}
+#[export]
+fn i32_store() -> i32 {
+    reset();
+    m.store32(i32_left(), i32_right());
+    get();
+}
+#[export]
+fn i32_store8() -> i32 {
+    reset();
+    m.store8(i32_left(), i32_right());
+    get();
+}
+#[export]
+fn i32_store16() -> i32 {
+    reset();
+    m.store16(i32_left(), i32_right());
+    get();
+}
+#[export]
+fn i32_call() -> i32 {
+    reset();
+    i32_dummy(i32_left(), i32_right());
+    get();
+}
+#[export]
+fn i32_call_indirect() -> i32 {
+    reset();
+    _ = (t[i32_callee()] as &?i32_T)(i32_left(), i32_right());
+    get();
+}
+#[export]
+fn i32_select() -> i32 {
+    reset();
+    _ = i32_bool()?i32_left():i32_right();
+    get();
+}
+#[export]
+fn i64_add() -> i32 {
+    reset();
+    _ = i64_left() + i64_right();
+    get();
+}
+#[export]
+fn i64_sub() -> i32 {
+    reset();
+    _ = i64_left() - i64_right();
+    get();
+}
+#[export]
+fn i64_mul() -> i32 {
+    reset();
+    _ = i64_left() * i64_right();
+    get();
+}
+#[export]
+fn i64_div_s() -> i32 {
+    reset();
+    _ = i64_left() /s i64_right();
+    get();
+}
+#[export]
+fn i64_div_u() -> i32 {
+    reset();
+    _ = i64_left() /u i64_right();
+    get();
+}
+#[export]
+fn i64_rem_s() -> i32 {
+    reset();
+    _ = i64_left() %s i64_right();
+    get();
+}
+#[export]
+fn i64_rem_u() -> i32 {
+    reset();
+    _ = i64_left() %u i64_right();
+    get();
+}
+#[export]
+fn i64_and() -> i32 {
+    reset();
+    _ = i64_left() & i64_right();
+    get();
+}
+#[export]
+fn i64_or() -> i32 {
+    reset();
+    _ = i64_left() | i64_right();
+    get();
+}
+#[export]
+fn i64_xor() -> i32 {
+    reset();
+    _ = i64_left() ^ i64_right();
+    get();
+}
+#[export]
+fn i64_shl() -> i32 {
+    reset();
+    _ = i64_left() << i64_right();
+    get();
+}
+#[export]
+fn i64_shr_u() -> i32 {
+    reset();
+    _ = i64_left() >>u i64_right();
+    get();
+}
+#[export]
+fn i64_shr_s() -> i32 {
+    reset();
+    _ = i64_left() >>s i64_right();
+    get();
+}
+#[export]
+fn i64_eq() -> i32 {
+    reset();
+    _ = i64_left() == i64_right();
+    get();
+}
+#[export]
+fn i64_ne() -> i32 {
+    reset();
+    _ = i64_left() != i64_right();
+    get();
+}
+#[export]
+fn i64_lt_s() -> i32 {
+    reset();
+    _ = i64_left() <s i64_right();
+    get();
+}
+#[export]
+fn i64_le_s() -> i32 {
+    reset();
+    _ = i64_left() <=s i64_right();
+    get();
+}
+#[export]
+fn i64_lt_u() -> i32 {
+    reset();
+    _ = i64_left() <u i64_right();
+    get();
+}
+#[export]
+fn i64_le_u() -> i32 {
+    reset();
+    _ = i64_left() <=u i64_right();
+    get();
+}
+#[export]
+fn i64_gt_s() -> i32 {
+    reset();
+    _ = i64_left() >s i64_right();
+    get();
+}
+#[export]
+fn i64_ge_s() -> i32 {
+    reset();
+    _ = i64_left() >=s i64_right();
+    get();
+}
+#[export]
+fn i64_gt_u() -> i32 {
+    reset();
+    _ = i64_left() >u i64_right();
+    get();
+}
+#[export]
+fn i64_ge_u() -> i32 {
+    reset();
+    _ = i64_left() >=u i64_right();
+    get();
+}
+#[export]
+fn i64_store() -> i32 {
+    reset();
+    m.store64(i32_left(), i64_right());
+    get();
+}
+#[export]
+fn i64_store8() -> i32 {
+    reset();
+    m.store8(i32_left(), i64_right());
+    get();
+}
+#[export]
+fn i64_store16() -> i32 {
+    reset();
+    m.store16(i32_left(), i64_right());
+    get();
+}
+#[export]
+fn i64_store32() -> i32 {
+    reset();
+    m.store32(i32_left(), i64_right());
+    get();
+}
+#[export]
+fn i64_call() -> i32 {
+    reset();
+    i64_dummy(i64_left(), i64_right());
+    get();
+}
+#[export]
+fn i64_call_indirect() -> i32 {
+    reset();
+    _ = (t[i64_callee()] as &?i64_T)(i64_left(), i64_right());
+    get();
+}
+#[export]
+fn i64_select() -> i32 {
+    reset();
+    _ = i64_bool()?i64_left():i64_right();
+    get();
+}
+#[export]
+fn f32_add() -> i32 {
+    reset();
+    _ = f32_left() + f32_right();
+    get();
+}
+#[export]
+fn f32_sub() -> i32 {
+    reset();
+    _ = f32_left() - f32_right();
+    get();
+}
+#[export]
+fn f32_mul() -> i32 {
+    reset();
+    _ = f32_left() * f32_right();
+    get();
+}
+#[export]
+fn f32_div() -> i32 {
+    reset();
+    _ = f32_left() / f32_right();
+    get();
+}
+#[export]
+fn f32_copysign() -> i32 {
+    reset();
+    _ = f32_left().copysign(f32_right());
+    get();
+}
+#[export]
+fn f32_eq() -> i32 {
+    reset();
+    _ = f32_left() == f32_right();
+    get();
+}
+#[export]
+fn f32_ne() -> i32 {
+    reset();
+    _ = f32_left() != f32_right();
+    get();
+}
+#[export]
+fn f32_lt() -> i32 {
+    reset();
+    _ = f32_left() < f32_right();
+    get();
+}
+#[export]
+fn f32_le() -> i32 {
+    reset();
+    _ = f32_left() <= f32_right();
+    get();
+}
+#[export]
+fn f32_gt() -> i32 {
+    reset();
+    _ = f32_left() > f32_right();
+    get();
+}
+#[export]
+fn f32_ge() -> i32 {
+    reset();
+    _ = f32_left() >= f32_right();
+    get();
+}
+#[export]
+fn f32_min() -> i32 {
+    reset();
+    _ = f32_left().min(f32_right());
+    get();
+}
+#[export]
+fn f32_max() -> i32 {
+    reset();
+    _ = f32_left().max(f32_right());
+    get();
+}
+#[export]
+fn f32_store() -> i32 {
+    reset();
+    m.storef32(i32_left(), f32_right());
+    get();
+}
+#[export]
+fn f32_call() -> i32 {
+    reset();
+    f32_dummy(f32_left(), f32_right());
+    get();
+}
+#[export]
+fn f32_call_indirect() -> i32 {
+    reset();
+    _ = (t[f32_callee()] as &?f32_T)(f32_left(), f32_right());
+    get();
+}
+#[export]
+fn f32_select() -> i32 {
+    reset();
+    _ = f32_bool()?f32_left():f32_right();
+    get();
+}
+#[export]
+fn f64_add() -> i32 {
+    reset();
+    _ = f64_left() + f64_right();
+    get();
+}
+#[export]
+fn f64_sub() -> i32 {
+    reset();
+    _ = f64_left() - f64_right();
+    get();
+}
+#[export]
+fn f64_mul() -> i32 {
+    reset();
+    _ = f64_left() * f64_right();
+    get();
+}
+#[export]
+fn f64_div() -> i32 {
+    reset();
+    _ = f64_left() / f64_right();
+    get();
+}
+#[export]
+fn f64_copysign() -> i32 {
+    reset();
+    _ = f64_left().copysign(f64_right());
+    get();
+}
+#[export]
+fn f64_eq() -> i32 {
+    reset();
+    _ = f64_left() == f64_right();
+    get();
+}
+#[export]
+fn f64_ne() -> i32 {
+    reset();
+    _ = f64_left() != f64_right();
+    get();
+}
+#[export]
+fn f64_lt() -> i32 {
+    reset();
+    _ = f64_left() < f64_right();
+    get();
+}
+#[export]
+fn f64_le() -> i32 {
+    reset();
+    _ = f64_left() <= f64_right();
+    get();
+}
+#[export]
+fn f64_gt() -> i32 {
+    reset();
+    _ = f64_left() > f64_right();
+    get();
+}
+#[export]
+fn f64_ge() -> i32 {
+    reset();
+    _ = f64_left() >= f64_right();
+    get();
+}
+#[export]
+fn f64_min() -> i32 {
+    reset();
+    _ = f64_left().min(f64_right());
+    get();
+}
+#[export]
+fn f64_max() -> i32 {
+    reset();
+    _ = f64_left().max(f64_right());
+    get();
+}
+#[export]
+fn f64_store() -> i32 {
+    reset();
+    m.storef64(i32_left(), f64_right());
+    get();
+}
+#[export]
+fn f64_call() -> i32 {
+    reset();
+    f64_dummy(f64_left(), f64_right());
+    get();
+}
+#[export]
+fn f64_call_indirect() -> i32 {
+    reset();
+    _ = (t[f64_callee()] as &?f64_T)(f64_left(), f64_right());
+    get();
+}
+#[export]
+fn f64_select() -> i32 {
+    reset();
+    _ = f64_bool()?f64_left():f64_right();
+    get();
+}
+#[export = "br_if"]
+fn f() -> i32 {
+    'l: do {
+        reset();
+        _ = br_if 'l (i32_left(), i32_right() & 0);
+        get();
+    }
+}
+#[export = "br_table"]
+fn f_2() -> i32 {
+    'a: do {
+        reset();
+        _ =
+            'b: do {
+                br_table [ 'a, else 'b ] (i32_left(), i32_right());
+            };
+        get();
+    }
+}
+table t: &?func [8, 8];
+memory m: i32 [1];
+elem e: &func @ t [0] = [
+        i32_t0, i32_t1, i64_t0, i64_t1, f32_t0, f32_t1, f64_t0, f64_t1
+    ];

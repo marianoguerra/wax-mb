@@ -1,0 +1,7 @@
+fn target() {}
+fn f(x: i32) {
+    #[likely]
+    if x {
+        _ = target;
+    }
+}

@@ -1,0 +1,4 @@
+#[start, if(debug)]
+fn init() {
+    // only run under `-D debug=true`
+}

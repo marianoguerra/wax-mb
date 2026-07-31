@@ -1,0 +1,7 @@
+#![module = "M"]
+rec {
+    type f1 = fn();
+    type t = { };
+}
+#[export]
+fn f: f1 () {}

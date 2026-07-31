@@ -1,0 +1,13 @@
+type ft = fn();
+type ct = cont ft;
+type t = fn() -> i32;
+fn g() {
+    i = 42;
+}
+#[export]
+fn f() -> i32 {
+    i = 99;
+    ct::new(g).resume();
+    i;
+}
+let i = 0;

@@ -1,0 +1,2 @@
+{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/wax-fn-type-ref__bad.wax","startLine":2,"startColumn":33,"endLine":2,"endColumn":38,"startOffset":66,"endOffset":71,"message":"Expected function type.","warning":null,"hint":null,"related":[]}
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/wax-fn-type-ref__bad.wax","startLine":2,"startColumn":30,"endLine":2,"endColumn":31,"startOffset":63,"endOffset":64,"message":"The imported function 'f' is never used.","warning":"unused-import","hint":null,"related":[]}

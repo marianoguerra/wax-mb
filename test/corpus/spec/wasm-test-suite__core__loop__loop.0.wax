@@ -1,0 +1,737 @@
+type check = fn(i32, i32) -> i32;
+type t = fn();
+type t_2 = fn() -> i32;
+type t_3 = fn(i32);
+type t_4 = fn(i32, f64, i32) -> (i32, f64, i32);
+type t_5 = fn() -> (i32, i64, i32);
+type t_6 = fn(i32) -> i32;
+type t_7 = fn() -> (i32, i32);
+type t_8 = fn() -> (f32, f32);
+type t_9 = fn() -> (i32, i32, i64);
+type t_10 = fn(i32, i32, i64);
+type t_11 = fn(i32, i32) -> (i32, i32);
+type t_12 = fn(i64) -> i64;
+type t_13 = fn(f32, f32) -> f32;
+fn dummy() {}
+#[export]
+fn empty() {
+    loop {}
+    'l: loop {}
+}
+#[export]
+fn singular() -> i32 {
+    loop {
+        nop;
+    }
+    loop {
+        7;
+    }
+}
+#[export]
+fn multi() -> i32 {
+    loop {
+        dummy();
+        dummy();
+        dummy();
+        dummy();
+    }
+    _ =
+        loop {
+            dummy();
+            dummy();
+            8;
+            dummy();
+        };
+    loop () -> (i32, i64, i32) {
+        dummy();
+        dummy();
+        dummy();
+        8;
+        dummy();
+        dummy();
+        dummy();
+        dummy();
+        7;
+        dummy();
+        dummy();
+        dummy();
+        dummy();
+        9;
+        dummy();
+    }
+    _ = _;
+    _ = _;
+}
+#[export]
+fn nested() -> i32 {
+    loop {
+        loop {
+            dummy();
+            do {}
+            nop;
+        }
+        loop {
+            dummy();
+            9;
+        }
+    }
+}
+#[export]
+fn deep() -> i32 {
+    loop {
+        do {
+            loop {
+                do {
+                    loop {
+                        do {
+                            loop {
+                                do {
+                                    loop {
+                                        do {
+                                            loop {
+                                                do {
+                                                    loop {
+                                                        do {
+                                                            loop {
+                                                                do {
+                                                                    loop {
+                                                                        do {
+                                                                            loop {
+                                                                                do {
+                                                                                    loop {
+                                                                                        do {
+                                                                                          loop {
+                                                                                          do {
+                                                                                          loop {
+                                                                                          do {
+                                                                                          loop {
+                                                                                          do {
+                                                                                          loop {
+                                                                                          do {
+                                                                                          loop {
+                                                                                          do {
+                                                                                          loop {
+                                                                                          do {
+                                                                                          loop {
+                                                                                          do {
+                                                                                          loop {
+                                                                                          do {
+                                                                                          loop {
+                                                                                          do {
+                                                                                          dummy();
+                                                                                          150;
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                          }
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+#[export = "as-select-first"]
+fn f() -> i32 {
+    3
+        ?loop {
+             1;
+         }:2;
+}
+#[export = "as-select-mid"]
+fn f_2() -> i32 {
+    3?2
+        :loop {
+             1;
+         };
+}
+#[export = "as-select-last"]
+fn f_3() -> i32 {
+    (loop {
+         1;
+     }?2:3);
+}
+#[export = "as-if-condition"]
+fn f_4() {
+    if
+        loop i32 {
+            1;
+        } {
+        dummy();
+    }
+}
+#[export = "as-if-then"]
+fn f_5() -> i32 {
+    if 1 {
+        loop {
+            1;
+        }
+    } else {
+        2;
+    }
+}
+#[export = "as-if-else"]
+fn f_6() -> i32 {
+    if 1 {
+        2;
+    } else {
+        loop {
+            1;
+        }
+    }
+}
+#[export = "as-br_if-first"]
+fn f_7() -> i32 {
+    'l: do {
+        br_if 'l
+            (loop {
+                 1;
+             }, 2);
+    }
+}
+#[export = "as-br_if-last"]
+fn f_8() -> i32 {
+    'l: do {
+        br_if 'l
+            (2,
+             loop {
+                 1;
+             });
+    }
+}
+#[export = "as-br_table-first"]
+fn f_9() -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ]
+            (loop {
+                 1;
+             }, 2);
+    }
+}
+#[export = "as-br_table-last"]
+fn f_10() -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ]
+            (2,
+             loop {
+                 1;
+             });
+    }
+}
+fn func(x: i32, i32) -> i32 {
+    x;
+}
+#[export = "as-call_indirect-first"]
+fn f_11() -> i32 {
+    do {
+        (t[0] as &?check)(
+            loop {
+                1;
+            },
+            2,
+        );
+    }
+}
+#[export = "as-call_indirect-mid"]
+fn f_12() -> i32 {
+    do {
+        (t[0] as &?check)(
+            2,
+            loop {
+                1;
+            },
+        );
+    }
+}
+#[export = "as-call_indirect-last"]
+fn f_13() -> i32 {
+    do {
+        (t
+             [loop {
+                  0;
+              }] as &?check)(
+            1,
+            2,
+        );
+    }
+}
+#[export = "as-store-first"]
+fn f_14() {
+    m.store32(
+        loop {
+            1;
+        },
+        1,
+    );
+}
+#[export = "as-store-last"]
+fn f_15() {
+    m.store32(
+        10,
+        loop {
+            1;
+        },
+    );
+}
+#[export = "as-memory.grow-value"]
+fn f_16() -> i32 {
+    m.grow(
+        loop {
+            1;
+        },
+    );
+}
+fn f_17(x: i32) -> i32 {
+    x;
+}
+#[export = "as-call-value"]
+fn f_18() -> i32 {
+    f_17(
+        loop {
+            1;
+        },
+    );
+}
+#[export = "as-return-value"]
+fn f_19() -> i32 {
+    return
+        loop {
+            1;
+        };
+}
+#[export = "as-drop-operand"]
+fn f_20() {
+    _ =
+        loop {
+            1;
+        };
+}
+#[export = "as-br-value"]
+fn f_21() -> i32 {
+    'l: do {
+        br 'l
+            loop {
+                1;
+            };
+    }
+}
+#[export = "as-local.set-value"]
+fn f_22() -> i32 {
+    let x =
+        loop {
+            1;
+        };
+    x;
+}
+#[export = "as-local.tee-value"]
+fn f_23() -> i32 {
+    let x: i32;
+    x :=
+        loop {
+            1;
+        };
+}
+#[export = "as-global.set-value"]
+fn f_24() -> i32 {
+    a =
+        loop {
+            1;
+        };
+    a;
+}
+#[export = "as-load-operand"]
+fn f_25() -> i32 {
+    m.load32(
+        loop {
+            1;
+        },
+    );
+}
+#[export = "as-unary-operand"]
+fn f_26() -> i32 {
+    (loop {
+         dummy();
+         13;
+     }.ctz());
+}
+#[export = "as-binary-operand"]
+fn f_27() -> i32 {
+    (loop {
+         dummy();
+         3;
+     }
+         * loop {
+               dummy();
+               4;
+           });
+}
+#[export = "as-test-operand"]
+fn f_28() -> i32 {
+    (!loop {
+          dummy();
+          13;
+      });
+}
+#[export = "as-compare-operand"]
+fn f_29() -> i32 {
+    (loop f32 {
+         dummy();
+         0x1.8p+1;
+     }
+         > loop f32 {
+               dummy();
+               0x1.8p+1;
+           });
+}
+#[export = "as-binary-operands"]
+fn f_30() -> i32 {
+    loop () -> (i32, i32) {
+        dummy();
+        3;
+        dummy();
+        4;
+    }
+    _ * _;
+}
+#[export = "as-compare-operands"]
+fn f_31() -> i32 {
+    loop () -> (f32, f32) {
+        dummy();
+        0x1.8p+1;
+        dummy();
+        0x1.8p+1;
+    }
+    _ > _;
+}
+#[export = "as-mixed-operands"]
+fn f_32() -> i32 {
+    loop () -> (i32, i32) {
+        dummy();
+        3;
+        dummy();
+        4;
+    }
+    _ * (_ + 5);
+}
+#[export = "break-bare"]
+fn f_33() -> i32 {
+    'l: do {
+        'l_2: loop {
+            br 'l;
+            br 'l_2;
+            unreachable;
+        }
+    }
+    'l: do {
+        loop {
+            br_if 'l 1;
+            unreachable;
+        }
+    }
+    'l: do {
+        loop {
+            br_table [ else 'l ] 0;
+            unreachable;
+        }
+    }
+    'l: do {
+        loop {
+            br_table [ 'l, 'l, else 'l ] 1;
+            unreachable;
+        }
+    }
+    19;
+}
+#[export = "break-value"]
+fn f_34() -> i32 {
+    'l: do {
+        0;
+        'l_2: loop (i32) {
+            do {
+                br 'l 18;
+            }
+            br 'l_2 20;
+        }
+        19;
+    }
+}
+#[export = "break-multi-value"]
+fn f_35() -> (i32, i32, i64) {
+    'l: do () -> (i32, i32, i64) {
+        0;
+        0;
+        0;
+        'l_2: loop (i32, i32, i64) {
+            do {
+                br 'l (18, -18, 18);
+            }
+            br 'l_2 (20, -20, 20);
+        }
+        19;
+        -19;
+        19;
+    }
+}
+#[export = "break-repeated"]
+fn f_36() -> i32 {
+    'l: do {
+        loop {
+            br 'l 18;
+            br 'l 19;
+            _ = br_if 'l (20, 0);
+            _ = br_if 'l (20, 1);
+            br 'l 21;
+            br_table [ else 'l ] (22, 0);
+            br_table [ 'l, 'l, else 'l ] (23, 1);
+            21;
+        }
+    }
+}
+#[export = "break-inner"]
+fn f_37() -> i32 {
+    let x = 0;
+    x +=
+        'l: do {
+            loop {
+                do i32 {
+                    br 'l 1;
+                }
+            }
+        };
+    x +=
+        'l: do {
+            loop {
+                loop i32 {
+                    br 'l 2;
+                }
+            }
+        };
+    x +=
+        do {
+            loop {
+                'l: do {
+                    loop i32 {
+                        br 'l 4;
+                    }
+                }
+            }
+        };
+    x +=
+        'l: do {
+            loop {
+                br 'l 8;
+                (_ as i32).ctz();
+            }
+        };
+    x +=
+        'l: do {
+            loop {
+                (loop i32 {
+                     br 'l 16;
+                 }.ctz());
+            }
+        };
+    x;
+}
+#[export = "cont-inner"]
+fn f_38() -> i32 {
+    let x = 0;
+    x +=
+        'l: loop {
+            loop i32 {
+                br 'l;
+            }
+        };
+    x +=
+        'l: loop {
+            br 'l;
+            (_ as i32).ctz();
+        };
+    x +=
+        'l: loop {
+            (loop i32 {
+                 br 'l;
+             }.ctz());
+        };
+    x;
+}
+#[export]
+fn param() -> i32 {
+    1;
+    loop (i32) -> i32 {
+        _ + 2;
+    }
+}
+#[export]
+fn params() -> i32 {
+    1;
+    2;
+    loop (i32, i32) -> i32 {
+        _ + _;
+    }
+}
+#[export = "params-id"]
+fn f_39() -> i32 {
+    1;
+    2;
+    loop (i32, i32) -> (i32, i32) {}
+    _ + _;
+}
+#[export = "param-break"]
+fn f_40() -> i32 {
+    1;
+    'l: loop (i32) -> i32 {
+        let x: i32;
+        br_if 'l (x := _ + 4, x <u 10);
+    }
+}
+#[export = "params-break"]
+fn f_41() -> i32 {
+    1;
+    2;
+    'l: loop (i32, i32) -> i32 {
+        let x: i32;
+        br_if 'l (x := _ + _, 3, x <u 10);
+        _ = _;
+    }
+}
+#[export = "params-id-break"]
+fn f_42() -> i32 {
+    let x = 0;
+    1;
+    2;
+    'l: loop (i32, i32) -> (i32, i32) {
+        x += 1;
+        br_if 'l (_, _, x <u 10);
+    }
+    _ + _;
+}
+#[export = "effects"]
+fn fx() -> i32 {
+    let x: i32;
+    'l: do {
+        loop {
+            x = 1;
+            x *= 3;
+            x -= 5;
+            x *= 7;
+            br 'l;
+            x *= 100;
+        }
+    }
+    x == -14;
+}
+#[export = "while"]
+fn f_43(x: i64) -> i64 {
+    let x_2: i64 = 1;
+    'l: do {
+        'l_2: loop {
+            br_if 'l !x;
+            x_2 = x * x_2;
+            x -= 1;
+            br 'l_2;
+        }
+    }
+    x_2;
+}
+#[export]
+fn for(x: i64) -> i64 {
+    let x_2: i64 = 1;
+    let x_3: i64 = 2;
+    'l: do {
+        'l_2: loop {
+            br_if 'l x_3 >u x;
+            x_2 *= x_3;
+            x_3 += 1;
+            br 'l_2;
+        }
+    }
+    x_2;
+}
+#[export]
+fn nesting(x: f32, x_2: f32) -> f32 {
+    let x_4: f32;
+    'l: do {
+        'l_2: loop {
+            br_if 'l x == 0x0p+0;
+            let x_3 = x_2;
+            'l_3: do {
+                'l_4: loop {
+                    br_if 'l_3 x_3 == 0x0p+0;
+                    br_if 'l x_3 < 0x0p+0;
+                    x_4 += x_3;
+                    x_3 -= 0x1p+1;
+                    br 'l_4;
+                }
+            }
+            x_4 /= x;
+            x -= 0x1p+0;
+            br 'l_2;
+        }
+    }
+    x_4;
+}
+#[export = "type-use"]
+fn f_44() {
+    loop {}
+    loop i32 {
+        0;
+    }
+    loop (i32) {
+        _ = _;
+    }
+    0;
+    0x0p+0;
+    0;
+    loop (i32, f64, i32) -> (i32, f64, i32) {}
+    _ = _;
+    _ = _;
+    _ = _;
+    loop i32 {
+        0;
+    }
+    loop (i32) {
+        _ = _;
+    }
+    0;
+    0x0p+0;
+    0;
+    loop (i32, f64, i32) -> (i32, f64, i32) {}
+    _ = _;
+    _ = _;
+    _ = _;
+}
+table t: &?func [1, 1];
+memory m: i32 [1];
+let a = 0;
+elem e: &func @ t [0] = [func];

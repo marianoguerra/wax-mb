@@ -1,0 +1,10 @@
+type ft = fn();
+type ct = cont ft;
+tag foo();
+fn f() {
+    _ =
+        'on_foo: do &ft {
+            (null as &?ct).resume() on [foo -> 'on_foo];
+            unreachable;
+        };
+}

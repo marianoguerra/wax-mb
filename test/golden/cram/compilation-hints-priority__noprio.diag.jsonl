@@ -1,0 +1,1 @@
+{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/compilation-hints-priority__noprio.wax","startLine":2,"startColumn":0,"endLine":2,"endColumn":19,"startOffset":10,"endOffset":29,"message":"The '#[optimization]' attribute needs a '#[priority = n]'.","warning":null,"hint":null,"related":[]}

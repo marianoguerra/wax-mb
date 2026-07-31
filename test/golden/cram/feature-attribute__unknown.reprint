@@ -1,0 +1,4 @@
+#![feature = "no-such-proposal"]
+fn f() -> i32 {
+    0;
+}

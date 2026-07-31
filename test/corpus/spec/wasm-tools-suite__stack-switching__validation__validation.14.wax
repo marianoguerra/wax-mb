@@ -1,0 +1,18 @@
+type ft1 = fn(i32) -> i32;
+type ct1 = cont ft1;
+type ft2 = fn(i32, i32) -> i32;
+type ct2 = cont ft2;
+type t = fn(&ct1);
+type t_2 = fn(&ft1) -> &ct1;
+type t_3 = fn(&?ft1) -> &ct1;
+#[export]
+fn f1(i32) -> i32 {
+    123;
+}
+fn drop_ct1(c: &ct1) {}
+fn test_good1(x: &ft1) -> &ct1 {
+    ct1::new(x);
+}
+fn test_good2(x: &?ft1) -> &ct1 {
+    ct1::new(x);
+}

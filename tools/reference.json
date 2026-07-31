@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "The pinned reference implementation, used as the oracle by the differential",
+    "harness (cmd/waxdiff). Restore it with tools/fetch-reference.sh.",
+    "",
+    "NOTE the release is 'edge', which ocsigen/wax REBUILDS ON EVERY PUSH to main.",
+    "The asset URL therefore serves a moving target, which is why sha256 and",
+    "upstream_commit are recorded here: fetch-reference.sh fails loudly when what",
+    "it downloads is not what this file describes, rather than silently swapping",
+    "the oracle out from under the goldens.",
+    "",
+    "The npm package @wax-wasm/wax is NOT usable as the oracle: it is pinned at",
+    "0.1.0, which is 328 commits behind main, and the front end diverged heavily",
+    "over those commits (parser.mly 558 lines, output.ml 377, lexer.ml 91, plus",
+    "the whole parser_messages generator, which did not exist at 0.1.0)."
+  ],
+  "repo": "ocsigen/wax",
+  "release": "edge",
+  "asset": "wax-linux-x86_64",
+  "sha256": "28c17cc3b867e34f77c4163b6c1ff2619ed9b61059a65512b5eb81f7cca7dca5",
+  "reports_version": "0.1.1~dev",
+  "upstream_commit": "9002a71",
+  "ported_from_commit": "75d71d05ed51e9e3fddef2fe66a60415db1516f3",
+  "front_end_identical": true,
+  "_front_end_note": [
+    "upstream_commit is 2 commits ahead of ported_from_commit (the state of the",
+    "wax/ reference checkout). Those two commits touch only src/lib-wasm/",
+    "binary_to_text.ml and src/lib-wax/typing.ml -- neither is in this port's",
+    "scope -- so the binary is front-end-identical to the sources being ported.",
+    "Verified by reproducing test/cram-tests/bracket-wrapping.t byte for byte.",
+    "Re-check this claim with:",
+    "  gh api repos/ocsigen/wax/compare/<ported_from_commit>...<upstream_commit>"
+  ]
+}

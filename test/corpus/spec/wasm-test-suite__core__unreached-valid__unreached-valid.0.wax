@@ -1,0 +1,54 @@
+type t = fn(i32) -> i32;
+type t_2 = fn();
+type t_3 = fn() -> i32;
+type t_4 = fn() -> i64;
+#[export = "select-trap-left"]
+fn f(cond: i32) -> i32 {
+    unreachable;
+    cond?_:0;
+}
+#[export = "select-trap-right"]
+fn f_2(cond: i32) -> i32 {
+    0;
+    unreachable;
+    cond?_:_;
+}
+#[export = "select-unreached"]
+fn f_3() {
+    unreachable;
+    _?_:_;
+    unreachable;
+    0?_:_;
+    unreachable;
+    0?_:0;
+    unreachable;
+    0?0:0;
+    unreachable;
+    0?_:0x0p+0 as f32;
+    unreachable;
+}
+#[export = "select-unreached-result1"]
+fn f_4() -> i32 {
+    unreachable;
+    _ + (_?_:_);
+}
+#[export = "select-unreached-result2"]
+fn f_5() -> i64 {
+    unreachable;
+    _ + (0?_:0);
+}
+#[export = "select-unreached-num"]
+fn f_6() {
+    unreachable;
+    _ = !(_?_:_);
+}
+#[export = "select-unreached-ref"]
+fn f_7() {
+    unreachable;
+    _ = !((_?_:_) as &?any);
+}
+#[export = "call_ref-unreached"]
+fn f_8() -> i32 {
+    unreachable;
+    (_ as &?t)(_);
+}

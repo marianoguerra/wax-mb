@@ -1,0 +1,11 @@
+type t = fn(i32) -> i32;
+import "test"
+#[import = "memory-2-4"]
+memory m: i32 [1];
+import "spectest"
+#[import = "memory"]
+memory m_2: i32 [0, 3];
+#[export]
+fn grow(x: i32) -> i32 {
+    m_2.grow(x);
+}

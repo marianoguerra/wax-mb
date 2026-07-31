@@ -1,0 +1,13 @@
+#![module = "M2"]
+type t = fn(i32) -> i64;
+type t_2 = fn(i32, i64);
+#[export]
+fn load(x: i32) -> i64 {
+    mem.load64(x);
+}
+#[export]
+fn store(x: i32, x_2: i64) {
+    mem.store64(x, x_2);
+}
+#[export]
+memory mem: i32 [1];

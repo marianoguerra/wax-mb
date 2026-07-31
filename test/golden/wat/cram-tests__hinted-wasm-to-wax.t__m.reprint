@@ -1,0 +1,8 @@
+fn f() {}
+elem e: &func = [];
+fn f_2(x: i32) {
+    #[likely]
+    if x {
+        e.drop();
+    }
+}

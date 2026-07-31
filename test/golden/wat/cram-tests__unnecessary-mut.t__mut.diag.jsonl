@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/wat/cram-tests__unnecessary-mut.t__mut.wax","startLine":4,"startColumn":4,"endLine":4,"endColumn":13,"startOffset":52,"endOffset":61,"message":"The global 'never_set' is mutable but is never assigned.","warning":"unnecessary-mut","hint":"Declare it with 'const' instead of 'let'.","related":[]}

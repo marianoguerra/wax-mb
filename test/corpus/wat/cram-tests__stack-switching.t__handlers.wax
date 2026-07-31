@@ -1,0 +1,34 @@
+// resume with an on-label handler
+type ft = fn(i32) -> i32;
+type ct = cont ft;
+tag yield(i32) -> i32;
+fn handle(k0: &?ct) -> i32 {
+    'h: do () -> (i32, &ct) {
+        return k0.resume(1) on [yield -> 'h];
+    }
+    _ = _;
+    return _;
+}
+// switch between two continuations
+rec {
+    type ft1 = fn(&?ct2) -> i32;
+    type ct1 = cont ft1;
+    type ft2 = fn(i32) -> i32;
+    type ct2 = cont ft2;
+}
+tag e() -> i32;
+fn sw(k: &?ct1) -> i32 {
+    k.switch(tag: e);
+}
+// resume with an on-switch handler
+rec {
+    type sft = fn(&?sct) -> i32;
+    type sct = cont sft;
+}
+tag swap() -> i32;
+fn f: sft (&?sct) -> i32 {
+    0;
+}
+fn onsw(k: &?sct) -> i32 {
+    sct::new(f).resume(k) on [swap -> switch];
+}

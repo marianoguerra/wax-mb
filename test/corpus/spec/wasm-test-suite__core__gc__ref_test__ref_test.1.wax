@@ -1,0 +1,120 @@
+type t0 = open { };
+type t1: t0 = open { f: i32 };
+type t1': t0 = open { f: i32 };
+type t2: t1 = open { .., f_2: i32 };
+type t2': t1' = open { .., f_2: i32 };
+type t3: t0 = open { f: i32, f_2: i32 };
+type t0': t0 = open { };
+type t4: t0' = open { f: i32, f_2: i32 };
+type t = fn();
+fn init() {
+    t[0] = {t0| .. };
+    t[10] = {t0| .. };
+    t[1] = {t1| .. };
+    t[11] = {t1'| .. };
+    t[2] = {t2| .. };
+    t[12] = {t2'| .. };
+    t[3] = {t3| .. };
+    t[4] = {t4| .. };
+}
+#[export = "test-sub"]
+fn f() {
+    init();
+    'l: do {
+        br_if 'l !(null as &?struct is &?t0);
+        br_if 'l !(null as &?t0 is &?t0);
+        br_if 'l !(null as &?t1 is &?t0);
+        br_if 'l !(null as &?t2 is &?t0);
+        br_if 'l !(null as &?t3 is &?t0);
+        br_if 'l !(null as &?t4 is &?t0);
+        br_if 'l !(t[0] is &?t0);
+        br_if 'l !(t[1] is &?t0);
+        br_if 'l !(t[2] is &?t0);
+        br_if 'l !(t[3] is &?t0);
+        br_if 'l !(t[4] is &?t0);
+        br_if 'l !(null as &?struct is &?t1);
+        br_if 'l !(null as &?t0 is &?t1);
+        br_if 'l !(null as &?t1 is &?t1);
+        br_if 'l !(null as &?t2 is &?t1);
+        br_if 'l !(null as &?t3 is &?t1);
+        br_if 'l !(null as &?t4 is &?t1);
+        br_if 'l !(t[1] is &?t1);
+        br_if 'l !(t[2] is &?t1);
+        br_if 'l !(null as &?struct is &?t2);
+        br_if 'l !(null as &?t0 is &?t2);
+        br_if 'l !(null as &?t1 is &?t2);
+        br_if 'l !(null as &?t2 is &?t2);
+        br_if 'l !(null as &?t3 is &?t2);
+        br_if 'l !(null as &?t4 is &?t2);
+        br_if 'l !(t[2] is &?t2);
+        br_if 'l !(null as &?struct is &?t3);
+        br_if 'l !(null as &?t0 is &?t3);
+        br_if 'l !(null as &?t1 is &?t3);
+        br_if 'l !(null as &?t2 is &?t3);
+        br_if 'l !(null as &?t3 is &?t3);
+        br_if 'l !(null as &?t4 is &?t3);
+        br_if 'l !(t[3] is &?t3);
+        br_if 'l !(null as &?struct is &?t4);
+        br_if 'l !(null as &?t0 is &?t4);
+        br_if 'l !(null as &?t1 is &?t4);
+        br_if 'l !(null as &?t2 is &?t4);
+        br_if 'l !(null as &?t3 is &?t4);
+        br_if 'l !(null as &?t4 is &?t4);
+        br_if 'l !(t[4] is &?t4);
+        br_if 'l !(t[0] is &t0);
+        br_if 'l !(t[1] is &t0);
+        br_if 'l !(t[2] is &t0);
+        br_if 'l !(t[3] is &t0);
+        br_if 'l !(t[4] is &t0);
+        br_if 'l !(t[1] is &t1);
+        br_if 'l !(t[2] is &t1);
+        br_if 'l !(t[2] is &t2);
+        br_if 'l !(t[3] is &t3);
+        br_if 'l !(t[4] is &t4);
+        br_if 'l null as &?struct is &t0;
+        br_if 'l null as &?struct is &t1;
+        br_if 'l null as &?struct is &t2;
+        br_if 'l null as &?struct is &t3;
+        br_if 'l null as &?struct is &t4;
+        br_if 'l t[0] is &t1;
+        br_if 'l t[3] is &t1;
+        br_if 'l t[4] is &t1;
+        br_if 'l t[0] is &t2;
+        br_if 'l t[1] is &t2;
+        br_if 'l t[3] is &t2;
+        br_if 'l t[4] is &t2;
+        br_if 'l t[0] is &t3;
+        br_if 'l t[1] is &t3;
+        br_if 'l t[2] is &t3;
+        br_if 'l t[4] is &t3;
+        br_if 'l t[0] is &t4;
+        br_if 'l t[1] is &t4;
+        br_if 'l t[2] is &t4;
+        br_if 'l t[3] is &t4;
+        return;
+    }
+    unreachable;
+}
+#[export = "test-canon"]
+fn f_2() {
+    init();
+    'l: do {
+        br_if 'l !(t[0] is &t0);
+        br_if 'l !(t[1] is &t0);
+        br_if 'l !(t[2] is &t0);
+        br_if 'l !(t[3] is &t0);
+        br_if 'l !(t[4] is &t0);
+        br_if 'l !(t[10] is &t0);
+        br_if 'l !(t[11] is &t0);
+        br_if 'l !(t[12] is &t0);
+        br_if 'l !(t[1] is &t1');
+        br_if 'l !(t[2] is &t1');
+        br_if 'l !(t[11] is &t1);
+        br_if 'l !(t[12] is &t1);
+        br_if 'l !(t[2] is &t2');
+        br_if 'l !(t[12] is &t2);
+        return;
+    }
+    unreachable;
+}
+table t: &?struct [20];

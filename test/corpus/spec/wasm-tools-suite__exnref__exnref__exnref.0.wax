@@ -1,0 +1,10 @@
+type t = fn(&?exn);
+type t_2 = fn(&exn);
+type t_3 = fn(&?noexn);
+type t_4 = fn(&noexn);
+fn f(&?exn) {}
+fn f_2(&?exn) {}
+fn f_3(&exn) {}
+fn f_4(&?noexn) {}
+fn f_5(&?noexn) {}
+fn f_6(&noexn) {}

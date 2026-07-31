@@ -1,0 +1,4 @@
+import "spectest"
+#[import = "table"]
+table t: &?func [0];
+table t_2: &?func [0];

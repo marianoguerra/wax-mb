@@ -1,0 +1,7 @@
+#![feature = "custom-descriptors"]
+rec {
+    type A = open descriptor t { };
+    type t = open describes A { };
+    type B: A = open descriptor t_2 { };
+    type t_2: t = open describes B { };
+}

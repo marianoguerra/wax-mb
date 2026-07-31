@@ -1,0 +1,23 @@
+#![feature = "custom-descriptors"]
+type f = fn();
+type t = fn(i32) -> i64;
+import "" {
+    #[import = ""]
+    fn f!();
+    #[import = ""]
+    fn f_2!();
+    #[import = ""]
+    fn f_3!(i32) -> i64;
+    #[import = ""]
+    fn f_4!(i32) -> i64;
+    #[import = ""]
+    fn f_5!();
+    #[import = ""]
+    fn f_6!();
+}
+const g = f;
+const g_2 = f_2;
+const g_3 = f_3;
+const g_4 = f_4;
+const g_5 = f_5;
+const g_6 = f_6;

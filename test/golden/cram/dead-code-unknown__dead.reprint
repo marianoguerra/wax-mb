@@ -1,0 +1,18 @@
+// An array access on a hole in unreachable code has an unknown receiver type.
+// Dead code type-checks permissively, but the access still cannot be compiled
+// (the array type is unknown), so it is rejected with a diagnostic pointing at
+// the receiver rather than silently miscompiled.
+fn f() -> i32 {
+    unreachable;
+    _[0];
+}
+
+// Likewise a field access whose receiver type is unknown in dead code: the
+// struct type cannot be resolved, so the access is rejected.
+type box = { v: i32 };
+
+fn g() {
+    unreachable;
+    let b = _.v;
+    _ = b;
+}

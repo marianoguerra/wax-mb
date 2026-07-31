@@ -1,0 +1,1 @@
+type t = fn(); import "test" fn unknown(); memory m: i32 [65536] pagesize 65536;

@@ -1,0 +1,4 @@
+type a = open { f: mut &?any };
+type b: a = open { .. };
+type c = open { f: &?any };
+type d: c = open { f: &?none };

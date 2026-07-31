@@ -1,0 +1,7 @@
+#![feature = "compact-import-section"]
+import "test" {
+    const g1: i32;
+    const g20: i32;
+    const g300: i32;
+    const g4000: i32;
+}

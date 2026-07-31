@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/wat/cram-tests__declare-ref-func.t__reffunc.wax","startLine":4,"startColumn":8,"endLine":4,"endColumn":9,"startOffset":37,"endOffset":38,"message":"The result of this expression is discarded, and computing it has no effect.","warning":"unused-result","hint":null,"related":[]}

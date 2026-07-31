@@ -1,0 +1,2 @@
+#[export]
+memory mem: i32 [2];

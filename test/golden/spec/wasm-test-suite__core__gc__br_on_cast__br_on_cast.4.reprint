@@ -1,0 +1,8 @@
+type t = { };
+type t_2 = fn(&any) -> &?t;
+fn f(x: &any) -> &?t 'l: {
+    do &any {
+        br_on_cast 'l &?t x;
+    }
+    unreachable;
+}

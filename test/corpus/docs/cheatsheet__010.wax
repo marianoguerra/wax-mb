@@ -1,0 +1,7 @@
+try t { } catch { oops => { _; } }               // try / catch arms (payload via hole _)
+try_legacy t { } catch { oops => { _; } }        // deprecated try/catch instructions
+throw oops(42);                                   // throw
+try { } catch [oops -> 'h]                       // branch-to-label form (try_table)
+type k = cont ft;                                // continuation type
+let c = k::new(f);                               // cont.new (k::bind binds args)
+suspend yield(x);   c.resume(args) on [tag -> 'l];    // suspend / resume

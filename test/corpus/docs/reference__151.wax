@@ -1,0 +1,16 @@
+type counter = { value: mut i32 };
+
+#[export = "new_counter"]
+fn new_counter() -> &counter {
+    {counter| value: 0};
+}
+
+#[export = "increment"]
+fn increment(c: &counter) {
+    c.value = c.value + 1;
+}
+
+#[export = "get_value"]
+fn get_value(c: &counter) -> i32 {
+    c.value;
+}

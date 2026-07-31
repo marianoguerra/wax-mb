@@ -1,0 +1,13 @@
+#![module = "Mm"]
+type t = fn(i32) -> i32;
+#[export]
+fn load(a: i32) -> i32 {
+    mem1.load8(a) as i32_u;
+}
+#[export]
+memory mem0: i32 [0, 0];
+#[export]
+memory mem1: i32 [1, 5];
+#[export]
+memory mem2: i32 [0, 0];
+data d @ mem1 [10] = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09";

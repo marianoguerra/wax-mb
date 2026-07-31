@@ -1,0 +1,63 @@
+type t = fn(v128, v128) -> v128;
+type t_2 = fn(v128) -> v128;
+type t_3 = fn(v128, v128, v128) -> v128;
+fn swizzle(x: v128, x_2: v128) -> v128 {
+    x.relaxed_swizzle_i8x16(x_2);
+}
+fn i32x4_trunc_f32x4_s(x: v128) -> v128 {
+    x.relaxed_trunc_f32x4_s_i32x4();
+}
+fn i32x4_trunc_f32x4_u(x: v128) -> v128 {
+    x.relaxed_trunc_f32x4_u_i32x4();
+}
+fn f(x: v128) -> v128 {
+    x.relaxed_trunc_f64x2_s_zero_i32x4();
+}
+fn f_2(x: v128) -> v128 {
+    x.relaxed_trunc_f64x2_u_zero_i32x4();
+}
+fn f32x4_fma(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_madd_f32x4(x_2, x_3);
+}
+fn f32x4_fnma(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_nmadd_f32x4(x_2, x_3);
+}
+fn f64x2_fma(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_madd_f64x2(x_2, x_3);
+}
+fn f64x2_fnma(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_nmadd_f64x2(x_2, x_3);
+}
+fn i8x16_laneselect(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i8x16(x_2, x_3);
+}
+fn i16x8_laneselect(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i16x8(x_2, x_3);
+}
+fn i32x4_laneselect(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i32x4(x_2, x_3);
+}
+fn i64x2_laneselect(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i64x2(x_2, x_3);
+}
+fn f32x4_min(x: v128, x_2: v128) -> v128 {
+    x.relaxed_min_f32x4(x_2);
+}
+fn f32x4_max(x: v128, x_2: v128) -> v128 {
+    x.relaxed_max_f32x4(x_2);
+}
+fn f64x2_min(x: v128, x_2: v128) -> v128 {
+    x.relaxed_min_f64x2(x_2);
+}
+fn f64x2_max(x: v128, x_2: v128) -> v128 {
+    x.relaxed_max_f64x2(x_2);
+}
+fn i16x8_q15mulr_s(x: v128, x_2: v128) -> v128 {
+    x.relaxed_q15mulr_s_i16x8(x_2);
+}
+fn i16x8_dot_i8x16_i7x16_s(x: v128, x_2: v128) -> v128 {
+    x.relaxed_dot_i8x16_i7x16_s_i16x8(x_2);
+}
+fn i32x4_dot_i8x16_i7x16_add_s(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_dot_i8x16_i7x16_add_s_i32x4(x_2, x_3);
+}

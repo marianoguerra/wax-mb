@@ -1,0 +1,6 @@
+fn f() {
+    let x: &?extern;
+    _ = x;
+    let y: i32;
+    _ = y;
+}

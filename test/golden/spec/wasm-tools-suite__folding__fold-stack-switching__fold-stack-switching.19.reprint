@@ -1,0 +1,63 @@
+type ft0 = fn();
+type ct0 = cont ft0;
+type ft1 = fn(f32) -> f64;
+type ct1 = cont ft1;
+type ft2 = fn(i64) -> f64;
+type ct2 = cont ft2;
+type ft3 = fn(i32) -> f64;
+type ct3 = cont ft3;
+type t = fn(i32) -> i64;
+type t_2 = fn(i64) -> i32;
+type t_3 = fn(&ct1) -> f64;
+type t_4 = fn() -> (i32, &ct2);
+type t_5 = fn() -> (i64, &ct3);
+type t_6 = fn(&?ct0);
+type t_7 = fn(&ct0);
+type t_8 = fn(&ct0) -> &ct0;
+fn test0(x: &ct1) -> f64 {
+    'handler0: do () -> (i32, &ct2) {
+        'handler1: do () -> (i64, &ct3) {
+            return x.resume(0x1.3ae148p+0) on [t2 -> 'handler0, t3 -> 'handler1];
+        }
+        unreachable;
+    }
+    unreachable;
+}
+fn test1(x: &ct1) -> f64 {
+    'handler0: do () -> (i32, &ct2) {
+        'handler1: do () -> (i32, &ct2) {
+            return x.resume(0x1.3ae148p+0) on [t2 -> 'handler0, t2 -> 'handler1];
+        }
+        unreachable;
+    }
+    unreachable;
+}
+fn test2(x: &?ct0) {
+    x.resume();
+}
+fn test3(x: &ct0) {
+    'handler: do &?ct0 {
+        x.resume() on [t0 -> 'handler];
+        return;
+    }
+    unreachable;
+}
+fn test4(x: &ct0) {
+    'handler: do &?ct0 {
+        x.resume() on [t0 -> 'handler, t1 -> 'handler];
+        return;
+    }
+    unreachable;
+}
+fn test5(x: &ct0) {
+    x;
+    'handler: do (&ct0) -> &ct0 {
+        _.resume() on [t0 -> 'handler];
+        return;
+    }
+    unreachable;
+}
+tag t0: ft0 ;
+tag t1: ft0 ;
+tag t2: t ;
+tag t3: t_2 ;

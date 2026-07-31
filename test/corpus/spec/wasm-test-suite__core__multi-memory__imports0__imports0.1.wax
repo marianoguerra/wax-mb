@@ -1,0 +1,4 @@
+type t = fn();
+import "test"
+#[import = "memory-2-inf"]
+fn f();

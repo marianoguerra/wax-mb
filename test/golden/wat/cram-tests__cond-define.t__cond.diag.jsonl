@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/wat/cram-tests__cond-define.t__cond.wax","startLine":9,"startColumn":3,"endLine":9,"endColumn":6,"startOffset":95,"endOffset":98,"message":"The function 'get' is never used.","warning":"unused-field","hint":null,"related":[]}

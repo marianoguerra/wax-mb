@@ -1,0 +1,98 @@
+type t = fn(v128, i32) -> v128;
+type t_2 = fn(v128) -> v128;
+#[export = "i8x16.shl"]
+fn f(x: v128, x_2: i32) -> v128 {
+    x.shl_i8x16(x_2);
+}
+#[export = "i8x16.shr_s"]
+fn f_2(x: v128, x_2: i32) -> v128 {
+    x.shr_s_i8x16(x_2);
+}
+#[export = "i8x16.shr_u"]
+fn f_3(x: v128, x_2: i32) -> v128 {
+    x.shr_u_i8x16(x_2);
+}
+#[export = "i16x8.shl"]
+fn f_4(x: v128, x_2: i32) -> v128 {
+    x.shl_i16x8(x_2);
+}
+#[export = "i16x8.shr_s"]
+fn f_5(x: v128, x_2: i32) -> v128 {
+    x.shr_s_i16x8(x_2);
+}
+#[export = "i16x8.shr_u"]
+fn f_6(x: v128, x_2: i32) -> v128 {
+    x.shr_u_i16x8(x_2);
+}
+#[export = "i32x4.shl"]
+fn f_7(x: v128, x_2: i32) -> v128 {
+    x.shl_i32x4(x_2);
+}
+#[export = "i32x4.shr_s"]
+fn f_8(x: v128, x_2: i32) -> v128 {
+    x.shr_s_i32x4(x_2);
+}
+#[export = "i32x4.shr_u"]
+fn f_9(x: v128, x_2: i32) -> v128 {
+    x.shr_u_i32x4(x_2);
+}
+#[export = "i64x2.shl"]
+fn f_10(x: v128, x_2: i32) -> v128 {
+    x.shl_i64x2(x_2);
+}
+#[export = "i64x2.shr_s"]
+fn f_11(x: v128, x_2: i32) -> v128 {
+    x.shr_s_i64x2(x_2);
+}
+#[export = "i64x2.shr_u"]
+fn f_12(x: v128, x_2: i32) -> v128 {
+    x.shr_u_i64x2(x_2);
+}
+#[export = "i8x16.shl_1"]
+fn f_13(x: v128) -> v128 {
+    x.shl_i8x16(1);
+}
+#[export = "i8x16.shr_u_8"]
+fn f_14(x: v128) -> v128 {
+    x.shr_u_i8x16(8);
+}
+#[export = "i8x16.shr_s_9"]
+fn f_15(x: v128) -> v128 {
+    x.shr_s_i8x16(9);
+}
+#[export = "i16x8.shl_1"]
+fn f_16(x: v128) -> v128 {
+    x.shl_i16x8(1);
+}
+#[export = "i16x8.shr_u_16"]
+fn f_17(x: v128) -> v128 {
+    x.shr_u_i16x8(16);
+}
+#[export = "i16x8.shr_s_17"]
+fn f_18(x: v128) -> v128 {
+    x.shr_s_i16x8(17);
+}
+#[export = "i32x4.shl_1"]
+fn f_19(x: v128) -> v128 {
+    x.shl_i32x4(1);
+}
+#[export = "i32x4.shr_u_32"]
+fn f_20(x: v128) -> v128 {
+    x.shr_u_i32x4(32);
+}
+#[export = "i32x4.shr_s_33"]
+fn f_21(x: v128) -> v128 {
+    x.shr_s_i32x4(33);
+}
+#[export = "i64x2.shl_1"]
+fn f_22(x: v128) -> v128 {
+    x.shl_i64x2(1);
+}
+#[export = "i64x2.shr_u_64"]
+fn f_23(x: v128) -> v128 {
+    x.shr_u_i64x2(64);
+}
+#[export = "i64x2.shr_s_65"]
+fn f_24(x: v128) -> v128 {
+    x.shr_s_i64x2(65);
+}

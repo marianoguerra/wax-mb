@@ -1,0 +1,6 @@
+type t = fn();
+fn f() {
+    1;
+    become f_2();
+}
+fn f_2() {}

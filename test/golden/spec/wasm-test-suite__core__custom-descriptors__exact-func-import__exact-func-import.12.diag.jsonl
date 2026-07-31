@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-test-suite__core__custom-descriptors__exact-func-import__exact-func-import.12.wax","startLine":4,"startColumn":14,"endLine":4,"endColumn":15,"startOffset":102,"endOffset":103,"message":"The imported function 'f' is never used.","warning":"unused-import","hint":null,"related":[]}

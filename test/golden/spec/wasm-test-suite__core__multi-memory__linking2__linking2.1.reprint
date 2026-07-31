@@ -1,0 +1,7 @@
+#![module = "Pm"]
+type t = fn(i32) -> i32;
+import "Mm" memory mem1: i32 [1, 8];
+#[export]
+fn grow(a: i32) -> i32 {
+    mem1.grow(a);
+}

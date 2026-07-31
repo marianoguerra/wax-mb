@@ -1,0 +1,147 @@
+type proc = fn();
+type t = fn(i32);
+type t_2 = fn() -> i32;
+fn f() {
+    do {
+        (t[0] as &?proc)();
+    }
+    loop {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    } else {
+        (t[0] as &?proc)();
+    }
+    do {
+        (t[0] as &?proc)();
+    }
+    loop {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    } else {
+        (t[0] as &?proc)();
+    }
+    do {
+        (t[0] as &?t)(0);
+    }
+    loop {
+        (t[0] as &?t)(0);
+    }
+    if 0 {
+        (t[0] as &?t)(0);
+    }
+    if 0 {
+        (t[0] as &?t)(0);
+    } else {
+        (t[0] as &?t)(0);
+    }
+    _ =
+        do {
+            (t[0] as &?t_2)();
+        };
+    _ =
+        loop {
+            (t[0] as &?t_2)();
+        };
+    _ =
+        if 0 {
+            (t[0] as &?t_2)();
+        } else {
+            (t[0] as &?t_2)();
+        };
+    do {
+        (t[0] as &?proc)();
+    }
+    loop {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    } else {
+        (t[0] as &?proc)();
+    }
+    do {
+        (t[0] as &?proc)();
+    }
+    loop {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    } else {
+        (t[0] as &?proc)();
+    }
+    do {
+        (t[0] as &?proc)();
+    }
+    loop {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    } else {
+        (t[0] as &?proc)();
+    }
+    do {
+        (t[0] as &?t)(0);
+    }
+    loop {
+        (t[0] as &?t)(0);
+    }
+    if 0 {
+        (t[0] as &?t)(0);
+    }
+    if 0 {
+        (t[0] as &?t)(0);
+    } else {
+        (t[0] as &?t)(0);
+    }
+    _ =
+        do {
+            (t[0] as &?t_2)();
+        };
+    _ =
+        loop {
+            (t[0] as &?t_2)();
+        };
+    _ =
+        if 0 {
+            (t[0] as &?t_2)();
+        } else {
+            (t[0] as &?t_2)();
+        };
+    do {
+        (t[0] as &?proc)();
+    }
+    loop {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    }
+    if 0 {
+        (t[0] as &?proc)();
+    } else {
+        (t[0] as &?proc)();
+    }
+    (t[0] as &?proc)();
+}
+table t: &?func [1];

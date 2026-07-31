@@ -1,0 +1,36 @@
+type t = fn(i32) -> &i31;
+type t_2 = fn(i32) -> i32;
+type t_3 = fn() -> i32;
+type t_4 = fn() -> (i32, i32);
+type t_5 = fn(i32);
+#[export]
+fn new(i: i32) -> &i31 {
+    i as &i31;
+}
+#[export]
+fn get_u(i: i32) -> i32 {
+    i as &i31 as i32_u;
+}
+#[export]
+fn get_s(i: i32) -> i32 {
+    i as &i31 as i32_s;
+}
+#[export = "get_u-null"]
+fn f() -> i32 {
+    null as &?i31 as i32_u;
+}
+#[export = "get_s-null"]
+fn f_2() -> i32 {
+    null as &?i31 as i32_s;
+}
+#[export]
+fn get_globals() -> (i32, i32) {
+    i as i32_u;
+    m as i32_u;
+}
+#[export]
+fn set_global(x: i32) {
+    m = x as &i31;
+}
+const i = 2 as &i31;
+let m = 3 as &i31;

@@ -1,0 +1,24 @@
+type t = fn(i32, f64);
+type t_2 = fn(i32) -> f64;
+#[export]
+fn init(i: i32, x: f64) {
+    m_2.storef64(i, x);
+}
+#[export]
+fn run(n: i32, z: f64) {
+    'exit: do {
+        let i: i32;
+        'cont: loop {
+            m_2.storef64(i, m_2.loadf64(i) / z);
+            i += 8;
+            br_if 'cont i <u n;
+        }
+    }
+}
+#[export]
+fn check(i: i32) -> f64 {
+    m_2.loadf64(i);
+}
+memory m: i32 [0, 0];
+memory m_2: i32 [1, 1];
+memory m_3: i32 [0, 0];

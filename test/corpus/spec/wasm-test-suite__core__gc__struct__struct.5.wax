@@ -1,0 +1,15 @@
+type t = { x: i32 };
+type t1 = { f: i32, x: f32 };
+type t2 = { f: i32, f_2: i32, x: i64 };
+type t_2 = fn(&t) -> i32;
+type t_3 = fn(&t1) -> f32;
+type t_4 = fn(&t2) -> i64;
+fn f(x: &t) -> i32 {
+    x.x;
+}
+fn f_2(x: &t1) -> f32 {
+    x.x;
+}
+fn f_3(x: &t2) -> i64 {
+    x.x;
+}

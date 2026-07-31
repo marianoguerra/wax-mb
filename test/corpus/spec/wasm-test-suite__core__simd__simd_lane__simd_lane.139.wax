@@ -1,0 +1,35 @@
+type t = fn(v128, i32) -> v128;
+type t_2 = fn(v128, f32) -> v128;
+type t_3 = fn(v128, i64) -> v128;
+type t_4 = fn(v128, f64) -> v128;
+#[export = "as-v128_store-operand-1"]
+fn f(x: v128, x_2: i32) -> v128 {
+    m.storev128(0, x.replace_lane_i8x16(0, x_2));
+    m.loadv128(0);
+}
+#[export = "as-v128_store-operand-2"]
+fn f_2(x: v128, x_2: i32) -> v128 {
+    m.storev128(0, x.replace_lane_i16x8(0, x_2));
+    m.loadv128(0);
+}
+#[export = "as-v128_store-operand-3"]
+fn f_3(x: v128, x_2: i32) -> v128 {
+    m.storev128(0, x.replace_lane_i32x4(0, x_2));
+    m.loadv128(0);
+}
+#[export = "as-v128_store-operand-4"]
+fn f_4(x: v128, x_2: f32) -> v128 {
+    m.storev128(0, x.replace_lane_f32x4(0, x_2));
+    m.loadv128(0);
+}
+#[export = "as-v128_store-operand-5"]
+fn f_5(x: v128, x_2: i64) -> v128 {
+    m.storev128(0, x.replace_lane_i64x2(0, x_2));
+    m.loadv128(0);
+}
+#[export = "as-v128_store-operand-6"]
+fn f_6(x: v128, x_2: f64) -> v128 {
+    m.storev128(0, x.replace_lane_f64x2(0, x_2));
+    m.loadv128(0);
+}
+memory m: i32 [1];

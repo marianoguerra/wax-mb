@@ -1,0 +1,18 @@
+type a = [i32];
+type b = [mut i32];
+type c = [mut &?func];
+type t = fn();
+type t_2 = fn(&a, &b);
+fn func() {}
+fn f(x: &a, x_2: &b) {
+    _ = [a|1; 1];
+    _ = [a|..; 1];
+    _ = x[1];
+    x_2[2] = 3;
+    _ = [a|1, 1];
+    _ = [a| data_2 @ 0; 4];
+    _ = [c| elem_2 @ 0; 1];
+    x_2.copy(0, x_2, 0, 1);
+}
+elem elem_2: &func = [func];
+data data_2 = "\\0\\1\\2\\3";

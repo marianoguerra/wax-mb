@@ -1,0 +1,6 @@
+type t = fn(i32) -> i64;
+// An inline function-import signature synthesises an implicit type (index 0).
+import "env" fn f(i32) -> i64;
+// Referencing that implicit type from a ref-type position: Wax has no inline
+// function-type form here, so it is given a name and a `type` declaration.
+let g: &?t = null;

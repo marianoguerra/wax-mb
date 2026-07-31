@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/language__059_checked.wax","startLine":1,"startColumn":3,"endLine":1,"endColumn":12,"startOffset":3,"endOffset":12,"message":"The function 'log_value' is never used.","warning":"unused-field","hint":null,"related":[]}

@@ -1,0 +1,21 @@
+type t = fn(i64) -> i64;
+type t_2 = fn(i64, i64) -> i32;
+#[export]
+fn grow(x: i64) -> i64 {
+    m.grow(x);
+}
+#[export = "check-memory-zero"]
+fn f(x: i64, x_2: i64) -> i32 {
+    let x_3 = 1;
+    'l: do {
+        'l_2: loop {
+            x_3 = m.load8(x) as i32_u;
+            br_if 'l x_3 != 0;
+            br_if 'l x >=u x_2;
+            x += 1;
+            br_if 'l_2 x <=u x_2;
+        }
+    }
+    x_3;
+}
+memory m: i64 [1];

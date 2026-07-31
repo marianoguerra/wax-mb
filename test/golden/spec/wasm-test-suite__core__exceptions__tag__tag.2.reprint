@@ -1,0 +1,6 @@
+rec {
+    type t1 = fn();
+    type t2 = fn();
+}
+#[export = "tag"]
+tag t: t1 ;

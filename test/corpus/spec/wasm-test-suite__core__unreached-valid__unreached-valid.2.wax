@@ -1,0 +1,26 @@
+type t = fn() -> &func;
+type t_2 = fn() -> &extern;
+fn f() -> &func {
+    unreachable;
+    _!;
+}
+fn f_2() -> &extern {
+    unreachable;
+    _!;
+}
+fn f_3() -> &func {
+    'l: do &?func {
+        unreachable;
+        br_on_null 'l (_, _);
+        return _;
+    }
+    unreachable;
+}
+fn f_4() -> &extern {
+    'l: do &?extern {
+        unreachable;
+        br_on_null 'l (_, _);
+        return _;
+    }
+    unreachable;
+}

@@ -1,0 +1,58 @@
+type a32 = [i32];
+type a64 = [i64];
+type t = fn();
+#[export]
+fn f0() {
+    _ = [a32| data0 @ 0; 1];
+}
+#[export]
+fn f1() {
+    _ = [a32| data1 @ 0; 1];
+}
+#[export]
+fn f2() {
+    _ = [a32| data2 @ 0; 1];
+}
+#[export]
+fn f3() {
+    _ = [a32| data3 @ 0; 1];
+}
+#[export]
+fn f4() {
+    _ = [a32| data4 @ 0; 1];
+}
+#[export]
+fn f9() {
+    _ = [a32| data9 @ 6; 1];
+}
+#[export]
+fn g0() {
+    _ = [a64| data0 @ 0; 1];
+}
+#[export]
+fn g1() {
+    _ = [a64| data1 @ 0; 1];
+}
+#[export]
+fn g4() {
+    _ = [a64| data4 @ 0; 1];
+}
+#[export]
+fn g7() {
+    _ = [a64| data7 @ 0; 1];
+}
+#[export]
+fn g8() {
+    _ = [a64| data9 @ 0; 1];
+}
+#[export]
+fn g9() {
+    _ = [a64| data9 @ 2; 1];
+}
+data data0 = "";
+data data1 = "1";
+data data2 = "12";
+data data3 = "123";
+data data4 = "1234";
+data data7 = "1234567";
+data data9 = "123456789";

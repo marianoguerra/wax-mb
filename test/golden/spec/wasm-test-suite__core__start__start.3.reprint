@@ -1,0 +1,18 @@
+type t = fn();
+type t_2 = fn() -> i32;
+#[export]
+fn inc() {
+    m.store8(0, m.load8(0) as i32_u + 1);
+}
+#[export]
+fn get() -> i32 {
+    return m.load8(0) as i32_u;
+}
+#[start]
+fn main() {
+    inc();
+    inc();
+    inc();
+}
+memory m: i32 [1, 1];
+data d @ m [0] = "A";

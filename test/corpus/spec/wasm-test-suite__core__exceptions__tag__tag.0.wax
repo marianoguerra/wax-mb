@@ -1,0 +1,9 @@
+type t = fn();
+type t_2 = fn(i32);
+type t_3 = fn(i32, f32);
+tag t: t ;
+tag t_2: t_2 ;
+#[export]
+tag t2: t_2 ;
+#[export]
+tag t3: t_3 ;

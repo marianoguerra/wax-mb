@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {
+    e.drop();
+}
+elem e: &?func = [f];

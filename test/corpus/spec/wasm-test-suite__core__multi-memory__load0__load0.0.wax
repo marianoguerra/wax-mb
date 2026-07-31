@@ -1,0 +1,13 @@
+type t = fn(i32) -> i64;
+#[export]
+fn load1(x: i32) -> i64 {
+    mem1.load64(x);
+}
+#[export]
+fn load2(x: i32) -> i64 {
+    mem2.load64(x);
+}
+memory mem1: i32 [1];
+memory mem2: i32 [1];
+data d @ mem1 [0] = "\x01";
+data d_2 @ mem2 [0] = "\x02";

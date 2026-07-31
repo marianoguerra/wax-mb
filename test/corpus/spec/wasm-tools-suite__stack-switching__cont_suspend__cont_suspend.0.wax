@@ -1,0 +1,24 @@
+type ft = fn();
+type ct = cont ft;
+type t = fn(i32);
+type t_2 = fn() -> i32;
+import "spectest"
+#[import = "print_i32"]
+fn print(i32);
+#[export]
+fn f() {
+    suspend h();
+    print(2);
+}
+#[export]
+fn run() -> i32 {
+    print(1);
+    _ =
+        'on_h: do &ct {
+            ct::new(f).resume() on [h -> 'on_h];
+            unreachable;
+        };
+    print(3);
+    return 42;
+}
+tag h: ft ;

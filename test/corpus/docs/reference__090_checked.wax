@@ -1,0 +1,2 @@
+type shape = open { kind: i32 };
+type circle : shape = { .., radius: f64 };

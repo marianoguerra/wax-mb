@@ -1,0 +1,6 @@
+type t = fn();
+#[export = "v128.load_offset_65521"]
+fn f() {
+    _ = m.loadv128(0, offset: 65521);
+}
+memory m: i32 [1];

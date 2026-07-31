@@ -1,0 +1,7 @@
+fn f() {
+    _ =
+        'l: do &?cont {
+            unreachable;
+            br_on_cast 'l &?cont _;
+        };
+}

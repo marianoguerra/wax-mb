@@ -1,0 +1,21 @@
+type t = fn(i32) -> i32;
+type t_2 = fn(i32, i32) -> &?func;
+#[export]
+fn grow(x: i32) -> i32 {
+    t.grow(null as &?func, x);
+}
+#[export = "check-table-null"]
+fn f(x: i32, x_2: i32) -> &?func {
+    let x_3: &?func = f;
+    'l: do {
+        'l_2: loop {
+            x_3 = t[x];
+            br_if 'l !!x_3;
+            br_if 'l x >=u x_2;
+            x += 1;
+            br_if 'l_2 x <=u x_2;
+        }
+    }
+    x_3;
+}
+table t: &?func [10];

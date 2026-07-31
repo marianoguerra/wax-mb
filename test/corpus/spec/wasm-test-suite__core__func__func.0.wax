@@ -1,0 +1,490 @@
+type sig = fn();
+type t = fn();
+type t_2 = fn() -> i32;
+type t_3 = fn(i32);
+type t_4 = fn(i32, f64, i32) -> i32;
+type forward = fn();
+type t_5 = fn(i32, f64, i64);
+type t_6 = fn(i32, f64);
+type t_7 = fn(i32, f32, i64, i32, f64);
+type t_8 = fn() -> (i32, f64, f32);
+type t_9 = fn() -> (i32, f64);
+type t_10 = fn() -> (i32, f32, i64, i32, f64);
+type t_11 = fn(i32, f32, i64, i32) -> (i32, i64, i32);
+type t_12 = fn() -> i64;
+type t_13 = fn() -> f32;
+type t_14 = fn() -> f64;
+type t_15 = fn(i32, i32) -> i32;
+type t_16 = fn(i64, i64) -> i64;
+type t_17 = fn(f32, f32) -> f32;
+type t_18 = fn(f64, f64) -> f64;
+type t_19 = fn(f32, i32, i64, i32, f64, i32) -> f64;
+type t_20 = fn() -> (i32, i32, i32);
+type t_21 = fn() -> (i32, i64);
+type t_22 = fn(i32) -> i32;
+type t_23 = fn(i32) -> (i32, i64);
+type t_24 = fn(i32) -> (f32, i64);
+type t_25 = fn(i32) -> (i32, i32);
+type t_26 = fn() -> (i32, i32);
+type t_27 =
+fn(i32, i64, f32, f32, i32, f64, f32, i32, i32, i32, f32, f64, f64, f64, i32, i32, f32
+    ) -> (f64, f32, i32, i32, i32, i64, f32, i32, i32, f32, f64, f64, i32, f32, i32, f64);
+fn dummy() {}
+fn f() {}
+#[export = "f"]
+fn f_2() {}
+fn f_3() {}
+#[export = "g"]
+fn h() {}
+fn f_4() {}
+fn f_5() {}
+fn f_6() {
+    let x: i32;
+}
+fn f_7() {
+    let x: i32;
+}
+fn f_8() {
+    let x: i32;
+    let x_2: f64;
+    let x_3: i64;
+}
+fn f_9() {
+    let x: i32;
+    let x_2: f64;
+}
+fn f_10() {
+    let x_2: i32;
+    let x_3: f32;
+    let x: i64;
+    let x_4: i32;
+    let x_5: f64;
+}
+fn f_11() {}
+fn f_12() {}
+fn f_13(i32) {}
+fn f_14(x: i32) {}
+fn f_15(i32, f64, i64) {}
+fn f_16(i32, f64) {}
+fn f_17(i32, f32, x: i64, i32, f64) {}
+fn f_18() {}
+fn f_19() {}
+fn f_20() -> i32 {
+    unreachable;
+}
+fn f_21() -> (i32, f64, f32) {
+    unreachable;
+}
+fn f_22() -> (i32, f64) {
+    unreachable;
+}
+fn f_23() -> (i32, f32, i64, i32, f64) {
+    unreachable;
+}
+#[export = "type-use-1"]
+fn f_24() {}
+#[export = "type-use-2"]
+fn f_25() -> i32 {
+    0;
+}
+#[export = "type-use-3"]
+fn f_26(i32) {}
+#[export = "type-use-4"]
+fn f_27(i32, f64, i32) -> i32 {
+    0;
+}
+#[export = "type-use-5"]
+fn f_28() -> i32 {
+    0;
+}
+#[export = "type-use-6"]
+fn f_29(i32) {}
+#[export = "type-use-7"]
+fn f_30(i32, f64, i32) -> i32 {
+    0;
+}
+fn f_31() {}
+fn f_32() {}
+fn complex(i32, f32, x: i64, i32) -> (i32, i64, i32) {
+    let x_2: f32;
+    let y: i32;
+    let x_3: i64;
+    let x_4: i32;
+    let x_5: f64;
+    let x_6: i32;
+    unreachable;
+    unreachable;
+}
+fn f_33() {
+    let x: f32;
+    let y: i32;
+    let x_2: i64;
+    let x_3: i32;
+    let x_4: f64;
+    let x_5: i32;
+    unreachable;
+    unreachable;
+}
+#[export = "local-first-i32"]
+fn f_34() -> i32 {
+    let x_2: i32;
+    let x: i32;
+    x;
+}
+#[export = "local-first-i64"]
+fn f_35() -> i64 {
+    let x_2: i64;
+    let x: i64;
+    x;
+}
+#[export = "local-first-f32"]
+fn f_36() -> f32 {
+    let x_2: f32;
+    let x: f32;
+    x;
+}
+#[export = "local-first-f64"]
+fn f_37() -> f64 {
+    let x_2: f64;
+    let x: f64;
+    x;
+}
+#[export = "local-second-i32"]
+fn f_38() -> i32 {
+    let x: i32;
+    let x_2: i32;
+    x_2;
+}
+#[export = "local-second-i64"]
+fn f_39() -> i64 {
+    let x: i64;
+    let x_2: i64;
+    x_2;
+}
+#[export = "local-second-f32"]
+fn f_40() -> f32 {
+    let x: f32;
+    let x_2: f32;
+    x_2;
+}
+#[export = "local-second-f64"]
+fn f_41() -> f64 {
+    let x: f64;
+    let x_2: f64;
+    x_2;
+}
+#[export = "local-mixed"]
+fn f_42() -> f64 {
+    let x_2: f32;
+    _ = -x_2;
+    let x: i32;
+    _ = !x;
+    let x_3: i64;
+    _ = !x_3;
+    let x_4: i32;
+    _ = !x_4;
+    let x_5: f64;
+    _ = -x_5;
+    let x_6: i32;
+    _ = !x_6;
+    x_5;
+}
+#[export = "param-first-i32"]
+fn f_43(x: i32, i32) -> i32 {
+    x;
+}
+#[export = "param-first-i64"]
+fn f_44(x: i64, i64) -> i64 {
+    x;
+}
+#[export = "param-first-f32"]
+fn f_45(x: f32, f32) -> f32 {
+    x;
+}
+#[export = "param-first-f64"]
+fn f_46(x: f64, f64) -> f64 {
+    x;
+}
+#[export = "param-second-i32"]
+fn f_47(i32, x: i32) -> i32 {
+    x;
+}
+#[export = "param-second-i64"]
+fn f_48(i64, x: i64) -> i64 {
+    x;
+}
+#[export = "param-second-f32"]
+fn f_49(f32, x: f32) -> f32 {
+    x;
+}
+#[export = "param-second-f64"]
+fn f_50(f64, x: f64) -> f64 {
+    x;
+}
+#[export = "param-mixed"]
+fn f_51(x_2: f32, x_3: i32, x: i64, x_4: i32, x_5: f64, x_6: i32) -> f64 {
+    _ = -x_2;
+    _ = !x_3;
+    _ = !x;
+    _ = !x_4;
+    _ = -x_5;
+    _ = !x_6;
+    x_5;
+}
+#[export]
+fn empty() {}
+#[export = "value-void"]
+fn f_52() {
+    dummy();
+}
+#[export = "value-i32"]
+fn f_53() -> i32 {
+    77;
+}
+#[export = "value-i64"]
+fn f_54() -> i64 {
+    7777;
+}
+#[export = "value-f32"]
+fn f_55() -> f32 {
+    0x1.36ccccp+6;
+}
+#[export = "value-f64"]
+fn f_56() -> f64 {
+    0x1.37147ae147ae1p+6;
+}
+#[export = "value-i32-f64"]
+fn f_57() -> (i32, f64) {
+    77;
+    0x1.cp+2;
+}
+#[export = "value-i32-i32-i32"]
+fn f_58() -> (i32, i32, i32) {
+    1;
+    2;
+    3;
+}
+#[export = "value-block-void"]
+fn f_59() {
+    do {
+        dummy();
+        dummy();
+    }
+}
+#[export = "value-block-i32"]
+fn f_60() -> i32 {
+    do {
+        dummy();
+        77;
+    }
+}
+#[export = "value-block-i32-i64"]
+fn f_61() -> (i32, i64) {
+    do () -> (i32, i64) {
+        dummy();
+        1;
+        2;
+    }
+}
+#[export = "return-empty"]
+fn f_62() {
+    return;
+}
+#[export = "return-i32"]
+fn f_63() -> i32 {
+    return 78;
+}
+#[export = "return-i64"]
+fn f_64() -> i64 {
+    return 7878;
+}
+#[export = "return-f32"]
+fn f_65() -> f32 {
+    return 0x1.3accccp+6;
+}
+#[export = "return-f64"]
+fn f_66() -> f64 {
+    return 0x1.3b1eb851eb852p+6;
+}
+#[export = "return-i32-f64"]
+fn f_67() -> (i32, f64) {
+    return (78, 0x1.3b1eb851eb852p+6);
+}
+#[export = "return-i32-i32-i32"]
+fn f_68() -> (i32, i32, i32) {
+    return (1, 2, 3);
+}
+#[export = "return-block-i32"]
+fn f_69() -> i32 {
+    return
+        do {
+            dummy();
+            77;
+        };
+}
+#[export = "return-block-i32-i64"]
+fn f_70() -> (i32, i64) {
+    do () -> (i32, i64) {
+        dummy();
+        1;
+        2;
+    }
+    return (_, _);
+}
+#[export = "break-empty"]
+fn f_71() 'l: {
+    br 'l;
+}
+#[export = "break-i32"]
+fn f_72() -> i32 'l: {
+    br 'l 79;
+}
+#[export = "break-i64"]
+fn f_73() -> i64 'l: {
+    br 'l 7979;
+}
+#[export = "break-f32"]
+fn f_74() -> f32 'l: {
+    br 'l 0x1.3f999ap+6;
+}
+#[export = "break-f64"]
+fn f_75() -> f64 'l: {
+    br 'l 0x1.3f28f5c28f5c3p+6;
+}
+#[export = "break-i32-f64"]
+fn f_76() -> (i32, f64) 'l: {
+    br 'l (79, 0x1.3f28f5c28f5c3p+6);
+}
+#[export = "break-i32-i32-i32"]
+fn f_77() -> (i32, i32, i32) 'l: {
+    br 'l (1, 2, 3);
+}
+#[export = "break-block-i32"]
+fn f_78() -> i32 'l: {
+    br 'l
+        do {
+            dummy();
+            77;
+        };
+}
+#[export = "break-block-i32-i64"]
+fn f_79() -> (i32, i64) 'l: {
+    do () -> (i32, i64) {
+        dummy();
+        1;
+        2;
+    }
+    br 'l (_, _);
+}
+#[export = "break-br_if-empty"]
+fn f_80(x: i32) 'l: {
+    br_if 'l x;
+}
+#[export = "break-br_if-num"]
+fn f_81(x: i32) -> i32 'l: {
+    _ = br_if 'l (50, x);
+    51;
+}
+#[export = "break-br_if-num-num"]
+fn f_82(x: i32) -> (i32, i64) 'l: {
+    br_if 'l (50, 51, x);
+    _ = _;
+    _ = _;
+    51;
+    52;
+}
+#[export = "break-br_table-empty"]
+fn f_83(x: i32) 'l: {
+    br_table [ 'l, 'l, else 'l ] x;
+}
+#[export = "break-br_table-num"]
+fn f_84(x: i32) -> i32 'l: {
+    br_table [ 'l, else 'l ] (50, x);
+    51;
+}
+#[export = "break-br_table-num-num"]
+fn f_85(x: i32) -> (f32, i64) 'l: {
+    br_table [ 'l, else 'l ] (0x1.9p+5, 51, x);
+    0x1.98p+5;
+    52;
+}
+#[export = "break-br_table-nested-empty"]
+fn f_86(x: i32) 'l: {
+    dispatch x [ 'l_2, 'l, else 'l_2 ] {
+        'l_2: {}
+    }
+}
+#[export = "break-br_table-nested-num"]
+fn f_87(x: i32) -> i32 'l: {
+    ('l_2: do {
+         br_table [ 'l_2, 'l, else 'l_2 ] (50, x);
+         51;
+     } + 2);
+}
+#[export = "break-br_table-nested-num-num"]
+fn f_88(x: i32) -> (i32, i32) 'l: {
+    'l_2: do () -> (i32, i32) {
+        br_table [ 'l_2, 'l, else 'l_2 ] (50, 51, x);
+        51;
+        -3;
+    }
+    _ + _;
+    52;
+}
+#[export = "large-sig"]
+fn f_89(
+    x: i32,
+    x_2: i64,
+    x_3: f32,
+    x_4: f32,
+    x_5: i32,
+    x_6: f64,
+    x_7: f32,
+    x_8: i32,
+    x_9: i32,
+    x_10: i32,
+    f32,
+    x_11: f64,
+    x_12: f64,
+    x_13: f64,
+    x_14: i32,
+    x_15: i32,
+    x_16: f32,
+) -> (f64, f32, i32, i32, i32, i64, f32, i32, i32, f32, f64, f64, i32, f32, i32, f64) {
+    x_6;
+    x_3;
+    x;
+    x_9;
+    x_8;
+    x_2;
+    x_4;
+    x_10;
+    x_5;
+    x_7;
+    x_13;
+    x_11;
+    x_15;
+    x_16;
+    x_14;
+    x_12;
+}
+#[export = "init-local-i32"]
+fn f_90() -> i32 {
+    let x: i32;
+    x;
+}
+#[export = "init-local-i64"]
+fn f_91() -> i64 {
+    let x: i64;
+    x;
+}
+#[export = "init-local-f32"]
+fn f_92() -> f32 {
+    let x: f32;
+    x;
+}
+#[export = "init-local-f64"]
+fn f_93() -> f64 {
+    let x: f64;
+    x;
+}

@@ -1,0 +1,206 @@
+type t = fn();
+#[export = "i8x16.shl-in-block"]
+fn f() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shl_i8x16(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i8x16.shr_s-in-block"]
+fn f_2() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shr_s_i8x16(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i8x16.shr_u-in-block"]
+fn f_3() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shr_u_i8x16(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i16x8.shl-in-block"]
+fn f_4() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shl_i16x8(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i16x8.shr_s-in-block"]
+fn f_5() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shr_s_i16x8(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i16x8.shr_u-in-block"]
+fn f_6() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shr_u_i16x8(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i32x4.shl-in-block"]
+fn f_7() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shl_i32x4(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i32x4.shr_s-in-block"]
+fn f_8() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shr_s_i32x4(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i32x4.shr_u-in-block"]
+fn f_9() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shr_u_i32x4(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i64x2.shl-in-block"]
+fn f_10() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shl_i64x2(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i64x2.shr_s-in-block"]
+fn f_11() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shr_s_i64x2(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "i64x2.shr_u-in-block"]
+fn f_12() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.shr_u_i64x2(
+                     1,
+                 ));
+            };
+    }
+}
+#[export = "nested-i8x16.shl"]
+fn f_13() {
+    _ = m.loadv128(0).shl_i8x16(1).shl_i8x16(1).shl_i8x16(1);
+}
+#[export = "nested-i8x16.shr_s"]
+fn f_14() {
+    _ = m.loadv128(0).shr_s_i8x16(1).shr_s_i8x16(1).shr_s_i8x16(1);
+}
+#[export = "nested-i8x16.shr_u"]
+fn f_15() {
+    _ = m.loadv128(0).shr_u_i8x16(1).shr_u_i8x16(1).shr_u_i8x16(1);
+}
+#[export = "nested-i16x8.shl"]
+fn f_16() {
+    _ = m.loadv128(0).shl_i16x8(1).shl_i16x8(1).shl_i16x8(1);
+}
+#[export = "nested-i16x8.shr_s"]
+fn f_17() {
+    _ = m.loadv128(0).shr_s_i16x8(1).shr_s_i16x8(1).shr_s_i16x8(1);
+}
+#[export = "nested-i16x8.shr_u"]
+fn f_18() {
+    _ = m.loadv128(0).shr_u_i16x8(1).shr_u_i16x8(1).shr_u_i16x8(1);
+}
+#[export = "nested-i32x4.shl"]
+fn f_19() {
+    _ = m.loadv128(0).shl_i32x4(1).shl_i32x4(1).shl_i32x4(1);
+}
+#[export = "nested-i32x4.shr_s"]
+fn f_20() {
+    _ = m.loadv128(0).shr_s_i32x4(1).shr_s_i32x4(1).shr_s_i32x4(1);
+}
+#[export = "nested-i32x4.shr_u"]
+fn f_21() {
+    _ = m.loadv128(0).shr_u_i32x4(1).shr_u_i32x4(1).shr_u_i32x4(1);
+}
+#[export = "nested-i64x2.shl"]
+fn f_22() {
+    _ = m.loadv128(0).shl_i64x2(1).shl_i64x2(1).shl_i64x2(1);
+}
+#[export = "nested-i64x2.shr_s"]
+fn f_23() {
+    _ = m.loadv128(0).shr_s_i64x2(1).shr_s_i64x2(1).shr_s_i64x2(1);
+}
+#[export = "nested-i64x2.shr_u"]
+fn f_24() {
+    _ = m.loadv128(0).shr_u_i64x2(1).shr_u_i64x2(1).shr_u_i64x2(1);
+}
+memory m: i32 [1];

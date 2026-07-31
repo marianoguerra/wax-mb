@@ -1,0 +1,6 @@
+type e0 = open { };
+type e1: e0 = open { };
+type e2: e1 = open { f: i32 };
+type e3: e2 = open { .., f_2: &?e0 };
+type e4: e3 = open { f: i32, f_2: &e0, f_3: mut i64 };
+type e5: e4 = open { f: i32, f_2: &e1, f_3: mut i64 };

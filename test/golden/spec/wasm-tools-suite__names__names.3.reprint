@@ -1,0 +1,6 @@
+type t = fn();
+fn f() {
+    let foo: i32;
+    let foo_1: i32;
+    let foo_1_1: i32;
+}

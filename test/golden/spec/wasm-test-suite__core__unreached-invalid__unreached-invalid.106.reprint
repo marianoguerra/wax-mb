@@ -1,0 +1,7 @@
+type t = fn() -> i32;
+fn f() -> i32 {
+    'l: loop i32 {
+        0;
+        br 'l;
+    }
+}

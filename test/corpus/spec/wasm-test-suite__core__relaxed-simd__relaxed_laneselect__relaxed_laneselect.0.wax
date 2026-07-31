@@ -1,0 +1,33 @@
+type t = fn(v128, v128, v128) -> v128;
+#[export = "i8x16.relaxed_laneselect"]
+fn f(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i8x16(x_2, x_3);
+}
+#[export = "i16x8.relaxed_laneselect"]
+fn f_2(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i16x8(x_2, x_3);
+}
+#[export = "i32x4.relaxed_laneselect"]
+fn f_3(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i32x4(x_2, x_3);
+}
+#[export = "i64x2.relaxed_laneselect"]
+fn f_4(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i64x2(x_2, x_3);
+}
+#[export = "i8x16.relaxed_laneselect_cmp"]
+fn f_5(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i8x16(x_2, x_3).eq_i8x16(x.relaxed_laneselect_i8x16(x_2, x_3));
+}
+#[export = "i16x8.relaxed_laneselect_cmp"]
+fn f_6(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i16x8(x_2, x_3).eq_i16x8(x.relaxed_laneselect_i16x8(x_2, x_3));
+}
+#[export = "i32x4.relaxed_laneselect_cmp"]
+fn f_7(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i32x4(x_2, x_3).eq_i32x4(x.relaxed_laneselect_i32x4(x_2, x_3));
+}
+#[export = "i64x2.relaxed_laneselect_cmp"]
+fn f_8(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.relaxed_laneselect_i64x2(x_2, x_3).eq_i64x2(x.relaxed_laneselect_i64x2(x_2, x_3));
+}

@@ -1,0 +1,9 @@
+type t = [i8];
+fn f(y: i32, z: &?t) {
+    let x =
+        if y {
+            null;
+        } else {
+            z;
+        };
+}

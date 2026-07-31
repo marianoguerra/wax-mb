@@ -1,0 +1,16 @@
+type t = fn();
+fn f() {
+    m.init(d, 0, 0, 0);
+    d.drop();
+    m.copy(0, 0, 0);
+    m.fill(0, 0, 0);
+}
+fn f_2() {
+    t.init(e, 0, 0, 0);
+    e.drop();
+    t.copy(0, 0, 0);
+}
+table t: &?func [1];
+memory m: i32 [1];
+elem e: &func = [f];
+data d = "a";

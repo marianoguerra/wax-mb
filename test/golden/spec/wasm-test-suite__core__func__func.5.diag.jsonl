@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-test-suite__core__func__func.5.wax","startLine":8,"startColumn":3,"endLine":8,"endColumn":6,"startOffset":217,"endOffset":220,"message":"The function 'f_4' is never used.","warning":"unused-field","hint":null,"related":[]}

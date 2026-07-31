@@ -1,0 +1,7 @@
+rec {
+    type t0 = fn(i32, &t2, &t3);
+    type t1 = fn(i32, &t0, i32, &t4);
+    type t2 = fn(i32, &t2, &t1);
+    type t3 = fn(i32, &t2, i32, &t4);
+    type t4 = fn(&t0, &t2);
+}

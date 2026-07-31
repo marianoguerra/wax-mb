@@ -1,0 +1,8 @@
+type t = fn() -> v128;
+#[export = "as-i8x16.swizzle-operand"]
+fn f() -> v128 {
+    m.loadv128(0).swizzle_i8x16(m.loadv128(1, offset: 15));
+}
+memory m: i32 [1];
+data d @ m [0] = "defghijklmnopqrs";
+data d_2 @ m [16] = "\x0f\x0e\x0d\x0c\x0b\x0a\x09\x08\x07\x06\x05\x04\x03\x02\x01\x00";

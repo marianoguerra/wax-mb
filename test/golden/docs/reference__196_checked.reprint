@@ -1,0 +1,1 @@
+memory small: i32 [4096] pagesize 1;

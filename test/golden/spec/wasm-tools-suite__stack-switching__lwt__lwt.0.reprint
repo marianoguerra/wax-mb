@@ -1,0 +1,8 @@
+#![module = "lwt"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(&cont_2);
+#[export]
+tag yield: func_2 ;
+#[export]
+tag fork: t ;

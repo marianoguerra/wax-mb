@@ -1,0 +1,11 @@
+type t = fn(i64, i64);
+type t_2 = fn(i64) -> i32;
+#[export]
+fn store(x: i64, x_2: i64) {
+    m.store64(x, x_2, align: 4);
+}
+#[export]
+fn load(x: i64) -> i32 {
+    m.load32(x);
+}
+memory m: i64 [1];

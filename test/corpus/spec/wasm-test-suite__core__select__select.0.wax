@@ -1,0 +1,287 @@
+type t = fn();
+type check = fn(i32, i32) -> i32;
+type t_2 = fn(i32, i32, i32) -> i32;
+type t_3 = fn(i64, i64, i32) -> i64;
+type t_4 = fn(f32, f32, i32) -> f32;
+type t_5 = fn(f64, f64, i32) -> f64;
+type t_6 = fn(&?func, &?func, i32) -> &?func;
+type t_7 = fn(&?extern, &?extern, i32) -> &?extern;
+type t_8 = fn(i32) -> &?func;
+type t_9 = fn(i32) -> i32;
+type t_10 = fn() -> i32;
+type t_11 = fn() -> i64;
+type t_12 = fn(i32);
+fn dummy() {}
+#[export = "select-i32"]
+fn f(x: i32, x_2: i32, x_3: i32) -> i32 {
+    x_3?x:x_2;
+}
+#[export = "select-i64"]
+fn f_2(x: i64, x_2: i64, x_3: i32) -> i64 {
+    x_3?x:x_2;
+}
+#[export = "select-f32"]
+fn f_3(x: f32, x_2: f32, x_3: i32) -> f32 {
+    x_3?x:x_2;
+}
+#[export = "select-f64"]
+fn f_4(x: f64, x_2: f64, x_3: i32) -> f64 {
+    x_3?x:x_2;
+}
+#[export = "select-i32-t"]
+fn f_5(x: i32, x_2: i32, x_3: i32) -> i32 {
+    x_3?x:x_2;
+}
+#[export = "select-i64-t"]
+fn f_6(x: i64, x_2: i64, x_3: i32) -> i64 {
+    x_3?x:x_2;
+}
+#[export = "select-f32-t"]
+fn f_7(x: f32, x_2: f32, x_3: i32) -> f32 {
+    x_3?x:x_2;
+}
+#[export = "select-f64-t"]
+fn f_8(x: f64, x_2: f64, x_3: i32) -> f64 {
+    x_3?x:x_2;
+}
+#[export = "select-funcref"]
+fn f_9(x: &?func, x_2: &?func, x_3: i32) -> &?func {
+    x_3?x:x_2;
+}
+#[export = "select-externref"]
+fn f_10(x: &?extern, x_2: &?extern, x_3: i32) -> &?extern {
+    x_3?x:x_2;
+}
+fn tf() {}
+#[export = "join-funcnull"]
+fn f_11(x: i32) -> &?func {
+    x?tf:null;
+}
+#[export = "select-trap-left"]
+fn f_12(cond: i32) -> i32 {
+    unreachable;
+    cond?_:0;
+}
+#[export = "select-trap-right"]
+fn f_13(cond: i32) -> i32 {
+    0;
+    unreachable;
+    cond?_:_;
+}
+#[export = "select-unreached"]
+fn f_14() {
+    unreachable;
+    _?_:_;
+    unreachable;
+    0?_:_;
+    unreachable;
+    0?_:0;
+    unreachable;
+    0?0:0;
+    unreachable;
+    0?_:0x0p+0 as f32;
+    unreachable;
+}
+#[export]
+fn select_unreached_result_1() -> i32 {
+    unreachable;
+    _ + (_?_:_);
+}
+#[export]
+fn select_unreached_result_2() -> i64 {
+    unreachable;
+    _ + (0?_:0);
+}
+#[export = "as-select-first"]
+fn f_15(x: i32) -> i32 {
+    3?x?0:1:2;
+}
+#[export = "as-select-mid"]
+fn f_16(x: i32) -> i32 {
+    3?2:x?0:1;
+}
+#[export = "as-select-last"]
+fn f_17(x: i32) -> i32 {
+    (x?0:1)?2:3;
+}
+#[export = "as-loop-first"]
+fn f_18(x: i32) -> i32 {
+    loop {
+        x?2:3;
+        dummy();
+        dummy();
+    }
+}
+#[export = "as-loop-mid"]
+fn f_19(x: i32) -> i32 {
+    loop {
+        dummy();
+        x?2:3;
+        dummy();
+    }
+}
+#[export = "as-loop-last"]
+fn f_20(x: i32) -> i32 {
+    loop {
+        dummy();
+        dummy();
+        x?2:3;
+    }
+}
+#[export = "as-if-condition"]
+fn f_21(x: i32) {
+    if x?2:3 {
+        dummy();
+    }
+}
+#[export = "as-if-then"]
+fn f_22(x: i32) -> i32 {
+    if 1 {
+        x?2:3;
+    } else {
+        4;
+    }
+}
+#[export = "as-if-else"]
+fn f_23(x: i32) -> i32 {
+    if 0 {
+        2;
+    } else {
+        x?2:3;
+    }
+}
+#[export = "as-br_if-first"]
+fn f_24(x: i32) -> i32 {
+    'l: do {
+        br_if 'l (x?2:3, 4);
+    }
+}
+#[export = "as-br_if-last"]
+fn f_25(x: i32) -> i32 {
+    'l: do {
+        br_if 'l (2, x?2:3);
+    }
+}
+#[export = "as-br_table-first"]
+fn f_26(x: i32) -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ] (x?2:3, 2);
+    }
+}
+#[export = "as-br_table-last"]
+fn f_27(x: i32) -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ] (2, x?2:3);
+    }
+}
+fn func(x: i32, i32) -> i32 {
+    x;
+}
+#[export = "as-call_indirect-first"]
+fn f_28(x: i32) -> i32 {
+    do {
+        (t[0] as &?check)(x?2:3, 1);
+    }
+}
+#[export = "as-call_indirect-mid"]
+fn f_29(x: i32) -> i32 {
+    do {
+        (t[0] as &?check)(1, x?2:3);
+    }
+}
+#[export = "as-call_indirect-last"]
+fn f_30(x: i32) -> i32 {
+    do {
+        (t[x?2:3] as &?check)(1, 4);
+    }
+}
+#[export = "as-store-first"]
+fn f_31(x: i32) {
+    m.store32(x?0:4, 1);
+}
+#[export = "as-store-last"]
+fn f_32(x: i32) {
+    m.store32(8, x?1:2);
+}
+#[export = "as-memory.grow-value"]
+fn f_33(x: i32) -> i32 {
+    m.grow(x?1:2);
+}
+fn f_34(x: i32) -> i32 {
+    x;
+}
+#[export = "as-call-value"]
+fn f_35(x: i32) -> i32 {
+    f_34(x?1:2);
+}
+#[export = "as-return-value"]
+fn f_36(x: i32) -> i32 {
+    return x?1:2;
+}
+#[export = "as-drop-operand"]
+fn f_37(x: i32) {
+    _ = x?1:2;
+}
+#[export = "as-br-value"]
+fn f_38(x: i32) -> i32 {
+    'l: do {
+        br 'l x?1:2;
+    }
+}
+#[export = "as-local.set-value"]
+fn f_39(x: i32) -> i32 {
+    let x_2: i32;
+    x = x?1:2;
+    x;
+}
+#[export = "as-local.tee-value"]
+fn f_40(x: i32) -> i32 {
+    x := x?1:2;
+}
+#[export = "as-global.set-value"]
+fn f_41(x: i32) -> i32 {
+    a = x?1:2;
+    a;
+}
+#[export = "as-load-operand"]
+fn f_42(x: i32) -> i32 {
+    m.load32(x?0:4);
+}
+#[export = "as-unary-operand"]
+fn f_43(x: i32) -> i32 {
+    !(x?0:1);
+}
+#[export = "as-binary-operand"]
+fn f_44(x: i32) -> i32 {
+    (x?1:2) * (x?1:2);
+}
+#[export = "as-test-operand"]
+fn f_45(x: i32) -> i32 {
+    do {
+        !(x?0:1);
+    }
+}
+#[export = "as-compare-left"]
+fn f_46(x: i32) -> i32 {
+    do {
+        (x?1:2) <=s 1;
+    }
+}
+#[export = "as-compare-right"]
+fn f_47(x: i32) -> i32 {
+    do {
+        1 != (x?0:1);
+    }
+}
+#[export = "as-convert-operand"]
+fn f_48(x: i32) -> i32 {
+    do {
+        (x?1:0) as i64 as i32;
+    }
+}
+table tab: &?func [1, 1];
+table t: &?func [1, 1];
+memory m: i32 [1];
+let a = 10;
+elem e: &func @ tab [0] = [dummy];
+elem e_3: &func @ t [0] = [func];

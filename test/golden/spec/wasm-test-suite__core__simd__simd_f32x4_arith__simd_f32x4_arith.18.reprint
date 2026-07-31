@@ -1,0 +1,66 @@
+type t = fn(v128, v128, v128) -> v128;
+type t_2 = fn(v128, v128) -> v128;
+#[export = "add-sub"]
+fn f(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.sub_f32x4(x_2).add_f32x4(x_3);
+}
+#[export = "div-add"]
+fn f_2(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.add_f32x4(x_2).div_f32x4(x_3);
+}
+#[export = "div-mul"]
+fn f_3(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.mul_f32x4(x_2).div_f32x4(x_3);
+}
+#[export = "div-sub"]
+fn f_4(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.sub_f32x4(x_2).div_f32x4(x_3);
+}
+#[export = "mul-add"]
+fn f_5(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.add_f32x4(x_2).mul_f32x4(x_3);
+}
+#[export = "mul-div"]
+fn f_6(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.div_f32x4(x_2).mul_f32x4(x_3);
+}
+#[export = "mul-sub"]
+fn f_7(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.sub_f32x4(x_2).mul_f32x4(x_3);
+}
+#[export = "sub-add"]
+fn f_8(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.add_f32x4(x_2).sub_f32x4(x_3);
+}
+#[export = "add-neg"]
+fn f_9(x: v128, x_2: v128) -> v128 {
+    x.neg_f32x4().add_f32x4(x_2);
+}
+#[export = "add-sqrt"]
+fn f_10(x: v128, x_2: v128) -> v128 {
+    x.sqrt_f32x4().add_f32x4(x_2);
+}
+#[export = "div-neg"]
+fn f_11(x: v128, x_2: v128) -> v128 {
+    x.neg_f32x4().div_f32x4(x_2);
+}
+#[export = "div-sqrt"]
+fn f_12(x: v128, x_2: v128) -> v128 {
+    x.sqrt_f32x4().div_f32x4(x_2);
+}
+#[export = "mul-neg"]
+fn f_13(x: v128, x_2: v128) -> v128 {
+    x.neg_f32x4().mul_f32x4(x_2);
+}
+#[export = "mul-sqrt"]
+fn f_14(x: v128, x_2: v128) -> v128 {
+    x.sqrt_f32x4().mul_f32x4(x_2);
+}
+#[export = "sub-neg"]
+fn f_15(x: v128, x_2: v128) -> v128 {
+    x.neg_f32x4().sub_f32x4(x_2);
+}
+#[export = "sub-sqrt"]
+fn f_16(x: v128, x_2: v128) -> v128 {
+    x.sqrt_f32x4().sub_f32x4(x_2);
+}

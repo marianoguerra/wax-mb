@@ -1,0 +1,9 @@
+type t = fn();
+type t_2 = fn(i32);
+fn f() {
+    unreachable;
+    0?_:_;
+    do (i32) {
+        unreachable;
+    }
+}

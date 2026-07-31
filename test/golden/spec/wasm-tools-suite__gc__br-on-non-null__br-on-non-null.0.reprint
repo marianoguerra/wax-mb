@@ -1,0 +1,9 @@
+type t = fn();
+fn f() {
+    match (null as &?func) {
+        null => {
+            unreachable;
+        }
+        _ => {}
+    }
+}

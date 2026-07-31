@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {
+    _ = m.load32(0, offset: 18446744073709551615);
+}
+memory m: i64 [0];

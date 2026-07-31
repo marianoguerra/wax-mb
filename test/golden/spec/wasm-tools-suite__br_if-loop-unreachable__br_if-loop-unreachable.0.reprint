@@ -1,0 +1,12 @@
+type t = fn();
+type t_2 = fn() -> (f64, i32);
+fn f() -> (f64, i32) {
+    'l: loop () -> (f64, i32) {
+        br 'l;
+        f();
+        br_if 'l _;
+        _ as i32_u_strict;
+        unreachable;
+    }
+    unreachable;
+}

@@ -1,0 +1,5 @@
+type ft = fn() -> i32;
+type k = cont ft;
+fn f(c: &?cont) -> i32 {
+    (c as &k).resume();
+}

@@ -1,0 +1,5 @@
+import "m" fn g();
+
+fn f() -> i32 {
+    (g as &fn(i32) -> i32);
+}

@@ -1,0 +1,167 @@
+type t0 = open { };
+type t1: t0 = open { f: i32 };
+type t1': t0 = open { f: i32 };
+type t2: t1 = open { .., f_2: i32 };
+type t2': t1' = open { .., f_2: i32 };
+type t3: t0 = open { f: i32, f_2: i32 };
+type t0': t0 = open { };
+type t4: t0' = open { f: i32, f_2: i32 };
+type t = fn();
+fn init() {
+    t[0] = {t0| .. };
+    t[10] = {t0'| .. };
+    t[1] = {t1| .. };
+    t[11] = {t1'| .. };
+    t[2] = {t2| .. };
+    t[12] = {t2'| .. };
+    t[3] = {t3| .. };
+    t[4] = {t4| .. };
+}
+#[export = "test-sub"]
+fn f() {
+    init();
+    'l: do &?struct {
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0 null as &?struct;
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0 t[0];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0 t[1];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0 t[2];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0 t[3];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0 t[4];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t1 null as &?struct;
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t1 t[1];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t1 t[2];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t2 null as &?struct;
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t2 t[2];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t3 null as &?struct;
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t3 t[3];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t4 null as &?struct;
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t4 t[4];
+            };
+        br_on_cast 'l &t1 t[0];
+        br_on_cast 'l &t1 t[3];
+        br_on_cast 'l &t1 t[4];
+        br_on_cast 'l &t2 t[0];
+        br_on_cast 'l &t2 t[1];
+        br_on_cast 'l &t2 t[3];
+        br_on_cast 'l &t2 t[4];
+        br_on_cast 'l &t3 t[0];
+        br_on_cast 'l &t3 t[1];
+        br_on_cast 'l &t3 t[2];
+        br_on_cast 'l &t3 t[4];
+        br_on_cast 'l &t4 t[0];
+        br_on_cast 'l &t4 t[1];
+        br_on_cast 'l &t4 t[2];
+        br_on_cast 'l &t4 t[3];
+        return;
+    }
+    unreachable;
+}
+#[export = "test-canon"]
+fn f_2() {
+    init();
+    'l: do {
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0' t[0];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0' t[1];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0' t[2];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0' t[3];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0' t[4];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0 t[10];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0 t[11];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t0 t[12];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t1' t[1];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t1' t[2];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t1 t[11];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t1 t[12];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t2' t[2];
+            };
+        _ =
+            'l_2: do {
+                br_on_cast 'l_2 &t2 t[12];
+            };
+        return;
+    }
+    unreachable;
+}
+table t: &?struct [20];

@@ -1,0 +1,15 @@
+type t = fn(i32) -> i32;
+import "M"
+#[import = "mem"]
+memory mem1: i32 [2];
+#[export]
+fn read1(x: i32) -> i32 {
+    mem1.load8(x) as i32_u;
+}
+#[export]
+fn read2(x: i32) -> i32 {
+    mem2.load8(x) as i32_u;
+}
+memory mem2: i32 [3];
+data d @ mem1 [20] = "\x01\x02\x03\x04\x05";
+data d_2 @ mem2 [50] = "\x0a\x0b\x0c\x0d\x0e";

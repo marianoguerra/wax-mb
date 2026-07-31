@@ -1,0 +1,41 @@
+type t = fn(v128, v128) -> v128;
+#[export]
+fn eq(x: v128, y: v128) -> v128 {
+    x.eq_i16x8(y);
+}
+#[export]
+fn ne(x: v128, y: v128) -> v128 {
+    x.ne_i16x8(y);
+}
+#[export]
+fn lt_s(x: v128, y: v128) -> v128 {
+    x.lt_s_i16x8(y);
+}
+#[export]
+fn lt_u(x: v128, y: v128) -> v128 {
+    x.lt_u_i16x8(y);
+}
+#[export]
+fn le_s(x: v128, y: v128) -> v128 {
+    x.le_s_i16x8(y);
+}
+#[export]
+fn le_u(x: v128, y: v128) -> v128 {
+    x.le_u_i16x8(y);
+}
+#[export]
+fn gt_s(x: v128, y: v128) -> v128 {
+    x.gt_s_i16x8(y);
+}
+#[export]
+fn gt_u(x: v128, y: v128) -> v128 {
+    x.gt_u_i16x8(y);
+}
+#[export]
+fn ge_s(x: v128, y: v128) -> v128 {
+    x.ge_s_i16x8(y);
+}
+#[export]
+fn ge_u(x: v128, y: v128) -> v128 {
+    x.ge_u_i16x8(y);
+}

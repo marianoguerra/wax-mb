@@ -1,0 +1,16 @@
+type t = fn() -> i32;
+#[export]
+fn f1() -> i32 {
+    1;
+    return 2;
+}
+#[export]
+fn f2() -> i32 {
+    1;
+    return 2;
+}
+#[export]
+fn f3() -> i32 {
+    1;
+    return 2;
+}

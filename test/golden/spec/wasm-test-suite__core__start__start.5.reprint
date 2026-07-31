@@ -1,0 +1,7 @@
+type t = fn(i32);
+type t_2 = fn();
+import "spectest" fn print_i32(i32);
+#[start]
+fn main() {
+    print_i32(1);
+}

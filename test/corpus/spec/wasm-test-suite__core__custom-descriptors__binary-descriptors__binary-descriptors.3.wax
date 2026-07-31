@@ -1,0 +1,6 @@
+#![feature = "custom-descriptors"]
+rec {
+    type t = descriptor t_2 { };
+    type t_2 = describes t descriptor t_3 { };
+    type t_3 = describes t_2 { };
+}

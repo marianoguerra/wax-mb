@@ -1,0 +1,86 @@
+#![module = "scheduler"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(i32);
+type t_2 = cont t;
+type t_3 = fn(i32, i32);
+type t_4 = fn(&t_2) -> i32;
+type t_5 = fn(i32) -> i32;
+type t_6 = fn() -> i32;
+type t_7 = fn() -> &?cont_2;
+type t_8 = fn(&?cont_2);
+type t_9 = fn(i32, &t_2);
+type t_10 = fn(i32, i32) -> &?cont_2;
+type t_11 = fn() -> (i32, i32, &cont_2);
+type t_12 = fn() -> (&t_2, &t_2);
+type t_13 = fn() -> (i32, &t_2);
+import "async-await" {
+    tag yield: func_2 ;
+    tag fulfill: t_3 ;
+    tag async: t_4 ;
+    tag await: t_5 ;
+}
+import "queue" {
+    #[import = "queue-empty"]
+    fn f() -> i32;
+    fn dequeue() -> &?cont_2;
+    fn enqueue(&?cont_2);
+}
+import "promise" {
+    fn new() -> i32;
+    fn fulfilled(i32) -> i32;
+    fn read(i32) -> i32;
+    fn await(i32, &t_2);
+    fn fulfill(i32, i32) -> &?cont_2;
+}
+#[export]
+fn run(nextk: &?cont_2) {
+    'l: loop {
+        if !nextk {
+            return;
+        }
+        enqueue(
+            'on_yield: do &cont_2 {
+                let p: i32;
+                'on_fulfill: do () -> (i32, i32, &cont_2) {
+                    let ik: &t_2;
+                    'on_async: do () -> (&t_2, &t_2) {
+                        'on_await: do () -> (i32, &t_2) {
+                            nextk.resume() on
+                                [yield -> 'on_yield, fulfill -> 'on_fulfill, async -> 'on_async,
+                                 await -> 'on_await];
+                            nextk = dequeue();
+                            br 'l;
+                        }
+                        ik = _;
+                        p = _;
+                        if fulfilled(p) {
+                            nextk = cont_2::bind(read(p), ik);
+                        } else {
+                            await(p, ik);
+                            nextk = dequeue();
+                        }
+                        br 'l;
+                    }
+                    ik = _;
+                    let ak = _;
+                    p = new();
+                    enqueue(cont_2::bind(p, ik));
+                    nextk = cont_2::bind(p, ak);
+                    br 'l;
+                }
+                nextk = _;
+                let v = _;
+                p = _;
+                let k = fulfill(p, v);
+                if !k {
+                } else {
+                    enqueue(k);
+                }
+                br 'l;
+            },
+        );
+        nextk = dequeue();
+        br 'l;
+    }
+}

@@ -1,0 +1,4 @@
+type t = fn();
+import "Mref_ex"
+#[import = "g-const-funcnull"]
+const g: &func;

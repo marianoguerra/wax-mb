@@ -1,0 +1,8 @@
+type ft = fn() -> i32;
+#[export]
+fn callee() -> i32 {
+    42;
+}
+fn main() -> &ft {
+    callee;
+}

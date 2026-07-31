@@ -1,0 +1,30 @@
+type t = fn(i64) -> f64;
+type t_2 = fn(i64);
+#[export = "64_good1"]
+fn f(i: i64) -> f64 {
+    m.loadf64(i);
+}
+#[export = "64_good2"]
+fn f_2(i: i64) -> f64 {
+    m.loadf64(i, align: 1);
+}
+#[export = "64_good3"]
+fn f_3(i: i64) -> f64 {
+    m.loadf64(i, offset: 1, align: 1);
+}
+#[export = "64_good4"]
+fn f_4(i: i64) -> f64 {
+    m.loadf64(i, offset: 2, align: 2);
+}
+#[export = "64_good5"]
+fn f_5(i: i64) -> f64 {
+    m.loadf64(i, offset: 18);
+}
+#[export = "64_bad"]
+fn f_6(i: i64) {
+    _ = m.loadf64(i, offset: 4294967295);
+}
+memory m: i64 [1];
+data d @ m [0] =
+    "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf4\x7f\x01\x00"
+        ++ "\x00\x00\x00\x00\xfc\x7f";

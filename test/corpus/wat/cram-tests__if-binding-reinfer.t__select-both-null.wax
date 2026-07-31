@@ -1,0 +1,5 @@
+type t = { };
+fn f(c: i32, z: &?t) {
+    let x: &?t = c?null:null;
+    x = z;
+}

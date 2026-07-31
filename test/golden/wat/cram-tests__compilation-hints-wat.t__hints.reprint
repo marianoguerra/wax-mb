@@ -1,0 +1,17 @@
+type ft = fn(i32) -> i32;
+fn a(x: i32) -> i32 {
+    x;
+}
+fn b(i32) -> i32 {
+    7;
+}
+table t: &?func [2, 2];
+elem e: &?func @ t [0] = [a, b];
+#[export]
+fn go(x: i32) -> i32 {
+    // A comment before the hints stays put: an annotation payload is not a
+    // trivia anchor, so it cannot be pulled inside one of the groups below.
+    #[freq = 16]
+    #[targets(a: 0.73, b: 0.21)]
+    (t[x] as &?ft)(x);
+}

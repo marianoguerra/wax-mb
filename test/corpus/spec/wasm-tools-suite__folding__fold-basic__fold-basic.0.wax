@@ -1,0 +1,21 @@
+type t = fn() -> i32;
+type t_2 = fn() -> f32;
+type t_3 = fn() -> i64;
+fn f() -> i32 {
+    1 + 2;
+}
+fn f_2() -> i32 {
+    1 - (1 + 1);
+}
+fn f_3() -> i32 {
+    0x1p+0 as f32 <= 0x1p+1;
+}
+fn f_4() -> f32 {
+    --0x1p+0;
+}
+fn f_5() -> i64 {
+    0x0p+0 as f64 as f32 as i32_s_strict as i64_s;
+}
+fn f_6() -> f32 {
+    3?0x1p+0:0x1p+1;
+}

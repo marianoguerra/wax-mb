@@ -1,0 +1,21 @@
+type t = fn(i64);
+type t_2 = fn(i32, i32) -> i32;
+type t_3 = fn(i32, i32, i64) -> i32;
+type t_4 = fn(i32, i64, i64) -> i32;
+#[export]
+fn init(value: i64) {
+    m.store64(0, value);
+}
+#[export = "memory.atomic.notify"]
+fn f(addr: i32, count: i32) -> i32 {
+    m.atomic_notify(addr, count);
+}
+#[export = "memory.atomic.wait32"]
+fn f_2(addr: i32, expected: i32, timeout: i64) -> i32 {
+    m.atomic_wait32(addr, expected, timeout);
+}
+#[export = "memory.atomic.wait64"]
+fn f_3(addr: i32, expected: i64, timeout: i64) -> i32 {
+    m.atomic_wait64(addr, expected, timeout);
+}
+memory m: i32 [1, 1];

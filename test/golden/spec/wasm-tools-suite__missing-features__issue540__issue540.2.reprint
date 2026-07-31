@@ -1,0 +1,1 @@
+table t: &?func [0]; elem e: &func @ t [0] = [];

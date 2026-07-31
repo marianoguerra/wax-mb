@@ -1,0 +1,26 @@
+#[if(oxcaml)]
+{
+    fn a() -> i32 {
+        1;
+    }
+}
+#[else]
+{
+    fn a() -> i32 {
+        2;
+    }
+}
+fn f() -> i32 {
+    #[if(all(oxcaml, any(ocaml_version = (5, 2, 0), flavour != "default", a < (1, 0, 0), b > (2, 0, 0), c <= (3, 0, 0), d >= (4, 0, 0))))]
+    {
+        #[if(not(debug))]
+        {
+            nop;
+        }
+        1;
+    }
+    #[else]
+    {
+        2;
+    }
+}

@@ -1,0 +1,31 @@
+type bytes = [mut i8];
+
+#[export = "sum_bytes"]
+fn sum_bytes(arr: &bytes) -> i32 {
+    let sum = 0;
+    let i = 0;
+    let len = arr.length();
+    'loop: loop {
+        if i >=s len {
+            return sum;
+        }
+        sum += arr[i] as i32_u;
+        i += 1;
+        br 'loop;
+    }
+    unreachable;
+}
+
+#[export = "fill_bytes"]
+fn fill_bytes(arr: &bytes, val: i32) {
+    let i = 0;
+    let len = arr.length();
+    'loop: loop {
+        if i >=s len {
+            return;
+        }
+        arr[i] = val;
+        i += 1;
+        br 'loop;
+    }
+}

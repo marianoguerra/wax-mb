@@ -1,0 +1,8 @@
+table t: &?func [1];
+table t_2: &?func [1];
+elem e: &func @ t [0] = [];
+elem e_2: &func = [];
+elem e_3: &func @ t_2 [0] = [];
+elem e_5: &?func @ t [0] = [];
+elem e_6: &?func = [];
+elem e_7: &?func @ t_2 [0] = [];

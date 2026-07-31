@@ -1,0 +1,12 @@
+table t: &?func [1];
+elem e: &?func @ t [0] = [];
+elem e_2: &?func @ t [0] = [];
+elem e_3: &?func @ t [
+        0 + 0
+    ] = [];
+elem e_4: &?func @ t [
+        0 + 0
+    ] = [];
+elem e_5: &?func @ t [
+        0 + 0
+    ] = [];

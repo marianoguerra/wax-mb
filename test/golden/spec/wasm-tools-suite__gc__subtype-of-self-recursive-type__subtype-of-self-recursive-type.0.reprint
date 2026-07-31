@@ -1,0 +1,1 @@
+type t = open { f: &?any }; type r: t = open { f: &r }; type t': r = open { .., f_2: i32 };

@@ -1,0 +1,4 @@
+fn f(x: i32, y: i32) -> i32 { x + y; }   // definition
+fn g(x: i32) -> i32;                     // declaration (for imports)
+f(a, b)                                  // call
+(fref as &?ft)(a, b)                     // indirect call through a reference

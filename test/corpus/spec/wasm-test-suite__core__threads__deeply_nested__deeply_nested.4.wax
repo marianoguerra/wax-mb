@@ -1,0 +1,8 @@
+type t = fn();
+import "mem"
+#[import = "shared"]
+memory m: i32 [1, 1] shared;
+#[export]
+fn run_innermost() {
+    m.store32(24, 44);
+}

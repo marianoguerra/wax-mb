@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/wat/cram-tests__elem-declare-init.t__decl-init.wax","startLine":3,"startColumn":3,"endLine":3,"endColumn":4,"startOffset":45,"endOffset":46,"message":"The function 'f' is never used.","warning":"unused-field","hint":null,"related":[]}

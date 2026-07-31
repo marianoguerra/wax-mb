@@ -1,0 +1,328 @@
+type t = fn(v128) -> i32;
+type t_2 = fn(v128, v128) -> i32;
+type t_3 = fn(v128, v128, v128) -> i32;
+#[export]
+fn i8x16_any_true_as_if_cond(x: v128) -> i32 {
+    if x.any_true_v128() {
+        1;
+    } else {
+        0;
+    }
+}
+#[export]
+fn i16x8_any_true_as_if_cond(x: v128) -> i32 {
+    if x.any_true_v128() {
+        1;
+    } else {
+        0;
+    }
+}
+#[export]
+fn i32x4_any_true_as_if_cond(x: v128) -> i32 {
+    if x.any_true_v128() {
+        1;
+    } else {
+        0;
+    }
+}
+#[export]
+fn i8x16_all_true_as_if_cond(x: v128) -> i32 {
+    if x.all_true_i8x16() {
+        1;
+    } else {
+        0;
+    }
+}
+#[export]
+fn i16x8_all_true_as_if_cond(x: v128) -> i32 {
+    if x.all_true_i16x8() {
+        1;
+    } else {
+        0;
+    }
+}
+#[export]
+fn i32x4_all_true_as_if_cond(x: v128) -> i32 {
+    if x.all_true_i32x4() {
+        1;
+    } else {
+        0;
+    }
+}
+#[export]
+fn i8x16_any_true_as_select_cond(x: v128) -> i32 {
+    x.any_true_v128()?1:0;
+}
+#[export]
+fn i16x8_any_true_as_select_cond(x: v128) -> i32 {
+    x.any_true_v128()?1:0;
+}
+#[export]
+fn i32x4_any_true_as_select_cond(x: v128) -> i32 {
+    x.any_true_v128()?1:0;
+}
+#[export]
+fn i8x16_all_true_as_select_cond(x: v128) -> i32 {
+    x.all_true_i8x16()?1:0;
+}
+#[export]
+fn i16x8_all_true_as_select_cond(x: v128) -> i32 {
+    x.all_true_i16x8()?1:0;
+}
+#[export]
+fn i32x4_all_true_as_select_cond(x: v128) -> i32 {
+    x.all_true_i32x4()?1:0;
+}
+#[export]
+fn i8x16_any_true_as_br_if_cond(x: v128) -> i32 {
+    let x_2 = 2;
+    'l: do {
+        x_2 = 1;
+        br_if 'l x.any_true_v128();
+        x_2 = 0;
+    }
+    x_2;
+}
+#[export]
+fn i16x8_any_true_as_br_if_cond(x: v128) -> i32 {
+    let x_2 = 2;
+    'l: do {
+        x_2 = 1;
+        br_if 'l x.any_true_v128();
+        x_2 = 0;
+    }
+    x_2;
+}
+#[export]
+fn i32x4_any_true_as_br_if_cond(x: v128) -> i32 {
+    let x_2 = 2;
+    'l: do {
+        x_2 = 1;
+        br_if 'l x.any_true_v128();
+        x_2 = 0;
+    }
+    x_2;
+}
+#[export]
+fn i8x16_all_true_as_br_if_cond(x: v128) -> i32 {
+    let x_2 = 2;
+    'l: do {
+        x_2 = 1;
+        br_if 'l x.all_true_i8x16();
+        x_2 = 0;
+    }
+    x_2;
+}
+#[export]
+fn i16x8_all_true_as_br_if_cond(x: v128) -> i32 {
+    let x_2 = 2;
+    'l: do {
+        x_2 = 1;
+        br_if 'l x.all_true_i16x8();
+        x_2 = 0;
+    }
+    x_2;
+}
+#[export]
+fn i32x4_all_true_as_br_if_cond(x: v128) -> i32 {
+    let x_2 = 2;
+    'l: do {
+        x_2 = 1;
+        br_if 'l x.all_true_i32x4();
+        x_2 = 0;
+    }
+    x_2;
+}
+#[export = "i8x16_any_true_as_i32.and_operand"]
+fn f(x: v128, x_2: v128) -> i32 {
+    x.any_true_v128() & x_2.any_true_v128();
+}
+#[export = "i16x8_any_true_as_i32.and_operand"]
+fn f_2(x: v128, x_2: v128) -> i32 {
+    x.any_true_v128() & x_2.any_true_v128();
+}
+#[export = "i32x4_any_true_as_i32.and_operand"]
+fn f_3(x: v128, x_2: v128) -> i32 {
+    x.any_true_v128() & x_2.any_true_v128();
+}
+#[export = "i8x16_any_true_as_i32.or_operand"]
+fn f_4(x: v128, x_2: v128) -> i32 {
+    x.any_true_v128() | x_2.any_true_v128();
+}
+#[export = "i16x8_any_true_as_i32.or_operand"]
+fn f_5(x: v128, x_2: v128) -> i32 {
+    x.any_true_v128() | x_2.any_true_v128();
+}
+#[export = "i32x4_any_true_as_i32.or_operand"]
+fn f_6(x: v128, x_2: v128) -> i32 {
+    x.any_true_v128() | x_2.any_true_v128();
+}
+#[export = "i8x16_any_true_as_i32.xor_operand"]
+fn f_7(x: v128, x_2: v128) -> i32 {
+    x.any_true_v128() ^ x_2.any_true_v128();
+}
+#[export = "i16x8_any_true_as_i32.xor_operand"]
+fn f_8(x: v128, x_2: v128) -> i32 {
+    x.any_true_v128() ^ x_2.any_true_v128();
+}
+#[export = "i32x4_any_true_as_i32.xor_operand"]
+fn f_9(x: v128, x_2: v128) -> i32 {
+    x.any_true_v128() ^ x_2.any_true_v128();
+}
+#[export = "i8x16_all_true_as_i32.and_operand"]
+fn f_10(x: v128, x_2: v128) -> i32 {
+    x.all_true_i8x16() & x_2.all_true_i8x16();
+}
+#[export = "i16x8_all_true_as_i32.and_operand"]
+fn f_11(x: v128, x_2: v128) -> i32 {
+    x.all_true_i16x8() & x_2.all_true_i16x8();
+}
+#[export = "i32x4_all_true_as_i32.and_operand"]
+fn f_12(x: v128, x_2: v128) -> i32 {
+    x.all_true_i32x4() & x_2.all_true_i32x4();
+}
+#[export = "i8x16_all_true_as_i32.or_operand"]
+fn f_13(x: v128, x_2: v128) -> i32 {
+    x.all_true_i8x16() | x_2.all_true_i8x16();
+}
+#[export = "i16x8_all_true_as_i32.or_operand"]
+fn f_14(x: v128, x_2: v128) -> i32 {
+    x.all_true_i16x8() | x_2.all_true_i16x8();
+}
+#[export = "i32x4_all_true_as_i32.or_operand"]
+fn f_15(x: v128, x_2: v128) -> i32 {
+    x.all_true_i32x4() | x_2.all_true_i32x4();
+}
+#[export = "i8x16_all_true_as_i32.xor_operand"]
+fn f_16(x: v128, x_2: v128) -> i32 {
+    x.all_true_i8x16() ^ x_2.all_true_i8x16();
+}
+#[export = "i16x8_all_true_as_i32.xor_operand"]
+fn f_17(x: v128, x_2: v128) -> i32 {
+    x.all_true_i16x8() ^ x_2.all_true_i16x8();
+}
+#[export = "i32x4_all_true_as_i32.xor_operand"]
+fn f_18(x: v128, x_2: v128) -> i32 {
+    x.all_true_i32x4() ^ x_2.all_true_i32x4();
+}
+#[export = "i8x16_any_true_with_v128.not"]
+fn f_19(x: v128) -> i32 {
+    x.not_v128().any_true_v128();
+}
+#[export = "i16x8_any_true_with_v128.not"]
+fn f_20(x: v128) -> i32 {
+    x.not_v128().any_true_v128();
+}
+#[export = "i32x4_any_true_with_v128.not"]
+fn f_21(x: v128) -> i32 {
+    x.not_v128().any_true_v128();
+}
+#[export = "i8x16_any_true_with_v128.and"]
+fn f_22(x: v128, x_2: v128) -> i32 {
+    x.and_v128(x_2).any_true_v128();
+}
+#[export = "i16x8_any_true_with_v128.and"]
+fn f_23(x: v128, x_2: v128) -> i32 {
+    x.and_v128(x_2).any_true_v128();
+}
+#[export = "i32x4_any_true_with_v128.and"]
+fn f_24(x: v128, x_2: v128) -> i32 {
+    x.and_v128(x_2).any_true_v128();
+}
+#[export = "i8x16_any_true_with_v128.or"]
+fn f_25(x: v128, x_2: v128) -> i32 {
+    x.or_v128(x_2).any_true_v128();
+}
+#[export = "i16x8_any_true_with_v128.or"]
+fn f_26(x: v128, x_2: v128) -> i32 {
+    x.or_v128(x_2).any_true_v128();
+}
+#[export = "i32x4_any_true_with_v128.or"]
+fn f_27(x: v128, x_2: v128) -> i32 {
+    x.or_v128(x_2).any_true_v128();
+}
+#[export = "i8x16_any_true_with_v128.xor"]
+fn f_28(x: v128, x_2: v128) -> i32 {
+    x.xor_v128(x_2).any_true_v128();
+}
+#[export = "i16x8_any_true_with_v128.xor"]
+fn f_29(x: v128, x_2: v128) -> i32 {
+    x.xor_v128(x_2).any_true_v128();
+}
+#[export = "i32x4_any_true_with_v128.xor"]
+fn f_30(x: v128, x_2: v128) -> i32 {
+    x.xor_v128(x_2).any_true_v128();
+}
+#[export = "i8x16_any_true_with_v128.bitselect"]
+fn f_31(x: v128, x_2: v128, x_3: v128) -> i32 {
+    v128::bitselect(x, x_2, x_3).any_true_v128();
+}
+#[export = "i16x8_any_true_with_v128.bitselect"]
+fn f_32(x: v128, x_2: v128, x_3: v128) -> i32 {
+    v128::bitselect(x, x_2, x_3).any_true_v128();
+}
+#[export = "i32x4_any_true_with_v128.bitselect"]
+fn f_33(x: v128, x_2: v128, x_3: v128) -> i32 {
+    v128::bitselect(x, x_2, x_3).any_true_v128();
+}
+#[export = "i8x16_all_true_with_v128.not"]
+fn f_34(x: v128) -> i32 {
+    x.not_v128().all_true_i8x16();
+}
+#[export = "i16x8_all_true_with_v128.not"]
+fn f_35(x: v128) -> i32 {
+    x.not_v128().all_true_i16x8();
+}
+#[export = "i32x4_all_true_with_v128.not"]
+fn f_36(x: v128) -> i32 {
+    x.not_v128().all_true_i32x4();
+}
+#[export = "i8x16_all_true_with_v128.and"]
+fn f_37(x: v128, x_2: v128) -> i32 {
+    x.and_v128(x_2).all_true_i8x16();
+}
+#[export = "i16x8_all_true_with_v128.and"]
+fn f_38(x: v128, x_2: v128) -> i32 {
+    x.and_v128(x_2).all_true_i16x8();
+}
+#[export = "i32x4_all_true_with_v128.and"]
+fn f_39(x: v128, x_2: v128) -> i32 {
+    x.and_v128(x_2).all_true_i32x4();
+}
+#[export = "i8x16_all_true_with_v128.or"]
+fn f_40(x: v128, x_2: v128) -> i32 {
+    x.or_v128(x_2).all_true_i8x16();
+}
+#[export = "i16x8_all_true_with_v128.or"]
+fn f_41(x: v128, x_2: v128) -> i32 {
+    x.or_v128(x_2).all_true_i16x8();
+}
+#[export = "i32x4_all_true_with_v128.or"]
+fn f_42(x: v128, x_2: v128) -> i32 {
+    x.or_v128(x_2).all_true_i32x4();
+}
+#[export = "i8x16_all_true_with_v128.xor"]
+fn f_43(x: v128, x_2: v128) -> i32 {
+    x.xor_v128(x_2).all_true_i8x16();
+}
+#[export = "i16x8_all_true_with_v128.xor"]
+fn f_44(x: v128, x_2: v128) -> i32 {
+    x.xor_v128(x_2).all_true_i16x8();
+}
+#[export = "i32x4_all_true_with_v128.xor"]
+fn f_45(x: v128, x_2: v128) -> i32 {
+    x.xor_v128(x_2).all_true_i32x4();
+}
+#[export = "i8x16_all_true_with_v128.bitselect"]
+fn f_46(x: v128, x_2: v128, x_3: v128) -> i32 {
+    v128::bitselect(x, x_2, x_3).all_true_i8x16();
+}
+#[export = "i16x8_all_true_with_v128.bitselect"]
+fn f_47(x: v128, x_2: v128, x_3: v128) -> i32 {
+    v128::bitselect(x, x_2, x_3).all_true_i16x8();
+}
+#[export = "i32x4_all_true_with_v128.bitselect"]
+fn f_48(x: v128, x_2: v128, x_3: v128) -> i32 {
+    v128::bitselect(x, x_2, x_3).all_true_i32x4();
+}
+memory m: i32 [1];

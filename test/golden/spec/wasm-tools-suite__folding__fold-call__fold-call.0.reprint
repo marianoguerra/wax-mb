@@ -1,0 +1,24 @@
+type i_i = fn(i32) -> i32;
+type t = fn(i32, f32) -> f32;
+type t_2 = fn(f32, f32, f32, f32);
+type t_3 = fn() -> i32;
+type t_4 = fn();
+fn i_i(i32) -> i32 {
+    1;
+}
+fn if_f(i32, f32) -> f32 {
+    0x0p+0;
+}
+fn ffff_v(f32, f32, f32, f32) {}
+fn f() -> i32 {
+    _ = i_i(1);
+    i_i(2);
+}
+fn f_2() {
+    ffff_v(0x0p+0, 0x1p+0, 0x1p+1, if_f(3, 0x1p+2));
+}
+fn f_3() -> i32 {
+    (t[2] as &?i_i)(1);
+}
+table t: &?func [2, 2];
+elem e: &func @ t [0] = [i_i, if_f];

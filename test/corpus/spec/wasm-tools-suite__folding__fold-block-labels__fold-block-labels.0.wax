@@ -1,0 +1,36 @@
+type t = fn();
+fn f() {
+    'l: do {
+        br 'l;
+    }
+    'l: do {
+        br 'l;
+    }
+}
+fn f_2() {
+    'l: do {
+        br 'l;
+        'l_2: do {
+            br 'l_2;
+        }
+    }
+    'l: do {
+        br 'l;
+    }
+}
+fn f_3() {
+    'l: if 0 {
+        br 'l;
+    }
+    'l: if 0 {
+        br 'l;
+    }
+}
+fn f_4() {
+    'l: loop {
+        br 'l;
+    }
+    'l: loop {
+        br 'l;
+    }
+}

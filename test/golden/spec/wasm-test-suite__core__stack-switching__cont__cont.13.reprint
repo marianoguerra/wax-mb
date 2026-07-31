@@ -1,0 +1,31 @@
+#![module = "state"]
+type f = fn(i32) -> i32;
+type k = cont f;
+type t = fn() -> i32;
+type t_2 = fn(i32, &k) -> i32;
+type t_3 = fn() -> (i32, &k);
+fn runner(s: i32, k: &k) -> i32 {
+    'loop: loop {
+        k =
+            'on_get: do {
+                'on_set: do () -> (i32, &k) {
+                    return k.resume(s) on [get -> 'on_get, set -> 'on_set];
+                }
+                k = _;
+                s = _;
+                br 'loop;
+            };
+        br 'loop;
+    }
+    unreachable;
+}
+fn f(i32) -> i32 {
+    _ = suspend set(7);
+    suspend get() + 2 * (suspend set(3) + suspend get());
+}
+#[export]
+fn run() -> i32 {
+    runner(0, k::new(f));
+}
+tag get: t ;
+tag set: f ;

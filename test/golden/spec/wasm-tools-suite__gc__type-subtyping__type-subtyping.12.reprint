@@ -1,0 +1,23 @@
+rec {
+    type f1 = open fn();
+    type s1 = open { f: &f1 };
+}
+rec {
+    type f2 = open fn();
+    type s2 = open { f: &f2 };
+}
+rec {
+    type g1: f1 = open fn();
+    type t: s1 = open { .., f_2: &f1, f_3: &f2, f_4: &f2, f_5: &g1 };
+}
+rec {
+    type g2: f2 = open fn();
+    type t_2: s2 = open { f: &f1, f_2: &f2, f_3: &f1, f_4: &f2, f_5: &g2 };
+}
+rec {
+    type h: g2 = open fn();
+    type t_3 = { };
+}
+fn h: h () {}
+const g = h;
+const g_2 = h;

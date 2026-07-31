@@ -1,0 +1,59 @@
+type s = { f: i8, f_2: mut i8, f_3: i16, f_4: mut i16 };
+type t = fn() -> (i32, i32);
+type t_2 = fn(i32) -> (i32, i32);
+#[export]
+fn get_packed_g0_0() -> (i32, i32) {
+    g0.f as i32_s;
+    g0.f as i32_u;
+}
+#[export]
+fn get_packed_g1_0() -> (i32, i32) {
+    g1.f as i32_s;
+    g1.f as i32_u;
+}
+#[export]
+fn get_packed_g0_1() -> (i32, i32) {
+    g0.f_2 as i32_s;
+    g0.f_2 as i32_u;
+}
+#[export]
+fn get_packed_g1_1() -> (i32, i32) {
+    g1.f_2 as i32_s;
+    g1.f_2 as i32_u;
+}
+#[export]
+fn get_packed_g0_2() -> (i32, i32) {
+    g0.f_3 as i32_s;
+    g0.f_3 as i32_u;
+}
+#[export]
+fn get_packed_g1_2() -> (i32, i32) {
+    g1.f_3 as i32_s;
+    g1.f_3 as i32_u;
+}
+#[export]
+fn get_packed_g0_3() -> (i32, i32) {
+    g0.f_4 as i32_s;
+    g0.f_4 as i32_u;
+}
+#[export]
+fn get_packed_g1_3() -> (i32, i32) {
+    g1.f_4 as i32_s;
+    g1.f_4 as i32_u;
+}
+#[export]
+fn set_get_packed_g0_1(x: i32) -> (i32, i32) {
+    g0.f_2 = x;
+    g0.f_2 as i32_s;
+    g0.f_2 as i32_u;
+}
+#[export]
+fn set_get_packed_g0_3(x: i32) -> (i32, i32) {
+    g0.f_4 = x;
+    g0.f_4 as i32_s;
+    g0.f_4 as i32_u;
+}
+#[export]
+const g0 = { f: 0, f_2: 1, f_3: 2, f_4: 3 };
+#[export]
+const g1 = { f: 254, f_2: 255, f_3: 65534, f_4: 65535 };

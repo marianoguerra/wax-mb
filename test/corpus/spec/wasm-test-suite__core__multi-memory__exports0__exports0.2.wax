@@ -1,0 +1,4 @@
+#[export]
+memory a: i32 [0];
+#[export]
+memory b: i32 [0];

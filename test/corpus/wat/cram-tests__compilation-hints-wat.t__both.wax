@@ -1,0 +1,9 @@
+fn f(x: i32) -> i32 {
+    #[likely]
+    #[freq = 8]
+    if x {
+        1;
+    } else {
+        2;
+    }
+}

@@ -1,0 +1,28 @@
+type t = fn(i32) -> v128;
+type t_2 = fn(f32) -> v128;
+type t_3 = fn(i64) -> v128;
+type t_4 = fn(f64) -> v128;
+#[export = "i8x16.splat"]
+fn f(x: i32) -> v128 {
+    x.splat_i8x16();
+}
+#[export = "i16x8.splat"]
+fn f_2(x: i32) -> v128 {
+    x.splat_i16x8();
+}
+#[export = "i32x4.splat"]
+fn f_3(x: i32) -> v128 {
+    x.splat_i32x4();
+}
+#[export = "f32x4.splat"]
+fn f_4(x: f32) -> v128 {
+    x.splat_f32x4();
+}
+#[export = "i64x2.splat"]
+fn f_5(x: i64) -> v128 {
+    x.splat_i64x2();
+}
+#[export = "f64x2.splat"]
+fn f_6(x: f64) -> v128 {
+    x.splat_f64x2();
+}

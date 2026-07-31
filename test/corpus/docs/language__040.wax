@@ -1,0 +1,4 @@
+while i <s n {
+    total = total + i;
+    i = i + 1;
+}

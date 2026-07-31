@@ -1,0 +1,12 @@
+memory mem: i32 [1];
+
+#[export = "sum_bytes"]
+fn sum_bytes(start: i32, end: i32) -> i32 {
+    let total: i32 = 0;
+    let p: i32 = start;
+    while p <u end {
+        total += mem.load8(p) as i32_u;   // byte load, zero-extended
+        p += 1;
+    }
+    total;
+}

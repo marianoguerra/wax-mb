@@ -1,0 +1,3 @@
+import "Mv128"
+#[import = "mg-v128"]
+let g: v128;

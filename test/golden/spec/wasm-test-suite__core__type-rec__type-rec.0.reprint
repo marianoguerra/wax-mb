@@ -1,0 +1,18 @@
+type t = fn(&t) -> &t;
+rec {
+    type t_2 = fn(&t_3);
+    type t_3 = fn() -> &t_2;
+}
+rec {}
+type t_4 = fn();
+type t_5 = fn();
+rec {
+    type t1 = fn();
+    type t_6 = fn();
+    type t2 = fn();
+}
+type g = fn(&g) -> &g;
+rec {
+    type h = fn(&k);
+    type k = fn() -> &h;
+}

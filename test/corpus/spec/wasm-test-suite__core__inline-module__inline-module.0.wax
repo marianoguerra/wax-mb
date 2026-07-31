@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {}
+#[export = "f"]
+fn f_2() {}
+memory m: i32 [0];

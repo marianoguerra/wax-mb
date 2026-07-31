@@ -1,0 +1,37 @@
+type vec = [f32];
+type mvec = [mut f32];
+type t = fn() -> &vec;
+type t_2 = fn(i32, &vec) -> f32;
+type t_3 = fn(i32) -> f32;
+type t_4 = fn(i32, &mvec, f32) -> f32;
+type t_5 = fn(i32, f32) -> f32;
+type t_6 = fn(&array) -> i32;
+type t_7 = fn() -> i32;
+#[export]
+fn new() -> &vec {
+    [..; 3];
+}
+fn get(i: i32, v: &vec) -> f32 {
+    v[i];
+}
+#[export = "get"]
+fn get_2(i: i32) -> f32 {
+    get(i, new());
+}
+fn set_get(i: i32, v: &mvec, y: f32) -> f32 {
+    v[i] = y;
+    v[i];
+}
+#[export = "set_get"]
+fn set_get_2(i: i32, y: f32) -> f32 {
+    set_get(i, [..; 3], y);
+}
+fn len(v: &array) -> i32 {
+    v.length();
+}
+#[export = "len"]
+fn len_2() -> i32 {
+    len(new());
+}
+const g: &vec = [0x1p+0; 3];
+const g_2: &vec = [..; 3];

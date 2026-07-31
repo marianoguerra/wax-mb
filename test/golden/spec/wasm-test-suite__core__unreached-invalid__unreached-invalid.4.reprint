@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {
+    unreachable;
+    _ = !(0 as i32 as i64);
+}

@@ -1,0 +1,4 @@
+type t = fn(i32);
+import "test"
+#[import = "func-i32"]
+fn f(i32);

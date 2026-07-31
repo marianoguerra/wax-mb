@@ -1,0 +1,27 @@
+type t = fn(v128) -> v128;
+type t_2 = fn(v128, v128) -> v128;
+type t_3 = fn(v128, v128, v128) -> v128;
+#[export]
+fn not(x: v128) -> v128 {
+    x.not_v128();
+}
+#[export]
+fn and(x: v128, x_2: v128) -> v128 {
+    x.and_v128(x_2);
+}
+#[export]
+fn or(x: v128, x_2: v128) -> v128 {
+    x.or_v128(x_2);
+}
+#[export]
+fn xor(x: v128, x_2: v128) -> v128 {
+    x.xor_v128(x_2);
+}
+#[export]
+fn bitselect(x: v128, x_2: v128, x_3: v128) -> v128 {
+    v128::bitselect(x, x_2, x_3);
+}
+#[export]
+fn andnot(x: v128, x_2: v128) -> v128 {
+    x.andnot_v128(x_2);
+}

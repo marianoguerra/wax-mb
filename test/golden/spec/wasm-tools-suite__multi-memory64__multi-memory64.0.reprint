@@ -1,0 +1,10 @@
+#![module = "copy_between_memories"]
+type t = fn();
+fn f() {
+    m32.copy(0, 0, 0);
+    m64.copy(m32, 0, 0, 0);
+    m32.copy(m64, 0, 0, 0);
+    m64.copy(0, 0, 0);
+}
+memory m64: i64 [1];
+memory m32: i32 [1];

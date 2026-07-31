@@ -1,0 +1,1 @@
+data seg = "\x72\x61\x77\x00\x62\x79\x74\x65\x73"; data init @ mem0 [0] = "hello";

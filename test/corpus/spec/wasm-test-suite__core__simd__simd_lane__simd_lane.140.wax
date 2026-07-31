@@ -1,0 +1,49 @@
+type t = fn(v128) -> i32;
+type t_2 = fn(v128, i32) -> v128;
+type t_3 = fn(v128, f32) -> v128;
+type t_4 = fn(v128, v128) -> v128;
+type t_5 = fn(v128) -> i64;
+type t_6 = fn(v128, f64) -> v128;
+#[export = "as-if-condition-value"]
+fn f(x: v128) -> i32 {
+    if x.extract_lane_s_i8x16(0) {
+        255;
+    } else {
+        0;
+    }
+}
+#[export = "as-return-value-1"]
+fn f_2(x: v128, x_2: i32) -> v128 {
+    return x.replace_lane_i16x8(0, x_2);
+}
+#[export = "as-local_set-value"]
+fn f_3(x: v128) -> i32 {
+    let x_2 = x.extract_lane_i32x4(0);
+    return x_2;
+}
+#[export = "as-global_set-value-1"]
+fn f_4(x: v128, x_2: f32) -> v128 {
+    g = x.replace_lane_f32x4(0, x_2);
+    return g;
+}
+#[export = "as-return-value-2"]
+fn f_5(x: v128, x_2: v128) -> v128 {
+    return x.swizzle_i8x16(x_2);
+}
+#[export = "as-global_set-value-2"]
+fn f_6(x: v128, x_2: v128) -> v128 {
+    h = x.shuffle_i8x16(0, 1, 2, 3, 4, 5, 6, 7, 24, 25, 26, 27, 28, 29, 30, 31, x_2);
+    return h;
+}
+#[export = "as-local_set-value-1"]
+fn f_7(x: v128) -> i64 {
+    let x_2 = x.extract_lane_i64x2(0);
+    return x_2;
+}
+#[export = "as-global_set-value-3"]
+fn f_8(x: v128, x_2: f64) -> v128 {
+    g = x.replace_lane_f64x2(0, x_2);
+    return g;
+}
+let g = v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+let h = v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);

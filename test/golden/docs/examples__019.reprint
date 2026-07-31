@@ -1,0 +1,10 @@
+fn divmod(a: i32, b: i32) -> (i32, i32) {
+    a /s b;
+    a %s b;
+}
+
+#[export = "checksum"]
+fn checksum(a: i32, b: i32) -> i32 {
+    let (q, r) = divmod(a, b);
+    q + r;
+}

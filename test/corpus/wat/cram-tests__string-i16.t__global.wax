@@ -1,0 +1,7 @@
+type w = [mut i16];
+const wide = w#"hé😀";
+const narrow = "hi";
+#[export]
+fn g() -> &w {
+    wide;
+}

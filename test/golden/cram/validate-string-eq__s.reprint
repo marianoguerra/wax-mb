@@ -1,0 +1,7 @@
+fn f(c: i32) -> &eq {
+    if c {
+        "x";
+    } else {
+        null as &eq;
+    }
+}

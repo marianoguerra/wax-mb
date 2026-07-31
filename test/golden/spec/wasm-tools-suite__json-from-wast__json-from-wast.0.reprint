@@ -1,0 +1,16 @@
+#![module = "m"]
+type t = fn() -> i32;
+type t_2 = fn() -> i64;
+type t_3 = fn(i32) -> i32;
+#[export]
+fn f() -> i32 {
+    -1;
+}
+#[export]
+fn g() -> i64 {
+    -2;
+}
+#[export]
+fn id(x: i32) -> i32 {
+    x;
+}

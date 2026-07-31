@@ -1,0 +1,55 @@
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(i32);
+type t_2 = fn(i32, &cont_2);
+type t_3 = fn(i32, &cont_2) -> i32;
+type t_4 = fn(&cont_2) -> i32;
+type t_5 = fn(i32) -> i32;
+type t_6 = fn(i32, i32);
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+import "examples" {
+    fn naturals();
+    fn fibonacci();
+    #[import = "one-two-three"]
+    fn f();
+    #[import = "print-first"]
+    fn f_2(i32, &cont_2);
+    #[import = "sum-first"]
+    fn f_3(i32, &cont_2) -> i32;
+}
+import "manager" {
+    fn init(&cont_2) -> i32;
+    fn next(i32) -> i32;
+}
+fn f_4(n: i32, gen: i32) {
+    'l: loop {
+        if !n {
+            return;
+        }
+        log(next(gen));
+        n += -1;
+        br 'l;
+    }
+}
+fn f_5() {
+    let gen1 = init(cont_2::new(naturals));
+    let gen2 = init(cont_2::new(fibonacci));
+    f_4(5, gen1);
+    f_4(5, gen2);
+    f_4(5, gen1);
+    f_4(5, gen2);
+    f_4(5, gen1);
+    f_4(5, gen2);
+    f_4(5, gen1);
+    f_4(5, gen2);
+}
+#[export]
+fn main() {
+    f_5();
+    f_2(42, cont_2::new(naturals));
+    f_2(42, cont_2::new(fibonacci));
+    log(f_3(101, cont_2::new(naturals)));
+    log(f_3(10, cont_2::new(f)));
+}

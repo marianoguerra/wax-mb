@@ -1,0 +1,4 @@
+import "env" {
+    const base: i32;
+    let counter: i32;
+}

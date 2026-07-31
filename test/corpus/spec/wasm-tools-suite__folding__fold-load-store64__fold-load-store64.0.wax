@@ -1,0 +1,17 @@
+type t = fn();
+type t_2 = fn() -> i32;
+fn f() {
+    _ = m.load32(1);
+    _ = m.load32(2);
+}
+fn f_2() {
+    m.storef32(m.load64(1), 0x1p+1);
+}
+fn f_3() -> i32 {
+    _ = m.size() + 1;
+    2;
+}
+fn f_4() -> i32 {
+    1 <s m.grow(2);
+}
+memory m: i64 [1];

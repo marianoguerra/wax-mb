@@ -1,0 +1,21 @@
+let g = 0;
+#[export]
+fn id(x: i32) -> i32 {
+    x + 0;
+}
+#[export]
+fn zero(x: i32) -> i32 {
+    x * 0;
+}
+#[export]
+fn same(x: i32) -> i32 {
+    x ^ x;
+}
+#[export]
+fn selfset(x: i32) {
+    x = x;
+}
+#[export]
+fn gset() {
+    g = g;
+}

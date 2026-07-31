@@ -1,0 +1,46 @@
+type t = fn(f32, f32) -> f32;
+type t_2 = fn(f32) -> f32;
+#[export]
+fn add(x: f32, y: f32) -> f32 {
+    x + y;
+}
+#[export]
+fn sub(x: f32, y: f32) -> f32 {
+    x - y;
+}
+#[export]
+fn mul(x: f32, y: f32) -> f32 {
+    x * y;
+}
+#[export]
+fn div(x: f32, y: f32) -> f32 {
+    x / y;
+}
+#[export]
+fn sqrt(x: f32) -> f32 {
+    x.sqrt();
+}
+#[export]
+fn min(x: f32, y: f32) -> f32 {
+    x.min(y);
+}
+#[export]
+fn max(x: f32, y: f32) -> f32 {
+    x.max(y);
+}
+#[export]
+fn ceil(x: f32) -> f32 {
+    x.ceil();
+}
+#[export]
+fn floor(x: f32) -> f32 {
+    x.floor();
+}
+#[export]
+fn trunc(x: f32) -> f32 {
+    x.trunc();
+}
+#[export]
+fn nearest(x: f32) -> f32 {
+    x.nearest();
+}

@@ -1,0 +1,12 @@
+type f = fn();
+type ft1 = open fn(&f) -> &func;
+type ct1 = open cont ft1;
+type ft2 = fn(&any) -> &func;
+type ct2 = cont ft2;
+type ft3: ft1 = open fn(&func) -> &f;
+type ct3 = cont ft3;
+type ct_sub: ct1 = open cont ft3;
+type t = fn(&ct1, &ct_sub);
+fn test(p1: &ct1, p2: &ct_sub) {
+    p1 = p2;
+}

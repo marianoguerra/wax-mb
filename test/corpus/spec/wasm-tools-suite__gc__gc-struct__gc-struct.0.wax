@@ -1,0 +1,17 @@
+type t = { };
+type t_2 = { f: i32 };
+type t_3 = { f: mut i32 };
+type t_4 = { f: i32, f_2: i32 };
+type t_5 = { f: i32, f_2: mut i32 };
+type t_6 = { f: mut i32, f_2: mut i32 };
+type a = { field_a: f32 };
+type b = { field_b: mut f32 };
+type t_7 = { field_a: &?extern };
+type t_8 = { field_b: &?extern, field_c: &?func };
+type t_9 = fn(&a, &b);
+fn f(x: &a, x_2: &b) {
+    _ = {a| field_a: 0x1p+0 };
+    _ = {a| .. };
+    _ = x.field_a;
+    x_2.field_b = 0x1p+0;
+}

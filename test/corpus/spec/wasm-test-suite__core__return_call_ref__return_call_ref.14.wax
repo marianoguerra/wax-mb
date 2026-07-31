@@ -1,0 +1,5 @@
+type t = fn();
+type t_2 = fn(&?func);
+fn f(r: &?func) {
+    become (r as &?t)();
+}

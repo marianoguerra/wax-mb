@@ -1,0 +1,294 @@
+type check = fn(i32, i32) -> i32;
+type t = fn() -> i32;
+type t_2 = fn() -> i64;
+type t_3 = fn() -> &?extern;
+type t_4 = fn(i32);
+type t_5 = fn(i64);
+type t_6 = fn(&?extern);
+type t_7 = fn() -> f32;
+type t_8 = fn() -> f64;
+type t_9 = fn(f32);
+type t_10 = fn(f64);
+type t_11 = fn();
+type t_12 = fn(i32) -> i32;
+import "spectest" {
+    const global_i32: i32;
+    const global_i64: i64;
+}
+#[export = "get-a"]
+fn f() -> i32 {
+    a;
+}
+#[export = "get-b"]
+fn f_2() -> i64 {
+    b;
+}
+#[export = "get-r"]
+fn f_3() -> &?extern {
+    r;
+}
+#[export = "get-mr"]
+fn f_4() -> &?extern {
+    mr;
+}
+#[export = "get-x"]
+fn f_5() -> i32 {
+    x;
+}
+#[export = "get-y"]
+fn f_6() -> i64 {
+    y;
+}
+#[export = "get-z1"]
+fn f_7() -> i32 {
+    z1;
+}
+#[export = "get-z2"]
+fn f_8() -> i64 {
+    z2;
+}
+#[export = "get-z3"]
+fn f_9() -> i32 {
+    z3;
+}
+#[export = "get-z4"]
+fn f_10() -> i64 {
+    z4;
+}
+#[export = "get-z5"]
+fn f_11() -> i32 {
+    z5;
+}
+#[export = "get-z6"]
+fn f_12() -> i64 {
+    z6;
+}
+#[export = "set-x"]
+fn f_13(x_2: i32) {
+    x = x_2;
+}
+#[export = "set-y"]
+fn f_14(x: i64) {
+    y = x;
+}
+#[export = "set-mr"]
+fn f_15(x: &?extern) {
+    mr = x;
+}
+#[export = "get-3"]
+fn f_16() -> f32 {
+    g;
+}
+#[export = "get-4"]
+fn f_17() -> f64 {
+    g_2;
+}
+#[export = "get-7"]
+fn f_18() -> f32 {
+    g_3;
+}
+#[export = "get-8"]
+fn f_19() -> f64 {
+    g_4;
+}
+#[export = "set-7"]
+fn f_20(x: f32) {
+    g_3 = x;
+}
+#[export = "set-8"]
+fn f_21(x: f64) {
+    g_4 = x;
+}
+fn dummy() {}
+#[export = "as-select-first"]
+fn f_22() -> i32 {
+    3?x:2;
+}
+#[export = "as-select-mid"]
+fn f_23() -> i32 {
+    3?2:x;
+}
+#[export = "as-select-last"]
+fn f_24() -> i32 {
+    x?2:3;
+}
+#[export = "as-loop-first"]
+fn f_25() -> i32 {
+    loop {
+        x;
+        dummy();
+        dummy();
+    }
+}
+#[export = "as-loop-mid"]
+fn f_26() -> i32 {
+    loop {
+        dummy();
+        x;
+        dummy();
+    }
+}
+#[export = "as-loop-last"]
+fn f_27() -> i32 {
+    loop {
+        dummy();
+        dummy();
+        x;
+    }
+}
+#[export = "as-if-condition"]
+fn f_28() -> i32 {
+    if x {
+        dummy();
+        2;
+    } else {
+        dummy();
+        3;
+    }
+}
+#[export = "as-if-then"]
+fn f_29() -> i32 {
+    if 1 {
+        x;
+    } else {
+        2;
+    }
+}
+#[export = "as-if-else"]
+fn f_30() -> i32 {
+    if 0 {
+        2;
+    } else {
+        x;
+    }
+}
+#[export = "as-br_if-first"]
+fn f_31() -> i32 {
+    'l: do {
+        br_if 'l (x, 2);
+        return 3;
+    }
+}
+#[export = "as-br_if-last"]
+fn f_32() -> i32 {
+    'l: do {
+        br_if 'l (2, x);
+        return 3;
+    }
+}
+#[export = "as-br_table-first"]
+fn f_33() -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ] (x, 2);
+    }
+}
+#[export = "as-br_table-last"]
+fn f_34() -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ] (2, x);
+    }
+}
+fn func(x: i32, i32) -> i32 {
+    x;
+}
+#[export = "as-call_indirect-first"]
+fn f_35() -> i32 {
+    do {
+        (t[0] as &?check)(x, 2);
+    }
+}
+#[export = "as-call_indirect-mid"]
+fn f_36() -> i32 {
+    do {
+        (t[0] as &?check)(2, x);
+    }
+}
+#[export = "as-call_indirect-last"]
+fn f_37() -> i32 {
+    do {
+        (t[x] as &?check)(2, 0);
+    }
+}
+#[export = "as-store-first"]
+fn f_38() {
+    m.store32(x, 1);
+}
+#[export = "as-store-last"]
+fn f_39() {
+    m.store32(0, x);
+}
+#[export = "as-load-operand"]
+fn f_40() -> i32 {
+    m.load32(x);
+}
+#[export = "as-memory.grow-value"]
+fn f_41() -> i32 {
+    m.grow(x);
+}
+fn f_42(x: i32) -> i32 {
+    x;
+}
+#[export = "as-call-value"]
+fn f_43() -> i32 {
+    f_42(x);
+}
+#[export = "as-return-value"]
+fn f_44() -> i32 {
+    return x;
+}
+#[export = "as-drop-operand"]
+fn f_45() {
+    _ = x;
+}
+#[export = "as-br-value"]
+fn f_46() -> i32 {
+    'l: do {
+        br 'l x;
+    }
+}
+#[export = "as-local.set-value"]
+fn f_47(x_2: i32) -> i32 {
+    x_2 = x;
+    x_2;
+}
+#[export = "as-local.tee-value"]
+fn f_48(x_2: i32) -> i32 {
+    x_2 := x;
+}
+#[export = "as-global.set-value"]
+fn f_49() -> i32 {
+    x = x;
+    x;
+}
+#[export = "as-unary-operand"]
+fn f_50() -> i32 {
+    !x;
+}
+#[export = "as-binary-operand"]
+fn f_51() -> i32 {
+    x * x;
+}
+#[export = "as-compare-operand"]
+fn f_52() -> i32 {
+    global_i32 >u 1;
+}
+table t: &?func [1, 1];
+memory m: i32 [1];
+const a = -2;
+const g: f32 = -0x1.8p+1;
+const g_2 = -0x1p+2;
+const b: i64 = -5;
+let x = -12;
+let g_3: f32 = -0x1.ap+3;
+let g_4 = -0x1.cp+3;
+let y: i64 = -15;
+const z1 = global_i32;
+const z2 = global_i64;
+const z3 = 20 * 2 - 2 + 4;
+const z4: i64 = 20 * 2 - 2 + 5;
+const z5 = global_i32 + 42;
+const z6 = global_i64 + 42;
+const r: &?extern = null;
+let mr: &?extern = null;
+const g_5: &?func = null;
+elem e: &func @ t [0] = [func];

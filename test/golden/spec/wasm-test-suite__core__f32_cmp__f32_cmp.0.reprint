@@ -1,0 +1,25 @@
+type t = fn(f32, f32) -> i32;
+#[export]
+fn eq(x: f32, y: f32) -> i32 {
+    x == y;
+}
+#[export]
+fn ne(x: f32, y: f32) -> i32 {
+    x != y;
+}
+#[export]
+fn lt(x: f32, y: f32) -> i32 {
+    x < y;
+}
+#[export]
+fn le(x: f32, y: f32) -> i32 {
+    x <= y;
+}
+#[export]
+fn gt(x: f32, y: f32) -> i32 {
+    x > y;
+}
+#[export]
+fn ge(x: f32, y: f32) -> i32 {
+    x >= y;
+}

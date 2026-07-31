@@ -1,0 +1,1 @@
+#![feature = "custom-descriptors"] type t = { f: &!t };

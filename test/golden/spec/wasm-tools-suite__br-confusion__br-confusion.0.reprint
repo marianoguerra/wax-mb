@@ -1,0 +1,8 @@
+type t = fn();
+fn f() {
+    'a: do {
+        'a_1: do {
+            br 'a;
+        }
+    }
+}

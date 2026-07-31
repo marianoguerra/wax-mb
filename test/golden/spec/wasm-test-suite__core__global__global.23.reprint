@@ -1,0 +1,1 @@
+import "spectest" const global_i32: i32;

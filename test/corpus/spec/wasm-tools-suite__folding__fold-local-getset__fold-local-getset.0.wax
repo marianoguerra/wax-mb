@@ -1,0 +1,19 @@
+type t = fn() -> f32;
+type t_2 = fn();
+type t_3 = fn() -> i32;
+fn f() -> f32 {
+    let x: f32;
+    let x_2: f32;
+    let x_3: f64;
+    let x_4: f64;
+    x + x_2 + (x_3 + x_4) as f32;
+}
+fn f_2() {
+    let x: i64 = 1 ^ (2 ^ 3);
+    let x_2 = 4;
+}
+fn f_3() -> i32 {
+    let x: i32;
+    let x_2: i32;
+    (x := 1) + (x_2 := 2);
+}

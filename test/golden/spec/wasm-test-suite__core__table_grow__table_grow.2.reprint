@@ -1,0 +1,6 @@
+type t = fn(i32) -> i32;
+#[export]
+fn grow(x: i32) -> i32 {
+    t.grow(null as &?extern, x);
+}
+table t: &?extern [0];

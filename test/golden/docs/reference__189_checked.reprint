@@ -1,0 +1,2 @@
+fn log_value(x: i32) {}
+// no return

@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {
+    atomic::fence();
+    atomic::fence();
+}

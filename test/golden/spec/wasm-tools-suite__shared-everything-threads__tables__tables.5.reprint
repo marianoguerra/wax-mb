@@ -1,0 +1,1 @@
+import "spectest" table table_ref: &?func [0];

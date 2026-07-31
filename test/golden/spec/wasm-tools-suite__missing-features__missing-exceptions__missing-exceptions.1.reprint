@@ -1,0 +1,4 @@
+type t = fn();
+import ""
+#[import = ""]
+tag t: t ;

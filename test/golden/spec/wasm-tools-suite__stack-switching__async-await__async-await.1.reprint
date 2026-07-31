@@ -1,0 +1,47 @@
+#![module = "example"]
+type t = fn(i32);
+type t_2 = cont t;
+type t_3 = fn(i32, i32, i32);
+type t_4 = cont t_3;
+type t_5 = fn();
+type t_6 = fn(i32, i32);
+type t_7 = fn(&t_2) -> i32;
+type t_8 = fn(i32) -> i32;
+import "async-await" {
+    tag yield: t_5 ;
+    tag fulfill: t_6 ;
+    tag async: t_7 ;
+    tag await: t_8 ;
+}
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+fn sum(i: i32, j: i32, p: i32) {
+    let a: i32;
+    'l: loop {
+        log(i);
+        a += i;
+        i += 1;
+        if i <=u j {
+            suspend yield();
+            br 'l;
+        }
+    }
+    suspend fulfill(p, a);
+}
+#[export]
+fn run() {
+    log(-1);
+    let p = suspend async(t_2::bind(1, 3, t_4::new(sum)));
+    log(-2);
+    let q = suspend async(t_2::bind(5, 7, t_4::new(sum)));
+    log(-3);
+    let r = suspend async(t_2::bind(10, 15, t_4::new(sum)));
+    log(-4);
+    let x = suspend await(p) * suspend await(q);
+    log(-5);
+    let y = suspend await(r) + x;
+    log(-6);
+    log(y);
+    log(-7);
+}

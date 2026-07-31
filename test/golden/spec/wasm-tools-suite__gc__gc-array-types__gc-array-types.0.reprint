@@ -1,0 +1,1 @@
+type a = [i32]; type b = [mut i32]; type c = [mut &?b]; type d = [i8]; type e = [mut i16];

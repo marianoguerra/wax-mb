@@ -1,0 +1,5 @@
+#![module = "m"]
+#[export = "small-pages-memory"]
+memory m: i32 [0] pagesize 1;
+#[export = "large-pages-memory"]
+memory m_2: i32 [0] pagesize 65536;

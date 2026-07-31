@@ -1,0 +1,30 @@
+type T = fn() -> i32;
+type U = fn() -> i32;
+type t = fn(i32) -> i32;
+fn t1() -> i32 {
+    1;
+}
+fn t2() -> i32 {
+    2;
+}
+fn t3() -> i32 {
+    3;
+}
+fn u1() -> i32 {
+    4;
+}
+fn u2() -> i32 {
+    5;
+}
+#[export]
+fn callt(i: i32) -> i32 {
+    (t[i] as &?T)();
+}
+#[export]
+fn callu(i: i32) -> i32 {
+    (t[i] as &?U)();
+}
+table t: &?func [7, 7];
+elem e: &func @ t [0] = [
+        t1, t2, t3, u1, u2, t1, t3
+    ];

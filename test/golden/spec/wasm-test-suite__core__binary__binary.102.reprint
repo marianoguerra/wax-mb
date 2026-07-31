@@ -1,0 +1,3 @@
+type t = fn();
+#[start]
+fn f() {}

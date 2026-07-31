@@ -1,0 +1,12 @@
+type t = [mut i32];
+type t_2 = fn();
+#[export = "array.get-null"]
+fn f() {
+    let x: &?t;
+    _ = x[0];
+}
+#[export = "array.set-null"]
+fn f_2() {
+    let x: &?t;
+    x[0] = 0;
+}

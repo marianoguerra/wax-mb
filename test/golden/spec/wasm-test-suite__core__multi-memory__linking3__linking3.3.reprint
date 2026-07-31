@@ -1,0 +1,6 @@
+type t = fn();
+import "Mm" memory mem1: i32 [1];
+fn f() {}
+table t: &?func [0];
+elem e: &func @ t [0] = [f];
+data d @ mem1 [0] = "abc";

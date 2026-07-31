@@ -1,0 +1,25 @@
+type t = fn(i32) -> &?extern;
+type t_2 = fn(i32, &?extern);
+type t_3 = fn(i32, &?extern) -> i32;
+type t_4 = fn() -> i32;
+#[export]
+fn get(i: i32) -> &?extern {
+    t[i];
+}
+#[export]
+fn set(i: i32, r: &?extern) {
+    t[i] = r;
+}
+#[export]
+fn grow(sz: i32, init: &?extern) -> i32 {
+    t.grow(init, sz);
+}
+#[export = "grow-abbrev"]
+fn f(sz: i32, init: &?extern) -> i32 {
+    t.grow(init, sz);
+}
+#[export]
+fn size() -> i32 {
+    t.size();
+}
+table t: &?extern [0];

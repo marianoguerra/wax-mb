@@ -1,0 +1,17 @@
+type s = open { f: i32 };
+fn f() -> i32 {
+    0;
+}
+fn write_once() -> &?func {
+    let x = f;
+    x;
+}
+fn reassigned() -> &?func {
+    let y: &?func = f;
+    y = null;
+    y;
+}
+fn write_once_struct() -> &?eq {
+    let z = { f: 7 };
+    z;
+}

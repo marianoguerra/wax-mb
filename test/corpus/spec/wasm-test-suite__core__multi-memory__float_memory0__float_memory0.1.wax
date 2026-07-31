@@ -1,0 +1,26 @@
+type t = fn() -> f64;
+type t_2 = fn() -> i64;
+type t_3 = fn();
+#[export = "f64.load"]
+fn f() -> f64 {
+    m_2.loadf64(0);
+}
+#[export = "i64.load"]
+fn f_2() -> i64 {
+    m_2.load64(0);
+}
+#[export = "f64.store"]
+fn f_3() {
+    m_2.storef64(0, nan:0x4000000000000);
+}
+#[export = "i64.store"]
+fn f_4() {
+    m_2.store64(0, 9219994337134247936);
+}
+#[export]
+fn reset() {
+    m_2.store64(0, 0);
+}
+memory m: i32 [0, 0];
+memory m_2: i32 [1, 1];
+data d @ m_2 [0] = "\x00\x00\x00\x00\x00\x00\xf4\x7f";

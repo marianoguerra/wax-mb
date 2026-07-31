@@ -1,0 +1,1 @@
+table funcs: &?func [1, 10]; table objs: &?any [0];

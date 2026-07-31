@@ -1,0 +1,15 @@
+type w = [mut i16];
+type b = [mut i8];
+const sg = "hi";
+#[export]
+fn ch() -> i32 {
+    '😀';
+}
+#[export]
+fn s() -> &b {
+    "yo";
+}
+#[export]
+fn w() -> &w {
+    "é😀";
+}

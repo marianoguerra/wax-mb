@@ -1,0 +1,8 @@
+#![module = "i31ref_of_global_table_initializer"]
+type t = fn(i32) -> i32;
+import "env" const g: i32;
+#[export]
+fn get(x: i32) -> i32 {
+    t[x] as i32_u;
+}
+table t: &i31 [3, 3] = g as &i31;

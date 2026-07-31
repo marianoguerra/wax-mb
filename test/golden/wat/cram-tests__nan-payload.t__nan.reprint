@@ -1,0 +1,12 @@
+#[export]
+fn f() -> f32 {
+    nan:0x200000;
+}
+#[export]
+fn g() -> f64 {
+    nan:0x4000000000000;
+}
+#[export]
+fn h() -> f32 {
+    -nan:0x200000;
+}

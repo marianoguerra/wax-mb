@@ -1,0 +1,28 @@
+type t = fn();
+type S = fn();
+type t_2 = fn();
+type t_3 = fn() -> i32;
+type t_4 = fn() -> i32;
+type T = fn(i32) -> i32;
+type U = fn(i32);
+import "spectest"
+#[import = "print_i32"]
+fn print(i32);
+fn f() {}
+fn f_2() {}
+#[export]
+fn one() -> i32 {
+    13;
+}
+#[export]
+fn two(x: i32) -> i32 {
+    x + 1;
+}
+#[export]
+fn three(a: i32) -> i32 {
+    a - 2;
+}
+#[export]
+fn four(x: i32) {
+    print(x);
+}

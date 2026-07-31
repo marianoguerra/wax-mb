@@ -1,0 +1,27 @@
+const used = 1;
+const unused = 2;
+const _ignored = 3;
+#[export = "g"]
+const inline_exported = 4;
+fn helper() -> i32 {
+    used;
+}
+fn unused_fn() -> i32 {
+    0;
+}
+#[export]
+fn main() -> i32 {
+    helper();
+}
+#[export]
+fn labels() {
+    'unused_block: do {
+        nop;
+    }
+    'used_by_name: do {
+        br 'used_by_name;
+    }
+    'used_by_index: do {
+        br 'used_by_index;
+    }
+}

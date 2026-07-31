@@ -1,0 +1,104 @@
+type t = fn(i64) -> i64;
+type t_2 = fn() -> i32;
+type t_3 = fn();
+#[export = "fac-expr"]
+fn f(n: i64) -> i64 {
+    let i = n;
+    let res: i64 = 1;
+    'done: do {
+        'loop: loop {
+            if i == 0 {
+                br 'done;
+            } else {
+                res = i * res;
+                i -= 1;
+            }
+            br 'loop;
+        }
+    }
+    res;
+}
+#[export = "fac-stack"]
+fn f_2(n: i64) -> i64 {
+    let i = n;
+    let res: i64 = 1;
+    'done: do {
+        'loop: loop {
+            if i == 0 {
+                br 'done;
+            } else {
+                res = i * res;
+                i -= 1;
+            }
+            br 'loop;
+        }
+    }
+    res;
+}
+#[export = "fac-stack-raw"]
+fn f_3(n: i64) -> i64 {
+    let i = n;
+    let res: i64 = 1;
+    'done: do {
+        'loop: loop {
+            'body: if i == 0 {
+                br 'done;
+            } else {
+                res = i * res;
+                i -= 1;
+            }
+            br 'loop;
+        }
+    }
+    res;
+}
+#[export = "fac-mixed"]
+fn f_4(n: i64) -> i64 {
+    let i = n;
+    let res: i64 = 1;
+    'done: do {
+        'loop: loop {
+            if i == 0 {
+                br 'done;
+            } else {
+                res = i * res;
+                i -= 1;
+            }
+            br 'loop;
+        }
+    }
+    res;
+}
+#[export = "fac-mixed-raw"]
+fn f_5(n: i64) -> i64 {
+    let i = n;
+    let res: i64 = 1;
+    'done: do {
+        'loop: loop {
+            if i == 0 {
+                br 'done;
+            } else {
+                res = i * res;
+                i -= 1;
+            }
+            br 'loop;
+        }
+    }
+    res;
+}
+fn add_one_to_global() -> i32 {
+    let x: i32;
+    temp = 1 + temp;
+    temp;
+}
+fn add_one_to_global_and_drop() {
+    _ = add_one_to_global();
+}
+#[export = "not-quite-a-tree"]
+fn f_6() -> i32 {
+    add_one_to_global();
+    add_one_to_global();
+    add_one_to_global_and_drop();
+    _ + _;
+}
+let temp = 0;

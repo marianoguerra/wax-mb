@@ -1,0 +1,14 @@
+type t = fn() -> i32;
+#[export]
+fn init1() -> i32 {
+    mem1.init(d, 1, 0, 4);
+    mem1.load32(1);
+}
+#[export]
+fn init2() -> i32 {
+    mem2.init(d, 1, 4, 4);
+    mem2.load32(1);
+}
+memory mem1: i32 [1];
+memory mem2: i32 [1];
+data d = "\x01\x00\x00\x00\x02\x00\x00\x00";

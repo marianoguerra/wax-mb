@@ -1,0 +1,46 @@
+type t = fn(f64, f64) -> f64;
+type t_2 = fn(f64) -> f64;
+#[export]
+fn add(x: f64, y: f64) -> f64 {
+    x + y;
+}
+#[export]
+fn sub(x: f64, y: f64) -> f64 {
+    x - y;
+}
+#[export]
+fn mul(x: f64, y: f64) -> f64 {
+    x * y;
+}
+#[export]
+fn div(x: f64, y: f64) -> f64 {
+    x / y;
+}
+#[export]
+fn sqrt(x: f64) -> f64 {
+    x.sqrt();
+}
+#[export]
+fn min(x: f64, y: f64) -> f64 {
+    x.min(y);
+}
+#[export]
+fn max(x: f64, y: f64) -> f64 {
+    x.max(y);
+}
+#[export]
+fn ceil(x: f64) -> f64 {
+    x.ceil();
+}
+#[export]
+fn floor(x: f64) -> f64 {
+    x.floor();
+}
+#[export]
+fn trunc(x: f64) -> f64 {
+    x.trunc();
+}
+#[export]
+fn nearest(x: f64) -> f64 {
+    x.nearest();
+}

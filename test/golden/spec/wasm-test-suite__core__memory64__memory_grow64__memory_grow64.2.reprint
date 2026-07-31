@@ -1,0 +1,6 @@
+type t = fn(i64) -> i64;
+#[export]
+fn grow(x: i64) -> i64 {
+    m.grow(x);
+}
+memory m: i64 [0, 10];

@@ -1,0 +1,8 @@
+#[export]
+fn trap() -> i32 {
+    1e300 as f32 as i32_u_strict;
+}
+#[export]
+fn shift(x: i64) -> i64 {
+    x << 18446744073709551615;
+}

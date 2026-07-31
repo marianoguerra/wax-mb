@@ -1,0 +1,226 @@
+type proc = fn();
+type t = fn() -> i32;
+type t_2 = fn() -> i64;
+type t_3 = fn() -> f32;
+type t_4 = fn() -> f64;
+type t_5 = fn(i32) -> i32;
+type t_6 = fn(i64) -> i64;
+type t_7 = fn(f32) -> f32;
+type t_8 = fn(f64) -> f64;
+type t_9 = fn(f32, i32) -> i32;
+type t_10 = fn(i32, i64) -> i64;
+type t_11 = fn(f64, f32) -> f32;
+type t_12 = fn(i64, f64) -> f64;
+type t_13 = fn(i32) -> i32;
+type t_14 = fn(i64) -> i64;
+type t_15 = fn(f32) -> f32;
+type t_16 = fn(f64) -> f64;
+type t_17 = fn(i32, f32);
+type t_18 = fn(f64, i64) -> (i32, f32);
+type t_19 = fn(i64);
+type t_20 = fn(i64, f64, i32, i64);
+type t_21 = fn(i64) -> i32;
+type t_22 = fn(i64, f64, i32, i64) -> i32;
+type t_23 = fn(i32) -> i64;
+type t_24 = fn(i64, i64) -> i64;
+import "spectest" fn print_i32_f32(i32, f32);
+fn f() -> i32 {
+    306;
+}
+fn f_2() -> i64 {
+    356;
+}
+fn f_3() -> f32 {
+    0x1.e64p+11;
+}
+fn f_4() -> f64 {
+    0x1.ec8p+11;
+}
+fn f_5(x: i32) -> i32 {
+    x;
+}
+fn f_6(x: i64) -> i64 {
+    x;
+}
+fn f_7(x: f32) -> f32 {
+    x;
+}
+fn f_8(x: f64) -> f64 {
+    x;
+}
+fn f_9(i32, x: i64) -> i64 {
+    x;
+}
+fn f_10(i64, x: f64) -> f64 {
+    x;
+}
+fn f_11(f32, x: i32) -> i32 {
+    x;
+}
+fn f_12(f64, x: f32) -> f32 {
+    x;
+}
+fn f_13(x: i32) -> i32 {
+    x;
+}
+fn f_14(x: i64) -> i64 {
+    x;
+}
+fn f_15(x: f32) -> f32 {
+    x;
+}
+fn f_16(x: f64) -> f64 {
+    x;
+}
+#[export]
+fn tailprint_i32_f32(x: i32, x_2: f32) {
+    become print_i32_f32(x, x_2);
+}
+fn swizzle(x: f64, x_2: i64) -> (i32, f32) {
+    x_2 as i32;
+    x as f32;
+}
+#[export = "type-f64-i64-to-i32-f32"]
+fn f_17(x: f64, x_2: i64) -> (i32, f32) {
+    become swizzle(x, x_2);
+}
+fn f_18() {
+    become (t[0] as &?proc)();
+    become (t[0] as &?t_19)(0);
+    become (t[0] as &?t_20)(0, 0x0p+0, 0, 0);
+    become (t[0] as &?proc)();
+}
+fn f_19() -> i32 {
+    become (t[0] as &?t)();
+    become (t[0] as &?t)();
+    become (t[0] as &?t_21)(0);
+    become (t[0] as &?t_22)(0, 0x0p+0, 0, 0);
+}
+fn f_20() -> i64 {
+    become (t[0] as &?t_6)(0);
+}
+#[export = "type-i32"]
+fn f_21() -> i32 {
+    become (t[0] as &?t)();
+}
+#[export = "type-i64"]
+fn f_22() -> i64 {
+    become (t[1] as &?t_2)();
+}
+#[export = "type-f32"]
+fn f_23() -> f32 {
+    become (t[2] as &?t_3)();
+}
+#[export = "type-f64"]
+fn f_24() -> f64 {
+    become (t[3] as &?t_4)();
+}
+#[export = "type-index"]
+fn f_25() -> i64 {
+    become (t[5] as &?t_6)(100);
+}
+#[export = "type-first-i32"]
+fn f_26() -> i32 {
+    become (t[4] as &?t_5)(32);
+}
+#[export = "type-first-i64"]
+fn f_27() -> i64 {
+    become (t[5] as &?t_6)(64);
+}
+#[export = "type-first-f32"]
+fn f_28() -> f32 {
+    become (t[6] as &?t_7)(0x1.51eb86p+0);
+}
+#[export = "type-first-f64"]
+fn f_29() -> f64 {
+    become (t[7] as &?t_8)(0x1.a3d70a3d70a3dp+0);
+}
+#[export = "type-second-i32"]
+fn f_30() -> i32 {
+    become (t[8] as &?t_9)(0x1.00ccccp+5, 32);
+}
+#[export = "type-second-i64"]
+fn f_31() -> i64 {
+    become (t[9] as &?t_10)(32, 64);
+}
+#[export = "type-second-f32"]
+fn f_32() -> f32 {
+    become (t[10] as &?t_11)(0x1p+6, 0x1p+5);
+}
+#[export = "type-second-f64"]
+fn f_33() -> f64 {
+    become (t[11] as &?t_12)(64, 0x1.0066666666666p+6);
+}
+#[export = "dispatch"]
+fn f_34(x: i32, x_2: i64) -> i64 {
+    become (t[x] as &?t_6)(x_2);
+}
+#[export = "dispatch-structural"]
+fn f_35(x: i32) -> i64 {
+    become (t[x] as &?t_14)(9);
+}
+fn f_36() -> i32 {
+    307;
+}
+fn f_37() -> i32 {
+    308;
+}
+#[export = "call-tab"]
+fn f_38(i: i32) -> i32 {
+    if i == 0 {
+        become (t[0] as &?t)();
+    }
+    if i == 1 {
+        become (tab2[0] as &?t)();
+    }
+    if i == 2 {
+        become (tab3[0] as &?t)();
+    }
+    0;
+}
+#[export]
+fn fac(x: i64) -> i64 {
+    become (t[13] as &?t_24)(x, 1);
+}
+fn f_39(x: i64, x_2: i64) -> i64 {
+    if !x {
+        x_2;
+    } else {
+        become (t[13] as &?t_24)(x - 1, x * x_2);
+    }
+}
+#[export]
+fn even(x: i32) -> i32 {
+    if !x {
+        44;
+    } else {
+        become (t[15] as &?t_5)(x - 1);
+    }
+}
+#[export]
+fn odd(x: i32) -> i32 {
+    if !x {
+        99;
+    } else {
+        become (t[14] as &?t_5)(x - 1);
+    }
+}
+#[export]
+fn call_tailprint(x: i32, x_2: f32) {
+    become (tab4[0] as &?t_17)(x, x_2);
+}
+#[export]
+fn call_mpmr(x: f64, x_2: i64) -> (i32, f32) {
+    become (tab4[1] as &?t_18)(x, x_2);
+}
+table t: &?func [20, 20];
+table tab2: &?func [1, 1];
+table tab3: &?func [1, 1];
+table tab4: &?func [2, 2];
+elem e: &func @ t [0] = [
+        f, f_2, f_3, f_4, f_5, f_6, f_7, f_8, f_11, f_9, f_12, f_10, fac, f_39, even, odd, f_13,
+        f_14, f_15, f_16
+    ];
+elem e_2: &func @ tab2 [0] = [f_36];
+elem e_3: &func @ tab3 [0] = [f_37];
+elem e_4: &func @ tab4 [0] = [tailprint_i32_f32, f_17];

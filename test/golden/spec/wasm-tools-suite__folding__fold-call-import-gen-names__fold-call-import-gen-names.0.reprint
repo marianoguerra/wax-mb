@@ -1,0 +1,12 @@
+type t = fn(i32) -> i32;
+type t_2 = fn(i64) -> i32;
+type t_3 = fn() -> i32;
+import "a" fn b(i32) -> i32;
+#[export]
+fn c(x: i64) -> i32 {
+    x as i32;
+}
+fn f() -> i32 {
+    b(1) + b(2);
+    _ = c(3);
+}

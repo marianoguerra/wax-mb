@@ -1,0 +1,7 @@
+type arr = [mut i16];
+type t = fn() -> i32;
+#[export = "array-new-data-unaligned"]
+fn f() -> i32 {
+    [arr| d @ 1; 1][0] as i32_u;
+}
+data d = "\x00\x11\x22";

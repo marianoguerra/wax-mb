@@ -1,0 +1,25 @@
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(&cont_2);
+type t_2 = fn(i32);
+import "scheduler"
+#[import = "run"]
+fn scheduler();
+import "queue" fn enqueue(&cont_2);
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+import "example" {
+    fn thread1();
+    fn thread2();
+    fn thread3();
+}
+#[export]
+fn run() {
+    enqueue(cont_2::new(thread1));
+    enqueue(cont_2::new(thread2));
+    enqueue(cont_2::new(thread3));
+    log(-1);
+    scheduler();
+    log(-2);
+}

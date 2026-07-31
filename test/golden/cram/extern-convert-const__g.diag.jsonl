@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/extern-convert-const__g.wax","startLine":1,"startColumn":4,"endLine":1,"endColumn":5,"startOffset":4,"endOffset":5,"message":"The global 'e' is mutable but is never assigned.","warning":"unnecessary-mut","hint":"Declare it with 'const' instead of 'let'.","related":[]}

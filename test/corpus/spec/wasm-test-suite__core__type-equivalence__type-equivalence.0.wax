@@ -1,0 +1,10 @@
+type t1 = fn(f32, f32) -> f32;
+type t2 = fn(f32, f32) -> f32;
+type t = fn(&t1);
+type t_2 = fn(&t2);
+fn f1(r: &t1) {
+    f2(r);
+}
+fn f2(r: &t2) {
+    f1(r);
+}

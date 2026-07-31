@@ -1,0 +1,18 @@
+rec {
+    type f11 = open fn() -> &func;
+    type f12: f11 = open fn() -> &f11;
+}
+rec {
+    type f21 = open fn() -> &func;
+    type f22: f21 = open fn() -> &f21;
+}
+fn f11: f11 () -> &func {
+    unreachable;
+}
+fn f12: f12 () -> &f11 {
+    unreachable;
+}
+const g = f11;
+const g_2 = f11;
+const g_3 = f12;
+const g_4 = f12;

@@ -1,0 +1,74 @@
+type point = { x: i32, y: i32 };
+type box = { v: i32 };
+type ints = [i32];
+
+// The struct/array type name may be omitted when an expected type supplies it.
+
+fn from_let() -> &point {
+    let p: &point = { x: 1, y: 2 };
+    return p;
+}
+
+// A single-field struct may also be written name-less.
+fn from_let_box() -> &box {
+    let b: &box = { v: 42 };
+    return b;
+}
+
+// An assignment target's type works as a context too.
+fn from_set() -> &point {
+    let p: &point;
+    p = { x: 5, y: 6 };
+    return p;
+}
+
+type holder = { p: mut &point };
+
+fn take(p: &point) -> i32 {
+    return p.x;
+}
+
+// A call argument takes its context from the parameter type.
+fn from_arg() -> i32 {
+    return take({ x: 1, y: 2 });
+}
+
+// A struct field assignment takes its context from the field type.
+fn from_field_set(h: &holder) {
+    h.p = { x: 3, y: 4 };
+}
+
+// A returned value takes its context from the result type.
+fn from_return(b: i32) -> &point {
+    if b == 0 {
+        return { x: 0, y: 0 };
+    }
+    return { x: 1, y: 1 };
+}
+
+// A trailing result expression does too, even without 'return'.
+fn from_trailing() -> &point {
+    { x: 7, y: 8 };
+}
+
+// A bare 'null' is typed from a nullable-reference context (here a field).
+type node = { v: i32, next: &?node };
+
+fn singleton(x: i32) -> &node {
+    return { v: x, next: null };
+}
+
+// With a unique field set, the type is inferred from the fields alone — no
+// annotation and no contextual type needed.
+fn infer_from_fields() {
+    let n = { v: 5, next: null };
+    _ = n;
+}
+
+fn from_let_array() -> &ints {
+    let a: &ints = [0; 8];
+    return a;
+}
+
+const origin: &point = { x: 0, y: 0 };
+const zeros: &ints = [0; 4];

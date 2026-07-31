@@ -1,0 +1,11 @@
+type t1 = fn();
+type t2_a = fn(&t1, &t1);
+type t2_b = fn(&t1, &t1);
+type t = fn(&t2_a);
+type t_2 = fn(&t2_b);
+fn f(&t2_a) {
+    nop;
+}
+fn g(x: &t2_b) {
+    f(x);
+}

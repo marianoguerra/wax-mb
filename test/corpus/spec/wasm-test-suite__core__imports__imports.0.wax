@@ -1,0 +1,41 @@
+type t = fn();
+type t_2 = fn(i32);
+type t_3 = fn(f32);
+type t_4 = fn() -> i32;
+type t_5 = fn() -> f32;
+type t_6 = fn(i32) -> i32;
+type t_7 = fn(i64) -> i64;
+#[export]
+fn func() {}
+#[export = "func-i32"]
+fn f(i32) {}
+#[export = "func-f32"]
+fn f_2(f32) {}
+#[export = "func->i32"]
+fn f_3() -> i32 {
+    22;
+}
+#[export = "func->f32"]
+fn f_4() -> f32 {
+    0x1.6p+3;
+}
+#[export = "func-i32->i32"]
+fn f_5(x: i32) -> i32 {
+    x;
+}
+#[export = "func-i64->i64"]
+fn f_6(x: i64) -> i64 {
+    x;
+}
+#[export = "global-i32"]
+const g = 55;
+#[export = "global-f32"]
+const g_2: f32 = 0x1.6p+5;
+#[export = "global-mut-i64"]
+let g_3: i64 = 66;
+#[export = "tag"]
+tag t: t ;
+#[export = "tag-i32"]
+tag t_2: t_2 ;
+#[export = "tag-f32"]
+tag t_3: t_3 ;

@@ -1,0 +1,9 @@
+#![module = "non_final"]
+type ft1 = fn(i32) -> &func;
+type ct1 = open cont ft1;
+type ft0 = fn() -> &func;
+type ct0 = open cont ft0;
+type t = fn(&ct1);
+fn test1(x: &ct1) {
+    _ = ct0::bind(123, x);
+}

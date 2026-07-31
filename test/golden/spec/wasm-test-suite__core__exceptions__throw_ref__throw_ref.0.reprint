@@ -1,0 +1,111 @@
+type t = fn();
+type t_2 = fn(i32) -> i32;
+type t_3 = fn(&?exn);
+#[export = "catch-throw_ref-0"]
+fn f() {
+    throw_ref
+        'h: do {
+            try {
+                throw e0();
+            } catch [ e0 & -> 'h]
+            unreachable;
+        };
+}
+#[export = "catch-throw_ref-1"]
+fn f_2(x: i32) -> i32 {
+    'h: do &?exn {
+        return
+            try {
+                throw e0();
+            } catch [ e0 & -> 'h];
+    }
+    if !x => (&?exn) {
+        throw_ref _;
+    } else {
+        _ = _;
+    }
+    23;
+}
+#[export = "catchall-throw_ref-0"]
+fn f_3() {
+    throw_ref
+        'h: do {
+            try &?exn {
+                throw e0();
+            } catch [ _ & -> 'h]
+        };
+}
+#[export = "catchall-throw_ref-1"]
+fn f_4(x: i32) -> i32 {
+    'h: do &?exn {
+        return
+            try {
+                throw e0();
+            } catch [ _ & -> 'h];
+    }
+    if !x => (&?exn) {
+        throw_ref _;
+    } else {
+        _ = _;
+    }
+    23;
+}
+#[export = "throw_ref-nested"]
+fn f_5(x: i32) -> i32 {
+    let exn1 =
+        'h1: do {
+            return
+                try {
+                    throw e1();
+                } catch [ e1 & -> 'h1];
+        };
+    let exn2 =
+        'h2: do {
+            return
+                try {
+                    throw e0();
+                } catch [ e0 & -> 'h2];
+        };
+    if x == 0 {
+        throw_ref exn1;
+    }
+    if x == 1 {
+        throw_ref exn2;
+    }
+    23;
+}
+#[export = "throw_ref-recatch"]
+fn f_6(x: i32) -> i32 {
+    let e =
+        'h1: do {
+            return
+                try {
+                    throw e0();
+                } catch [ e0 & -> 'h1];
+        };
+    _ =
+        'h2: do {
+            return
+                try {
+                    if !x {
+                        throw_ref e;
+                    }
+                    42;
+                } catch [ e0 & -> 'h2];
+        };
+    23;
+}
+#[export = "throw_ref-stack-polymorphism"]
+fn f_7() {
+    let e =
+        'h: do {
+            try f64 {
+                throw e0();
+            } catch [ e0 & -> 'h]
+            unreachable;
+        };
+    1;
+    throw_ref e;
+}
+tag e0: t ;
+tag e1: t ;

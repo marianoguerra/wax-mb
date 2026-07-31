@@ -1,0 +1,124 @@
+type t = fn(i32) -> i32;
+type t_2 = fn(i32);
+#[export = "8u_good1"]
+fn f(i: i32) -> i32 {
+    m.load8(i) as i32_u;
+}
+#[export = "8u_good2"]
+fn f_2(i: i32) -> i32 {
+    m.load8(i) as i32_u;
+}
+#[export = "8u_good3"]
+fn f_3(i: i32) -> i32 {
+    m.load8(i, offset: 1) as i32_u;
+}
+#[export = "8u_good4"]
+fn f_4(i: i32) -> i32 {
+    m.load8(i, offset: 2) as i32_u;
+}
+#[export = "8u_good5"]
+fn f_5(i: i32) -> i32 {
+    m.load8(i, offset: 25) as i32_u;
+}
+#[export = "8s_good1"]
+fn f_6(i: i32) -> i32 {
+    m.load8(i) as i32_s;
+}
+#[export = "8s_good2"]
+fn f_7(i: i32) -> i32 {
+    m.load8(i) as i32_s;
+}
+#[export = "8s_good3"]
+fn f_8(i: i32) -> i32 {
+    m.load8(i, offset: 1) as i32_s;
+}
+#[export = "8s_good4"]
+fn f_9(i: i32) -> i32 {
+    m.load8(i, offset: 2) as i32_s;
+}
+#[export = "8s_good5"]
+fn f_10(i: i32) -> i32 {
+    m.load8(i, offset: 25) as i32_s;
+}
+#[export = "16u_good1"]
+fn f_11(i: i32) -> i32 {
+    m.load16(i) as i32_u;
+}
+#[export = "16u_good2"]
+fn f_12(i: i32) -> i32 {
+    m.load16(i, align: 1) as i32_u;
+}
+#[export = "16u_good3"]
+fn f_13(i: i32) -> i32 {
+    m.load16(i, offset: 1, align: 1) as i32_u;
+}
+#[export = "16u_good4"]
+fn f_14(i: i32) -> i32 {
+    m.load16(i, offset: 2) as i32_u;
+}
+#[export = "16u_good5"]
+fn f_15(i: i32) -> i32 {
+    m.load16(i, offset: 25) as i32_u;
+}
+#[export = "16s_good1"]
+fn f_16(i: i32) -> i32 {
+    m.load16(i) as i32_s;
+}
+#[export = "16s_good2"]
+fn f_17(i: i32) -> i32 {
+    m.load16(i, align: 1) as i32_s;
+}
+#[export = "16s_good3"]
+fn f_18(i: i32) -> i32 {
+    m.load16(i, offset: 1, align: 1) as i32_s;
+}
+#[export = "16s_good4"]
+fn f_19(i: i32) -> i32 {
+    m.load16(i, offset: 2) as i32_s;
+}
+#[export = "16s_good5"]
+fn f_20(i: i32) -> i32 {
+    m.load16(i, offset: 25) as i32_s;
+}
+#[export = "32_good1"]
+fn f_21(i: i32) -> i32 {
+    m.load32(i);
+}
+#[export = "32_good2"]
+fn f_22(i: i32) -> i32 {
+    m.load32(i, align: 1);
+}
+#[export = "32_good3"]
+fn f_23(i: i32) -> i32 {
+    m.load32(i, offset: 1, align: 1);
+}
+#[export = "32_good4"]
+fn f_24(i: i32) -> i32 {
+    m.load32(i, offset: 2, align: 2);
+}
+#[export = "32_good5"]
+fn f_25(i: i32) -> i32 {
+    m.load32(i, offset: 25);
+}
+#[export = "8u_bad"]
+fn f_26(i: i32) {
+    _ = m.load8(i, offset: 4294967295) as i32_u;
+}
+#[export = "8s_bad"]
+fn f_27(i: i32) {
+    _ = m.load8(i, offset: 4294967295) as i32_s;
+}
+#[export = "16u_bad"]
+fn f_28(i: i32) {
+    _ = m.load16(i, offset: 4294967295) as i32_u;
+}
+#[export = "16s_bad"]
+fn f_29(i: i32) {
+    _ = m.load16(i, offset: 4294967295) as i32_s;
+}
+#[export = "32_bad"]
+fn f_30(i: i32) {
+    _ = m.load32(i, offset: 4294967295);
+}
+memory m: i32 [1];
+data d @ m [0] = "abcdefghijklmnopqrstuvwxyz";

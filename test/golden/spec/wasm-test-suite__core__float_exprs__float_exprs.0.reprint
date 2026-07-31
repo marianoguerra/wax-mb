@@ -1,0 +1,5 @@
+type t = fn(f64, f64, f64) -> f64;
+#[export = "f64.no_contraction"]
+fn f(x: f64, y: f64, z: f64) -> f64 {
+    x * y + z;
+}

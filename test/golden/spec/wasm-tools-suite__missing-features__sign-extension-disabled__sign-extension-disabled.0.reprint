@@ -1,0 +1,4 @@
+type t = fn(i32) -> i32;
+fn f(x: i32) -> i32 {
+    x.extend8_s();
+}

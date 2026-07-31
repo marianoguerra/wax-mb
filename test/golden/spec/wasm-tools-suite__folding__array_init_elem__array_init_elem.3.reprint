@@ -1,0 +1,29 @@
+type t_f = fn();
+type arrref = [&t_f];
+type arrref_mut = [mut &?func];
+type t = fn(i32);
+type t_2 = fn(i32, i32, i32);
+fn dummy() {}
+#[export]
+fn array_call_nth(x: i32) {
+    t[0] = g_arrref_mut[x];
+    (t[0] as &?t_f)();
+}
+#[export = "array_init_elem-null"]
+fn f() {
+    (null as &?arrref_mut).init(e1, 0, 0, 0);
+}
+#[export]
+fn array_init_elem(x: i32, x_2: i32, x_3: i32) {
+    g_arrref_mut.init(e1, x, x_2, x_3);
+}
+#[export]
+fn drop_segs() {
+    e1.drop();
+}
+table t: &?func [1];
+const g_arrref: &arrref = [dummy; 12];
+const g_arrref_mut: &arrref_mut = [..; 12];
+elem e1: &func = [
+        dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy, dummy
+    ];

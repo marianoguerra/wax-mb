@@ -1,0 +1,3 @@
+import "mem_1"
+#[import = "shared"]
+memory m: i32 [1, 1] shared;

@@ -1,0 +1,4 @@
+fn f() -> f32 {
+    unreachable;
+    _ = _.ceil();
+}

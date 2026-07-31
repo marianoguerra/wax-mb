@@ -1,0 +1,16 @@
+#![module = "m1"]
+type t = fn(i32, f32);
+import "spectest" {
+    #[import = "global_i32"]
+    #[export]
+    const g: i32;
+    #[import = "table"]
+    #[export]
+    table t: &?func [10, 20];
+    #[import = "memory"]
+    #[export]
+    memory m: i32 [1, 2];
+    #[import = "print_i32_f32"]
+    #[export]
+    fn f(i32, f32);
+}

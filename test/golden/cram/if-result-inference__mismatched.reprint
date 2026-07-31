@@ -1,0 +1,7 @@
+fn f(c: i32) -> i64 {
+    if c {
+        0 as i64;
+    } else {
+        null as &any;
+    }
+}

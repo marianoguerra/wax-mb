@@ -1,0 +1,7 @@
+type t = { };
+type t_2 = fn(&any) -> &any;
+fn f(x: &any) -> &any 'l: {
+    (do {
+         br_on_cast_fail 'l &?t x;
+     }!);
+}

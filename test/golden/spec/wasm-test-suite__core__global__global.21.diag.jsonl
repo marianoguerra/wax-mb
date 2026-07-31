@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-test-suite__core__global__global.21.wax","startLine":1,"startColumn":19,"endLine":1,"endColumn":22,"startOffset":19,"endOffset":22,"message":"The global 'g_2' is never used.","warning":"unused-field","hint":null,"related":[]}

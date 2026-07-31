@@ -1,0 +1,7 @@
+type t = fn() -> i64;
+#[export]
+fn memsize() -> i64 {
+    m.size();
+}
+memory m: i64 [0, 0];
+data d @ m [0] = "";

@@ -1,0 +1,7 @@
+type t = fn();
+#[export = "throw"]
+fn f() {
+    throw e0();
+}
+#[export]
+tag e0: t ;

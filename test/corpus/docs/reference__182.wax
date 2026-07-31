@@ -1,0 +1,4 @@
+m.load32(p);                        // i32.load
+m.load32(p, offset: 16);            // i32.load offset=16
+m.load32(p, offset: 16, align: 1);  // i32.load offset=16 align=1
+m.load32(p, align: 1);              // i32.load align=1

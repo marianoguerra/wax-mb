@@ -1,0 +1,2 @@
+{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/wax-forward-supertype__self.wax","startLine":1,"startColumn":8,"endLine":1,"endColumn":9,"startOffset":8,"endOffset":9,"message":"The type 'a' is not bound.","warning":null,"hint":null,"related":[]}
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/wax-forward-supertype__self.wax","startLine":1,"startColumn":5,"endLine":1,"endColumn":6,"startOffset":5,"endOffset":6,"message":"The type 'a' is never used.","warning":"unused-field","hint":null,"related":[]}

@@ -1,0 +1,15 @@
+#![module = "async-await"]
+type t = fn(i32);
+type t_2 = cont t;
+type t_3 = fn();
+type t_4 = fn(i32, i32);
+type t_5 = fn(&t_2) -> i32;
+type t_6 = fn(i32) -> i32;
+#[export]
+tag yield: t_3 ;
+#[export]
+tag fulfill: t_4 ;
+#[export]
+tag async: t_5 ;
+#[export]
+tag await: t_6 ;

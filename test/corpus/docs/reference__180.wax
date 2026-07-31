@@ -1,0 +1,4 @@
+do (i32) -> i32 { ... }
+do i32 { ... }
+{ ... }                  ;; equivalent to do { ... }
+if cond => (i32) -> i32 { ... } else { ... }

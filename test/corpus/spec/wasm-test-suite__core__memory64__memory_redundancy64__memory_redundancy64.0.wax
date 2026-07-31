@@ -1,0 +1,44 @@
+type t = fn();
+type t_2 = fn() -> i32;
+type t_3 = fn() -> f32;
+type t_4 = fn(i64) -> i64;
+#[export]
+fn zero_everything() {
+    m.store32(0, 0);
+    m.store32(4, 0);
+    m.store32(8, 0);
+    m.store32(12, 0);
+}
+#[export]
+fn test_store_to_load() -> i32 {
+    m.store32(8, 0);
+    m.storef32(5, -0x0p+0);
+    m.load32(8);
+}
+#[export]
+fn test_redundant_load() -> i32 {
+    let t = m.load32(8);
+    m.store32(5, -2147483648);
+    let s = m.load32(8);
+    t + s;
+}
+#[export]
+fn test_dead_store() -> f32 {
+    m.store32(8, 589505315);
+    let t = m.loadf32(11);
+    m.store32(8, 0);
+    t;
+}
+#[export]
+fn malloc(size: i64) -> i64 {
+    16;
+}
+#[export]
+fn malloc_aliasing() -> i32 {
+    let x = malloc(4);
+    let y = malloc(4);
+    m.store32(x, 42);
+    m.store32(y, 43);
+    m.load32(x);
+}
+memory m: i64 [1, 1];

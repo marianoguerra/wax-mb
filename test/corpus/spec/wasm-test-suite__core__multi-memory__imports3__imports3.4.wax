@@ -1,0 +1,4 @@
+import "test"
+#[import = "memory-2-4"]
+memory m: i32 [1];
+import "spectest" memory print_i32: i32 [1];

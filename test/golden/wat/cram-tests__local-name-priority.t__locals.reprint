@@ -1,0 +1,6 @@
+#[export]
+fn f() -> i32 {
+    let x_2 = 1;
+    let x = 2;
+    x_2 + x;
+}

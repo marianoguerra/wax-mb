@@ -1,0 +1,11 @@
+let res: &eq =
+    try &eq {
+        apply(f);
+    } catch {
+        javascript_exception => {
+            wrap_exception(_);
+        } // normalize; falls through
+        ocaml_exception => {
+            _;
+        } // handle either
+    };

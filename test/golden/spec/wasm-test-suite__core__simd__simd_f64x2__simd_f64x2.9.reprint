@@ -1,0 +1,18 @@
+type t = fn(v128, v128, v128) -> v128;
+type t_2 = fn(v128, v128) -> v128;
+#[export = "max-min"]
+fn f(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.min_f64x2(x_2).max_f64x2(x_3);
+}
+#[export = "min-max"]
+fn f_2(x: v128, x_2: v128, x_3: v128) -> v128 {
+    x.max_f64x2(x_2).min_f64x2(x_3);
+}
+#[export = "max-abs"]
+fn f_3(x: v128, x_2: v128) -> v128 {
+    x.abs_f64x2().max_f64x2(x_2);
+}
+#[export = "min-abs"]
+fn f_4(x: v128, x_2: v128) -> v128 {
+    x.abs_f64x2().min_f64x2(x_2);
+}

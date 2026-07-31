@@ -1,0 +1,1 @@
+type t = fn(); fn f() {} table t: &?func [0]; memory m: i32 [0]; elem e: &?func = [f];

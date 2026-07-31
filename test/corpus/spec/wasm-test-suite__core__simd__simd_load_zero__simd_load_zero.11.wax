@@ -1,0 +1,43 @@
+type t = fn() -> v128;
+type t_2 = fn() -> i32;
+type t_3 = fn() -> i64;
+#[export = "v128.load32_zero-in-block"]
+fn f() -> v128 {
+    do {
+        do {
+            m.load32_zero(0);
+        }
+    }
+}
+#[export = "v128.load64_zero-in-block"]
+fn f_2() -> v128 {
+    do {
+        do {
+            m.load64_zero(1);
+        }
+    }
+}
+#[export = "v128.load32_zero-as-br-value"]
+fn f_3() -> v128 {
+    'l: do {
+        br 'l m.load32_zero(6);
+    }
+}
+#[export = "v128.load64_zero-as-br-value"]
+fn f_4() -> v128 {
+    'l: do {
+        br 'l m.load64_zero(7);
+    }
+}
+#[export = "v128.load32_zero-extract_lane_s-operand"]
+fn f_5() -> i32 {
+    m.load32_zero(12).extract_lane_i32x4(0);
+}
+#[export = "v128.load64_zero-extract_lane_s-operand"]
+fn f_6() -> i64 {
+    m.load64_zero(13).extract_lane_i64x2(0);
+}
+memory m: i32 [1];
+data d @ m [0] =
+    "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x80\x81\x82\x83"
+        ++ "\x84\x85\x86\x87\x88\x89";

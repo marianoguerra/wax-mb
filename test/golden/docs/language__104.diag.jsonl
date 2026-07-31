@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/language__104.wax","startLine":1,"startColumn":5,"endLine":1,"endColumn":12,"startOffset":5,"endOffset":12,"message":"The data segment 'vectors' is never used.","warning":"unused-field","hint":null,"related":[]}

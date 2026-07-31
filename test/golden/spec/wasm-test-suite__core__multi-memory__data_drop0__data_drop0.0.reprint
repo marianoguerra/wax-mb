@@ -1,0 +1,23 @@
+type t = fn();
+type t_2 = fn(i32);
+#[export]
+fn drop_passive() {
+    p.drop();
+}
+#[export]
+fn init_passive(len: i32) {
+    mem1.init(p, 0, 0, len);
+}
+#[export]
+fn drop_active() {
+    a.drop();
+}
+#[export]
+fn init_active(len: i32) {
+    mem1.init(a, 0, 0, len);
+}
+memory mem0: i32 [0];
+memory mem1: i32 [1];
+memory mem2: i32 [0];
+data p = "x";
+data a @ mem1 [0] = "x";

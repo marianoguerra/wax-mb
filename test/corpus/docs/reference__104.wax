@@ -1,0 +1,7 @@
+memory mem1: i64 {
+    data _ @ [0x1000] = "hello world";   // active, anonymous
+    data greeting @ [0x2000] = "hi";     // active, named
+}
+
+data seg = "raw\x00bytes";               // top-level passive segment
+data init @ mem0 [0] = "hello";          // top-level active segment

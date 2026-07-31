@@ -1,0 +1,7 @@
+type t = fn();
+fn f() {
+    0x1p+1;
+    1;
+    become f_2();
+}
+fn f_2() {}

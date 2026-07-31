@@ -1,0 +1,17 @@
+type t = fn(i64) -> i64;
+fn f(n: i64) -> i64 {
+    let i = n;
+    let res: i64 = 1;
+    'done: do {
+        'loop: loop {
+            'body: if i == 0 {
+                br 'done;
+            } else {
+                res = i * res;
+                i -= 1;
+            }
+            br 'loop;
+        }
+    }
+    res;
+}

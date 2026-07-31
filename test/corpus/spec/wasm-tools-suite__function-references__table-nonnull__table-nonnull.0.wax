@@ -1,0 +1,19 @@
+type dummy = fn();
+type t = fn() -> &?func;
+fn dummy() {}
+#[export]
+fn get1() -> &?func {
+    t1[1];
+}
+#[export]
+fn get2() -> &?func {
+    t2[4];
+}
+#[export]
+fn get3() -> &?func {
+    t3[7];
+}
+table t1: &?func [10];
+table t2: &?func [10] = dummy;
+table t3: &dummy [10] = dummy;
+table t4: &func [10] = dummy;

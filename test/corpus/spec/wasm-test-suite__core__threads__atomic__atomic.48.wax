@@ -1,0 +1,146 @@
+type t = fn();
+fn f() {
+    _ = m.atomic_notify(0, 0);
+}
+fn f_2() {
+    _ = m.atomic_wait32(0, 0, 0);
+}
+fn f_3() {
+    _ = m.atomic_wait64(0, 0, 0);
+}
+fn f_4() {
+    _ = m.atomic_load32(0);
+}
+fn f_5() {
+    _ = m.atomic_load64(0);
+}
+fn f_6() {
+    _ = m.atomic_load16(0) as i32_u;
+}
+fn f_7() {
+    _ = m.atomic_load16(0) as i64_u;
+}
+fn f_8() {
+    _ = m.atomic_load32(0) as i64_u;
+}
+fn f_9() {
+    m.atomic_store32(0, 0);
+}
+fn f_10() {
+    m.atomic_store64(0, 0);
+}
+fn f_11() {
+    m.atomic_store16(0, 0);
+}
+fn f_12() {
+    m.atomic_store16(0, 0 as i64);
+}
+fn f_13() {
+    m.atomic_store32(0, 0 as i64);
+}
+fn f_14() {
+    _ = m.atomic_rmw_add32(0, 0);
+}
+fn f_15() {
+    _ = m.atomic_rmw_add64(0, 0);
+}
+fn f_16() {
+    _ = m.atomic_rmw_add16(0, 0);
+}
+fn f_17() {
+    _: i64 = m.atomic_rmw_add16(0, 0);
+}
+fn f_18() {
+    _: i64 = m.atomic_rmw_add32(0, 0);
+}
+fn f_19() {
+    _ = m.atomic_rmw_sub32(0, 0);
+}
+fn f_20() {
+    _ = m.atomic_rmw_sub64(0, 0);
+}
+fn f_21() {
+    _ = m.atomic_rmw_sub16(0, 0);
+}
+fn f_22() {
+    _: i64 = m.atomic_rmw_sub16(0, 0);
+}
+fn f_23() {
+    _: i64 = m.atomic_rmw_sub32(0, 0);
+}
+fn f_24() {
+    _ = m.atomic_rmw_and32(0, 0);
+}
+fn f_25() {
+    _ = m.atomic_rmw_and64(0, 0);
+}
+fn f_26() {
+    _ = m.atomic_rmw_and16(0, 0);
+}
+fn f_27() {
+    _: i64 = m.atomic_rmw_and16(0, 0);
+}
+fn f_28() {
+    _: i64 = m.atomic_rmw_and32(0, 0);
+}
+fn f_29() {
+    _ = m.atomic_rmw_or32(0, 0);
+}
+fn f_30() {
+    _ = m.atomic_rmw_or64(0, 0);
+}
+fn f_31() {
+    _ = m.atomic_rmw_or16(0, 0);
+}
+fn f_32() {
+    _: i64 = m.atomic_rmw_or16(0, 0);
+}
+fn f_33() {
+    _: i64 = m.atomic_rmw_or32(0, 0);
+}
+fn f_34() {
+    _ = m.atomic_rmw_xor32(0, 0);
+}
+fn f_35() {
+    _ = m.atomic_rmw_xor64(0, 0);
+}
+fn f_36() {
+    _ = m.atomic_rmw_xor16(0, 0);
+}
+fn f_37() {
+    _: i64 = m.atomic_rmw_xor16(0, 0);
+}
+fn f_38() {
+    _: i64 = m.atomic_rmw_xor32(0, 0);
+}
+fn f_39() {
+    _ = m.atomic_rmw_xchg32(0, 0);
+}
+fn f_40() {
+    _ = m.atomic_rmw_xchg64(0, 0);
+}
+fn f_41() {
+    _ = m.atomic_rmw_xchg16(0, 0);
+}
+fn f_42() {
+    _: i64 = m.atomic_rmw_xchg16(0, 0);
+}
+fn f_43() {
+    _: i64 = m.atomic_rmw_xchg32(0, 0);
+}
+fn f_44() {
+    _ = m.atomic_rmw_cmpxchg32(0, 0, 0);
+}
+fn f_45() {
+    _ = m.atomic_rmw_cmpxchg64(0, 0, 0);
+}
+fn f_46() {
+    _ = m.atomic_rmw_cmpxchg16(0, 0, 0);
+}
+fn f_47() {
+    _: i64 = m.atomic_rmw_cmpxchg16(0, 0, 0);
+}
+fn f_48() {
+    _: i64 = m.atomic_rmw_cmpxchg32(0, 0, 0);
+}
+memory m: i32 [1, 1];

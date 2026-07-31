@@ -1,0 +1,7 @@
+type arr = [mut i32];
+type t = fn() -> i32;
+#[export = "array-new-data-little-endian"]
+fn f() -> i32 {
+    [arr| d @ 0; 1][0];
+}
+data d = "\xaa\xbb\xcc\xdd";

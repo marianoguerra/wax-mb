@@ -1,0 +1,15 @@
+type t = fn();
+fn a1() {
+    if 0 {}
+}
+fn a2() {
+    if !1 {}
+}
+fn a3() {
+    if !1 {}
+}
+fn a4() {
+    if !1 {
+        nop;
+    }
+}

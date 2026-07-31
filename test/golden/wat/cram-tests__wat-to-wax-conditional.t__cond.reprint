@@ -1,0 +1,11 @@
+#[if(ocaml_version >= (5, 1, 0))]
+{
+    const size = 16;
+}
+#[else]
+{
+    const size = 20;
+}
+fn get() -> i32 {
+    size;
+}

@@ -1,0 +1,14 @@
+type f = fn();
+type k = cont f;
+fn never() {
+    unreachable;
+}
+#[export = "resume_throw-never"]
+fn f() {
+    'handle: do {
+        try {
+            k::new(never).resume_throw(exn());
+        } catch [ exn -> 'handle]
+    }
+}
+tag exn: f ;

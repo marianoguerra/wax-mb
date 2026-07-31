@@ -1,0 +1,14 @@
+type t = fn(f64) -> f64;
+type t_2 = fn(f64, f64) -> f64;
+#[export]
+fn abs(x: f64) -> f64 {
+    x.abs();
+}
+#[export]
+fn neg(x: f64) -> f64 {
+    -x;
+}
+#[export]
+fn copysign(x: f64, y: f64) -> f64 {
+    x.copysign(y);
+}

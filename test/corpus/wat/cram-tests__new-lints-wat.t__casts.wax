@@ -1,0 +1,19 @@
+type A = open { f: i32 };
+type B = { f: i64 };
+type C: A = open { .., f_2: i32 };
+#[export]
+fn redundant(x: &A) -> &A {
+    x;
+}
+#[export]
+fn downcast(x: &A) -> &C {
+    x as &C;
+}
+#[export]
+fn fail(x: &A) -> &B {
+    x as &B;
+}
+#[export]
+fn test_false(x: &A) -> i32 {
+    x is &B;
+}

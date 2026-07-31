@@ -1,0 +1,32 @@
+type t = fn();
+type t1 = fn() -> &t;
+type t2 = fn() -> &?t;
+type t3 = fn() -> &func;
+type t4 = fn() -> &?func;
+fn f11() -> &t {
+    become f11();
+}
+fn f21() -> &?t {
+    become f11();
+}
+fn f22() -> &?t {
+    become f22();
+}
+fn f31() -> &func {
+    become f11();
+}
+fn f33() -> &func {
+    become f33();
+}
+fn f41() -> &?func {
+    become f11();
+}
+fn f42() -> &?func {
+    become f22();
+}
+fn f43() -> &?func {
+    become f33();
+}
+fn f44() -> &?func {
+    become f44();
+}

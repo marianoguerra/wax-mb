@@ -1,0 +1,5 @@
+memory m0: i32 [1];
+memory m1: i32 [1];
+fn f(x: i32) -> i32 {
+    m1.load32(x, offset: 8);
+}

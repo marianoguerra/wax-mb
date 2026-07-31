@@ -1,0 +1,38 @@
+type t = fn(i32, i32) -> i32;
+type t_2 = fn();
+type t_3 = fn(i32, i32, i32) -> i32;
+fn f(x: i32, x_2: i32) -> i32 {
+    x + x_2;
+}
+fn g(x: i32, x_2: i32) -> i32 {
+    x - x_2;
+}
+fn h(x: i32, x_2: i32) -> i32 {
+    x * x_2;
+}
+fn i(x: i32, x_2: i32) -> i32 {
+    x /u x_2;
+}
+fn j(x: i32, x_2: i32) -> i32 {
+    x %u x_2;
+}
+fn z() {}
+#[export = "call-1"]
+fn f_2(x: i32, x_2: i32, x_3: i32) -> i32 {
+    (t1[x_3] as &?t)(x, x_2);
+}
+#[export = "call-2"]
+fn f_3(x: i32, x_2: i32, x_3: i32) -> i32 {
+    (t2[x_3] as &?t)(x, x_2);
+}
+#[export = "call-3"]
+fn f_4(x: i32, x_2: i32, x_3: i32) -> i32 {
+    (t3[x_3] as &?t)(x, x_2);
+}
+table t1: &?func [2, 2];
+table t2: &?func [3, 3];
+table t3: &?func [4];
+elem e: &func @ t1 [0] = [f, g];
+elem e_2: &func @ t2 [0] = [h, i, j];
+elem e_3: &func @ t3 [0] = [g, h];
+elem e_4: &func @ t3 [3] = [z];

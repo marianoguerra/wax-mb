@@ -1,0 +1,9 @@
+type t = fn(v128) -> v128;
+#[export = "i32x4.extadd_pairwise_i16x8_s"]
+fn f(x: v128) -> v128 {
+    x.extadd_pairwise_i16x8_s_i32x4();
+}
+#[export = "i32x4.extadd_pairwise_i16x8_u"]
+fn f_2(x: v128) -> v128 {
+    x.extadd_pairwise_i16x8_u_i32x4();
+}

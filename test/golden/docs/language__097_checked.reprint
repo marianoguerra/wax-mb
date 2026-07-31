@@ -1,0 +1,8 @@
+memory buf: i32 [1];
+
+fn sum2(p: i32) -> v128 {
+    let v = buf.loadv128(p); // v128.load
+    let w = buf.load32x2_s(p, offset: 16); // v128.load32x2_s
+    buf.storev128(p, v); // v128.store
+    v.add_i64x2(w);
+}

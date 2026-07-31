@@ -1,0 +1,2 @@
+&!point         // a non-null reference to exactly point
+&?!point        // nullable, exactly point

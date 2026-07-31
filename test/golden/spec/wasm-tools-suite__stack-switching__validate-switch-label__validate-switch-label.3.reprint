@@ -1,0 +1,11 @@
+type ft = fn() -> i32;
+type ct = cont ft;
+type tag_ft = fn() -> i32;
+type t = fn();
+fn f() {
+    'label: do {
+        (null as &?ct).resume() on [t -> switch];
+        unreachable;
+    }
+}
+tag t: tag_ft ;

@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-test-suite__core__custom-descriptors__br_on_cast_fail__br_on_cast_fail.1.wax","startLine":9,"startColumn":5,"endLine":9,"endColumn":6,"startOffset":272,"endOffset":273,"message":"The type 't' is never used.","warning":"unused-field","hint":null,"related":[]}

@@ -1,0 +1,66 @@
+type ft = fn() -> i32;
+type st = { f: i16 };
+type at = [i8];
+type t = fn(&?extern);
+type t_2 = fn(i32) -> i32;
+type t_3 = fn(&?struct) -> &st;
+type t_4 = fn(&?struct) -> &at;
+fn f() -> i32 {
+    9;
+}
+#[export]
+fn init(x: &?extern) {
+    t[0] = null;
+    t[1] = 7 as &i31;
+    t[2] = { f: 6 };
+    t[3] = [at|5; 3];
+    t[4] = x as &?any;
+}
+#[export = "br_on_null"]
+fn f_2(i: i32) -> i32 {
+    'l: do {
+        br_on_null 'l t[i];
+        return -1;
+    }
+    0;
+}
+#[export]
+fn br_on_i31(i: i32) -> i32 {
+    ('l: do {
+         br_on_cast 'l &i31 t[i];
+         return -1;
+     } as i32_u);
+}
+#[export]
+fn br_on_struct(i: i32) -> i32 {
+    'l: do &struct {
+        br_on_cast 'l &struct t[i];
+        return -1;
+    }
+    'l2: do (&?struct) -> &st {
+        'l3: do (&?struct) -> &at {
+            br_on_cast 'l3 &at br_on_cast 'l2 &st _;
+            return -2;
+        }
+        return _[0] as i32_u;
+    }
+    _.f as i32_s;
+}
+#[export]
+fn br_on_array(i: i32) -> i32 {
+    ('l: do {
+         br_on_cast 'l &array t[i];
+         return -1;
+     }.length());
+}
+#[export = "null-diff"]
+fn f_3(i: i32) -> i32 {
+    'l: do &?struct {
+        do &any {
+            br_on_cast 'l &?struct t[i];
+        }
+        return 0;
+    }
+    return 1;
+}
+table t: &?any [10];

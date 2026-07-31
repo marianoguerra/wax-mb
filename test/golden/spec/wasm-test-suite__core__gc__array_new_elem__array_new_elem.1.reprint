@@ -1,0 +1,11 @@
+type arr = [&?i31];
+type t = fn() -> (i32, i32);
+#[export = "array-new-elem-contents"]
+fn f() -> (i32, i32) {
+    let x: &arr = [ e @ 1; 2];
+    x[0] as i32_u;
+    x[1] as i32_u;
+}
+elem e: &?i31 = [
+        170 as &i31, 187 as &i31, 204 as &i31, 221 as &i31
+    ];

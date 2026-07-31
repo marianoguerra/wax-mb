@@ -1,0 +1,106 @@
+memory m: i32 [1];
+fn dummy() {}
+
+// --- Each function below wraps a width-sensitive i64/f32 tree in one "width
+// eraser": a consumer whose Wax surface carries a different width, or none.
+
+// drop: the value's width lives in the anonymous let's annotation
+#[export]
+fn drop_() {
+    _: i64 = 1 /u (2147483648 + 2147483648);
+}
+// comparison: yields i32 whatever the operands' width
+#[export]
+fn cmp() -> i32 {
+    (4096 >>u 40) as i64 == 0;
+}
+// eqz: i64 operand, i32 result
+#[export]
+fn eqz() -> i32 {
+    !((4096 >>u 40) as i64);
+}
+// wrap: the surface `as i32` carries the result width, not the source's
+#[export]
+fn wrap() -> i32 {
+    (1 << 40) as i64 as i32;
+}
+// a truncation's source float width
+#[export]
+fn trunc_src() -> i64 {
+    1.5 as f32 as i64_u_strict;
+}
+// a conversion's source integer width
+#[export]
+fn convert_src() -> f32 {
+    8 as i64 as f32_s;
+}
+// a narrow i64 store: the method name carries only the access width
+#[export]
+fn narrow_store() {
+    m.store8(0, (4096 >>u 40) as i64);
+}
+// a select arm (the `?:` surface carries no result type)
+#[export]
+fn select_arm(x: i32) -> i32 {
+    (x?4096 >>u 40:1) as i64 as i32;
+}
+// a method-form op whose width is baked into the receiver
+#[export]
+fn rotl() -> i32 {
+    !((4096).rotl(40) as i64);
+}
+#[export]
+fn f32_method() -> i32 {
+    (2).sqrt() as f32 as i32_u_strict;
+}
+// a value an unconditional branch leaves stranded
+#[export]
+fn br_leftover() -> i32 'l: {
+    (4096 >>u 40) as i64;
+    br 'l 1;
+}
+// a value stranded past a CONDITIONAL branch (no consumer, no push_poly)
+#[export]
+fn br_if_stranded(x: i32) -> i32 {
+    _ =
+        'l: do i64 {
+            _ = (1.5).trunc();
+            _ = br_if 'l (4096 >>u 40, x);
+            0;
+        };
+    0;
+}
+// a block result annotation as the pin: the two f32 blocks feed a comparison
+#[export]
+fn block_result_pin() -> i32 {
+    (do f32 {
+         dummy();
+         3;
+     }
+         > do f32 {
+               dummy();
+               3;
+           });
+}
+
+// a receiver whose pop an interposed zero-value statement blocks, so the method
+// reads a HOLE and the value below is stranded: the downstream demote then
+// re-grounds the whole chain unless the receiver's own type is stated
+#[export]
+fn blocked_receiver() -> f32 {
+    0x1p-1063;
+    do {}
+    (_ as f64).floor() as f32;
+}
+
+// --- Dead code: every operand is a hole on a polymorphic stack.
+#[export]
+fn dead() -> i32 {
+    unreachable;
+    _: i64 = 1 /u 0;
+    _ = (_ >>u _) as i64;
+    _ = (_ %u (_?_:_)) as i64;
+    _ = (_ as i64).clz();
+    _ = (_ as f32).sqrt();
+    0;
+}

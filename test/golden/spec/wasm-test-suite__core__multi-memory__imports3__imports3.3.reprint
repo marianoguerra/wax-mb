@@ -1,0 +1,6 @@
+import "test" {
+    #[import = "memory-2-4"]
+    memory m: i32 [1];
+    #[import = "table-10-inf"]
+    memory m_2: i32 [1];
+}

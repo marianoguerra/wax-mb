@@ -1,0 +1,17 @@
+type cell = { value: i32 };
+type cons = { head: &eq, tail: &?eq };
+
+#[export = "sum_list"]
+fn sum_list(v: &?eq) -> i32 {
+    match v {
+        c: &cons => {
+            return (c.head as &cell).value + sum_list(c.tail);
+        }
+        x: &cell => {
+            return x.value;
+        }
+        _ => {
+            return 0;
+        }
+    }
+}

@@ -1,0 +1,7 @@
+type t1 = [mut i16];
+type t2 = [mut i16];
+type t = fn();
+fn f() {
+    unreachable;
+    (_ as &?t1).copy(_, _ as &?t2, _, _);
+}

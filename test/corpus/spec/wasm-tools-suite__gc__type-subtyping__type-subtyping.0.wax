@@ -1,0 +1,7 @@
+type e0 = open [i32];
+type e1: e0 = open [i32];
+type e2 = open [&?any];
+type e3 = open [&?e0];
+type e4 = open [&e1];
+type m1 = open [mut i32];
+type m2: m1 = open [mut i32];

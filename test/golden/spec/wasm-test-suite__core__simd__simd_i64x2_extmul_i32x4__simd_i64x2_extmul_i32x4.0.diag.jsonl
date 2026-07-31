@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-test-suite__core__simd__simd_i64x2_extmul_i32x4__simd_i64x2_extmul_i32x4.0.wax","startLine":1,"startColumn":5,"endLine":1,"endColumn":6,"startOffset":5,"endOffset":6,"message":"The type 't' is never used.","warning":"unused-field","hint":null,"related":[]}

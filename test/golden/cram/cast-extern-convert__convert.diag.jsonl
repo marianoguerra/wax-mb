@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/cast-extern-convert__convert.wax","startLine":7,"startColumn":35,"endLine":7,"endColumn":46,"startOffset":148,"endOffset":159,"message":"This cast always traps: the value can never have this type.","warning":"cast-always-fails","hint":null,"related":[]}

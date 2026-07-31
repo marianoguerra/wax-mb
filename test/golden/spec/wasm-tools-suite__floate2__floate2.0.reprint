@@ -1,0 +1,5 @@
+type t = fn() -> f32;
+#[export]
+fn f() -> f32 {
+    0x1p-148;
+}

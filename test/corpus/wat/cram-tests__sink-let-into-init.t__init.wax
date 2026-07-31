@@ -1,0 +1,8 @@
+fn f(x: i32) -> i32 {
+    let outer =
+        'b: do {
+            let inner = x + 1;
+            inner * inner;
+        };
+    outer;
+}

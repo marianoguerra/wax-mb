@@ -1,0 +1,14 @@
+type T = fn() -> i32;
+type t = fn(i32) -> i32;
+fn t1() -> i32 {
+    1;
+}
+fn t2() -> i32 {
+    2;
+}
+#[export]
+fn callt(i: i32) -> i32 {
+    (t[i] as &?T)();
+}
+table t: &?func [2, 2];
+elem e: &func @ t [0] = [t1, t2];

@@ -1,0 +1,13 @@
+#![feature = "custom-descriptors"]
+rec {
+    type struct_2 = { f: &?!func_2 };
+    type array_2 = [&?!struct_2];
+    type func_2 = fn(&!struct_2) -> &!array_2;
+}
+type t = fn(&!struct_2) -> &!func_2;
+fn f(&!struct_2) -> &!func_2 {
+    unreachable;
+}
+table t: &?!array_2 [0];
+const g: &?!struct_2 = null;
+elem e: &?func_2 = [];

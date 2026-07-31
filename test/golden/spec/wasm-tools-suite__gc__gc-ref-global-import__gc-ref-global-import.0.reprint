@@ -1,0 +1,4 @@
+type a = { };
+import ""
+#[import = ""]
+const g: &a;

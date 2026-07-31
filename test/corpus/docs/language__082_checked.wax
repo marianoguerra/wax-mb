@@ -1,0 +1,2 @@
+type bytes = [i8];
+type mutable_ints = [mut i32];

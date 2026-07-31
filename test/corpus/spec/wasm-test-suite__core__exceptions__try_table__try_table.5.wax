@@ -1,0 +1,24 @@
+type t = fn();
+type t_2 = fn() -> &?exn;
+fn f() 'l: {
+    try {} catch [ e -> 'l, e -> 'l]
+}
+fn f_2() 'l: {
+    try {} catch [ _ -> 'l, e -> 'l]
+}
+fn f_3() 'l: {
+    try {} catch [ _ -> 'l, _ -> 'l]
+}
+fn f_4() -> &?exn 'l: {
+    try {} catch [ e & -> 'l, e & -> 'l]
+    unreachable;
+}
+fn f_5() -> &?exn 'l: {
+    try {} catch [ _ & -> 'l, e & -> 'l]
+    unreachable;
+}
+fn f_6() -> &?exn 'l: {
+    try {} catch [ _ & -> 'l, _ & -> 'l]
+    unreachable;
+}
+tag e: t ;

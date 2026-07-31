@@ -1,0 +1,2 @@
+{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/holes__bad2.wax","startLine":3,"startColumn":12,"endLine":3,"endColumn":17,"startOffset":30,"endOffset":35,"message":"This expression occurs before a hole '_'.","warning":null,"hint":null,"related":[]}
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/holes__bad2.wax","startLine":2,"startColumn":3,"endLine":2,"endColumn":4,"startOffset":4,"endOffset":5,"message":"The function 'f' is never used.","warning":"unused-field","hint":null,"related":[]}

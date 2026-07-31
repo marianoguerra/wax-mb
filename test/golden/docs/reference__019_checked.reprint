@@ -1,0 +1,2 @@
+const PI: f64 = 3.14159; // immutable global
+let counter: i32 = 0; // mutable global

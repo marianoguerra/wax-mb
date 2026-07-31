@@ -1,0 +1,9 @@
+type t = fn(v128) -> v128;
+#[export = "i32x4.trunc_sat_f64x2_s_zero"]
+fn f(x: v128) -> v128 {
+    x.trunc_sat_f64x2_s_i32x4();
+}
+#[export = "i32x4.trunc_sat_f64x2_u_zero"]
+fn f_2(x: v128) -> v128 {
+    x.trunc_sat_f64x2_u_i32x4();
+}

@@ -1,0 +1,19 @@
+type t = fn(&extern) -> &extern;
+#[export = "get-after-set"]
+fn f(p: &extern) -> &extern {
+    let x = p;
+    x;
+}
+#[export = "get-after-tee"]
+fn f_2(p: &extern) -> &extern {
+    let x: &extern;
+    _ = x := p;
+    x;
+}
+#[export = "get-in-block-after-set"]
+fn f_3(p: &extern) -> &extern {
+    let x = p;
+    do {
+        x;
+    }
+}

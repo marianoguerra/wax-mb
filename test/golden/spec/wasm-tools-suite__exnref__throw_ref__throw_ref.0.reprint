@@ -1,0 +1,4 @@
+type t = fn(&?exn);
+fn f(x: &?exn) {
+    throw_ref x;
+}

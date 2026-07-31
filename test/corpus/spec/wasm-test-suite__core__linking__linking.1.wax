@@ -1,0 +1,17 @@
+#![module = "Nf"]
+type t = fn() -> i32;
+import "Mf"
+#[import = "call"]
+#[export = "Mf.call"]
+fn f() -> i32;
+#[export = "call Mf.call"]
+fn f_2() -> i32 {
+    f();
+}
+#[export]
+fn call() -> i32 {
+    g();
+}
+fn g() -> i32 {
+    3;
+}

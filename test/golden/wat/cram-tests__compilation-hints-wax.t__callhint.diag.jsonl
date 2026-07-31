@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/wat/cram-tests__compilation-hints-wax.t__callhint.wax","startLine":2,"startColumn":3,"endLine":2,"endColumn":4,"startOffset":29,"endOffset":30,"message":"The function 'a' is never used.","warning":"unused-field","hint":null,"related":[]}

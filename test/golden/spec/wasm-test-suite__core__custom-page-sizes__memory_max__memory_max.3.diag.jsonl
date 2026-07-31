@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-test-suite__core__custom-page-sizes__memory_max__memory_max.3.wax","startLine":1,"startColumn":21,"endLine":1,"endColumn":28,"startOffset":21,"endOffset":28,"message":"The imported memory 'unknown' is never used.","warning":"unused-import","hint":null,"related":[]}

@@ -1,0 +1,6 @@
+memory m: i32 [0];
+memory m_2: i32 [0];
+memory m_3: i32 [1];
+data d @ m_3 [
+        -1
+    ] = "a";

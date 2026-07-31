@@ -1,0 +1,10 @@
+type t = fn(f32) -> i32;
+type t_2 = fn(f64) -> i32;
+#[export = "f32.no_fold_eq_self"]
+fn f(x: f32) -> i32 {
+    x == x;
+}
+#[export = "f64.no_fold_eq_self"]
+fn f_2(x: f64) -> i32 {
+    x == x;
+}

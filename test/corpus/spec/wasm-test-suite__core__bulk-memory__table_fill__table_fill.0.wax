@@ -1,0 +1,15 @@
+type t = fn(i32, &?extern, i32);
+type t_2 = fn(i32) -> &?extern;
+#[export]
+fn fill(i: i32, r: &?extern, n: i32) {
+    t.fill(i, r, n);
+}
+#[export = "fill-abbrev"]
+fn f(i: i32, r: &?extern, n: i32) {
+    t.fill(i, r, n);
+}
+#[export]
+fn get(i: i32) -> &?extern {
+    t[i];
+}
+table t: &?extern [10];

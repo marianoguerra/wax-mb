@@ -1,0 +1,19 @@
+type t = fn();
+#[export]
+fn test32() {
+    t32.copy(13, 2, 3);
+}
+#[export]
+fn test64() {
+    t64.copy(13, 2, 3);
+}
+#[export]
+fn test_64to32() {
+    t32.copy(t64, 13, 2, 3);
+}
+#[export]
+fn test_32to64() {
+    t64.copy(t32, 13, 2, 3);
+}
+table t32: &?func [30, 30];
+table t64: i64 &?func [30, 30];

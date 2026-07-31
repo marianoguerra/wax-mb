@@ -1,0 +1,14 @@
+type t = fn() -> i32;
+type t_2 = fn();
+fn f() -> i32 {
+    306;
+}
+fn f_2() {
+    (t64[0] as &?t_2)();
+}
+#[export = "type-i32-t64"]
+fn f_3() -> i32 {
+    (t64[0] as &?t)();
+}
+table t64: i64 &?func [1, 1];
+elem e: &func @ t64 [0] = [f];

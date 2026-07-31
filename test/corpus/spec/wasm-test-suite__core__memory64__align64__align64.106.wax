@@ -1,0 +1,270 @@
+type t = fn(i32) -> f32;
+type t_2 = fn(i32) -> f64;
+type t_3 = fn(i32, i32) -> i32;
+type t_4 = fn(i32, i32) -> i64;
+#[export]
+fn f32_align_switch(x: i32) -> f32 {
+    let x_2: f32 = 0x1.4p+3;
+    let x_3: f32;
+    dispatch x [ '_0, 'default, '_1, '_2, else '_4 ] {
+        '_0: {
+            m.storef32(0, x_2);
+            x_3 = m.loadf32(0);
+            br '_4;
+        }
+        'default: {
+            m.storef32(0, x_2, align: 1);
+            x_3 = m.loadf32(0, align: 1);
+            br '_4;
+        }
+        '_1: {
+            m.storef32(0, x_2, align: 2);
+            x_3 = m.loadf32(0, align: 2);
+            br '_4;
+        }
+        '_2: {
+            m.storef32(0, x_2);
+            x_3 = m.loadf32(0);
+        }
+        '_4: {
+            x_3;
+        }
+    }
+}
+#[export]
+fn f64_align_switch(x: i32) -> f64 {
+    let x_2 = 0x1.4p+3;
+    let x_3: f64;
+    dispatch x [ '_0, 'default, '_1, '_2, '_4, else '_8 ] {
+        '_0: {
+            m.storef64(0, x_2);
+            x_3 = m.loadf64(0);
+            br '_8;
+        }
+        'default: {
+            m.storef64(0, x_2, align: 1);
+            x_3 = m.loadf64(0, align: 1);
+            br '_8;
+        }
+        '_1: {
+            m.storef64(0, x_2, align: 2);
+            x_3 = m.loadf64(0, align: 2);
+            br '_8;
+        }
+        '_2: {
+            m.storef64(0, x_2, align: 4);
+            x_3 = m.loadf64(0, align: 4);
+            br '_8;
+        }
+        '_4: {
+            m.storef64(0, x_2);
+            x_3 = m.loadf64(0);
+        }
+        '_8: {
+            x_3;
+        }
+    }
+}
+#[export]
+fn i32_align_switch(x: i32, x_2: i32) -> i32 {
+    let x_3 = 10;
+    let x_4: i32;
+    dispatch x [ '_0, '_8s, '_8u, '_16s, '_16u, else '_32 ] {
+        '_0: {
+            if x_2 == 0 {
+                m.store8(0, x_3);
+                x_4 = m.load8(0) as i32_s;
+            }
+            if x_2 == 1 {
+                m.store8(0, x_3);
+                x_4 = m.load8(0) as i32_s;
+            }
+            br '_32;
+        }
+        '_8s: {
+            if x_2 == 0 {
+                m.store8(0, x_3);
+                x_4 = m.load8(0) as i32_u;
+            }
+            if x_2 == 1 {
+                m.store8(0, x_3);
+                x_4 = m.load8(0) as i32_u;
+            }
+            br '_32;
+        }
+        '_8u: {
+            if x_2 == 0 {
+                m.store16(0, x_3);
+                x_4 = m.load16(0) as i32_s;
+            }
+            if x_2 == 1 {
+                m.store16(0, x_3, align: 1);
+                x_4 = m.load16(0, align: 1) as i32_s;
+            }
+            if x_2 == 2 {
+                m.store16(0, x_3);
+                x_4 = m.load16(0) as i32_s;
+            }
+            br '_32;
+        }
+        '_16s: {
+            if x_2 == 0 {
+                m.store16(0, x_3);
+                x_4 = m.load16(0) as i32_u;
+            }
+            if x_2 == 1 {
+                m.store16(0, x_3, align: 1);
+                x_4 = m.load16(0, align: 1) as i32_u;
+            }
+            if x_2 == 2 {
+                m.store16(0, x_3);
+                x_4 = m.load16(0) as i32_u;
+            }
+            br '_32;
+        }
+        '_16u: {
+            if x_2 == 0 {
+                m.store32(0, x_3);
+                x_4 = m.load32(0);
+            }
+            if x_2 == 1 {
+                m.store32(0, x_3, align: 1);
+                x_4 = m.load32(0, align: 1);
+            }
+            if x_2 == 2 {
+                m.store32(0, x_3, align: 2);
+                x_4 = m.load32(0, align: 2);
+            }
+            if x_2 == 4 {
+                m.store32(0, x_3);
+                x_4 = m.load32(0);
+            }
+        }
+        '_32: {
+            x_4;
+        }
+    }
+}
+#[export]
+fn i64_align_switch(x: i32, x_2: i32) -> i64 {
+    let x_3: i64 = 10;
+    let x_4: i64;
+    dispatch x [ '_0, '_8s, '_8u, '_16s, '_16u, '_32s, '_32u, else '_64 ] {
+        '_0: {
+            if x_2 == 0 {
+                m.store8(0, x_3);
+                x_4 = m.load8(0) as i64_s;
+            }
+            if x_2 == 1 {
+                m.store8(0, x_3);
+                x_4 = m.load8(0) as i64_s;
+            }
+            br '_64;
+        }
+        '_8s: {
+            if x_2 == 0 {
+                m.store8(0, x_3);
+                x_4 = m.load8(0) as i64_u;
+            }
+            if x_2 == 1 {
+                m.store8(0, x_3);
+                x_4 = m.load8(0) as i64_u;
+            }
+            br '_64;
+        }
+        '_8u: {
+            if x_2 == 0 {
+                m.store16(0, x_3);
+                x_4 = m.load16(0) as i64_s;
+            }
+            if x_2 == 1 {
+                m.store16(0, x_3, align: 1);
+                x_4 = m.load16(0, align: 1) as i64_s;
+            }
+            if x_2 == 2 {
+                m.store16(0, x_3);
+                x_4 = m.load16(0) as i64_s;
+            }
+            br '_64;
+        }
+        '_16s: {
+            if x_2 == 0 {
+                m.store16(0, x_3);
+                x_4 = m.load16(0) as i64_u;
+            }
+            if x_2 == 1 {
+                m.store16(0, x_3, align: 1);
+                x_4 = m.load16(0, align: 1) as i64_u;
+            }
+            if x_2 == 2 {
+                m.store16(0, x_3);
+                x_4 = m.load16(0) as i64_u;
+            }
+            br '_64;
+        }
+        '_16u: {
+            if x_2 == 0 {
+                m.store32(0, x_3);
+                x_4 = m.load32(0) as i64_s;
+            }
+            if x_2 == 1 {
+                m.store32(0, x_3, align: 1);
+                x_4 = m.load32(0, align: 1) as i64_s;
+            }
+            if x_2 == 2 {
+                m.store32(0, x_3, align: 2);
+                x_4 = m.load32(0, align: 2) as i64_s;
+            }
+            if x_2 == 4 {
+                m.store32(0, x_3);
+                x_4 = m.load32(0) as i64_s;
+            }
+            br '_64;
+        }
+        '_32s: {
+            if x_2 == 0 {
+                m.store32(0, x_3);
+                x_4 = m.load32(0) as i64_u;
+            }
+            if x_2 == 1 {
+                m.store32(0, x_3, align: 1);
+                x_4 = m.load32(0, align: 1) as i64_u;
+            }
+            if x_2 == 2 {
+                m.store32(0, x_3, align: 2);
+                x_4 = m.load32(0, align: 2) as i64_u;
+            }
+            if x_2 == 4 {
+                m.store32(0, x_3);
+                x_4 = m.load32(0) as i64_u;
+            }
+            br '_64;
+        }
+        '_32u: {
+            if x_2 == 0 {
+                m.store64(0, x_3);
+                x_4 = m.load64(0);
+            }
+            if x_2 == 1 {
+                m.store64(0, x_3, align: 1);
+                x_4 = m.load64(0, align: 1);
+            }
+            if x_2 == 2 {
+                m.store64(0, x_3, align: 2);
+                x_4 = m.load64(0, align: 2);
+            }
+            if x_2 == 4 {
+                m.store64(0, x_3, align: 4);
+                x_4 = m.load64(0, align: 4);
+            }
+            if x_2 == 8 {
+                m.store64(0, x_3);
+                x_4 = m.load64(0);
+            }
+        }
+        '_64: {
+            x_4;
+        }
+    }
+}
+memory m: i64 [1];

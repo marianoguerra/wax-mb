@@ -1,0 +1,69 @@
+type ii = fn(i32) -> i32;
+type ll = fn(i64) -> i64;
+type lll = fn(i64, i64) -> i64;
+type t = fn(&ii, i32) -> i32;
+type t_2 = fn() -> i32;
+fn apply(f: &ii, x: i32) -> i32 {
+    f(x);
+}
+fn f(x: i32) -> i32 {
+    x * x;
+}
+fn g_2(x: i32) -> i32 {
+    0 - x;
+}
+#[export]
+fn run(x: i32) -> i32 {
+    let rf = f;
+    let rg = g_2;
+    rg(rf(x));
+}
+#[export = "null"]
+fn f_2() -> i32 {
+    (null as &?ii)(1);
+}
+#[export = "fac"]
+fn fac_2(x: i64) -> i64 {
+    if !x {
+        1;
+    } else {
+        x * fac(x - 1);
+    }
+}
+#[export = "fac-acc"]
+fn f_3(x: i64, x_2: i64) -> i64 {
+    if !x {
+        x_2;
+    } else {
+        g(x - 1, x * x_2);
+    }
+}
+#[export = "fib"]
+fn fib_2(x: i64) -> i64 {
+    if x <=u 1 {
+        1;
+    } else {
+        fib(x - 2) + fib(x - 1);
+    }
+}
+#[export = "even"]
+fn even_2(x: i64) -> i64 {
+    if !x {
+        44;
+    } else {
+        odd(x - 1);
+    }
+}
+#[export = "odd"]
+fn odd_2(x: i64) -> i64 {
+    if !x {
+        99;
+    } else {
+        even(x - 1);
+    }
+}
+const fac = fac_2;
+const g = f_3;
+const fib = fib_2;
+const even = even_2;
+const odd = odd_2;

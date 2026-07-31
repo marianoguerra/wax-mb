@@ -1,0 +1,9 @@
+#![feature = "custom-descriptors"]
+rec {
+    type t = descriptor t_2 { };
+    type t_2 = describes t { };
+}
+type t_3 = fn(&?t) -> &t_2;
+fn f(x: &?t) -> &t_2 {
+    x.descriptor;
+}

@@ -1,0 +1,45 @@
+type t = fn(v128) -> i32;
+#[export = "i8x16.any_true"]
+fn f(x: v128) -> i32 {
+    x.any_true_v128();
+}
+#[export = "i8x16.all_true"]
+fn f_2(x: v128) -> i32 {
+    x.all_true_i8x16();
+}
+#[export = "i8x16.bitmask"]
+fn f_3(x: v128) -> i32 {
+    x.bitmask_i8x16();
+}
+#[export = "i16x8.any_true"]
+fn f_4(x: v128) -> i32 {
+    x.any_true_v128();
+}
+#[export = "i16x8.all_true"]
+fn f_5(x: v128) -> i32 {
+    x.all_true_i16x8();
+}
+#[export = "i16x8.bitmask"]
+fn f_6(x: v128) -> i32 {
+    x.bitmask_i16x8();
+}
+#[export = "i32x4.any_true"]
+fn f_7(x: v128) -> i32 {
+    x.any_true_v128();
+}
+#[export = "i32x4.all_true"]
+fn f_8(x: v128) -> i32 {
+    x.all_true_i32x4();
+}
+#[export = "i32x4.bitmask"]
+fn f_9(x: v128) -> i32 {
+    x.bitmask_i32x4();
+}
+#[export = "i64x2.all_true"]
+fn f_10(x: v128) -> i32 {
+    x.all_true_i64x2();
+}
+#[export = "i64x2.bitmask"]
+fn f_11(x: v128) -> i32 {
+    x.bitmask_i64x2();
+}

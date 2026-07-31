@@ -1,0 +1,4 @@
+#![feature = "custom-descriptors"]
+type super = open fn();
+type sub: super = open fn();
+import "D" fn f: !sub ();

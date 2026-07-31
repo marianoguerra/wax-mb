@@ -1,0 +1,1 @@
+tag yield(value: i32) -> i32;

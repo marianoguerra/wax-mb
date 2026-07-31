@@ -1,0 +1,15 @@
+type s = open { f: i32 };
+type t = open { f: i32 };
+fn g(&s) -> i32 {
+    0;
+}
+fn arg(c: i32) -> i32 {
+    g(c?{ f: 1 }:{ f: 2 });
+}
+fn bound(c: i32) -> &s {
+    let x: &s = c?{ f: 3 }:{ f: 4 };
+    x;
+}
+fn body(c: i32) -> &s {
+    c?{ f: 5 }:{ f: 6 };
+}

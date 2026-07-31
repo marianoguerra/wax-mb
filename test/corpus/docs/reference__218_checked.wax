@@ -1,0 +1,29 @@
+// 1. Type definitions
+type point = { x: i32, y: i32 };
+type callback = fn(i32) -> i32;
+
+// 2. Imported globals and functions
+import "env" {
+    fn log(value: i32);
+    const base: i32;
+}
+
+// 3. Tags
+tag my_error(code: i32);
+
+// 4. Module globals
+const FACTOR: i32 = 100;
+let counter: i32 = 0;
+
+// 5. Internal functions
+fn helper(x: i32) -> i32 {
+    x * FACTOR;
+}
+
+// 6. Exported functions
+#[export = "compute"]
+fn compute(x: i32) -> i32 {
+    counter = counter + 1;
+    log(counter);
+    helper(x + base);
+}

@@ -1,0 +1,3 @@
+type point = { x: i32, y: i32 };
+type bytes = [i8];
+type callback = fn(i32) -> i32;

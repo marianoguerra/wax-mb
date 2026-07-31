@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {}
+fn g() {}
+table t: &?func [3, 3];
+elem e: &?func @ t [0] = [f, null as &?func, g];

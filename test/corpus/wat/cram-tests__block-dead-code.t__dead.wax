@@ -1,0 +1,10 @@
+#[export]
+fn f() -> i32 {
+    let x: i32;
+    x +=
+        'l: do {
+            br 'l 0x4;
+            (_ as i32).ctz();
+        };
+    x;
+}

@@ -1,0 +1,1 @@
+memory mem1: i64 { data _ @ [0x1000] = "hello world"; data greeting @ [0x2000] = "hi"; }

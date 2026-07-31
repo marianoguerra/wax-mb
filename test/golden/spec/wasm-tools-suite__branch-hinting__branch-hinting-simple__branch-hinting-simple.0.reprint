@@ -1,0 +1,16 @@
+type t = fn() -> i32;
+fn main() -> i32 {
+    let x: i32;
+    let x_2: i32;
+    let x_3: i32;
+    let x_4 = x_3 := 0;
+    'l: loop {
+        #[unlikely]
+        if x_3 == 50000 {
+            x_4 = 1;
+        }
+        #[likely]
+        br_if 'l (x_3 := x_3 + 1) != 100000;
+    }
+    x_4;
+}

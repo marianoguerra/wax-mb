@@ -1,0 +1,108 @@
+#![module = "scheduler"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(&cont_2);
+type t_2 = cont t;
+type t_3 = fn(&func_2, &t);
+type t_4 = cont t_3;
+type t_5 = fn(&cont_2, &cont_2);
+type t_6 = cont t_5;
+type t_7 = fn(i32);
+type t_8 = fn() -> i32;
+type t_9 = fn() -> &?cont_2;
+type t_10 = fn(&t_2);
+type t_11 = fn(&?cont_2);
+type t_12 = fn(&t_4);
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+import "queue" {
+    #[import = "queue-empty"]
+    fn f() -> i32;
+    fn dequeue() -> &?cont_2;
+    fn enqueue(&cont_2);
+}
+import "control" {
+    tag control: t_10 ;
+    fn prompt(&?cont_2);
+}
+fn scheduler(nextk: &?cont_2) {
+    'loop: loop {
+        if !nextk {
+            return;
+        }
+        prompt(nextk);
+        nextk = dequeue();
+        br 'loop;
+    }
+}
+fn f_2(k: &cont_2) {
+    scheduler(k);
+}
+fn f_3() {
+    suspend control(t_2::new(f_6));
+}
+fn f_4(t: &cont_2, k: &cont_2) {
+    enqueue(t);
+    scheduler(k);
+}
+fn f_5(t: &cont_2) {
+    suspend control(t_2::bind(t, t_6::new(f_4)));
+}
+#[export]
+fn sync(k: &t_4) {
+    scheduler(cont_2::bind(yield, f_5, k));
+}
+fn f_6(k: &cont_2) {
+    enqueue(k);
+    scheduler(dequeue());
+}
+fn yield() {
+    suspend control(t_2::new(f_6));
+}
+fn f_7(t: &cont_2, k: &cont_2) {
+    enqueue(t);
+    scheduler(k);
+}
+fn f_8(t: &cont_2) {
+    suspend control(t_2::bind(t, t_6::new(f_7)));
+}
+#[export]
+fn kt(k: &t_4) {
+    scheduler(cont_2::bind(yield, f_8, k));
+}
+fn f_9(t: &cont_2, k: &cont_2) {
+    enqueue(k);
+    scheduler(t);
+}
+fn f_10(t: &cont_2) {
+    suspend control(t_2::bind(t, t_6::new(f_9)));
+}
+#[export]
+fn tk(k: &t_4) {
+    scheduler(cont_2::bind(yield, f_10, k));
+}
+fn f_11(t: &cont_2, k: &cont_2) {
+    enqueue(k);
+    enqueue(t);
+    scheduler(dequeue());
+}
+fn f_12(t: &cont_2) {
+    suspend control(t_2::bind(t, t_6::new(f_11)));
+}
+#[export]
+fn ykt(k: &t_4) {
+    scheduler(cont_2::bind(yield, f_12, k));
+}
+fn f_13(t: &cont_2, k: &cont_2) {
+    enqueue(t);
+    enqueue(k);
+    scheduler(dequeue());
+}
+fn f_14(t: &cont_2) {
+    suspend control(t_2::bind(t, t_6::new(f_13)));
+}
+#[export]
+fn ytk(k: &t_4) {
+    scheduler(cont_2::bind(yield, f_14, k));
+}

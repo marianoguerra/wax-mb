@@ -1,0 +1,9 @@
+#![feature = "custom-descriptors"]
+rec {
+    type a = descriptor b { f: i32 };
+    type b = describes a { };
+}
+type t = fn(&b) -> &?any;
+fn f(x: &b) -> &?any {
+    { descriptor(x)| f: 0 };
+}

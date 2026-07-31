@@ -1,0 +1,6 @@
+rec {
+    type f1 = fn(&f2);
+    type f2 = fn(&f1);
+}
+type c1 = cont f1;
+type c2 = cont f2;

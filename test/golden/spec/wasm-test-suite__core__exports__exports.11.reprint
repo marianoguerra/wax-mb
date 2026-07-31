@@ -1,0 +1,6 @@
+#![module = "Func"]
+type t = fn(i32) -> i32;
+#[export = "e"]
+fn f(n: i32) -> i32 {
+    return n + 1;
+}

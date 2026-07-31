@@ -1,0 +1,10 @@
+#[export = "add"]
+fn add(x: i32, y: i32) -> i32 {
+    x + y;
+}
+
+#[export = "PI"]
+const PI: f64 = 3.14159;
+
+#[export = "my_error"]
+tag my_error(code: i32);

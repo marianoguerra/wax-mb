@@ -1,0 +1,13 @@
+fn g(x: i32) {
+    dispatch x [ 'a, 'b, else 'a ] {
+        'a: {
+            return;
+        }
+        'b: {
+            return;
+        }
+        'a: {
+            return;
+        }
+    }
+}

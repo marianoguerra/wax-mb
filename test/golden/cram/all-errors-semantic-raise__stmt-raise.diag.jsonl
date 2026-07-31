@@ -1,0 +1,1 @@
+{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/all-errors-semantic-raise__stmt-raise.wax","startLine":1,"startColumn":9,"endLine":1,"endColumn":23,"startOffset":9,"endOffset":23,"message":"An '#[else]' must directly follow an '#[if(...)]' group.","warning":null,"hint":null,"related":[]}

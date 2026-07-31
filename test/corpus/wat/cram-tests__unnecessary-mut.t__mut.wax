@@ -1,0 +1,15 @@
+import "env"
+#[import = "i"]
+let imported: i32;
+let never_set = 0;
+let set_somewhere = 0;
+let _ignored = 0;
+#[export = "e"]
+let inline_exported = 0;
+#[export = "l"]
+let late_exported = 0;
+#[export]
+fn f() -> i32 {
+    set_somewhere = 1;
+    never_set + set_somewhere + (_ignored + (imported + (inline_exported + late_exported)));
+}

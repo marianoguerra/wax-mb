@@ -1,0 +1,9 @@
+type t = fn(v128, v128) -> v128;
+#[export = "f32x4.pmin"]
+fn f(x: v128, x_2: v128) -> v128 {
+    x.pmin_f32x4(x_2);
+}
+#[export = "f32x4.pmax"]
+fn f_2(x: v128, x_2: v128) -> v128 {
+    x.pmax_f32x4(x_2);
+}

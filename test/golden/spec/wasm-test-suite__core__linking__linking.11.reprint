@@ -1,0 +1,3 @@
+import "Mref_ex"
+#[import = "g-const-extern"]
+const g: &?func;

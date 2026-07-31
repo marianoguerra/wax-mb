@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/spec/wasm-test-suite__core__multi-memory__load1__load1.0.wax","startLine":2,"startColumn":5,"endLine":2,"endColumn":6,"startOffset":22,"endOffset":23,"message":"The type 't' is never used.","warning":"unused-field","hint":null,"related":[]}

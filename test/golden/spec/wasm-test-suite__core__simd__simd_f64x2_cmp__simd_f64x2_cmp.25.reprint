@@ -1,0 +1,155 @@
+type t = fn();
+#[export = "f64x2.eq-in-block"]
+fn f() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.eq_f64x2(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "f64x2.ne-in-block"]
+fn f_2() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.ne_f64x2(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "f64x2.lt-in-block"]
+fn f_3() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.lt_f64x2(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "f64x2.le-in-block"]
+fn f_4() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.le_f64x2(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "f64x2.gt-in-block"]
+fn f_5() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.gt_f64x2(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "f64x2.ge-in-block"]
+fn f_6() {
+    do {
+        _ =
+            do {
+                (do {
+                     m.loadv128(0);
+                 }.ge_f64x2(
+                     do {
+                         m.loadv128(1);
+                     },
+                 ));
+            };
+    }
+}
+#[export = "nested-f64x2.eq"]
+fn f_7() {
+    _ =
+        m.loadv128(0).eq_f64x2(m.loadv128(1)).eq_f64x2(
+            m.loadv128(2).eq_f64x2(m.loadv128(3)),
+        ).eq_f64x2(
+            m.loadv128(0).eq_f64x2(m.loadv128(1)).eq_f64x2(m.loadv128(2).eq_f64x2(m.loadv128(3))),
+        );
+}
+#[export = "nested-f64x2.ne"]
+fn f_8() {
+    _ =
+        m.loadv128(0).ne_f64x2(m.loadv128(1)).ne_f64x2(
+            m.loadv128(2).ne_f64x2(m.loadv128(3)),
+        ).ne_f64x2(
+            m.loadv128(0).ne_f64x2(m.loadv128(1)).ne_f64x2(m.loadv128(2).ne_f64x2(m.loadv128(3))),
+        );
+}
+#[export = "nested-f64x2.lt"]
+fn f_9() {
+    _ =
+        m.loadv128(0).lt_f64x2(m.loadv128(1)).lt_f64x2(
+            m.loadv128(2).lt_f64x2(m.loadv128(3)),
+        ).lt_f64x2(
+            m.loadv128(0).lt_f64x2(m.loadv128(1)).lt_f64x2(m.loadv128(2).lt_f64x2(m.loadv128(3))),
+        );
+}
+#[export = "nested-f64x2.le"]
+fn f_10() {
+    _ =
+        m.loadv128(0).le_f64x2(m.loadv128(1)).le_f64x2(
+            m.loadv128(2).le_f64x2(m.loadv128(3)),
+        ).le_f64x2(
+            m.loadv128(0).le_f64x2(m.loadv128(1)).le_f64x2(m.loadv128(2).le_f64x2(m.loadv128(3))),
+        );
+}
+#[export = "nested-f64x2.gt"]
+fn f_11() {
+    _ =
+        m.loadv128(0).gt_f64x2(m.loadv128(1)).gt_f64x2(
+            m.loadv128(2).gt_f64x2(m.loadv128(3)),
+        ).gt_f64x2(
+            m.loadv128(0).gt_f64x2(m.loadv128(1)).gt_f64x2(m.loadv128(2).gt_f64x2(m.loadv128(3))),
+        );
+}
+#[export = "nested-f64x2.ge"]
+fn f_12() {
+    _ =
+        m.loadv128(0).ge_f64x2(m.loadv128(1)).ge_f64x2(
+            m.loadv128(2).ge_f64x2(m.loadv128(3)),
+        ).ge_f64x2(
+            m.loadv128(0).ge_f64x2(m.loadv128(1)).ge_f64x2(m.loadv128(2).ge_f64x2(m.loadv128(3))),
+        );
+}
+#[export = "as-param"]
+fn f_13() {
+    _ =
+        m.loadv128(0).lt_f64x2(m.loadv128(1)).ne_f64x2(
+            m.loadv128(2).le_f64x2(m.loadv128(3)),
+        ).eq_f64x2(
+            m.loadv128(0).ge_f64x2(m.loadv128(1)).gt_f64x2(m.loadv128(2).eq_f64x2(m.loadv128(3))),
+        );
+}
+memory m: i32 [1];

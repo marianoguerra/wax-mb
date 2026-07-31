@@ -1,0 +1,32 @@
+#![module = "tables_of_i31ref"]
+type t = fn() -> i32;
+type t_2 = fn(i32) -> i32;
+type t_3 = fn(i32, i32) -> i32;
+type t_4 = fn(i32, i32, i32);
+#[export]
+fn size() -> i32 {
+    table_2.size();
+}
+#[export]
+fn get(x: i32) -> i32 {
+    table_2[x] as i32_u;
+}
+#[export]
+fn grow(x: i32, x_2: i32) -> i32 {
+    table_2.grow(x_2 as &i31, x);
+}
+#[export]
+fn fill(x: i32, x_2: i32, x_3: i32) {
+    table_2.fill(x, x_2 as &i31, x_3);
+}
+#[export]
+fn copy(x: i32, x_2: i32, x_3: i32) {
+    table_2.copy(x, x_2, x_3);
+}
+#[export]
+fn init(x: i32, x_2: i32, x_3: i32) {
+    table_2.init(elem_2, x, x_2, x_3);
+}
+table table_2: &?i31 [3, 10];
+elem e: &?i31 @ table_2 [0] = [999 as &i31, 888 as &i31, 777 as &i31];
+elem elem_2: &?i31 = [123 as &i31, 456 as &i31, 789 as &i31];

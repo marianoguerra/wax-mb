@@ -1,0 +1,6 @@
+import "m" fn g();
+
+#[export = "f"]
+fn f() -> &func {
+    (g as &fn(i32) -> i32);
+}

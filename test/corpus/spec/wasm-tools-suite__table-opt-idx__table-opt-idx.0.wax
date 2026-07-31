@@ -1,0 +1,25 @@
+type t = fn();
+fn f() {}
+fn f_2() {
+    _ = t[0];
+}
+fn f_3() {
+    t[0] = f;
+}
+fn f_4() {
+    _ = t.size();
+}
+fn f_5() {
+    _ = t.grow(f, 0);
+}
+fn f_6() {
+    t.fill(0, f, 0);
+}
+fn f_7() {
+    t.copy(0, 0, 0);
+}
+fn f_8() {
+    t.init(a, 0, 0, 0);
+}
+table t: &?func [1];
+elem a: &func = [f];

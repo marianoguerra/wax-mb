@@ -1,0 +1,32 @@
+type t = fn();
+fn f() 'l: {
+    br 'l;
+    'a: try {
+        br 'a;
+        br 'l;
+        'b: loop {
+            br 'a;
+            br 'b;
+            br 'l;
+            'c: do {
+                br 'a;
+                br 'b;
+                br 'c;
+                br 'l;
+                'd: if _ {
+                    br 'a;
+                    br 'b;
+                    br 'c;
+                    br 'd;
+                    br 'l;
+                } else {
+                    br 'a;
+                    br 'b;
+                    br 'c;
+                    br 'd;
+                    br 'l;
+                }
+            }
+        }
+    } catch []
+}

@@ -1,0 +1,65 @@
+type t = fn();
+fn f() {}
+fn g() {}
+table t: &?func [10];
+elem e: &?func = [];
+elem e_2: &?func = [
+        f, f, null as &?func, g
+    ];
+elem e_3: &func = [];
+elem e_4: &func = [
+        f, f, g, g
+    ];
+elem p1: &?func = [];
+elem p2: &?func = [
+        f, f, null as &?func, g
+    ];
+elem p3: &func = [];
+elem p4: &func = [
+        f, f, g, g
+    ];
+elem e_5: &?func @ t [0] = [];
+elem e_6: &?func @ t [0] = [f, null as &?func];
+elem e_7: &func @ t [0] = [];
+elem e_8: &func @ t [0] = [f, g];
+elem e_9: &?func @ t [0] = [];
+elem e_10: &func @ t [0] = [f, g];
+elem e_11: &func @ t [0] = [];
+elem e_12: &func @ t [0] = [f, f];
+elem e_13: &func @ t [0] = [];
+elem e_14: &func @ t [0] = [f, f];
+elem e_15: &func @ t [0] = [];
+elem e_16: &func @ t [0] = [f, f];
+elem e_17: &func @ t [0] = [];
+elem e_18: &func @ t [0] = [f, f];
+elem e_19: &func @ t [0] = [];
+elem e_20: &?func @ t [0] = [f, null as &?func];
+elem e_21: &func @ t [0] = [f, f];
+elem e_22: &func @ t [0] = [f, f];
+elem e_23: &func @ t [0] = [];
+elem e_24: &?func @ t [0] = [f, null as &?func];
+elem e_25: &func @ t [0] = [f, f];
+elem e_26: &func @ t [0] = [f, f];
+elem e_27: &?func @ t [0] = [f, null as &?func];
+elem a1: &?func @ t [0] = [];
+elem a2: &?func @ t [0] = [f, null as &?func];
+elem a3: &func @ t [0] = [];
+elem a4: &func @ t [0] = [f, g];
+elem a9: &?func @ t [0] = [];
+elem a10: &func @ t [0] = [f, g];
+elem a11: &func @ t [0] = [];
+elem a12: &func @ t [0] = [f, f];
+elem a13: &func @ t [0] = [];
+elem a14: &func @ t [0] = [f, f];
+elem a15: &func @ t [0] = [];
+elem a16: &func @ t [0] = [f, f];
+elem a17: &func @ t [0] = [];
+elem a18: &func @ t [0] = [f, f];
+elem a19: &func @ t [0] = [];
+elem a20: &?func @ t [0] = [f, null as &?func];
+elem a21: &func @ t [0] = [f, f];
+elem a22: &func @ t [0] = [f, f];
+elem a23: &func @ t [0] = [];
+elem a24: &?func @ t [0] = [f, null as &?func];
+elem a25: &func @ t [0] = [f, f];
+elem a26: &func @ t [0] = [f, f];

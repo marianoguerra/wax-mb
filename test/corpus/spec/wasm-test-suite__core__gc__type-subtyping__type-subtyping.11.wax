@@ -1,0 +1,14 @@
+rec {
+    type f1 = open fn();
+    type t = { f: &f1 };
+}
+rec {
+    type f2 = open fn();
+    type t_2 = { f: &f2 };
+}
+rec {
+    type g: f1 = open fn();
+    type t_3 = { };
+}
+fn g_2: g () {}
+const g = g_2;

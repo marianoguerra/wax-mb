@@ -1,0 +1,31 @@
+type t = fn();
+type t_2 = fn() -> &?any;
+type t_3 = fn() -> &?func;
+type t_4 = fn() -> &?exn;
+type t_5 = fn() -> &?extern;
+type t_6 = fn() -> &?t;
+#[export]
+fn anyref() -> &?any {
+    null;
+}
+#[export]
+fn funcref() -> &?func {
+    null;
+}
+#[export]
+fn exnref() -> &?exn {
+    null;
+}
+#[export]
+fn externref() -> &?extern {
+    null;
+}
+#[export]
+fn ref() -> &?t {
+    null;
+}
+const g: &?any = null;
+const g_2: &?func = null;
+const g_3: &?exn = null;
+const g_4: &?extern = null;
+const g_5: &?t = null;

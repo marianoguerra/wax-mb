@@ -1,0 +1,6 @@
+type null_2 = { };
+const a = "x";
+const b = "y";
+const c = "z";
+#[export = "null"]
+const null_2 = { };

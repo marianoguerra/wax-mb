@@ -1,0 +1,1 @@
+type t = fn(i32); import "spectest" fn print_i32(i32);

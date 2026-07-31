@@ -1,0 +1,383 @@
+type sig = fn(i32, i32, i32);
+type t = fn();
+type t_2 = fn() -> i32;
+type t_3 = fn() -> i64;
+type t_4 = fn() -> f32;
+type t_5 = fn() -> f64;
+type t_6 = fn(i32, i32) -> i32;
+fn dummy() {}
+fn dummy3(i32, i32, i32) {}
+#[export = "type-i32"]
+fn f() -> i32 {
+    unreachable;
+}
+#[export = "type-i64"]
+fn f_2() -> i64 {
+    unreachable;
+}
+#[export = "type-f32"]
+fn f_3() -> f32 {
+    unreachable;
+}
+#[export = "type-f64"]
+fn f_4() -> f64 {
+    unreachable;
+}
+#[export = "as-func-first"]
+fn f_5() -> i32 {
+    unreachable;
+    -1;
+}
+#[export = "as-func-mid"]
+fn f_6() -> i32 {
+    dummy();
+    unreachable;
+    -1;
+}
+#[export = "as-func-last"]
+fn f_7() {
+    dummy();
+    unreachable;
+}
+#[export = "as-func-value"]
+fn f_8() -> i32 {
+    dummy();
+    unreachable;
+}
+#[export = "as-block-first"]
+fn f_9() -> i32 {
+    do {
+        unreachable;
+        2;
+    }
+}
+#[export = "as-block-mid"]
+fn f_10() -> i32 {
+    do {
+        dummy();
+        unreachable;
+        2;
+    }
+}
+#[export = "as-block-last"]
+fn f_11() {
+    do {
+        nop;
+        dummy();
+        unreachable;
+    }
+}
+#[export = "as-block-value"]
+fn f_12() -> i32 {
+    do {
+        nop;
+        dummy();
+        unreachable;
+    }
+}
+#[export = "as-block-broke"]
+fn f_13() -> i32 {
+    'l: do {
+        dummy();
+        br 'l 1;
+        unreachable;
+    }
+}
+#[export = "as-loop-first"]
+fn f_14() -> i32 {
+    loop {
+        unreachable;
+        2;
+    }
+}
+#[export = "as-loop-mid"]
+fn f_15() -> i32 {
+    loop {
+        dummy();
+        unreachable;
+        2;
+    }
+}
+#[export = "as-loop-last"]
+fn f_16() {
+    loop {
+        nop;
+        dummy();
+        unreachable;
+    }
+}
+#[export = "as-loop-broke"]
+fn f_17() -> i32 {
+    'l: do {
+        loop i32 {
+            dummy();
+            br 'l 1;
+            unreachable;
+        }
+    }
+}
+#[export = "as-br-value"]
+fn f_18() -> i32 {
+    'l: do {
+        unreachable;
+        br 'l _;
+    }
+}
+#[export = "as-br_if-cond"]
+fn f_19() {
+    'l: do {
+        unreachable;
+        br_if 'l _;
+    }
+}
+#[export = "as-br_if-value"]
+fn f_20() -> i32 {
+    'l: do {
+        unreachable;
+        _ = br_if 'l (_, 1);
+        7;
+    }
+}
+#[export = "as-br_if-value-cond"]
+fn f_21() -> i32 {
+    'l: do {
+        6;
+        unreachable;
+        _ = br_if 'l (_, _);
+        7;
+    }
+}
+#[export = "as-br_table-index"]
+fn f_22() {
+    'l: do {
+        unreachable;
+        br_table [ 'l, 'l, else 'l ] _;
+    }
+}
+#[export = "as-br_table-value"]
+fn f_23() -> i32 {
+    'l: do {
+        unreachable;
+        br_table [ 'l, 'l, else 'l ] (_, 1);
+        7;
+    }
+}
+#[export = "as-br_table-value-2"]
+fn f_24() -> i32 {
+    'l: do {
+        'l_2: do i32 {
+            unreachable;
+            br_table [ 'l_2, else 'l ] (_, 1);
+        }
+    }
+}
+#[export = "as-br_table-value-index"]
+fn f_25() -> i32 {
+    'l: do {
+        6;
+        unreachable;
+        br_table [ 'l, else 'l ] (_, _);
+        7;
+    }
+}
+#[export = "as-br_table-value-and-index"]
+fn f_26() -> i32 {
+    'l: do {
+        unreachable;
+        br_table [ 'l, else 'l ] (_, _);
+        8;
+    }
+}
+#[export = "as-return-value"]
+fn f_27() -> i64 {
+    unreachable;
+    return _;
+}
+#[export = "as-if-cond"]
+fn f_28() -> i32 {
+    unreachable;
+    if _ => i32 {
+        0;
+    } else {
+        1;
+    }
+}
+#[export = "as-if-then"]
+fn f_29(x: i32, x_2: i32) -> i32 {
+    if x {
+        unreachable;
+    } else {
+        x_2;
+    }
+}
+#[export = "as-if-else"]
+fn f_30(x: i32, x_2: i32) -> i32 {
+    if x {
+        x_2;
+    } else {
+        unreachable;
+    }
+}
+#[export = "as-if-then-no-else"]
+fn f_31(x: i32, x_2: i32) -> i32 {
+    if x {
+        unreachable;
+    }
+    x_2;
+}
+#[export = "as-select-first"]
+fn f_32(x: i32, x_2: i32) -> i32 {
+    unreachable;
+    x_2?_:x;
+}
+#[export = "as-select-second"]
+fn f_33(x: i32, x_2: i32) -> i32 {
+    x;
+    unreachable;
+    x_2?_:_;
+}
+#[export = "as-select-cond"]
+fn f_34() -> i32 {
+    0;
+    1;
+    unreachable;
+    _?_:_;
+}
+#[export = "as-call-first"]
+fn f_35() {
+    unreachable;
+    dummy3(_, 2, 3);
+}
+#[export = "as-call-mid"]
+fn f_36() {
+    1;
+    unreachable;
+    dummy3(_, _, 3);
+}
+#[export = "as-call-last"]
+fn f_37() {
+    1;
+    2;
+    unreachable;
+    dummy3(_, _, _);
+}
+#[export = "as-call_indirect-func"]
+fn f_38() {
+    unreachable;
+    (t[3] as &?sig)(_, 1, 2);
+}
+#[export = "as-call_indirect-first"]
+fn f_39() {
+    0;
+    unreachable;
+    (t[3] as &?sig)(_, _, 2);
+}
+#[export = "as-call_indirect-mid"]
+fn f_40() {
+    0;
+    1;
+    unreachable;
+    (t[3] as &?sig)(_, _, _);
+}
+#[export = "as-call_indirect-last"]
+fn f_41() {
+    0;
+    1;
+    2;
+    unreachable;
+    (t[_] as &?sig)(_, _, _);
+}
+#[export = "as-local.set-value"]
+fn f_42() {
+    unreachable;
+    let x: f32 = _;
+}
+#[export = "as-local.tee-value"]
+fn f_43() -> f32 {
+    unreachable;
+    let x: f32;
+    x := _;
+}
+#[export = "as-global.set-value"]
+fn f_44() -> f32 {
+    unreachable;
+    a = _;
+}
+#[export = "as-load-address"]
+fn f_45() -> f32 {
+    unreachable;
+    m.loadf32(_);
+}
+#[export = "as-loadN-address"]
+fn f_46() -> i64 {
+    unreachable;
+    m.load8(_) as i64_s;
+}
+#[export = "as-store-address"]
+fn f_47() {
+    unreachable;
+    m.storef64(_, 0x1.cp+2);
+}
+#[export = "as-store-value"]
+fn f_48() {
+    2;
+    unreachable;
+    m.store64(_, _);
+}
+#[export = "as-storeN-address"]
+fn f_49() {
+    unreachable;
+    m.store8(_, 7);
+}
+#[export = "as-storeN-value"]
+fn f_50() {
+    2;
+    unreachable;
+    m.store16(_, _ as i64);
+}
+#[export = "as-unary-operand"]
+fn f_51() -> f32 {
+    unreachable;
+    -(_ as f32);
+}
+#[export = "as-binary-left"]
+fn f_52() -> i32 {
+    unreachable;
+    _ + 10;
+}
+#[export = "as-binary-right"]
+fn f_53() -> i64 {
+    10 as i64;
+    unreachable;
+    _ - _;
+}
+#[export = "as-test-operand"]
+fn f_54() -> i32 {
+    unreachable;
+    !(_ as i32);
+}
+#[export = "as-compare-left"]
+fn f_55() -> i32 {
+    unreachable;
+    _ <= 0x1.4p+3;
+}
+#[export = "as-compare-right"]
+fn f_56() -> i32 {
+    0x1.4p+3 as f32;
+    unreachable;
+    _ as f32 != _;
+}
+#[export = "as-convert-operand"]
+fn f_57() -> i32 {
+    unreachable;
+    _ as i64 as i32;
+}
+#[export = "as-memory.grow-size"]
+fn f_58() -> i32 {
+    unreachable;
+    m.grow(_);
+}
+table t: &?func [1, 1];
+memory m: i32 [1];
+let a: f32 = 0x0p+0;
+elem e: &func @ t [0] = [dummy3];

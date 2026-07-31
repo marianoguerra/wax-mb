@@ -1,0 +1,759 @@
+type check = fn(i32, i32) -> i32;
+type t = fn();
+type t_2 = fn() -> i32;
+type t_3 = fn(i32);
+type t_4 = fn(i32, f64, i32) -> (i32, f64, i32);
+type t_5 = fn(i32) -> i32;
+type t_6 = fn(i32) -> (i32, i32);
+type t_7 = fn() -> (i32, i64, i32);
+type t_8 = fn() -> (i32, i32);
+type t_9 = fn() -> (f32, f32);
+type t_10 = fn(i32) -> (i32, i32, i64);
+type t_11 = fn() -> (i32, i32, i64);
+type t_12 = fn(i32, i32) -> (i32, i32);
+type t_13 = fn(i64, i64, i32) -> (i64, i32);
+type t_14 = fn(i64, i64) -> i64;
+type t_15 = fn(i64) -> i64;
+fn dummy() {}
+#[export]
+fn empty(x: i32) {
+    if x {}
+    if x {}
+    'l: if x {}
+    'l_1: if x {}
+}
+#[export]
+fn singular(x: i32) -> i32 {
+    if x {
+        nop;
+    }
+    if x {
+        nop;
+    } else {
+        nop;
+    }
+    if x {
+        7;
+    } else {
+        8;
+    }
+}
+#[export]
+fn multi(x: i32) -> (i32, i32) {
+    if x {
+        dummy();
+        dummy();
+        dummy();
+    }
+    if x {
+    } else {
+        dummy();
+        dummy();
+        dummy();
+    }
+    if x => i32 {
+        dummy();
+        dummy();
+        8;
+        dummy();
+    } else {
+        dummy();
+        dummy();
+        9;
+        dummy();
+    }
+    if x => () -> (i32, i64, i32) {
+        dummy();
+        dummy();
+        1;
+        dummy();
+        dummy();
+        dummy();
+        2;
+        dummy();
+        dummy();
+        dummy();
+        3;
+        dummy();
+    } else {
+        dummy();
+        dummy();
+        -1;
+        dummy();
+        dummy();
+        dummy();
+        -2;
+        dummy();
+        dummy();
+        dummy();
+        -3;
+        dummy();
+    }
+    _ = _;
+    _ = _;
+}
+#[export]
+fn nested(x: i32, x_2: i32) -> i32 {
+    if x {
+        if x_2 {
+            dummy();
+            do {}
+            nop;
+        }
+        if x_2 {
+        } else {
+            dummy();
+            do {}
+            nop;
+        }
+        if x_2 {
+            dummy();
+            9;
+        } else {
+            dummy();
+            10;
+        }
+    } else {
+        if x_2 {
+            dummy();
+            do {}
+            nop;
+        }
+        if x_2 {
+        } else {
+            dummy();
+            do {}
+            nop;
+        }
+        if x_2 {
+            dummy();
+            10;
+        } else {
+            dummy();
+            11;
+        }
+    }
+}
+#[export = "as-select-first"]
+fn f(x: i32) -> i32 {
+    3
+        ?if x {
+             dummy();
+             1;
+         } else {
+             dummy();
+             0;
+         }:2;
+}
+#[export = "as-select-mid"]
+fn f_2(x: i32) -> i32 {
+    3?2
+        :if x {
+             dummy();
+             1;
+         } else {
+             dummy();
+             0;
+         };
+}
+#[export = "as-select-last"]
+fn f_3(x: i32) -> i32 {
+    (if x {
+         dummy();
+         1;
+     } else {
+         dummy();
+         0;
+     }?2:3);
+}
+#[export = "as-loop-first"]
+fn f_4(x: i32) -> i32 {
+    loop {
+        if x => i32 {
+            dummy();
+            1;
+        } else {
+            dummy();
+            0;
+        }
+        dummy();
+        dummy();
+    }
+}
+#[export = "as-loop-mid"]
+fn f_5(x: i32) -> i32 {
+    loop {
+        dummy();
+        if x => i32 {
+            dummy();
+            1;
+        } else {
+            dummy();
+            0;
+        }
+        dummy();
+    }
+}
+#[export = "as-loop-last"]
+fn f_6(x: i32) -> i32 {
+    loop {
+        dummy();
+        dummy();
+        if x {
+            dummy();
+            1;
+        } else {
+            dummy();
+            0;
+        }
+    }
+}
+#[export = "as-if-condition"]
+fn f_7(x: i32) -> i32 {
+    if
+        if x {
+            1;
+        } else {
+            0;
+        } {
+        dummy();
+        2;
+    } else {
+        dummy();
+        3;
+    }
+}
+#[export = "as-br_if-first"]
+fn f_8(x: i32) -> i32 {
+    'l: do {
+        br_if 'l
+            (if x {
+                 dummy();
+                 1;
+             } else {
+                 dummy();
+                 0;
+             }, 2);
+        return 3;
+    }
+}
+#[export = "as-br_if-last"]
+fn f_9(x: i32) -> i32 {
+    'l: do {
+        br_if 'l
+            (2,
+             if x {
+                 dummy();
+                 1;
+             } else {
+                 dummy();
+                 0;
+             });
+        return 3;
+    }
+}
+#[export = "as-br_table-first"]
+fn f_10(x: i32) -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ]
+            (if x {
+                 dummy();
+                 1;
+             } else {
+                 dummy();
+                 0;
+             }, 2);
+    }
+}
+#[export = "as-br_table-last"]
+fn f_11(x: i32) -> i32 {
+    'l: do {
+        br_table [ 'l, else 'l ]
+            (2,
+             if x {
+                 dummy();
+                 1;
+             } else {
+                 dummy();
+                 0;
+             });
+    }
+}
+fn func(x: i32, i32) -> i32 {
+    x;
+}
+#[export = "as-call_indirect-first"]
+fn f_12(x: i32) -> i32 {
+    do {
+        (t[0] as &?check)(
+            if x {
+                dummy();
+                1;
+            } else {
+                dummy();
+                0;
+            },
+            2,
+        );
+    }
+}
+#[export = "as-call_indirect-mid"]
+fn f_13(x: i32) -> i32 {
+    do {
+        (t[0] as &?check)(
+            2,
+            if x {
+                dummy();
+                1;
+            } else {
+                dummy();
+                0;
+            },
+        );
+    }
+}
+#[export = "as-call_indirect-last"]
+fn f_14(x: i32) -> i32 {
+    do {
+        (t
+             [if x {
+                  dummy();
+                  1;
+              } else {
+                  dummy();
+                  0;
+              }] as &?check)(
+            2,
+            0,
+        );
+    }
+}
+#[export = "as-store-first"]
+fn f_15(x: i32) {
+    m.store32(
+        if x {
+            dummy();
+            1;
+        } else {
+            dummy();
+            0;
+        },
+        2,
+    );
+}
+#[export = "as-store-last"]
+fn f_16(x: i32) {
+    m.store32(
+        2,
+        if x {
+            dummy();
+            1;
+        } else {
+            dummy();
+            0;
+        },
+    );
+}
+#[export = "as-memory.grow-value"]
+fn f_17(x: i32) -> i32 {
+    m.grow(
+        if x {
+            1;
+        } else {
+            0;
+        },
+    );
+}
+fn f_18(x: i32) -> i32 {
+    x;
+}
+#[export = "as-call-value"]
+fn f_19(x: i32) -> i32 {
+    f_18(
+        if x {
+            1;
+        } else {
+            0;
+        },
+    );
+}
+#[export = "as-return-value"]
+fn f_20(x: i32) -> i32 {
+    return
+        if x {
+            1;
+        } else {
+            0;
+        };
+}
+#[export = "as-drop-operand"]
+fn f_21(x: i32) {
+    _ =
+        if x {
+            1;
+        } else {
+            0;
+        };
+}
+#[export = "as-br-value"]
+fn f_22(x: i32) -> i32 {
+    'l: do {
+        br 'l
+            if x {
+                1;
+            } else {
+                0;
+            };
+    }
+}
+#[export = "as-local.set-value"]
+fn f_23(x: i32) -> i32 {
+    let x_2: i32;
+    x =
+        if x {
+            1;
+        } else {
+            0;
+        };
+    x;
+}
+#[export = "as-local.tee-value"]
+fn f_24(x: i32) -> i32 {
+    x :=
+        if x {
+            1;
+        } else {
+            0;
+        };
+}
+#[export = "as-global.set-value"]
+fn f_25(x: i32) -> i32 {
+    a =
+        if x {
+            1;
+        } else {
+            0;
+        };
+    a;
+}
+#[export = "as-load-operand"]
+fn f_26(x: i32) -> i32 {
+    m.load32(
+        if x {
+            11;
+        } else {
+            10;
+        },
+    );
+}
+#[export = "as-unary-operand"]
+fn f_27(x: i32) -> i32 {
+    (if x {
+         dummy();
+         13;
+     } else {
+         dummy();
+         -13;
+     }.ctz());
+}
+#[export = "as-binary-operand"]
+fn f_28(x: i32, x_2: i32) -> i32 {
+    (if x {
+         dummy();
+         3;
+     } else {
+         dummy();
+         -3;
+     }
+         * if x_2 {
+               dummy();
+               4;
+           } else {
+               dummy();
+               -5;
+           });
+}
+#[export = "as-test-operand"]
+fn f_29(x: i32) -> i32 {
+    (!if x {
+          dummy();
+          13;
+      } else {
+          dummy();
+          0;
+      });
+}
+#[export = "as-compare-operand"]
+fn f_30(x: i32, x_2: i32) -> i32 {
+    (if x => f32 {
+         dummy();
+         0x1.8p+1;
+     } else {
+         dummy();
+         -0x1.8p+1;
+     }
+         > if x_2 => f32 {
+               dummy();
+               0x1p+2;
+           } else {
+               dummy();
+               -0x1p+2;
+           });
+}
+#[export = "as-binary-operands"]
+fn f_31(x: i32) -> i32 {
+    if x => () -> (i32, i32) {
+        dummy();
+        3;
+        dummy();
+        4;
+    } else {
+        dummy();
+        3;
+        dummy();
+        -4;
+    }
+    _ * _;
+}
+#[export = "as-compare-operands"]
+fn f_32(x: i32) -> i32 {
+    if x => () -> (f32, f32) {
+        dummy();
+        0x1.8p+1;
+        dummy();
+        0x1.8p+1;
+    } else {
+        dummy();
+        -0x1p+1;
+        dummy();
+        -0x1.8p+1;
+    }
+    _ > _;
+}
+#[export = "as-mixed-operands"]
+fn f_33(x: i32) -> i32 {
+    if x => () -> (i32, i32) {
+        dummy();
+        3;
+        dummy();
+        4;
+    } else {
+        dummy();
+        -3;
+        dummy();
+        -4;
+    }
+    _ * (_ + 5);
+}
+#[export = "break-bare"]
+fn f_34() -> i32 {
+    'l: if 1 {
+        br 'l;
+        unreachable;
+    }
+    'l: if 1 {
+        br 'l;
+        unreachable;
+    } else {
+        unreachable;
+    }
+    'l: if 0 {
+        unreachable;
+    } else {
+        br 'l;
+        unreachable;
+    }
+    'l: if 1 {
+        br_if 'l 1;
+        unreachable;
+    }
+    'l: if 1 {
+        br_if 'l 1;
+        unreachable;
+    } else {
+        unreachable;
+    }
+    'l: if 0 {
+        unreachable;
+    } else {
+        br_if 'l 1;
+        unreachable;
+    }
+    'l: if 1 {
+        br_table [ else 'l ] 0;
+        unreachable;
+    }
+    'l: if 1 {
+        br_table [ else 'l ] 0;
+        unreachable;
+    } else {
+        unreachable;
+    }
+    'l: if 0 {
+        unreachable;
+    } else {
+        br_table [ else 'l ] 0;
+        unreachable;
+    }
+    19;
+}
+#[export = "break-value"]
+fn f_35(x: i32) -> i32 {
+    'l: if x {
+        br 'l 18;
+        19;
+    } else {
+        br 'l 21;
+        20;
+    }
+}
+#[export = "break-multi-value"]
+fn f_36(x: i32) -> (i32, i32, i64) {
+    'l: if x => () -> (i32, i32, i64) {
+        br 'l (18, -18, 18);
+        19;
+        -19;
+        19;
+    } else {
+        br 'l (-18, 18, -18);
+        -19;
+        19;
+        -19;
+    }
+}
+#[export]
+fn param(x: i32) -> i32 {
+    1;
+    if x => (i32) -> i32 {
+        _ + 2;
+    } else {
+        _ + -2;
+    }
+}
+#[export]
+fn params(x: i32) -> i32 {
+    1;
+    2;
+    if x => (i32, i32) -> i32 {
+        _ + _;
+    } else {
+        _ - _;
+    }
+}
+#[export = "params-id"]
+fn f_37(x: i32) -> i32 {
+    1;
+    2;
+    if x => (i32, i32) -> (i32, i32) {}
+    _ + _;
+}
+#[export = "param-break"]
+fn f_38(x: i32) -> i32 {
+    1;
+    'l: if x => (i32) -> i32 {
+        br 'l _ + 2;
+    } else {
+        br 'l _ + -2;
+    }
+}
+#[export = "params-break"]
+fn f_39(x: i32) -> i32 {
+    1;
+    2;
+    'l: if x => (i32, i32) -> i32 {
+        br 'l _ + _;
+    } else {
+        br 'l _ - _;
+    }
+}
+#[export = "params-id-break"]
+fn f_40(x: i32) -> i32 {
+    1;
+    2;
+    'l: if x => (i32, i32) -> (i32, i32) {
+        br 'l (_, _);
+    }
+    _ + _;
+}
+#[export]
+fn effects(x: i32) -> i32 {
+    let x_2: i32;
+    'l: if
+        do i32 {
+            x_2 = 1;
+            x;
+        } {
+        x_2 *= 3;
+        x_2 -= 5;
+        x_2 *= 7;
+        br 'l;
+        x_2 *= 100;
+    } else {
+        x_2 *= 5;
+        x_2 -= 7;
+        x_2 *= 3;
+        br 'l;
+        x_2 *= 1000;
+    }
+    x_2;
+}
+#[export]
+fn add64_u_with_carry(i: i64, j: i64, c: i32) -> (i64, i32) {
+    let k = i + j + c as i64_u;
+    return (k, k <u i);
+}
+#[export]
+fn add64_u_saturated(x: i64, x_2: i64) -> i64 {
+    add64_u_with_carry(x, x_2, 0);
+    if _ => (i64) -> i64 {
+        _ = _;
+        -1;
+    }
+}
+#[export = "type-use"]
+fn f_41() {
+    if 1 {}
+    if 1 => i32 {
+        0;
+    } else {
+        2;
+    }
+    if 1 => (i32) {
+        _ = _;
+    } else {
+        _ = _;
+    }
+    0;
+    0x0p+0;
+    0;
+    if 1 => (i32, f64, i32) -> (i32, f64, i32) {}
+    _ = _;
+    _ = _;
+    _ = _;
+    if 1 => i32 {
+        0;
+    } else {
+        2;
+    }
+    if 1 => (i32) {
+        _ = _;
+    } else {
+        _ = _;
+    }
+    0;
+    0x0p+0;
+    0;
+    if 1 => (i32, f64, i32) -> (i32, f64, i32) {}
+    _ = _;
+    _ = _;
+    _ = _;
+}
+#[export = "atypical-condition"]
+fn f_42() {
+    if 0 {}
+    if !1 {}
+}
+table t: &?func [1, 1];
+memory m: i32 [1];
+let a = 10;
+elem e: &func @ t [0] = [func];

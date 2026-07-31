@@ -1,0 +1,11 @@
+tag e();
+#[export]
+fn f() -> i32 {
+    'h: do {
+        return
+            try {
+                5;
+            } catch [ _ -> 'h];
+    }
+    7;
+}

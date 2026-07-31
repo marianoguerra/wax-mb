@@ -1,0 +1,4 @@
+#![module = "generator"]
+type t = fn(i32);
+#[export]
+tag yield: t ;

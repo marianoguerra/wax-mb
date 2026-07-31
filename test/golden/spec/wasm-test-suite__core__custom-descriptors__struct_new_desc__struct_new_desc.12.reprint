@@ -1,0 +1,10 @@
+#![feature = "custom-descriptors"]
+rec {
+    type struct_2 = { f: i32 };
+    type a = descriptor b { f: i32 };
+    type b = describes a { };
+}
+type t = fn() -> &?any;
+fn f() -> &?any {
+    { descriptor({ })| .. };
+}

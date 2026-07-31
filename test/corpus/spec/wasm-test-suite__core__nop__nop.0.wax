@@ -1,0 +1,648 @@
+type check = fn(i32, i32) -> i32;
+type t = fn();
+type t_2 = fn(i32, i32, i32) -> i32;
+type t_3 = fn() -> i32;
+type t_4 = fn(i32);
+type t_5 = fn(i32) -> i32;
+type t_6 = fn(i32, i32);
+fn dummy() {}
+fn f(x: i32, x_2: i32, x_3: i32) -> i32 {
+    x + (x_2 - x_3);
+}
+#[export = "as-func-first"]
+fn f_2() -> i32 {
+    nop;
+    1;
+}
+#[export = "as-func-mid"]
+fn f_3() -> i32 {
+    dummy();
+    nop;
+    2;
+}
+#[export = "as-func-last"]
+fn f_4() -> i32 {
+    dummy();
+    3;
+    nop;
+}
+#[export = "as-func-everywhere"]
+fn f_5() -> i32 {
+    nop;
+    nop;
+    dummy();
+    nop;
+    4;
+    nop;
+    nop;
+}
+#[export = "as-drop-first"]
+fn f_6(x: i32) {
+    nop;
+    _ = x;
+}
+#[export = "as-drop-last"]
+fn f_7(x: i32) {
+    x;
+    nop;
+    _ = _;
+}
+#[export = "as-drop-everywhere"]
+fn f_8(x: i32) {
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    _ = _;
+}
+#[export = "as-select-first"]
+fn f_9(x: i32) -> i32 {
+    nop;
+    x?x:x;
+}
+#[export = "as-select-mid1"]
+fn f_10(x: i32) -> i32 {
+    x;
+    nop;
+    x?_:x;
+}
+#[export = "as-select-mid2"]
+fn f_11(x: i32) -> i32 {
+    x;
+    x;
+    nop;
+    x?_:_;
+}
+#[export = "as-select-last"]
+fn f_12(x: i32) -> i32 {
+    x;
+    x;
+    x;
+    nop;
+    _?_:_;
+}
+#[export = "as-select-everywhere"]
+fn f_13(x: i32) -> i32 {
+    nop;
+    x;
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    _?_:_;
+}
+#[export = "as-block-first"]
+fn f_14() -> i32 {
+    do {
+        nop;
+        2;
+    }
+}
+#[export = "as-block-mid"]
+fn f_15() -> i32 {
+    do {
+        dummy();
+        nop;
+        2;
+    }
+}
+#[export = "as-block-last"]
+fn f_16() -> i32 {
+    do {
+        nop;
+        dummy();
+        3;
+        nop;
+    }
+}
+#[export = "as-block-everywhere"]
+fn f_17() -> i32 {
+    do {
+        nop;
+        nop;
+        dummy();
+        nop;
+        4;
+        nop;
+        nop;
+    }
+}
+#[export = "as-loop-first"]
+fn f_18() -> i32 {
+    loop {
+        nop;
+        2;
+    }
+}
+#[export = "as-loop-mid"]
+fn f_19() -> i32 {
+    loop {
+        dummy();
+        nop;
+        2;
+    }
+}
+#[export = "as-loop-last"]
+fn f_20() -> i32 {
+    loop {
+        dummy();
+        3;
+        nop;
+    }
+}
+#[export = "as-loop-everywhere"]
+fn f_21() -> i32 {
+    loop {
+        nop;
+        nop;
+        dummy();
+        nop;
+        4;
+        nop;
+        nop;
+    }
+}
+#[export = "as-if-condition"]
+fn f_22(x: i32) {
+    x;
+    nop;
+    if _ {
+        dummy();
+    }
+}
+#[export = "as-if-then"]
+fn f_23(x: i32) {
+    if x {
+        nop;
+    } else {
+        dummy();
+    }
+}
+#[export = "as-if-else"]
+fn f_24(x: i32) {
+    if x {
+        dummy();
+    } else {
+        nop;
+    }
+}
+#[export = "as-br-first"]
+fn f_25(x: i32) -> i32 {
+    'l: do {
+        nop;
+        br 'l x;
+    }
+}
+#[export = "as-br-last"]
+fn f_26(x: i32) -> i32 {
+    'l: do {
+        x;
+        nop;
+        br 'l _;
+    }
+}
+#[export = "as-br-everywhere"]
+fn f_27(x: i32) -> i32 {
+    'l: do {
+        nop;
+        nop;
+        x;
+        nop;
+        nop;
+        br 'l _;
+    }
+}
+#[export = "as-br_if-first"]
+fn f_28(x: i32) -> i32 {
+    'l: do {
+        nop;
+        br_if 'l (x, x);
+    }
+}
+#[export = "as-br_if-mid"]
+fn f_29(x: i32) -> i32 {
+    'l: do {
+        x;
+        nop;
+        br_if 'l (_, x);
+    }
+}
+#[export = "as-br_if-last"]
+fn f_30(x: i32) -> i32 {
+    'l: do {
+        x;
+        x;
+        nop;
+        br_if 'l (_, _);
+    }
+}
+#[export = "as-br_if-everywhere"]
+fn f_31(x: i32) -> i32 {
+    'l: do {
+        nop;
+        nop;
+        x;
+        nop;
+        nop;
+        x;
+        nop;
+        nop;
+        br_if 'l (_, _);
+    }
+}
+#[export = "as-br_table-first"]
+fn f_32(x: i32) -> i32 {
+    'l: do {
+        nop;
+        br_table [ 'l, else 'l ] (x, x);
+    }
+}
+#[export = "as-br_table-mid"]
+fn f_33(x: i32) -> i32 {
+    'l: do {
+        x;
+        nop;
+        br_table [ 'l, else 'l ] (_, x);
+    }
+}
+#[export = "as-br_table-last"]
+fn f_34(x: i32) -> i32 {
+    'l: do {
+        x;
+        x;
+        nop;
+        br_table [ 'l, else 'l ] (_, _);
+    }
+}
+#[export = "as-br_table-everywhere"]
+fn f_35(x: i32) -> i32 {
+    'l: do {
+        nop;
+        nop;
+        x;
+        nop;
+        nop;
+        x;
+        nop;
+        nop;
+        br_table [ 'l, else 'l ] (_, _);
+    }
+}
+#[export = "as-return-first"]
+fn f_36(x: i32) -> i32 {
+    nop;
+    return x;
+}
+#[export = "as-return-last"]
+fn f_37(x: i32) -> i32 {
+    x;
+    nop;
+    return _;
+}
+#[export = "as-return-everywhere"]
+fn f_38(x: i32) -> i32 {
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    return _;
+}
+#[export = "as-call-first"]
+fn f_39(x: i32, x_2: i32, x_3: i32) -> i32 {
+    nop;
+    f(x, x_2, x_3);
+}
+#[export = "as-call-mid1"]
+fn f_40(x: i32, x_2: i32, x_3: i32) -> i32 {
+    x;
+    nop;
+    f(_, x_2, x_3);
+}
+#[export = "as-call-mid2"]
+fn f_41(x: i32, x_2: i32, x_3: i32) -> i32 {
+    x;
+    x_2;
+    nop;
+    f(_, _, x_3);
+}
+#[export = "as-call-last"]
+fn f_42(x: i32, x_2: i32, x_3: i32) -> i32 {
+    x;
+    x_2;
+    x_3;
+    nop;
+    f(_, _, _);
+}
+#[export = "as-call-everywhere"]
+fn f_43(x: i32, x_2: i32, x_3: i32) -> i32 {
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    x_2;
+    nop;
+    nop;
+    x_3;
+    nop;
+    nop;
+    f(_, _, _);
+}
+#[export = "as-unary-first"]
+fn f_44(x: i32) -> i32 {
+    nop;
+    x.ctz();
+}
+#[export = "as-unary-last"]
+fn f_45(x: i32) -> i32 {
+    x;
+    nop;
+    _.ctz();
+}
+#[export = "as-unary-everywhere"]
+fn f_46(x: i32) -> i32 {
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    _.ctz();
+}
+#[export = "as-binary-first"]
+fn f_47(x: i32) -> i32 {
+    nop;
+    x + x;
+}
+#[export = "as-binary-mid"]
+fn f_48(x: i32) -> i32 {
+    x;
+    nop;
+    _ + x;
+}
+#[export = "as-binary-last"]
+fn f_49(x: i32) -> i32 {
+    x;
+    x;
+    nop;
+    _ + _;
+}
+#[export = "as-binary-everywhere"]
+fn f_50(x: i32) -> i32 {
+    nop;
+    x;
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    _ + _;
+}
+#[export = "as-test-first"]
+fn f_51(x: i32) -> i32 {
+    nop;
+    !x;
+}
+#[export = "as-test-last"]
+fn f_52(x: i32) -> i32 {
+    x;
+    nop;
+    !_;
+}
+#[export = "as-test-everywhere"]
+fn f_53(x: i32) -> i32 {
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    !_;
+}
+#[export = "as-compare-first"]
+fn f_54(x: i32) -> i32 {
+    nop;
+    x != x;
+}
+#[export = "as-compare-mid"]
+fn f_55(x: i32) -> i32 {
+    x;
+    nop;
+    _ != x;
+}
+#[export = "as-compare-last"]
+fn f_56(x: i32) -> i32 {
+    x;
+    x;
+    nop;
+    _ <u _;
+}
+#[export = "as-compare-everywhere"]
+fn f_57(x: i32) -> i32 {
+    nop;
+    x;
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    _ <=s _;
+}
+#[export = "as-memory.grow-first"]
+fn f_58(x: i32) -> i32 {
+    nop;
+    m.grow(x);
+}
+#[export = "as-memory.grow-last"]
+fn f_59(x: i32) -> i32 {
+    x;
+    nop;
+    m.grow(_);
+}
+#[export = "as-memory.grow-everywhere"]
+fn f_60(x: i32) -> i32 {
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    m.grow(_);
+}
+fn func(x: i32, i32) -> i32 {
+    x;
+}
+#[export = "as-call_indirect-first"]
+fn f_61() -> i32 {
+    do {
+        nop;
+        (t[0] as &?check)(1, 2);
+    }
+}
+#[export = "as-call_indirect-mid1"]
+fn f_62() -> i32 {
+    do {
+        1;
+        nop;
+        (t[0] as &?check)(_, 2);
+    }
+}
+#[export = "as-call_indirect-mid2"]
+fn f_63() -> i32 {
+    do {
+        1;
+        2;
+        nop;
+        (t[0] as &?check)(_, _);
+    }
+}
+#[export = "as-call_indirect-last"]
+fn f_64() -> i32 {
+    do {
+        1;
+        2;
+        0;
+        nop;
+        (t[_] as &?check)(_, _);
+    }
+}
+#[export = "as-call_indirect-everywhere"]
+fn f_65() -> i32 {
+    do {
+        nop;
+        nop;
+        1;
+        nop;
+        nop;
+        2;
+        nop;
+        nop;
+        0;
+        nop;
+        nop;
+        (t[_] as &?check)(_, _);
+    }
+}
+#[export = "as-local.set-first"]
+fn f_66(x: i32) -> i32 {
+    nop;
+    x = 2;
+    x;
+}
+#[export = "as-local.set-last"]
+fn f_67(x: i32) -> i32 {
+    2;
+    nop;
+    x = _;
+    x;
+}
+#[export = "as-local.set-everywhere"]
+fn f_68(x: i32) -> i32 {
+    nop;
+    nop;
+    2;
+    nop;
+    nop;
+    x = _;
+    x;
+}
+#[export = "as-local.tee-first"]
+fn f_69(x: i32) -> i32 {
+    nop;
+    x := 2;
+}
+#[export = "as-local.tee-last"]
+fn f_70(x: i32) -> i32 {
+    2;
+    nop;
+    x := _;
+}
+#[export = "as-local.tee-everywhere"]
+fn f_71(x: i32) -> i32 {
+    nop;
+    nop;
+    2;
+    nop;
+    nop;
+    x := _;
+}
+#[export = "as-global.set-first"]
+fn f_72() -> i32 {
+    nop;
+    a = 2;
+    a;
+}
+#[export = "as-global.set-last"]
+fn f_73() -> i32 {
+    2;
+    nop;
+    a = _;
+    a;
+}
+#[export = "as-global.set-everywhere"]
+fn f_74() -> i32 {
+    nop;
+    nop;
+    2;
+    nop;
+    nop;
+    a = _;
+    a;
+}
+#[export = "as-load-first"]
+fn f_75(x: i32) -> i32 {
+    nop;
+    m.load32(x);
+}
+#[export = "as-load-last"]
+fn f_76(x: i32) -> i32 {
+    x;
+    nop;
+    m.load32(_);
+}
+#[export = "as-load-everywhere"]
+fn f_77(x: i32) -> i32 {
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    m.load32(_);
+}
+#[export = "as-store-first"]
+fn f_78(x: i32, x_2: i32) {
+    nop;
+    m.store32(x, x_2);
+}
+#[export = "as-store-mid"]
+fn f_79(x: i32, x_2: i32) {
+    x;
+    nop;
+    m.store32(_, x_2);
+}
+#[export = "as-store-last"]
+fn f_80(x: i32, x_2: i32) {
+    x;
+    x_2;
+    nop;
+    m.store32(_, _);
+}
+#[export = "as-store-everywhere"]
+fn f_81(x: i32, x_2: i32) {
+    nop;
+    nop;
+    x;
+    nop;
+    nop;
+    x_2;
+    nop;
+    nop;
+    m.store32(_, _);
+}
+table t: &?func [1, 1];
+memory m: i32 [1];
+let a = 0;
+elem e: &func @ t [0] = [func];

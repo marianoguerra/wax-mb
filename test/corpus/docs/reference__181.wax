@@ -1,0 +1,2 @@
+#[likely] if cond { ... } else { ... }
+#[unlikely] br_if 'l cond

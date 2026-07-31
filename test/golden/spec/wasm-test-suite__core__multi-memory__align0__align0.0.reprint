@@ -1,0 +1,33 @@
+type t = fn(i32) -> f32;
+#[export]
+fn f32_align_switch(x: i32) -> f32 {
+    let x_2: f32 = 0x1.4p+3;
+    let x_3: f32;
+    dispatch x [ '_0, 'default, '_1, '_2, else '_4 ] {
+        '_0: {
+            mem1.storef32(0, x_2);
+            x_3 = mem1.loadf32(0);
+            br '_4;
+        }
+        'default: {
+            mem1.storef32(0, x_2, align: 1);
+            x_3 = mem1.loadf32(0, align: 1);
+            br '_4;
+        }
+        '_1: {
+            mem1.storef32(0, x_2, align: 2);
+            x_3 = mem1.loadf32(0, align: 2);
+            br '_4;
+        }
+        '_2: {
+            mem1.storef32(0, x_2);
+            x_3 = mem1.loadf32(0);
+        }
+        '_4: {
+            x_3;
+        }
+    }
+}
+memory mem0: i32 [0];
+memory mem1: i32 [1];
+memory mem2: i32 [0];

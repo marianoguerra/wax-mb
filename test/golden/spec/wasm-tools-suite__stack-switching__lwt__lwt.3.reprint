@@ -1,0 +1,129 @@
+#![module = "scheduler"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(&cont_2);
+type t_2 = fn() -> i32;
+type t_3 = fn() -> &?cont_2;
+type t_4 = fn(&?cont_2);
+type t_5 = fn() -> (&cont_2, &cont_2);
+import "lwt" {
+    tag yield: func_2 ;
+    tag fork: t ;
+}
+import "queue" {
+    #[import = "queue-empty"]
+    fn f() -> i32;
+    fn dequeue() -> &?cont_2;
+    fn enqueue(&?cont_2);
+}
+#[export]
+fn sync(nextk: &?cont_2) {
+    'l: loop {
+        if !nextk {
+            return;
+        }
+        nextk =
+            'on_yield: do &cont_2 {
+                'on_fork: do () -> (&cont_2, &cont_2) {
+                    nextk.resume() on [yield -> 'on_yield, fork -> 'on_fork];
+                    nextk = dequeue();
+                    br 'l;
+                }
+                nextk = _;
+                enqueue(_);
+                br 'l;
+            };
+        br 'l;
+    }
+}
+#[export]
+fn kt(nextk: &?cont_2) {
+    'l: loop {
+        if !nextk {
+            return;
+        }
+        enqueue(
+            'on_yield: do &cont_2 {
+                'on_fork: do () -> (&cont_2, &cont_2) {
+                    nextk.resume() on [yield -> 'on_yield, fork -> 'on_fork];
+                    nextk = dequeue();
+                    br 'l;
+                }
+                nextk = _;
+                enqueue(_);
+                br 'l;
+            },
+        );
+        nextk = dequeue();
+        br 'l;
+    }
+}
+#[export]
+fn tk(nextk: &?cont_2) {
+    'l: loop {
+        if !nextk {
+            return;
+        }
+        enqueue(
+            'on_yield: do &cont_2 {
+                'on_fork: do () -> (&cont_2, &cont_2) {
+                    nextk.resume() on [yield -> 'on_yield, fork -> 'on_fork];
+                    nextk = dequeue();
+                    br 'l;
+                }
+                enqueue(_);
+                nextk = _;
+                br 'l;
+            },
+        );
+        nextk = dequeue();
+        br 'l;
+    }
+}
+#[export]
+fn ykt(nextk: &?cont_2) {
+    'l: loop {
+        if !nextk {
+            return;
+        }
+        enqueue(
+            'on_yield: do &cont_2 {
+                'on_fork: do () -> (&cont_2, &cont_2) {
+                    nextk.resume() on [yield -> 'on_yield, fork -> 'on_fork];
+                    nextk = dequeue();
+                    br 'l;
+                }
+                enqueue(_);
+                enqueue(_);
+                nextk = dequeue();
+                br 'l;
+            },
+        );
+        nextk = dequeue();
+        br 'l;
+    }
+}
+#[export]
+fn ytk(nextk: &?cont_2) {
+    'l: loop {
+        if !nextk {
+            return;
+        }
+        enqueue(
+            'on_yield: do &cont_2 {
+                'on_fork: do () -> (&cont_2, &cont_2) {
+                    nextk.resume() on [yield -> 'on_yield, fork -> 'on_fork];
+                    nextk = dequeue();
+                    br 'l;
+                }
+                nextk = _;
+                enqueue(_);
+                enqueue(nextk);
+                nextk = dequeue();
+                br 'l;
+            },
+        );
+        nextk = dequeue();
+        br 'l;
+    }
+}

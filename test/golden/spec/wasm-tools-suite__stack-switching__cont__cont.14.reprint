@@ -1,0 +1,61 @@
+#![module = "scheduler"]
+type proc = fn();
+type cont_2 = cont proc;
+type t = fn(&cont_2);
+type t_2 = fn() -> i32;
+type t_3 = fn() -> &?cont_2;
+type t_4 = fn() -> (&cont_2, &cont_2);
+fn f() -> i32 {
+    qfront == qback;
+}
+fn dequeue() -> &?cont_2 {
+    if f() {
+        return null;
+    }
+    let i = qfront;
+    qfront = i + 1;
+    queue[i];
+}
+fn enqueue(k: &cont_2) {
+    if qback == queue.size() {
+        if qfront <u qdelta {
+            _ = queue.grow(null as &?cont_2, qdelta);
+        } else {
+            qback -= qfront;
+            queue.copy(0, qfront, qback);
+            queue.fill(qback, null as &?cont_2, qfront);
+            qfront = 0;
+        }
+    }
+    queue[qback] = k;
+    qback += 1;
+}
+#[export]
+fn scheduler(main: &cont_2) {
+    enqueue(main);
+    'l: loop {
+        if f() {
+            return;
+        }
+        enqueue(
+            'on_yield: do {
+                'on_spawn: do () -> (&cont_2, &cont_2) {
+                    dequeue().resume() on [yield -> 'on_yield, spawn -> 'on_spawn];
+                    br 'l;
+                }
+                enqueue(_);
+                enqueue(_);
+                br 'l;
+            },
+        );
+        br 'l;
+    }
+}
+table queue: &?cont_2 [0];
+const qdelta = 10;
+let qback = 0;
+let qfront = 0;
+#[export]
+tag yield: proc ;
+#[export]
+tag spawn: t ;

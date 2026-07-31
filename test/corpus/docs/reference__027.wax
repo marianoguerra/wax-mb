@@ -1,0 +1,5 @@
+x.min(y)
+x.max(y)
+x.copysign(y)
+x.rotl(y)      // Rotate left
+x.rotr(y)      // Rotate right

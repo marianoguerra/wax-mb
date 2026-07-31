@@ -1,0 +1,51 @@
+type t = fn() -> f32;
+type t_2 = fn() -> i32;
+type t_3 = fn();
+fn f() -> f32 {
+    0x1p+1;
+    'l: do {
+        0x1.8p+1 as f32;
+        br 'l;
+    }
+    _ + 0x1p+0;
+}
+fn f_2() -> i32 {
+    'l: do {
+        br 'l 1;
+    }
+}
+fn f_3() {
+    _ =
+        'l: loop i64 {
+            br 'l;
+            1;
+        };
+}
+fn f_4() -> i32 {
+    'l: loop {
+        1;
+        br 'l;
+    }
+}
+fn f_5() {
+    if 1 {
+        nop;
+        nop;
+    }
+}
+fn f_6() {
+    _ =
+        if 1 {
+            2;
+        } else {
+            3;
+        };
+}
+fn f_7() {
+    _ =
+        'l: if 1 {
+            br 'l 2;
+        } else {
+            3;
+        };
+}

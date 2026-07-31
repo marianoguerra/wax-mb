@@ -1,0 +1,3 @@
+type t = fn();
+type t_2 = fn(&?func, &?extern, &func, &extern, &t, &t, &t, &t, &?func, &?extern, &?t, &?t);
+fn f(&?func, &?extern, &func, &extern, &t, &t, &t, &t, &?func, &?extern, &?t, &?t) {}

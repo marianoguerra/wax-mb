@@ -1,0 +1,8 @@
+import "env" {
+    fn log(msg: i32);
+    const memory_base: i32;
+    #[import = "js_error"]
+    tag error(code: i32);
+}
+
+import "env" fn trace(msg: i32);

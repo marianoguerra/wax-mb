@@ -1,0 +1,14 @@
+#![module = "Mgim2"]
+type t = fn() -> i32;
+import "test"
+#[import = "memory-2-4"]
+memory m: i32 [1];
+import "grown-imported-memory"
+#[import = "memory"]
+memory m_2: i32 [3];
+#[export]
+fn size() -> i32 {
+    m_2.size();
+}
+memory m_3: i32 [0];
+memory m_4: i32 [0];

@@ -1,0 +1,58 @@
+type a32 = [mut i32];
+type a64 = [mut i64];
+type t = fn();
+#[export]
+fn f0() {
+    [a32|..; 1].init(data0, 0, 0, 1);
+}
+#[export]
+fn f1() {
+    [a32|..; 1].init(data1, 0, 0, 1);
+}
+#[export]
+fn f2() {
+    [a32|..; 1].init(data2, 0, 0, 1);
+}
+#[export]
+fn f3() {
+    [a32|..; 1].init(data3, 0, 0, 1);
+}
+#[export]
+fn f4() {
+    [a32|..; 1].init(data4, 0, 0, 1);
+}
+#[export]
+fn f9() {
+    [a32|..; 1].init(data9, 0, 6, 1);
+}
+#[export]
+fn g0() {
+    [a64|..; 1].init(data0, 0, 0, 1);
+}
+#[export]
+fn g1() {
+    [a64|..; 1].init(data1, 0, 0, 1);
+}
+#[export]
+fn g4() {
+    [a64|..; 1].init(data4, 0, 0, 1);
+}
+#[export]
+fn g7() {
+    [a64|..; 1].init(data7, 0, 0, 1);
+}
+#[export]
+fn g8() {
+    [a64|..; 1].init(data9, 0, 0, 1);
+}
+#[export]
+fn g9() {
+    [a64|..; 1].init(data9, 0, 2, 1);
+}
+data data0 = "";
+data data1 = "1";
+data data2 = "12";
+data data3 = "123";
+data data4 = "1234";
+data data7 = "1234567";
+data data9 = "123456789";

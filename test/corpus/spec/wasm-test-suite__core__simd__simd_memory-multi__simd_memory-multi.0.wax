@@ -1,0 +1,30 @@
+type t = fn();
+fn f() {
+    let v: v128;
+    _ = m.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    _ = m_2.load8_lane(0, v, lane: 1);
+    m.store8_lane(0, v, lane: 1);
+    m.store8_lane(0, v, lane: 1);
+    m.store8_lane(0, v, lane: 1);
+    m.store8_lane(0, v, lane: 1);
+    m_2.store8_lane(0, v, lane: 1);
+    m_2.store8_lane(0, v, lane: 1);
+    m_2.store8_lane(0, v, lane: 1);
+    m_2.store8_lane(0, v, lane: 1);
+    m_2.store8_lane(0, v, lane: 1);
+    m_2.store8_lane(0, v, lane: 1);
+    m_2.store8_lane(0, v, lane: 1);
+    m_2.store8_lane(0, v, lane: 1);
+}
+memory m: i32 [1];
+memory m_2: i32 [1];

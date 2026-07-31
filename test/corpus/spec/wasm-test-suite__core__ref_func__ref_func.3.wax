@@ -1,0 +1,23 @@
+type t = fn();
+fn f1() {}
+#[export = "f"]
+fn f2() {}
+fn f3() {}
+fn f4() {}
+fn f5() {}
+fn f6() {}
+fn f() {
+    f1;
+    f2;
+    f3;
+    f4;
+    f5;
+    f6;
+    return;
+}
+table t: &?func [1];
+const g = f1;
+elem e: &func @ t [0] = [f3];
+elem e_2: &?func @ t [0] = [f4];
+elem e_3: &func = [f5];
+elem e_4: &?func = [f6];

@@ -1,0 +1,6 @@
+import "env" {
+    fn a() -> i32;
+    const b: i32;
+    fn x(i32);
+    fn y(i32);
+}

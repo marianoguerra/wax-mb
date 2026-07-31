@@ -1,0 +1,38 @@
+#![module = "queue"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn() -> i32;
+type t_2 = fn() -> &?cont_2;
+type t_3 = fn(&?cont_2);
+#[export = "queue-empty"]
+fn f() -> i32 {
+    qfront == qback;
+}
+#[export]
+fn dequeue() -> &?cont_2 {
+    if f() {
+        return null;
+    }
+    let i = qfront;
+    qfront = i + 1;
+    queue[i];
+}
+#[export]
+fn enqueue(k: &?cont_2) {
+    if qback == queue.size() {
+        if qfront <u qdelta {
+            _ = queue.grow(null as &?cont_2, qdelta);
+        } else {
+            qback -= qfront;
+            queue.copy(0, qfront, qback);
+            queue.fill(qback, null as &?cont_2, qfront);
+            qfront = 0;
+        }
+    }
+    queue[qback] = k;
+    qback += 1;
+}
+table queue: &?cont_2 [0];
+const qdelta = 10;
+let qback = 0;
+let qfront = 0;

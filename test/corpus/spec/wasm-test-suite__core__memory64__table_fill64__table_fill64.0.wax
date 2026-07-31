@@ -1,0 +1,26 @@
+type t = fn(i32, &?extern, i32);
+type t_2 = fn(i32) -> &?extern;
+type t_3 = fn(i64, &?extern, i64);
+type t_4 = fn(i64) -> &?extern;
+#[export]
+fn fill(i: i32, r: &?extern, n: i32) {
+    t.fill(i, r, n);
+}
+#[export = "fill-abbrev"]
+fn f(i: i32, r: &?extern, n: i32) {
+    t.fill(i, r, n);
+}
+#[export]
+fn get(i: i32) -> &?extern {
+    t[i];
+}
+#[export = "fill-t64"]
+fn f_2(i: i64, r: &?extern, n: i64) {
+    t64.fill(i, r, n);
+}
+#[export = "get-t64"]
+fn f_3(i: i64) -> &?extern {
+    t64[i];
+}
+table t: &?extern [10];
+table t64: i64 &?extern [10];

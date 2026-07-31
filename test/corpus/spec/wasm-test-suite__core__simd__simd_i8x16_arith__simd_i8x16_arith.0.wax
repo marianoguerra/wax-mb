@@ -1,0 +1,14 @@
+type t = fn(v128, v128) -> v128;
+type t_2 = fn(v128) -> v128;
+#[export = "i8x16.add"]
+fn f(x: v128, x_2: v128) -> v128 {
+    x.add_i8x16(x_2);
+}
+#[export = "i8x16.sub"]
+fn f_2(x: v128, x_2: v128) -> v128 {
+    x.sub_i8x16(x_2);
+}
+#[export = "i8x16.neg"]
+fn f_3(x: v128) -> v128 {
+    x.neg_i8x16();
+}

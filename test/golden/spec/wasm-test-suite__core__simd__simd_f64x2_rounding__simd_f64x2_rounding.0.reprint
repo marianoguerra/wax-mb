@@ -1,0 +1,17 @@
+type t = fn(v128) -> v128;
+#[export = "f64x2.ceil"]
+fn f(x: v128) -> v128 {
+    x.ceil_f64x2();
+}
+#[export = "f64x2.floor"]
+fn f_2(x: v128) -> v128 {
+    x.floor_f64x2();
+}
+#[export = "f64x2.trunc"]
+fn f_3(x: v128) -> v128 {
+    x.trunc_f64x2();
+}
+#[export = "f64x2.nearest"]
+fn f_4(x: v128) -> v128 {
+    x.nearest_f64x2();
+}

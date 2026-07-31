@@ -1,0 +1,31 @@
+#![module = "example"]
+type t = fn();
+type t_2 = fn(i32);
+import "lwt" tag yield: t ;
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+#[export]
+fn thread1() {
+    log(10);
+    suspend yield();
+    log(11);
+    suspend yield();
+    log(12);
+}
+#[export]
+fn thread2() {
+    log(20);
+    suspend yield();
+    log(21);
+    suspend yield();
+    log(22);
+}
+#[export]
+fn thread3() {
+    log(30);
+    suspend yield();
+    log(31);
+    suspend yield();
+    log(32);
+}

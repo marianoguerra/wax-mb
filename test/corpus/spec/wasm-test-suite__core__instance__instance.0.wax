@@ -1,0 +1,10 @@
+#![module = "M"]
+type t = fn();
+#[export]
+table tab: &?func [10] = null as &?func;
+#[export]
+memory mem: i32 [1];
+#[export]
+let glob = 0;
+#[export = "tag"]
+tag t: t ;

@@ -1,0 +1,18 @@
+type t = fn();
+import ""
+#[import = ""]
+fn f();
+fn f_2() {
+    #[unlikely]
+    'l: if 0 {
+        #[likely]
+        br_if 'l 0;
+    }
+}
+fn f_3() {
+    #[likely]
+    'l: if 0 {
+        #[unlikely]
+        br_if 'l 0;
+    }
+}

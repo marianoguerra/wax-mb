@@ -1,0 +1,12 @@
+type t = fn() -> i32;
+type t_2 = fn();
+fn f() -> i32 {
+    _ = g_2;
+    g * g;
+}
+fn f_2() {
+    g += 1;
+    g_2 = 0x1p+1;
+}
+let g = 1;
+let g_2: f32 = 0x1.8p+0;

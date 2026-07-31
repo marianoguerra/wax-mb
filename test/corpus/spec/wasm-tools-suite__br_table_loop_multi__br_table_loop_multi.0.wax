@@ -1,0 +1,11 @@
+type t = fn(i32) -> i32;
+type t_2 = fn(i32);
+fn f(i32) -> i32 'l: {
+    let x: i32;
+    x;
+    'l_2: loop (i32) {
+        br_table [ 'l_2, 'l, else 'l_2 ] (_, -458751);
+        unreachable;
+    }
+    unreachable;
+}

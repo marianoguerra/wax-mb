@@ -1,0 +1,8 @@
+#[export]
+fn f(n: i32) -> i32 {
+    0
+        + 'l: loop {
+              br_if 'l n;
+              9;
+          };
+}

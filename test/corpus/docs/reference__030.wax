@@ -1,0 +1,9 @@
+x as i32        // Wrap i64 to i32
+x as i64_s      // Sign-extend i32 to i64
+x as i64_u      // Zero-extend i32 to i64
+x as f32        // Demote f64 to f32
+x as f64        // Promote f32 to f64
+x as i32_s      // Truncate float to signed int
+x as f32_s      // Convert signed int to float
+x.to_bits()     // Reinterpret float as int
+x.from_bits()   // Reinterpret int as float

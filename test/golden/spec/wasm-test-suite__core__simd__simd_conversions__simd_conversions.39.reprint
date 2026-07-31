@@ -1,0 +1,77 @@
+type t = fn(v128, v128) -> v128;
+#[export]
+fn f32x4_convert_i32x4_s_add(x: v128, x_2: v128) -> v128 {
+    x.add_i32x4(x_2).convert_i32x4_s_f32x4();
+}
+#[export]
+fn f32x4_convert_i32x4_s_sub(x: v128, x_2: v128) -> v128 {
+    x.sub_i32x4(x_2).convert_i32x4_s_f32x4();
+}
+#[export]
+fn f32x4_convert_i32x4_u_mul(x: v128, x_2: v128) -> v128 {
+    x.mul_i32x4(x_2).convert_i32x4_u_f32x4();
+}
+#[export]
+fn i16x8_low_extend_narrow_ss(x: v128, x_2: v128) -> v128 {
+    x.narrow_i16x8_s_i8x16(x_2).extend_low_i8x16_s_i16x8();
+}
+#[export]
+fn i16x8_low_extend_narrow_su(x: v128, x_2: v128) -> v128 {
+    x.narrow_i16x8_u_i8x16(x_2).extend_low_i8x16_s_i16x8();
+}
+#[export]
+fn i16x8_high_extend_narrow_ss(x: v128, x_2: v128) -> v128 {
+    x.narrow_i16x8_s_i8x16(x_2).extend_low_i8x16_s_i16x8();
+}
+#[export]
+fn i16x8_high_extend_narrow_su(x: v128, x_2: v128) -> v128 {
+    x.narrow_i16x8_u_i8x16(x_2).extend_low_i8x16_s_i16x8();
+}
+#[export]
+fn i16x8_low_extend_narrow_uu(x: v128, x_2: v128) -> v128 {
+    x.narrow_i16x8_u_i8x16(x_2).extend_low_i8x16_u_i16x8();
+}
+#[export]
+fn i16x8_low_extend_narrow_us(x: v128, x_2: v128) -> v128 {
+    x.narrow_i16x8_s_i8x16(x_2).extend_low_i8x16_u_i16x8();
+}
+#[export]
+fn i16x8_high_extend_narrow_uu(x: v128, x_2: v128) -> v128 {
+    x.narrow_i16x8_u_i8x16(x_2).extend_low_i8x16_u_i16x8();
+}
+#[export]
+fn i16x8_high_extend_narrow_us(x: v128, x_2: v128) -> v128 {
+    x.narrow_i16x8_s_i8x16(x_2).extend_low_i8x16_u_i16x8();
+}
+#[export]
+fn i32x4_low_extend_narrow_ss(x: v128, x_2: v128) -> v128 {
+    x.narrow_i32x4_s_i16x8(x_2).extend_low_i16x8_s_i32x4();
+}
+#[export]
+fn i32x4_low_extend_narrow_su(x: v128, x_2: v128) -> v128 {
+    x.narrow_i32x4_u_i16x8(x_2).extend_low_i16x8_s_i32x4();
+}
+#[export]
+fn i32x4_high_extend_narrow_ss(x: v128, x_2: v128) -> v128 {
+    x.narrow_i32x4_s_i16x8(x_2).extend_low_i16x8_s_i32x4();
+}
+#[export]
+fn i32x4_high_extend_narrow_su(x: v128, x_2: v128) -> v128 {
+    x.narrow_i32x4_u_i16x8(x_2).extend_low_i16x8_s_i32x4();
+}
+#[export]
+fn i32x4_low_extend_narrow_uu(x: v128, x_2: v128) -> v128 {
+    x.narrow_i32x4_u_i16x8(x_2).extend_low_i16x8_u_i32x4();
+}
+#[export]
+fn i32x4_low_extend_narrow_us(x: v128, x_2: v128) -> v128 {
+    x.narrow_i32x4_s_i16x8(x_2).extend_low_i16x8_u_i32x4();
+}
+#[export]
+fn i32x4_high_extend_narrow_uu(x: v128, x_2: v128) -> v128 {
+    x.narrow_i32x4_u_i16x8(x_2).extend_low_i16x8_u_i32x4();
+}
+#[export]
+fn i32x4_high_extend_narrow_us(x: v128, x_2: v128) -> v128 {
+    x.narrow_i32x4_s_i16x8(x_2).extend_low_i16x8_u_i32x4();
+}

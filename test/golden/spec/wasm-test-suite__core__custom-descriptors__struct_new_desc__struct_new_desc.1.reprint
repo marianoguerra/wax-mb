@@ -1,0 +1,15 @@
+#![feature = "custom-descriptors"]
+rec {
+    type a = descriptor b { };
+    type b = describes a descriptor c { };
+    type c = describes b descriptor d { };
+    type d = describes c { };
+}
+type t = fn() -> &!a;
+fn f() -> &!a {
+    { descriptor({ descriptor({ descriptor({d| })| })| })| };
+}
+const d: &!d = { };
+const c = { descriptor(d)| };
+const b = { descriptor(c)| };
+const a = { descriptor(b)| };

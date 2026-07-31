@@ -1,0 +1,4 @@
+type t1 = fn(f32, f32) -> f32;
+type t = fn(&t1);
+#[export]
+fn f(&t1) {}

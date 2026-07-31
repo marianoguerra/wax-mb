@@ -1,0 +1,35 @@
+type t = fn();
+type t_2 = fn(i32) -> &?extern;
+type t_3 = fn(i32) -> &?func;
+type t_4 = fn(i32, &?extern);
+type t_5 = fn(i32, &?func);
+type t_6 = fn(i32, i32);
+type t_7 = fn(i32) -> i32;
+fn dummy() {}
+#[export = "get-externref"]
+fn f(i: i32) -> &?extern {
+    t2[i];
+}
+#[export = "get-funcref"]
+fn f3(i: i32) -> &?func {
+    t3[i];
+}
+#[export = "set-externref"]
+fn f_2(i: i32, r: &?extern) {
+    t2[i] = r;
+}
+#[export = "set-funcref"]
+fn f_3(i: i32, r: &?func) {
+    t3[i] = r;
+}
+#[export = "set-funcref-from"]
+fn f_4(i: i32, j: i32) {
+    t3[i] = t3[j];
+}
+#[export = "is_null-funcref"]
+fn f_5(i: i32) -> i32 {
+    !f3(i);
+}
+table t2: &?extern [1];
+table t3: &?func [2];
+elem e: &func @ t3 [1] = [dummy];

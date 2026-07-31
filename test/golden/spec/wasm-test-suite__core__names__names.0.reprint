@@ -1,0 +1,5 @@
+type t = fn() -> i32;
+#[export]
+fn foo() -> i32 {
+    0;
+}

@@ -1,0 +1,103 @@
+type t = fn(i64) -> i32;
+type t_2 = fn(i64) -> i64;
+type t_3 = fn(i64) -> f32;
+type t_4 = fn(i64) -> f64;
+type t_5 = fn(i64, i32);
+type t_6 = fn(i64, i64);
+type t_7 = fn(i64, f32);
+type t_8 = fn(i64, f64);
+#[export = "i32.load"]
+fn f(a: i64) -> i32 {
+    m.load32(a);
+}
+#[export = "i64.load"]
+fn f_2(a: i64) -> i64 {
+    m.load64(a);
+}
+#[export = "f32.load"]
+fn f_3(a: i64) -> f32 {
+    m.loadf32(a);
+}
+#[export = "f64.load"]
+fn f_4(a: i64) -> f64 {
+    m.loadf64(a);
+}
+#[export = "i32.load8_s"]
+fn f_5(a: i64) -> i32 {
+    m.load8(a) as i32_s;
+}
+#[export = "i32.load8_u"]
+fn f_6(a: i64) -> i32 {
+    m.load8(a) as i32_u;
+}
+#[export = "i32.load16_s"]
+fn f_7(a: i64) -> i32 {
+    m.load16(a) as i32_s;
+}
+#[export = "i32.load16_u"]
+fn f_8(a: i64) -> i32 {
+    m.load16(a) as i32_u;
+}
+#[export = "i64.load8_s"]
+fn f_9(a: i64) -> i64 {
+    m.load8(a) as i64_s;
+}
+#[export = "i64.load8_u"]
+fn f_10(a: i64) -> i64 {
+    m.load8(a) as i64_u;
+}
+#[export = "i64.load16_s"]
+fn f_11(a: i64) -> i64 {
+    m.load16(a) as i64_s;
+}
+#[export = "i64.load16_u"]
+fn f_12(a: i64) -> i64 {
+    m.load16(a) as i64_u;
+}
+#[export = "i64.load32_s"]
+fn f_13(a: i64) -> i64 {
+    m.load32(a) as i64_s;
+}
+#[export = "i64.load32_u"]
+fn f_14(a: i64) -> i64 {
+    m.load32(a) as i64_u;
+}
+#[export = "i32.store"]
+fn f_15(a: i64, v: i32) {
+    m.store32(a, v);
+}
+#[export = "i64.store"]
+fn f_16(a: i64, v: i64) {
+    m.store64(a, v);
+}
+#[export = "f32.store"]
+fn f_17(a: i64, v: f32) {
+    m.storef32(a, v);
+}
+#[export = "f64.store"]
+fn f_18(a: i64, v: f64) {
+    m.storef64(a, v);
+}
+#[export = "i32.store8"]
+fn f_19(a: i64, v: i32) {
+    m.store8(a, v);
+}
+#[export = "i32.store16"]
+fn f_20(a: i64, v: i32) {
+    m.store16(a, v);
+}
+#[export = "i64.store8"]
+fn f_21(a: i64, v: i64) {
+    m.store8(a, v);
+}
+#[export = "i64.store16"]
+fn f_22(a: i64, v: i64) {
+    m.store16(a, v);
+}
+#[export = "i64.store32"]
+fn f_23(a: i64, v: i64) {
+    m.store32(a, v);
+}
+memory m: i64 [1];
+data d @ m [0] = "abcdefgh";
+data d_2 @ m [65528] = "abcdefgh";

@@ -1,0 +1,71 @@
+#![module = "examples"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(i32);
+type t_2 = fn(i32, &cont_2);
+type t_3 = fn() -> (i32, &cont_2);
+type t_4 = fn(i32, &cont_2) -> i32;
+import "generator" tag yield: t ;
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+#[export]
+fn naturals() {
+    let n: i32;
+    'l: loop {
+        suspend yield(n);
+        n += 1;
+        br 'l;
+    }
+}
+#[export = "one-two-three"]
+fn f() {
+    suspend yield(1);
+    suspend yield(2);
+    suspend yield(3);
+}
+#[export]
+fn fibonacci() {
+    let b = 1;
+    let a: i32;
+    'l: loop {
+        suspend yield(a);
+        let t = a;
+        a = b;
+        b = t + a;
+        br 'l;
+    }
+}
+#[export = "print-first"]
+fn f_2(n: i32, k: &cont_2) {
+    'l: loop {
+        'on_yield: do () -> (i32, &cont_2) {
+            if n {
+                k.resume() on [yield -> 'on_yield];
+            }
+            return;
+        }
+        k = _;
+        log(_);
+        n += -1;
+        br 'l;
+    }
+    unreachable;
+}
+#[export = "sum-first"]
+fn f_3(n: i32, k: &cont_2) -> i32 {
+    let sum: i32;
+    'l: loop {
+        'on_yield: do () -> (i32, &cont_2) {
+            if n {
+                k.resume() on [yield -> 'on_yield];
+            }
+            return sum;
+        }
+        k = _;
+        sum = _ + sum;
+        n += -1;
+        br 'l;
+    }
+    unreachable;
+}

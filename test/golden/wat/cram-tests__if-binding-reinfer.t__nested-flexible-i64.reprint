@@ -1,0 +1,12 @@
+fn f(y: i32) {
+    let x: i64 =
+        if y {
+            if y {
+                1;
+            } else {
+                2;
+            }
+        } else {
+            2;
+        };
+}

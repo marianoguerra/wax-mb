@@ -1,0 +1,18 @@
+type t = fn() -> i32;
+type t_2 = fn() -> i64;
+#[export]
+fn fi32() -> i32 {
+    123;
+}
+#[export]
+fn fi64() -> i64 {
+    456;
+}
+#[export]
+const g1 = 1;
+#[export]
+const g20 = 20;
+#[export]
+const g300 = 300;
+#[export]
+const g4000 = 4000;

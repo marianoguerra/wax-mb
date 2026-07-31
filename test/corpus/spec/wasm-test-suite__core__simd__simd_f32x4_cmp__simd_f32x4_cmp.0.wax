@@ -1,0 +1,25 @@
+type t = fn(v128, v128) -> v128;
+#[export]
+fn eq(x: v128, y: v128) -> v128 {
+    x.eq_f32x4(y);
+}
+#[export]
+fn ne(x: v128, y: v128) -> v128 {
+    x.ne_f32x4(y);
+}
+#[export]
+fn lt(x: v128, y: v128) -> v128 {
+    x.lt_f32x4(y);
+}
+#[export]
+fn le(x: v128, y: v128) -> v128 {
+    x.le_f32x4(y);
+}
+#[export]
+fn gt(x: v128, y: v128) -> v128 {
+    x.gt_f32x4(y);
+}
+#[export]
+fn ge(x: v128, y: v128) -> v128 {
+    x.ge_f32x4(y);
+}

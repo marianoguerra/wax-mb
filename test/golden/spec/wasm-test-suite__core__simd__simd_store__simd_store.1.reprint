@@ -1,0 +1,61 @@
+type t = fn();
+#[export = "as-block-value"]
+fn f() {
+    do {
+        m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+    }
+}
+#[export = "as-loop-value"]
+fn f_2() {
+    loop {
+        m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+    }
+}
+#[export = "as-br-value"]
+fn f_3() {
+    'l: do {
+        m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        br 'l;
+    }
+}
+#[export = "as-br_if-value"]
+fn f_4() {
+    'l: do {
+        m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        br_if 'l 1;
+    }
+}
+#[export = "as-br_if-value-cond"]
+fn f_5() {
+    'l: do {
+        6;
+        m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        br_if 'l _;
+    }
+}
+#[export = "as-br_table-value"]
+fn f_6() {
+    'l: do {
+        m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+        br_table [ else 'l ] 1;
+    }
+}
+#[export = "as-return-value"]
+fn f_7() {
+    m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+    return;
+}
+#[export = "as-if-then"]
+fn f_8() {
+    if 1 {
+        m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+    }
+}
+#[export = "as-if-else"]
+fn f_9() {
+    if 0 {
+    } else {
+        m.storev128(0, v128::i8x16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+    }
+}
+memory m: i32 [1];

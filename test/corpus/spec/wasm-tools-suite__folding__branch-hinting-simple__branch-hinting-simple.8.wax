@@ -1,0 +1,7 @@
+type t = fn();
+fn f() {}
+fn f_2() {}
+fn f_3() {
+    #[unlikely]
+    if #[unlikely] 0 {}
+}

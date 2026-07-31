@@ -1,0 +1,3 @@
+#[export]
+#[export = "a"]
+memory b: i32 [0];

@@ -1,0 +1,5 @@
+type t = fn();
+fn f() {
+    _ = m.loadv128(0, align: 2);
+}
+memory m: i32 [1];

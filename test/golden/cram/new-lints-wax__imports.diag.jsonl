@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/new-lints-wax__imports.wax","startLine":3,"startColumn":7,"endLine":3,"endColumn":11,"startOffset":42,"endOffset":46,"message":"The imported function 'dead' is never used.","warning":"unused-import","hint":null,"related":[]}

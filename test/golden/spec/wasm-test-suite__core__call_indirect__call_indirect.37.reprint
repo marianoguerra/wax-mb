@@ -1,0 +1,56 @@
+type t = fn();
+type t_2 = fn() -> i32;
+fn f() {
+    unreachable;
+    (t[_] as &?t)();
+}
+fn f_2() {
+    unreachable;
+    (t[_] as &?t)();
+    nop;
+}
+fn f_3() {
+    unreachable;
+    (t[_] as &?t)();
+    (t[_] as &?t)();
+}
+fn f_4() {
+    unreachable;
+    (t[_] as &?t)();
+    (t[_] as &?t)();
+}
+fn f_5() {
+    unreachable;
+    (t[_] as &?t)();
+    (t[_] as &?t)();
+    (t[_] as &?t)();
+}
+fn f_6() {
+    unreachable;
+    (t[_] as &?t)();
+}
+fn f_7() {
+    unreachable;
+    (t[_] as &?t)();
+}
+fn f_8() {
+    unreachable;
+    (t[_] as &?t)();
+    (t[_] as &?t)();
+}
+fn f_9() {
+    unreachable;
+    (t[_] as &?t)();
+    (t[_] as &?t)();
+}
+fn f_10() -> i32 {
+    unreachable;
+    (t[_] as &?t)();
+    _?_:_;
+}
+fn f_11() -> i32 {
+    unreachable;
+    (t[_] as &?t)();
+    (t[_?_:_] as &?t)();
+}
+table t: &?func [1];

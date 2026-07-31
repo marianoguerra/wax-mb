@@ -1,0 +1,1 @@
+import "a" memory b: i32 [4294967295] pagesize 1;

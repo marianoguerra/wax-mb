@@ -1,0 +1,5 @@
+memory dst: i64 [1];
+memory src: i32 [1];
+fn f() {
+    dst.copy(src, 0, 0, 0);
+}

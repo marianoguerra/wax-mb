@@ -1,0 +1,24 @@
+type t = fn(i32) -> i64;
+type t_2 = fn(i32, i64);
+import "M1"
+#[import = "mem"]
+memory mem1: i32 [1];
+import "M2"
+#[import = "mem"]
+memory mem2: i32 [1];
+#[export]
+fn load1(x: i32) -> i64 {
+    mem1.load64(x);
+}
+#[export]
+fn load2(x: i32) -> i64 {
+    mem2.load64(x);
+}
+#[export]
+fn store1(x: i32, x_2: i64) {
+    mem1.store64(x, x_2);
+}
+#[export]
+fn store2(x: i32, x_2: i64) {
+    mem2.store64(x, x_2);
+}

@@ -1,0 +1,8 @@
+fn f(x: i32) -> i32 {
+    #[unlikely]
+    if x {
+        1;
+    } else {
+        2;
+    }
+}

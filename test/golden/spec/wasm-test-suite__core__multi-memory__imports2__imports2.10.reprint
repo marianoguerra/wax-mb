@@ -1,0 +1,3 @@
+import "spectest"
+#[import = "memory"]
+memory m: i32 [1, 1];

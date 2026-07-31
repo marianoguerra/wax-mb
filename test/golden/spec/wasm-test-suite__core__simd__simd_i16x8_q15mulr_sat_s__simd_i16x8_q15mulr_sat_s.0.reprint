@@ -1,0 +1,5 @@
+type t = fn(v128, v128) -> v128;
+#[export = "i16x8.q15mulr_sat_s"]
+fn f(x: v128, x_2: v128) -> v128 {
+    x.q15mulr_sat_s_i16x8(x_2);
+}

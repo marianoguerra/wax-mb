@@ -1,0 +1,34 @@
+#![module = "Mref_im"]
+type t = fn();
+import "Mref_ex" {
+    #[import = "g-const-funcnull"]
+    const g: &?func;
+    #[import = "g-const-func"]
+    const g_2: &?func;
+    #[import = "g-const-refnull"]
+    const g_3: &?func;
+    #[import = "g-const-ref"]
+    const g_4: &?func;
+    #[import = "g-const-func"]
+    const g_5: &func;
+    #[import = "g-const-ref"]
+    const g_6: &func;
+    #[import = "g-const-refnull"]
+    const g_7: &?t;
+    #[import = "g-const-ref"]
+    const g_8: &?t;
+    #[import = "g-const-ref"]
+    const g_9: &t;
+    #[import = "g-const-extern"]
+    const g_10: &?extern;
+    #[import = "g-var-funcnull"]
+    let g_11: &?func;
+    #[import = "g-var-func"]
+    let g_12: &func;
+    #[import = "g-var-refnull"]
+    let g_13: &?t;
+    #[import = "g-var-ref"]
+    let g_14: &t;
+    #[import = "g-var-extern"]
+    let g_15: &?extern;
+}

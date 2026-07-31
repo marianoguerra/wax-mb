@@ -1,0 +1,16 @@
+type t = fn() -> i32;
+type t_2 = fn(i32) -> i32;
+#[export]
+fn size() -> i32 {
+    m.size();
+}
+#[export]
+fn grow(x: i32) -> i32 {
+    m.grow(x);
+}
+#[export]
+fn load(x: i32) -> i32 {
+    m.load8(x) as i32_u;
+}
+memory m: i32 [3, 3] pagesize 1;
+data d @ m [0] = "xyz";

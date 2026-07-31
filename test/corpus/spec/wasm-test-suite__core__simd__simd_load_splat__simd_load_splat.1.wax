@@ -1,0 +1,76 @@
+type t = fn() -> v128;
+type t_2 = fn() -> i32;
+#[export = "v128.load8_splat-in-block"]
+fn f() -> v128 {
+    do {
+        do {
+            m.load8_splat(0);
+        }
+    }
+}
+#[export = "v128.load16_splat-in-block"]
+fn f_2() -> v128 {
+    do {
+        do {
+            m.load16_splat(1);
+        }
+    }
+}
+#[export = "v128.load32_splat-in-block"]
+fn f_3() -> v128 {
+    do {
+        do {
+            m.load32_splat(2);
+        }
+    }
+}
+#[export = "v128.load64_splat-in-block"]
+fn f_4() -> v128 {
+    do {
+        do {
+            m.load64_splat(9);
+        }
+    }
+}
+#[export = "v128.load8_splat-as-br-value"]
+fn f_5() -> v128 {
+    'l: do {
+        br 'l m.load8_splat(3);
+    }
+}
+#[export = "v128.load16_splat-as-br-value"]
+fn f_6() -> v128 {
+    'l: do {
+        br 'l m.load16_splat(4);
+    }
+}
+#[export = "v128.load32_splat-as-br-value"]
+fn f_7() -> v128 {
+    'l: do {
+        br 'l m.load32_splat(5);
+    }
+}
+#[export = "v128.load64_splat-as-br-value"]
+fn f_8() -> v128 {
+    'l: do {
+        br 'l m.load64_splat(10);
+    }
+}
+#[export = "v128.load8_splat-extract_lane_s-operand"]
+fn f_9() -> i32 {
+    m.load8_splat(6).extract_lane_s_i8x16(0);
+}
+#[export = "v128.load16_splat-extract_lane_s-operand"]
+fn f_10() -> i32 {
+    m.load16_splat(7).extract_lane_s_i8x16(0);
+}
+#[export = "v128.load32_splat-extract_lane_s-operand"]
+fn f_11() -> i32 {
+    m.load32_splat(8).extract_lane_s_i8x16(0);
+}
+#[export = "v128.load64_splat-extract_lane_s-operand"]
+fn f_12() -> i32 {
+    m.load64_splat(11).extract_lane_s_i8x16(0);
+}
+memory m: i32 [1];
+data d @ m [0] = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a";

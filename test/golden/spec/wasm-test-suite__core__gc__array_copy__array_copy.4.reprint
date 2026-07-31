@@ -1,0 +1,36 @@
+type arr8 = [i8];
+type arr8_mut = [mut i8];
+type t = fn(i32) -> i32;
+type t_2 = fn();
+type t_3 = fn(i32, i32, i32);
+#[export]
+fn array_get_nth(x: i32) -> i32 {
+    g_arr8_mut[x] as i32_u;
+}
+#[export = "array_copy-null-left"]
+fn f() {
+    (null as &?arr8_mut).copy(0, g_arr8, 0, 0);
+}
+#[export = "array_copy-null-right"]
+fn f_2() {
+    g_arr8_mut.copy(0, null as &?arr8, 0, 0);
+}
+#[export]
+fn array_copy(x: i32, x_2: i32, x_3: i32) {
+    g_arr8_mut.copy(x, g_arr8, x_2, x_3);
+}
+#[export = "array_copy_overlap_test-1"]
+fn f_3() {
+    let x: &arr8_mut = [ d1 @ 0; 12];
+    x.copy(1, x, 0, 11);
+    g_arr8_mut = x;
+}
+#[export = "array_copy_overlap_test-2"]
+fn f_4() {
+    let x: &arr8_mut = [ d1 @ 0; 12];
+    x.copy(0, x, 1, 11);
+    g_arr8_mut = x;
+}
+const g_arr8: &arr8 = [10; 12];
+let g_arr8_mut: &arr8_mut = [..; 12];
+data d1 = "abcdefghijkl";

@@ -1,0 +1,3 @@
+import "env"
+#[start]
+fn init();

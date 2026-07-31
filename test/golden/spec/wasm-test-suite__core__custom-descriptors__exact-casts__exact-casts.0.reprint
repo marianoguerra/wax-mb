@@ -1,0 +1,190 @@
+#![feature = "custom-descriptors"]
+type super = open { };
+type sub: super = open { };
+type t = fn() -> &?any;
+type t_2 = fn();
+type t_3 = fn() -> i32;
+fn super_2() -> &?any {
+    {super| };
+}
+fn sub_2() -> &?any {
+    {sub| };
+}
+#[export = "self-nullable"]
+fn f() -> &?any {
+    {super| };
+}
+#[export = "self-nullable-global"]
+fn f_2() -> &?any {
+    super as &?!super;
+}
+#[export = "self-nullable-call"]
+fn f_3() -> &?any {
+    super_2() as &?!super;
+}
+#[export = "self-nullable-null"]
+fn f_4() -> &?any {
+    null as &?super as &?!super;
+}
+#[export = "self-nonnullable"]
+fn f_5() -> &?any {
+    {super| };
+}
+#[export = "self-nonnullable-global"]
+fn f_6() -> &?any {
+    super as &!super;
+}
+#[export = "self-nonnullable-call"]
+fn f_7() -> &?any {
+    super_2() as &!super;
+}
+#[export = "self-nonnullable-null"]
+fn f_8() -> &?any {
+    null as &?super as &!super;
+}
+#[export = "sub-nullable"]
+fn f_9() -> &?any {
+    {sub| } as &?!super;
+}
+#[export = "sub-nullable-global"]
+fn f_10() -> &?any {
+    sub as &?!super;
+}
+#[export = "sub-nullable-call"]
+fn f_11() -> &?any {
+    sub_2() as &?!super;
+}
+#[export = "sub-nullable-null"]
+fn f_12() -> &?any {
+    null as &?sub as &?!super;
+}
+#[export = "sub-nonnullable"]
+fn f_13() -> &?any {
+    {sub| } as &!super;
+}
+#[export = "sub-nonnullable-global"]
+fn f_14() -> &?any {
+    sub as &!super;
+}
+#[export = "sub-nonnullable-call"]
+fn f_15() -> &?any {
+    sub_2() as &!super;
+}
+#[export = "sub-nonnullable-null"]
+fn f_16() -> &?any {
+    null as &?sub as &!super;
+}
+#[export = "super-nullable"]
+fn f_17() -> &?any {
+    {super| } as &?!sub;
+}
+#[export = "super-nullable-global"]
+fn f_18() -> &?any {
+    super as &?!sub;
+}
+#[export = "super-nullable-call"]
+fn f_19() -> &?any {
+    super_2() as &?!sub;
+}
+#[export = "super-nullable-null"]
+fn f_20() -> &?any {
+    null as &?super as &?!sub;
+}
+#[export = "super-nonnullable"]
+fn f_21() -> &?any {
+    {super| } as &!sub;
+}
+#[export = "super-nonnullable-global"]
+fn f_22() -> &?any {
+    super as &!sub;
+}
+#[export = "super-nonnullable-call"]
+fn f_23() -> &?any {
+    super_2() as &!sub;
+}
+#[export = "super-nonnullable-null"]
+fn f_24() -> &?any {
+    null as &?super as &!sub;
+}
+#[export = "yes-br-on-cast-val"]
+fn f_25() {
+    'l: do &?any {
+        br_on_cast 'l &!super super;
+        unreachable;
+    }
+    return;
+}
+#[export = "no-br-on-cast-val"]
+fn f_26() {
+    'l: do &?any {
+        br_on_cast 'l &!super sub;
+        return;
+    }
+    unreachable;
+}
+#[export = "yes-br-on-cast-null"]
+fn f_27() {
+    'l: do &?any {
+        br_on_cast 'l &?!super null as &?none;
+        unreachable;
+    }
+    return;
+}
+#[export = "no-br-on-cast-null"]
+fn f_28() {
+    'l: do &?any {
+        br_on_cast 'l &!super null as &?none;
+        return;
+    }
+    unreachable;
+}
+#[export = "no-br-on-cast-fail-val"]
+fn f_29() {
+    'l: do &?any {
+        br_on_cast_fail 'l &!super super;
+        return;
+    }
+    unreachable;
+}
+#[export = "yes-br-on-cast-fail-val"]
+fn f_30() {
+    'l: do &?any {
+        br_on_cast_fail 'l &!super sub;
+        unreachable;
+    }
+    return;
+}
+#[export = "no-br-on-cast-fail-null"]
+fn f_31() {
+    'l: do &?any {
+        br_on_cast_fail 'l &?!super null as &?none;
+        return;
+    }
+    unreachable;
+}
+#[export = "yes-br-on-cast-fail-null"]
+fn f_32() {
+    'l: do &?any {
+        br_on_cast_fail 'l &!super null as &?none;
+        unreachable;
+    }
+    return;
+}
+#[export = "yes-ref-test-val"]
+fn f_33() -> i32 {
+    super is &!super;
+}
+#[export = "no-ref-test-val"]
+fn f_34() -> i32 {
+    sub is &!super;
+}
+#[export = "yes-ref-test-null"]
+fn f_35() -> i32 {
+    null as &?none is &?!super;
+}
+#[export = "no-ref-test-null"]
+fn f_36() -> i32 {
+    null as &?none is &!super;
+}
+const super: &?any = {super| };
+const sub: &?any = {sub| };

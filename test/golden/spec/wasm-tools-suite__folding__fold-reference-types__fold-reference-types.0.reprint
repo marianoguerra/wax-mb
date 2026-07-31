@@ -1,0 +1,13 @@
+type t = fn();
+fn f() {
+    _ = t[0];
+    let x: &?extern;
+    t[0] = x;
+    _ = t.grow(x, 0);
+    _ = t.size();
+    t.fill(0, x, 0);
+    _ = null as &?extern;
+    _ = !x;
+    _ = f;
+}
+table t: &?extern [1];

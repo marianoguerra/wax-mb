@@ -1,0 +1,22 @@
+#![module = "m2"]
+type T = fn(i32, i64, i32) -> i32;
+type t = fn();
+#[export]
+fn f(x_2: i32, i64, x: i32) -> i32 {
+    let x_3: i32;
+    let x_4: i32;
+    let y: i32;
+    do {
+        x + x_2;
+    }
+}
+#[start]
+fn s() {}
+#[export]
+table t: &?func [10, 20];
+#[export]
+memory m: i32 [1, 2];
+#[export]
+const g = 42;
+elem e: &func @ t [0] = [f, f, f];
+data d @ m [0] = "blaC";

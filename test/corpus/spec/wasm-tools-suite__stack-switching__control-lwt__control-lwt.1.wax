@@ -1,0 +1,42 @@
+#![module = "example"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(&cont_2);
+type t_2 = cont t;
+type t_3 = fn(&func_2, &t);
+type t_4 = cont t_3;
+type t_5 = fn(i32);
+import "spectest"
+#[import = "print_i32"]
+fn log(i32);
+#[export]
+fn main(yield: &func_2, fork: &t) {
+    log(0);
+    fork(cont_2::bind(yield, fork, t_4::new(thread1)));
+    log(1);
+    fork(cont_2::bind(yield, fork, t_4::new(thread2)));
+    log(2);
+    fork(cont_2::bind(yield, fork, t_4::new(thread3)));
+    log(3);
+}
+fn thread1(yield: &func_2, fork: &t) {
+    log(10);
+    yield();
+    log(11);
+    yield();
+    log(12);
+}
+fn thread2(yield: &func_2, fork: &t) {
+    log(20);
+    yield();
+    log(21);
+    yield();
+    log(22);
+}
+fn thread3(yield: &func_2, fork: &t) {
+    log(30);
+    yield();
+    log(31);
+    yield();
+    log(32);
+}

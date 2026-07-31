@@ -1,0 +1,8 @@
+type t = fn();
+type t_2 = fn(i32);
+fn f() {
+    0;
+    try (i32) {
+        if _ {}
+    } catch []
+}

@@ -1,0 +1,1 @@
+type f2 = fn(); import "M" fn f();

@@ -1,0 +1,7 @@
+type t = fn(&extern) -> &extern;
+#[export = "tee-init"]
+fn f(p: &extern) -> &extern {
+    let x: &extern;
+    _ = x := p;
+    x;
+}

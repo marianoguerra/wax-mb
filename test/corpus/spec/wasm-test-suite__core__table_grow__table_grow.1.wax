@@ -1,0 +1,6 @@
+type t = fn() -> i32;
+#[export = "grow"]
+fn f() -> i32 {
+    t.grow(f, -16);
+}
+table t: &?func [16];

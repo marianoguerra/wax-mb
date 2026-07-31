@@ -1,0 +1,97 @@
+type t = fn(v128, v128) -> v128;
+type t_2 = fn(v128, i32) -> i32;
+type t_3 = fn(v128, f32) -> f32;
+type t_4 = fn(v128, i64) -> i64;
+type t_5 = fn(v128, f64) -> f64;
+type t_6 = fn(v128, i32, v128) -> v128;
+type t_7 = fn(v128, i32, v128, i32) -> v128;
+#[export]
+fn i8x16_extract_lane_s(x: v128, x_2: v128) -> v128 {
+    x.replace_lane_i8x16(0, x_2.extract_lane_s_i8x16(0));
+}
+#[export]
+fn i8x16_extract_lane_u(x: v128, x_2: v128) -> v128 {
+    x.replace_lane_i8x16(0, x_2.extract_lane_u_i8x16(0));
+}
+#[export]
+fn i16x8_extract_lane_s(x: v128, x_2: v128) -> v128 {
+    x.replace_lane_i16x8(0, x_2.extract_lane_s_i16x8(0));
+}
+#[export]
+fn i16x8_extract_lane_u(x: v128, x_2: v128) -> v128 {
+    x.replace_lane_i16x8(0, x_2.extract_lane_u_i16x8(0));
+}
+#[export]
+fn i32x4_extract_lane(x: v128, x_2: v128) -> v128 {
+    x.replace_lane_i32x4(0, x_2.extract_lane_i32x4(0));
+}
+#[export]
+fn f32x4_extract_lane(x: v128, x_2: v128) -> v128 {
+    x.replace_lane_i32x4(0, x_2.extract_lane_i32x4(0));
+}
+#[export]
+fn i64x2_extract_lane(x: v128, x_2: v128) -> v128 {
+    x.replace_lane_i64x2(0, x_2.extract_lane_i64x2(0));
+}
+#[export]
+fn f64x2_extract_lane(x: v128, x_2: v128) -> v128 {
+    x.replace_lane_f64x2(0, x_2.extract_lane_f64x2(0));
+}
+#[export = "i8x16_replace_lane-s"]
+fn f(x: v128, x_2: i32) -> i32 {
+    x.replace_lane_i8x16(15, x_2).extract_lane_s_i8x16(15);
+}
+#[export = "i8x16_replace_lane-u"]
+fn f_2(x: v128, x_2: i32) -> i32 {
+    x.replace_lane_i8x16(15, x_2).extract_lane_u_i8x16(15);
+}
+#[export = "i16x8_replace_lane-s"]
+fn f_3(x: v128, x_2: i32) -> i32 {
+    x.replace_lane_i16x8(7, x_2).extract_lane_s_i16x8(7);
+}
+#[export = "i16x8_replace_lane-u"]
+fn f_4(x: v128, x_2: i32) -> i32 {
+    x.replace_lane_i16x8(7, x_2).extract_lane_u_i16x8(7);
+}
+#[export]
+fn i32x4_replace_lane(x: v128, x_2: i32) -> i32 {
+    x.replace_lane_i32x4(3, x_2).extract_lane_i32x4(3);
+}
+#[export]
+fn f32x4_replace_lane(x: v128, x_2: f32) -> f32 {
+    x.replace_lane_f32x4(3, x_2).extract_lane_f32x4(3);
+}
+#[export]
+fn i64x2_replace_lane(x: v128, x_2: i64) -> i64 {
+    x.replace_lane_i64x2(1, x_2).extract_lane_i64x2(1);
+}
+#[export]
+fn f64x2_replace_lane(x: v128, x_2: f64) -> f64 {
+    x.replace_lane_f64x2(1, x_2).extract_lane_f64x2(1);
+}
+#[export = "as-v8x16_swizzle-operand"]
+fn f_5(x: v128, x_2: i32, x_3: v128) -> v128 {
+    x.replace_lane_i8x16(0, x_2).swizzle_i8x16(x_3);
+}
+#[export = "as-v8x16_shuffle-operands"]
+fn f_6(x: v128, x_2: i32, x_3: v128, x_4: i32) -> v128 {
+    x.replace_lane_i8x16(0, x_2).shuffle_i8x16(
+        16,
+        1,
+        18,
+        3,
+        20,
+        5,
+        22,
+        7,
+        24,
+        9,
+        26,
+        11,
+        28,
+        13,
+        30,
+        15,
+        x_3.replace_lane_i8x16(15, x_4),
+    );
+}

@@ -1,0 +1,7 @@
+const answer: i32 = 42;
+
+fn g() {}
+
+fn f() -> &func {
+    g;
+}

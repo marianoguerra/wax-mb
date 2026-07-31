@@ -1,0 +1,10 @@
+type t = fn() -> i32;
+import "Mt" table tab: &?func [10];
+fn f() -> i32 {
+    0;
+}
+memory m: i32 [0];
+memory m_2: i32 [1];
+memory m_3: i32 [0];
+elem e: &func @ tab [7] = [f];
+data m_4 @ m [65536] = "d";

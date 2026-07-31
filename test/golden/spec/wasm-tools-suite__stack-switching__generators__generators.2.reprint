@@ -1,0 +1,23 @@
+#![module = "manager"]
+type func_2 = fn();
+type cont_2 = cont func_2;
+type t = fn(i32);
+type t_2 = fn(&cont_2) -> i32;
+type t_3 = fn(i32) -> i32;
+type t_4 = fn() -> (i32, &cont_2);
+import "generator" tag yield: t ;
+#[export]
+fn init(k: &cont_2) -> i32 {
+    active.grow(k, 1);
+}
+#[export]
+fn next(g: i32) -> i32 {
+    let (next_v, next_k) =
+        'on_yield: do () -> (i32, &cont_2) {
+            active[g].resume() on [yield -> 'on_yield];
+            return -1;
+        };
+    active[g] = next_k;
+    return next_v;
+}
+table active: &?cont_2 [0];

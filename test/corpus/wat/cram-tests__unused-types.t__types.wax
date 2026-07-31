@@ -1,0 +1,25 @@
+type used = { a: i32 };
+type unused = { f: i32 };
+type _ignored = { };
+type reached_via_field = { f: i32 };
+type holder = { f: &?reached_via_field };
+type dead_target = { f: i64 };
+type dead_holder = { f: &?dead_target };
+// dead cycle: the two only name each other
+rec {
+    type rec_dead_a = { f: &?rec_dead_b };
+    type rec_dead_b = { f: &?rec_dead_a };
+}
+// live cycle: reached through the exported function's signature
+rec {
+    type rec_live_a = { f: &?rec_live_b };
+    type rec_live_b = { f: &?rec_live_a };
+}
+type only_in_dead_body = { f: i32 };
+fn dead() -> &?only_in_dead_body {
+    null;
+}
+#[export]
+fn f(h: &?holder, r: &?rec_live_a) -> i32 {
+    { a: 1 }.a;
+}

@@ -1,0 +1,1 @@
+cond ? val_true : val_false

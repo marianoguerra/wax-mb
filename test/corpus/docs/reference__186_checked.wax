@@ -1,0 +1,4 @@
+rec {
+    type list = { head: i32, tail: &?node };
+    type node = { rest: &list };
+}

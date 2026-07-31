@@ -1,0 +1,4 @@
+rec {
+    type t = fn();
+    type t_2 = fn();
+}

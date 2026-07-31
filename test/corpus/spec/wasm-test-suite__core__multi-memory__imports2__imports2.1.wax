@@ -1,0 +1,10 @@
+type t = fn(i32) -> i32;
+import "test" memory z: i32 [0];
+import "spectest"
+#[import = "memory"]
+memory m: i32 [1, 2];
+#[export]
+fn load(x: i32) -> i32 {
+    m.load32(x);
+}
+data d @ m [10] = "\x10";

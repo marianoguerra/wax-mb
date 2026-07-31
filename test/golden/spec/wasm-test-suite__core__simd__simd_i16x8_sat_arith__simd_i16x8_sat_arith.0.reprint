@@ -1,0 +1,17 @@
+type t = fn(v128, v128) -> v128;
+#[export = "i16x8.add_sat_s"]
+fn f(x: v128, x_2: v128) -> v128 {
+    x.add_sat_s_i16x8(x_2);
+}
+#[export = "i16x8.add_sat_u"]
+fn f_2(x: v128, x_2: v128) -> v128 {
+    x.add_sat_u_i16x8(x_2);
+}
+#[export = "i16x8.sub_sat_s"]
+fn f_3(x: v128, x_2: v128) -> v128 {
+    x.sub_sat_s_i16x8(x_2);
+}
+#[export = "i16x8.sub_sat_u"]
+fn f_4(x: v128, x_2: v128) -> v128 {
+    x.sub_sat_u_i16x8(x_2);
+}

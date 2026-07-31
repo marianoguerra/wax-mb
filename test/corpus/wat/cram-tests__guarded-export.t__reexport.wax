@@ -1,0 +1,11 @@
+#[export]
+#[export = "fmt", if(not(portable))]
+fn fmt32(v: &eq) -> &eq {
+    v;
+}
+#[if(portable)]
+{
+    import "m"
+    #[export = "fmt"]
+    fn fmt64(&eq) -> &eq;
+}

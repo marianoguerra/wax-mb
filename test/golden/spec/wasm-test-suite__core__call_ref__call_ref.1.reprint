@@ -1,0 +1,7 @@
+type t = fn();
+type t_2 = fn() -> i32;
+#[export = "unreachable"]
+fn f() -> i32 {
+    unreachable;
+    (_ as &?t)();
+}

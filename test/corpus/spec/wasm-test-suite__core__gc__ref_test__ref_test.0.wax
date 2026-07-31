@@ -1,0 +1,69 @@
+type ft = fn();
+type st = { };
+type at = [i8];
+type t = fn(&?extern);
+type t_2 = fn(i32) -> i32;
+fn f() {}
+#[export]
+fn init(x: &?extern) {
+    ta[0] = null;
+    ta[1] = null as &?struct;
+    ta[2] = null as &?none;
+    ta[3] = 7 as &i31;
+    ta[4] = {st| .. };
+    ta[5] = [at|..; 0];
+    ta[6] = x as &?any;
+    ta[7] = null as &?extern as &?any;
+    tf[0] = null as &?nofunc;
+    tf[1] = null;
+    tf[2] = f;
+    te[0] = null as &?noextern;
+    te[1] = null;
+    te[2] = x;
+    te[3] = 8 as &extern;
+    te[4] = {st| .. } as &extern;
+    te[5] = null as &?any as &?extern;
+}
+#[export]
+fn ref_test_null_data(i: i32) -> i32 {
+    !ta[i] + ta[i] is &?none;
+}
+#[export]
+fn ref_test_any(i: i32) -> i32 {
+    ta[i] is &any + ta[i] is &?any;
+}
+#[export]
+fn ref_test_eq(i: i32) -> i32 {
+    ta[i] is &eq + ta[i] is &?eq;
+}
+#[export]
+fn ref_test_i31(i: i32) -> i32 {
+    ta[i] is &i31 + ta[i] is &?i31;
+}
+#[export]
+fn ref_test_struct(i: i32) -> i32 {
+    ta[i] is &struct + ta[i] is &?struct;
+}
+#[export]
+fn ref_test_array(i: i32) -> i32 {
+    ta[i] is &array + ta[i] is &?array;
+}
+#[export]
+fn ref_test_null_func(i: i32) -> i32 {
+    !tf[i] + tf[i] is &?nofunc;
+}
+#[export]
+fn ref_test_func(i: i32) -> i32 {
+    tf[i] is &func + tf[i] is &?func;
+}
+#[export]
+fn ref_test_null_extern(i: i32) -> i32 {
+    !te[i] + te[i] is &?noextern;
+}
+#[export]
+fn ref_test_extern(i: i32) -> i32 {
+    te[i] is &extern + te[i] is &?extern;
+}
+table ta: &?any [10];
+table tf: &?func [10];
+table te: &?extern [10];

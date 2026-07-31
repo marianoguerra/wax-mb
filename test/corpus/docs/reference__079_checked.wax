@@ -1,0 +1,2 @@
+type point = { x: i32, y: i32 };
+type mutable_point = { x: mut i32, y: mut i32 };

@@ -1,0 +1,5 @@
+type t = fn(i32, i32) -> i32;
+#[export]
+fn addTwo(x: i32, x_2: i32) -> i32 {
+    x + x_2;
+}

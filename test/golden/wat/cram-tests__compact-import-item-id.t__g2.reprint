@@ -1,0 +1,7 @@
+import "env" {
+    const a: i32;
+    const b: i32;
+}
+fn f() -> i32 {
+    a + b;
+}

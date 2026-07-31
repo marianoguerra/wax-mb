@@ -1,0 +1,8 @@
+type t = fn();
+fn f() 'l: {
+    do {
+        if 1 {
+            br_table [ else 'l ] 1;
+        }
+    }
+}

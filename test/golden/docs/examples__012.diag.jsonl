@@ -1,0 +1,1 @@
+{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/examples__012.wax","startLine":2,"startColumn":4,"endLine":2,"endColumn":12,"startOffset":26,"endOffset":34,"message":"The tag 'overflow' is never used.","warning":"unused-field","hint":null,"related":[]}

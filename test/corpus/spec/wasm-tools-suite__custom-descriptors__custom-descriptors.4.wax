@@ -1,0 +1,8 @@
+#![feature = "custom-descriptors"]
+rec {
+    type t1 = open descriptor t2 { f: i32 };
+    type t2 = open describes t1 { f: &f };
+    type t1sub: t1 = open descriptor t2sub { .., f_2: f32 };
+    type t2sub: t2 = open describes t1sub { .., f_2: &f };
+    type f = fn() -> i32;
+}

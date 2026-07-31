@@ -1,0 +1,8 @@
+#[if(a)]
+{
+    #[export]
+    #[export = "g", if(b)]
+    fn f(v: &eq) -> &eq {
+        v;
+    }
+}

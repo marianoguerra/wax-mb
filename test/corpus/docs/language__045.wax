@@ -1,0 +1,3 @@
+br 'label;                          // unconditional branch
+br_if 'label cond;                  // branch if cond (an i32) is non-zero
+br_table ['a, 'b, else 'default] i;   // branch to the i-th label, else 'default

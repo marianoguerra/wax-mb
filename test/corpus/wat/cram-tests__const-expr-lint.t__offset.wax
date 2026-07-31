@@ -1,0 +1,9 @@
+memory m: i32 [1];
+let g = 0;
+data d @ m [
+        0 + 42
+    ] = "x";
+#[export]
+fn f() -> i32 {
+    g;
+}

@@ -1,0 +1,1 @@
+memory mem0: i32 [1, 1000]; memory mem1: i64 [2]; memory mem2: i32;

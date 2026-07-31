@@ -1,0 +1,3 @@
+arr[i]                      // Get element
+arr[i] = val;               // Set element (if mutable)
+arr.length()                // Array length

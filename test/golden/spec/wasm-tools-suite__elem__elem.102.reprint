@@ -1,0 +1,1 @@
+type t = fn(); fn f() {} table t: &?extern [1]; elem e: &func @ t [0] = [f];
