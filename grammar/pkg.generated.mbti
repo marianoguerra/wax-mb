@@ -31,6 +31,8 @@ pub fn decl_sign((@basic.Position, @basic.Position), @ast.Ident?, @ast.FuncType?
 
 pub fn error_state(Array[(@tokens.Token, @basic.Position, @basic.Position)]) -> ErrorState?
 
+pub fn expected_signature(Array[@tokens.TokenKind]) -> String
+
 pub fn[T] fail_at(@basic.Location, String, default~ : T, hint? : String?, fix? : @basic.Edit?) -> T
 
 pub fn freq_of_ratio(Double) -> Int
@@ -62,6 +64,8 @@ pub fn parse_string(String, fname? : String) -> ParseResult
 pub fn process_stmts(Array[RawStmt]) -> Array[@ast.Instr[@basic.Location]]
 
 pub fn record_error(@basic.Location, String, hint? : String?, fix? : @basic.Edit?) -> Unit
+
+pub fn reference_message(ArrayView[Int], String) -> String?
 
 pub fn[T] respan(@basic.Annotated[T, @basic.Location], (@basic.Position, @basic.Position)) -> @basic.Annotated[T, @basic.Location]
 

@@ -1,0 +1,9 @@
+import {
+  "waxmb/wax/grammar",
+  "waxmb/wax/lexer",
+  "waxmb/wax/trivia",
+  "moonbitlang/x/fs",
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")

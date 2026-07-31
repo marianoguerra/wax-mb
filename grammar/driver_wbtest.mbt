@@ -68,3 +68,44 @@ test "a repeated kind is listed once" {
     content="Expecting ';', or '}'.",
   )
 }
+
+///|
+test "a borrowed message may only name tokens this state accepts" {
+  // `signature` is the sorted spellings of the acceptable set, as
+  // `expected_signature` writes it.
+  let sig = "';' '}' 'as'"
+  assert_true(
+    message_fits("Assuming that X is complete, expecting ';', or '}'.", sig),
+  )
+  // The message from a state where '{' could follow: not here, so not borrowed.
+  assert_false(message_fits("Expecting '{', or '}'.", sig))
+  // Nothing quoted, nothing to contradict.
+  assert_true(message_fits("Expecting an expression.", sig))
+}
+
+///|
+test "the QUOTE token's own spelling is read as one token" {
+  // `'''` is three quote characters: the token IS a quote.
+  assert_true(message_fits("Expecting ''', or '{'.", "''' '{'"))
+  assert_false(message_fits("Expecting ''', or '{'.", "'{'"))
+}
+
+///|
+test "a message with an unpaired quote is prose" {
+  // Nothing in the golden looks like this, but a stray apostrophe must not
+  // silently reject a message.
+  assert_true(message_fits("Expecting the module's end.", "';'"))
+}
+
+///|
+test "the reference's own message is used when the stack is one it knows" {
+  // The whole point of parser_messages.mbt: the subject clause names the
+  // construct under way, which no acceptable-token set determines.
+  let r = parse_string("fn g(x: i32) -> i32;\n")
+  inspect(
+    r.errors[0].message,
+    content=(
+      #|Assuming that the function type is complete, expecting ''', or '{'.
+    ),
+  )
+}

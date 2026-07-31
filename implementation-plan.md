@@ -14,7 +14,7 @@ order it makes sense to do it.
 
 **Phase 5 — harden the front end**
 
-- [ ] 4. Reproduce the `Assuming that … is complete` subject phrase
+- [x] 4. Reproduce the `Assuming that … is complete` subject phrase
 - [ ] 5. Reproduce the related labels (`this statement`, `This '{' opens …`)
 - [ ] 6. Diff-fuzzing
 - [ ] 7. Error recovery and `--all-errors` *(research)*
@@ -45,8 +45,8 @@ order it makes sense to do it.
 | Oracle 1 — reprint parity | 1903 / 1903 byte-exact, idempotence gated alongside |
 | Oracle 2 — same wasm | 1592 / 1592 identical binaries |
 | Oracle 3 — same errors | 2112 / 2112 on severity, file, spans, offsets, exit code |
-| Unit tests | 135 |
-| Message drift | 231 entries: 182 message text, 23 related labels, 26 span (the 7 finding-9 exemptions) |
+| Unit tests | 148 |
+| Message drift | 78 entries: 29 message text, 23 related labels, 26 span (the 7 finding-9 exemptions) |
 | Upstream findings | 11, in `test/UPSTREAM-FINDINGS.md` |
 | Cram tests in scope | 2 of 328; the other 326 are listed with reasons in `test/cram-scope.md` |
 
@@ -213,7 +213,57 @@ rationale in its header comments); `tokens/tokens.mbt`;
 
 ---
 
-## 4. Reproduce the `Assuming that … is complete` subject phrase
+## 4. Reproduce the `Assuming that … is complete` subject phrase — done
+
+**Done.** Message drift fell from **182 to 29**, and the total from 231 to 78.
+The route was the plan's option 2, but sourced from committed goldens rather
+than from a menhir run, and keyed on the state rather than on the token set.
+
+**What made it possible.** MoonYacc's `--table` engine represents a state as an
+`Int` (the default direct-style engine makes it an anonymous closure), and
+leaves `yy_state`/`yy_input` package-visible. Switching the build rule to
+`--table` is behaviour-neutral — all three oracles unchanged, corpus run
+unchanged at ~1m7s — and makes the state observable. `grammar/state.mbt` then
+replays the token stream through the same tables with the actions left out and
+recovers the state *and the stack*; `test/corpus_parse/error_state_test.mbt`
+checks the replay stops on the token the real parse rejected, over all 191
+syntax-error corpus files.
+
+**The table.** `tools/gen_parser_messages.py` writes each of the 550 sentences
+in `parser_messages.expected` out as source, parses it, and records
+stack → message. `grammar/parser_messages.mbt` is the result: 462 keys, nothing
+dropped. Regenerating needs the `wax/` checkout and is a deliberate local act,
+like regenerating goldens.
+
+**One state was not enough.** Menhir's subject comes from reductions performed
+*at* the error, which depend on the stack — so our state 55 ("after an
+expression") is claimed by 14 different reference messages. The key is
+therefore a stack SUFFIX, taken only as deep as it needs to be: one frame
+resolves 435 of the 550 sentences, two resolve 533, seven resolve all of them.
+
+**Borrowing a message needs evidence.** A stack suffix recurs in contexts whose
+continuations differ, and the first version of this happily told the user, at
+the top level of a module, that a `'}'` would do. Two checks now gate every
+lookup: the acceptable-token *signature* recorded with the message must match
+(proof the context is the same), or failing that, every token the message
+NAMES must be legal here (`message_fits`) — the weaker evidence, which admits a
+message whose recorded context differed only in a token it never mentions. That
+combination is worth 3 drift entries over the signature alone, and it is the
+difference between a message that is merely unhelpful and one that is false.
+
+**What still drifts (29).** Two kinds. Most are states our replay reaches that
+the reference's own sentences never produced — `Assuming that the statement is
+complete, expecting ';', or '}'.` is generated from a sentence that lands in our
+state 55, while real code with a missing `;` lands in state 53. The rest are
+where the reference's message quotes a token we do not accept, so `message_fits`
+declines it; the `#[if(VERSION 1)]` case in task 3 is the example, and there
+ours is the accurate one.
+
+**Options 1 and 3 are still worth doing.** This is a rekeyed table, not a
+derivation: it can only say what the reference's sentence set covered. Exposing
+the error state on `UnexpectedToken` (finding 11) would not change that, but an
+automaton dump would — it is what tasks 4 and 5 would need to collapse into one
+generator, and what the remaining 29 would need.
 
 **Summary.** This is the bulk of the drift: **153 of 160** captured reference
 messages use the template `Assuming that the SUBJECT is/are complete,

@@ -36,7 +36,11 @@ pub fn parse_string(src : String, fname? : String = "") -> ParseResult {
   }
   let module_ = parse(lexed.tokens) catch {
     e =>
-      return { module_: None, errors: [report_of_parse_error(e)], trivia: ctx }
+      return {
+        module_: None,
+        errors: [report_of_parse_error(e, lexed.tokens)],
+        trivia: ctx,
+      }
   }
   // A semantic error is recorded rather than raised, so the parse "succeeds"
   // with a tree built partly from placeholders. Discard it.
@@ -64,21 +68,119 @@ pub fn parse_string(src : String, fname? : String = "") -> ParseResult {
 ///|
 /// Turn the automaton's own error into a diagnostic.
 ///
-/// The message is deliberately NOT an attempt to match the reference's wording.
-/// The reference derives its "Expecting an expression." text from the LR
-/// automaton through a generator (`stele`) that has no counterpart here, so
-/// message text is the one field the differential harness does not gate. The
-/// SPAN is gated, and that is reproduced exactly.
-fn report_of_parse_error(e : ParseError) -> @basic.Report {
-  match e {
-    UnexpectedToken(_, (start, end), expected) =>
-      @basic.Report::error({ start, end }, expecting_message(expected))
-    UnexpectedEndOfInput(pos, expected) =>
-      @basic.Report::error(
-        { start: pos, end: pos },
-        expecting_message(expected),
-      )
+/// The message is the reference's own where the state it failed in is one the
+/// reference has a message for -- that is what `parser_messages.mbt` is, and it
+/// is the only way to reach the "Assuming that the X is complete" subject,
+/// which names a grammar symbol nothing in MoonYacc's error value identifies.
+/// Otherwise it is the locally rendered acceptable-token list: less specific,
+/// never wrong.
+fn report_of_parse_error(
+  e : ParseError,
+  tokens : Array[(Token, Position, Position)],
+) -> @basic.Report {
+  let (loc, expected) : (@basic.Location, Array[TokenKind]) = match e {
+    UnexpectedToken(_, (start, end), expected) => ({ start, end }, expected)
+    UnexpectedEndOfInput(pos, expected) => ({ start: pos, end: pos }, expected)
   }
+  @basic.Report::error(
+    loc,
+    reference_message_for(e, tokens).unwrap_or(expecting_message(expected)),
+  )
+}
+
+///|
+/// The reference's message for this failure, if the tables have one.
+///
+/// The state comes from replaying the parse (`error_state`), so it is only
+/// trusted when the replay stopped where the parse did -- a disagreement means
+/// the replay no longer mirrors the engine, and a message keyed on the wrong
+/// state would be worse than no message at all.
+fn reference_message_for(
+  e : ParseError,
+  tokens : Array[(Token, Position, Position)],
+) -> String? {
+  guard error_state(tokens) is Some(st) else { return None }
+  let agrees = match e {
+    UnexpectedToken(_, (start, end), _) =>
+      st.token_index < tokens.length() &&
+      tokens[st.token_index].1 == start &&
+      tokens[st.token_index].2 == end
+    UnexpectedEndOfInput(_) => st.token_index >= tokens.length()
+  }
+  guard agrees else { return None }
+  let expected = match e {
+    UnexpectedToken(_, _, expected) | UnexpectedEndOfInput(_, expected) =>
+      expected
+  }
+  reference_message(st.stack[:], expected_signature(expected))
+}
+
+///|
+/// A signature of the acceptable-token set, for the message table.
+///
+/// A stack suffix alone is not enough to borrow the reference's message: the
+/// same top frames occur in contexts whose continuations differ (a `type`
+/// definition inside a `rec { … }` group accepts `'}'`, the same construct at
+/// the top level does not), and a message from the wrong one claims a token is
+/// legal when it is not. The acceptable set IS that difference, so the table
+/// records it and the lookup checks it.
+///
+/// Deliberately the raw spellings rather than the rendered message: the
+/// rendering has opinions (class collapse, ordering) that may change, and this
+/// wants to change only when the automaton does.
+pub fn expected_signature(expected : Array[TokenKind]) -> String {
+  let names = []
+  for k in expected {
+    names.push(k.to_expect_string())
+  }
+  names.sort_by((a, b) => a.lexical_compare(b))
+  names.join(" ")
+}
+
+///|
+/// Does this borrowed message claim only tokens this state really accepts?
+///
+/// The second half of the message-table lookup. A recorded signature that
+/// matches is proof the context is the same one; this is the weaker evidence
+/// used when it does not, and it is what the reader would check: every token
+/// the message NAMES must be legal here. It lets a message through when the
+/// recorded context differed in a token the message never mentions (the
+/// function-type state reached with `->` still ahead of it, say), and keeps out
+/// the one that matters -- a message from elsewhere in the grammar, offering a
+/// `'}'` that would close nothing.
+///
+/// Says nothing about a message with no quoted token in it ("Expecting an
+/// expression."), which is then borrowed on the stack key alone.
+fn message_fits(message : String, signature : String) -> Bool {
+  let padded = " " + signature + " "
+  let chars = message.to_array()
+  let mut i = 0
+  while i < chars.length() {
+    if chars[i] != '\'' {
+      i += 1
+      continue
+    }
+    // `'''` is the QUOTE token, whose spelling is a quote between quotes.
+    let (spelling, next) = if i + 2 < chars.length() &&
+      chars[i + 1] == '\'' &&
+      chars[i + 2] == '\'' {
+      ("'''", i + 3)
+    } else {
+      let mut j = i + 1
+      while j < chars.length() && chars[j] != '\'' {
+        j += 1
+      }
+      if j >= chars.length() {
+        return true // an unpaired quote is prose, not a token
+      }
+      (String::from_array(chars[i:j + 1].to_owned()), j + 1)
+    }
+    if !padded.contains(" " + spelling + " ") {
+      return false
+    }
+    i = next
+  }
+  true
 }
 
 ///|
