@@ -43,6 +43,8 @@ pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.L
 
 pub fn run_string((@printer.Printer) -> Unit) -> String
 
+pub fn[Info] simple_inline_instr(@ast.Instr[Info]) -> Bool
+
 pub fn[Info] starts_with_block(@ast.Instr[Info]) -> Bool
 
 pub fn[Info] starts_with_block_prec(Prec, @ast.Instr[Info]) -> Bool

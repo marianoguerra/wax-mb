@@ -257,17 +257,59 @@ fn Ctx::data_name(self : Ctx[@basic.Location], n : @ast.Ident?) -> Unit {
 }
 
 ///|
-/// `@target[offset]` -- an active segment's placement.
+/// A bracketed offset instruction, `[off]`.
+///
+/// A SIMPLE offset -- a name or a literal -- stays inline. Anything else, or a
+/// comment forcing a break, gets the indented form with the `]` on its own
+/// line, so `data d @ [0x1000 // why\n]` keeps the comment where it was
+/// written.
+fn Ctx::square_instr(
+  self : Ctx[@basic.Location],
+  i : @ast.Instr[@basic.Location],
+  leading_space? : Bool = false,
+) -> Unit {
+  if simple_inline_instr(i) {
+    if leading_space {
+      self.space()
+    }
+    self.punct("[")
+    self.instr(Instruction, i)
+    self.punct("]")
+  } else {
+    if leading_space {
+      self.p.hbox(() => {
+        self.space()
+        self.punct("[")
+      })
+    } else {
+      self.punct("[")
+    }
+    self.p.indent(indent_level, () => {
+      self.newline()
+      self.instr(Instruction, i)
+    })
+    self.newline()
+    self.punct("]")
+  }
+}
+
+///|
+/// ` @ target [offset]` -- an active segment's placement.
+///
+/// The spaces are real: the reference writes `data d @ mem [0]`, not
+/// `data d@mem[0]`.
 fn Ctx::targeted_offset(
   self : Ctx[@basic.Location],
   target : @ast.Ident,
   off : @ast.Instr[@basic.Location],
 ) -> Unit {
-  self.punct("@")
-  self.ident(target.name)
-  self.punct("[")
-  self.p.box(() => self.instr(Instruction, off))
-  self.punct("]")
+  self.p.hbox(() => {
+    self.space()
+    self.op("@")
+    self.space()
+    self.ident(target.name)
+  })
+  self.square_instr(off, leading_space=true)
 }
 
 ///|
@@ -279,19 +321,24 @@ fn Ctx::eq_square_instr_list(
   self.p.hbox(() => {
     self.space()
     self.punct("=")
+    self.space()
   })
-  self.space()
-  self.p.hvbox(() => {
+  // More than three elements and the list is laid out one per line
+  // UNCONDITIONALLY -- a count, not a width test, so a long element list stays
+  // readable even when it would technically fit.
+  if l.length() > 3 {
     self.punct("[")
-    if l.length() > 0 {
-      self.p.indent(indent_level, () => {
-        self.cut()
-        self.list_commasep_trailing(l, i => self.instr(Instruction, i))
-      })
-      self.cut()
-    }
+    self.p.indent(indent_level, () => {
+      self.newline()
+      self.list_commasep(l, i => self.instr(Instruction, i))
+    })
+    self.newline()
     self.punct("]")
-  })
+  } else {
+    self.punct("[")
+    self.p.box(() => self.list_commasep(l, i => self.instr(Instruction, i)))
+    self.punct("]")
+  }
 }
 
 ///|
@@ -305,11 +352,10 @@ fn Ctx::memdata(
       self.kw("data")
       self.space()
       self.data_name(d.data_name)
+      self.space()
+      self.op("@")
     })
-    self.punct("@")
-    self.punct("[")
-    self.p.box(() => self.instr(Instruction, d.offset))
-    self.punct("]")
+    self.square_instr(d.offset, leading_space=true)
     if d.init.length() > 0 {
       self.p.hbox(() => {
         self.space()

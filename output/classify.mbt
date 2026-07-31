@@ -224,3 +224,15 @@ fn cond_list(l : Array[@wasm_types.Cond]) -> String {
   }
   parts.join(", ")
 }
+
+///|
+/// Whether an instruction is simple enough to sit inline inside brackets.
+///
+/// A name or a literal only: anything with structure gets the broken-out form
+/// so the brackets do not have to hold a multi-line expression.
+pub fn[Info] simple_inline_instr(i : @ast.Instr[Info]) -> Bool {
+  match i.desc {
+    Get(_) | Path(_) | Char(_) | Str(_) | Int(_) | Float(_) => true
+    _ => false
+  }
+}
