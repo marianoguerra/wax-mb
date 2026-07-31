@@ -1,0 +1,64 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/warning"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub let all : Array[Warning]
+
+pub let default_policy : Policy
+
+pub fn groups() -> Array[String]
+
+pub fn parse_spec(String) -> Result[(String, Level), String]
+
+// Errors
+
+// Types and methods
+pub(all) enum Level {
+  Hidden
+  Displayed
+  ErrorLevel
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Policy {
+  level : (Warning) -> Level
+}
+pub fn Policy::resolve(Self, Warning) -> Level
+pub fn Policy::set(Self, String, Level) -> Result[Self, String]
+
+pub(all) enum Warning {
+  UnusedLocal
+  UnusedField
+  UnusedImport
+  UnusedLabel
+  UnnecessaryMut
+  ShiftOverflow
+  ConstantTrap
+  TautologicalComparison
+  ConstantCondition
+  UnusedResult
+  DeadCode
+  CastAlwaysFails
+  EagerSelect
+  Precedence
+  RedundantOperation
+  TruncatedCoverage
+  NamingConflict
+  ReservedWordRename
+  GeneratedName
+  CompoundAssignment
+  FieldPunning
+  RedundantAnnotation
+  ConfusableUnicode
+} derive(Eq, @debug.Debug)
+pub fn Warning::description(Self) -> String
+pub fn Warning::is_unnecessary(Self) -> Bool
+pub fn Warning::name(Self) -> String
+
+// Type aliases
+
+// Traits
+
