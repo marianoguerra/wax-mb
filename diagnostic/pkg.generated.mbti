@@ -1,0 +1,99 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/diagnostic"
+
+import {
+  "moonbitlang/core/debug",
+  "waxmb/wax/basic",
+  "waxmb/wax/colors",
+  "waxmb/wax/message",
+  "waxmb/wax/warning",
+}
+
+// Values
+pub fn buffer_sink(StringBuilder) -> Sink
+
+pub fn collector(parent? : Context?, source? : String?) -> Context
+
+pub fn get_theme(color? : @colors.Flag, palette? : @colors.Theme, is_tty? : Bool) -> Theme
+
+pub fn output_error(Sink, Theme, OutputFormat, String?, Diagnostic) -> Unit
+
+pub fn[T] run(Sink, @colors.Flag, @colors.Theme, String?, (Context) -> T, format? : OutputFormat, related? : Array[Label], exit_on_error? : Bool, policy? : @warning.Policy, is_tty? : Bool, max? : Int) -> (T, Context)
+
+// Errors
+
+// Types and methods
+pub struct Context {
+  max : Int
+  queue : Array[Diagnostic]
+  source : String?
+  related : Array[Label]
+  policy : @warning.Policy
+  render : Render?
+  mut recovery : Bool
+  mut failed : Bool
+}
+pub fn Context::collected(Self) -> Array[Diagnostic]
+pub fn Context::failed(Self) -> Bool
+pub fn Context::in_recovery(Self) -> Bool
+pub fn Context::report(Self, @basic.Location, Severity, @message.Message, warning? : @warning.Warning?, universal? : Bool, hint? : @message.Message?, edit? : Edit?, related? : Array[Label]) -> Unit
+pub fn Context::set_recovery(Self, Bool) -> Unit
+pub fn Context::source(Self) -> String?
+
+pub(all) struct Diagnostic {
+  loc : @basic.Location
+  severity : Severity
+  warning : @warning.Warning?
+  message : @message.Message
+  hint : @message.Message?
+  edit : Edit?
+  related : Array[Label]
+  universal : Bool
+}
+
+pub(all) struct Edit {
+  loc : @basic.Location
+  new_text : String
+}
+
+pub(all) struct Label {
+  loc : @basic.Location
+  message : @message.Message
+}
+
+pub(all) enum OutputFormat {
+  Human
+  Json
+  Short
+} derive(Eq, @debug.Debug)
+
+type Render
+
+pub(all) enum Severity {
+  Error
+  Warning
+  Suggestion
+} derive(Eq, @debug.Debug)
+pub fn Severity::header(Self) -> String
+pub fn Severity::to_str(Self) -> String
+
+pub(all) struct Sink {
+  write : (String) -> Unit
+  flush : () -> Unit
+}
+
+pub(all) struct Theme {
+  error_header : String
+  warning_header : String
+  hint_header : String
+  error_label : String
+  warning_label : String
+  secondary_label : String
+  line_numbers : String
+  body : @colors.Theme
+}
+
+// Type aliases
+
+// Traits
+
