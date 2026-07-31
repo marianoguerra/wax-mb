@@ -1,0 +1,9 @@
+import {
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
+
+// xid.mbt is transliterated generated data, not hand-written code.
+formatter(ignore: [ "xid.mbt" ])
