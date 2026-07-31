@@ -2,4 +2,4 @@
 using @basic {type Location, type Position, type Report}
 
 ///|
-using @tokens {type Token, type Triple}
+using @tokens {type Token}

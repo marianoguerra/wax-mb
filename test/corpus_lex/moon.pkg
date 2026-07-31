@@ -1,0 +1,12 @@
+import {
+}
+
+import {
+  "waxmb/wax/lexer",
+  "waxmb/wax/tokens",
+  "moonbitlang/x/fs",
+  "moonbitlang/core/json",
+  "moonbitlang/core/test",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/debug",
+} for "test"
