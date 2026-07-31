@@ -8,7 +8,7 @@ order it makes sense to do it.
 
 **Near-term — close the gaps in what already exists**
 
-- [ ] 1. Point CI at the port, not at the reference
+- [x] 1. Point CI at the port, not at the reference
 - [ ] 2. Run the cram suite in CI
 - [ ] 3. Readable token names for the `Expecting …` list
 
@@ -56,7 +56,34 @@ is the one command that says so.
 
 ---
 
-## 1. Point CI at the port, not at the reference
+## 1. Point CI at the port, not at the reference — done
+
+**Done.** The `check` job now builds the native executable and runs
+`tools/waxdiff.py run --oracle 1 --oracle 3 --impl tools/wax-mb`, so CI
+exercises the port. It stays hermetic: no reference binary, no `wax/` checkout.
+
+The harness self-test moved to its own job, `harness-self-test`, which fetches
+the pinned reference and runs `waxdiff.py run --self-test` over all three
+oracles (~90 s — this is also the only place oracle 2 runs in CI). It is
+`continue-on-error: true` for the same reason `drift` is: its one external
+dependency is the floating `edge` asset, so an upstream rebuild would otherwise
+redden every PR for a reason unrelated to the change.
+
+Two harness bugs surfaced while wiring it up, both fixed in `waxdiff.py`:
+
+- `--self-test` failed on 7 files. The finding-9 span exemptions carry a
+  staleness check ("listed but the spans now agree — did upstream fix it?"),
+  and with `--impl` pointed at the reference the spans *always* agree. The
+  exemptions describe the port, so the check is now suppressed under
+  `--self-test` (`policy["self_test"]`).
+- `--self-test` only *documented* that it used the reference; it inherited
+  whatever `--impl` said. It now sets `impl` itself, so
+  `--self-test --impl tools/wax-mb` cannot quietly mean something else.
+
+Also: `need_reference()` checked the committed *wrapper*, which always exists,
+rather than the gitignored binary it execs — so a missing reference produced
+~8400 separate exit-127 failures instead of one clear message. It now checks
+the asset named in `reference.json`.
 
 **Summary.** `.github/workflows/check.yml` runs
 `tools/waxdiff.py run --oracle 1 --oracle 3` with no `--impl`. That flag

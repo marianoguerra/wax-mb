@@ -42,15 +42,50 @@ jobs:
       - name: test
         run: moon test --target all
 
-      # The differential suite runs against the COMMITTED goldens, so it needs
-      # neither the reference binary nor the wax/ checkout. Keep it that way:
-      # adding a fetch step here trades away the hermetic property. Regenerating
-      # goldens needs the reference, and is a deliberate local act.
+      # The harness drives an executable, not `moon run`, which would re-check
+      # the build graph once per file over a 2100-file corpus. tools/wax-mb
+      # locates what this step builds.
+      - name: build the native executable
+        run: moon build --target native
+
+      # The differential suite runs the PORT against the COMMITTED goldens, so
+      # it needs neither the reference binary nor the wax/ checkout. Keep it
+      # that way: adding a fetch step here trades away the hermetic property.
+      # Regenerating goldens needs the reference, and is a deliberate local act.
+      #
+      # --impl is what puts the port under test. Without it the harness defaults
+      # to the reference and compares it against its own goldens -- green no
+      # matter what the port does. That is a harness self-test, and it lives in
+      # its own job below.
       #
       # Oracle 2 is excluded because it alone needs the reference back end to
       # compile our output; 1 and 3 compare against committed files.
-      - name: differential harness
-        run: tools/waxdiff.py run --oracle 1 --oracle 3
+      - name: differential harness (oracles 1 and 3, port under test)
+        run: tools/waxdiff.py run --oracle 1 --oracle 3 --impl tools/wax-mb
+
+  # Validates the HARNESS, not the port: --self-test points --impl at the
+  # reference, so every oracle must pass trivially and any failure is a waxdiff
+  # bug. It needs the pinned reference binary, which is why it is a separate job
+  # -- the `check` job above stays hermetic.
+  #
+  # Non-blocking, for the same reason `drift` is: its only external dependency
+  # is the floating `edge` asset, so an upstream rebuild would redden every PR
+  # for a reason that has nothing to do with the change under review. `drift`
+  # is the job that names that cause.
+  #
+  # This is also the only place oracle 2 runs in CI, since the reference is
+  # present here anyway.
+  harness-self-test:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: fetch the pinned reference
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: tools/fetch-reference.sh
+      - name: harness self-test (reference against its own goldens)
+        run: tools/waxdiff.py run --self-test
 
   # `edge` upstream is rebuilt on every push to ocsigen/wax main, so the pinned
   # oracle can go stale silently. Catch that on a schedule rather than

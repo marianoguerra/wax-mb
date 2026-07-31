@@ -129,7 +129,11 @@ def wax(*args: str, timeout: int = 60) -> Run:
 
 
 def need_reference() -> None:
-    if not REFERENCE.exists():
+    # The wrapper is committed; the binary it execs is not (13 MB, gitignored).
+    # Checking the binary is what matters -- otherwise the precondition holds
+    # and every one of the ~8400 invocations fails separately with exit 127.
+    asset = json.loads((ROOT / "tools" / "reference.json").read_text())["asset"]
+    if not REFERENCE.exists() or not (ROOT / "tools" / asset).exists():
         sys.exit("waxdiff: reference missing; run tools/fetch-reference.sh")
 
 
@@ -784,7 +788,7 @@ def check_oracle3(
         for f in policy["reported"]:
             if w.get(f) != g.get(f):
                 out.drift.append(f"{rel} #{i} {f}\n  ref: {w.get(f)!r}\n  ours: {g.get(f)!r}")
-    if span_exempt and not saw_span_divergence:
+    if span_exempt and not saw_span_divergence and not policy.get("self_test"):
         out.failed += 1
         out.failures.append(
             Failure(rel, "errors",
@@ -812,6 +816,11 @@ def cmd_run(args) -> int:
 
     if args.self_test:
         # Validating the harness by pointing --impl at the reference itself.
+        # The mode *is* that substitution, so it picks the implementation
+        # rather than trusting the default: `--self-test --impl tools/wax-mb`
+        # would otherwise silently mean something else entirely.
+        impl = [str(REFERENCE)]
+        need_reference()
         #
         # Oracles 1 and 2 are scope-neutral -- they ask "does this produce the
         # same bytes?" -- so the reference must pass them perfectly, and any
@@ -823,6 +832,11 @@ def cmd_run(args) -> int:
         # correctly reports the type error the expectation forbids. So the
         # reference is only a valid stand-in on the buckets compared with
         # `match`, and the rest are skipped rather than counted as failures.
+        #
+        # The finding-9 span exemptions are likewise a property of the PORT, not
+        # of the harness: the reference cannot diverge from its own goldens, so
+        # the staleness check guarding them would fire on every listed file.
+        policy["self_test"] = True
         for bucket, modes in policy["buckets"].items():
             if isinstance(modes, dict) and modes.get("oracle3") == "no-errors":
                 modes["oracle3"] = "skip"
@@ -1178,8 +1192,9 @@ def main() -> int:
         "--impl",
         default="tools/wax-ref",
         help="the implementation under test, invoked with the reference's own "
-        "command line. Defaults to the reference itself, which self-tests the "
-        "harness: every oracle must pass trivially.",
+        "command line; pass tools/wax-mb for the port. The default compares the "
+        "reference against its own goldens, which passes trivially whatever the "
+        "port does -- prefer --self-test when that is what you actually want.",
     )
     c.add_argument(
         "--oracle",
@@ -1201,7 +1216,8 @@ def main() -> int:
     c.add_argument(
         "--self-test",
         action="store_true",
-        help="validate the harness itself with --impl tools/wax-ref. Skips the "
+        help="validate the harness itself: forces --impl to tools/wax-ref, so "
+        "the reference is compared against its own goldens. Skips the "
         "oracle-3 buckets where the reference is knowingly not a valid stand-in "
         "for a front-end-only port; everything else must pass perfectly.",
     )
