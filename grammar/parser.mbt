@@ -170,11 +170,40 @@ priv enum YYSymbol {
   NT_structure_type_field
   NT_structure_type
   NT_structtype
+  NT_arraytype
+  NT_composite_type
+  NT_type_name
+  NT_type_definition
+  NT_rectype
+  NT_attribute_expression
+  NT_attribute_guard
+  NT_attribute
+  NT_hint_attr
+  NT_hint_target
+  NT_inner_attribute
+  NT_simple_pattern
+  NT_function_parameter
+  NT_parameter_list
+  NT_function_type_definition
+  NT_function_name
   NT_parse
-  NT_function_type_as
+  NT_expression
+  NT_condition
+  NT_boption_QUESTIONMARK_
+  NT_boption_BANG_
   NT_non_empty_sep_trailing_COMMA_value_type_
+  NT_boption_MUT_
   NT_sep_trailing_COMMA_structure_type_field_
+  NT_option_supertype_clause_
+  NT_boption_OPEN_
+  NT_list_of_type_definition_
+  NT_sep_trailing_COMMA_hint_target_
+  NT_sep_trailing_COMMA_function_parameter_
+  NT_function_type_AS_
+  NT_function_type_TYPE_
   NT_non_empty_sep_trailing_COMMA_structure_type_field_
+  NT_non_empty_sep_trailing_COMMA_hint_target_
+  NT_non_empty_sep_trailing_COMMA_function_parameter_
   EOI
 }
 
@@ -187,7 +216,7 @@ fn init {
 }
 
 // file:///./parser.mbty
-// 368|    EOF { () }
+// 545|    EOF { () }
 fn yy_action_0(_last_pos : Position, _args : ArrayView[(YYObj, Position, Position)]) -> YYObj {
   YYObj_Unit({();  () })
 }

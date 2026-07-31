@@ -196,15 +196,15 @@
 // standard `separated_list` is not enough. The reference defines these as
 // parameterised rules and so do we -- MoonYacc supports the same form.
 
-non_empty_sep_trailing[T](sep : Unit, X : T) -> Array[T]
+non_empty_sep_trailing[T](SEP, X : T) -> Array[T]
   : X { [$1] }
-  | X sep { [$1] }
-  | X sep non_empty_sep_trailing(sep, X) { [$1, ..$3] }
+  | X SEP { [$1] }
+  | X SEP non_empty_sep_trailing(SEP, X) { [$1, ..$3] }
   ;
 
-sep_trailing[T](sep : Unit, X : T) -> Array[T]
+sep_trailing[T](SEP, X : T) -> Array[T]
   : { [] }
-  | non_empty_sep_trailing(sep, X) { $1 }
+  | non_empty_sep_trailing(SEP, X) { $1 }
   ;
 
 // ===========================================================================
@@ -288,20 +288,10 @@ heap_type -> HeapType
   ;
 
 reference_type -> RefType
-  : "&" opt_question opt_bang heap_type {
+  : "&" boption("?") boption("!") heap_type {
       let typ = if $3 { make_exact($sloc, $4) } else { $4 }
       { nullable: $2, typ }
     }
-  ;
-
-%inline opt_question -> Bool
-  : { false }
-  | "?" { true }
-  ;
-
-%inline opt_bang -> Bool
-  : { false }
-  | "!" { true }
   ;
 
 value_type -> ValType
@@ -312,7 +302,7 @@ value_type -> ValType
 cast_type -> CastType
   : IDENT { cast_type_of($loc($1), $1) }
   | reference_type { Value(Ref($1)) }
-  | "&" opt_question FN function_type_as { Func(nullable=$2, sign=$4) }
+  | "&" boption("?") FN function_type_as { Func(nullable=$2, sign=$4) }
   ;
 
 result_type_ -> Array[ValType]
@@ -331,12 +321,7 @@ storage_type -> StorageType
   ;
 
 field_type -> FieldType
-  : opt_mut storage_type { { mut_: $1, typ: $2 } }
-  ;
-
-%inline opt_mut -> Bool
-  : { false }
-  | MUT { true }
+  : boption(MUT) storage_type { { mut_: $1, typ: $2 } }
   ;
 
 field_name -> Ident
@@ -362,12 +347,208 @@ structtype -> Array[Annotated[(Ident, FieldType), Location]]
   | "{" structure_type "}" { $2 }
   ;
 
-// TEMPORARY: placeholder so the grammar is well-formed while the remaining
-// sections are translated. Replaced by the real `parse` rule.
+arraytype -> FieldType
+  : "[" field_type "]" { $2 }
+  ;
+
+composite_type -> CompType
+  : structtype { Struct($1) }
+  | function_type_definition { Func($1) }
+  | arraytype { Array($1) }
+  // A continuation type wraps a NAMED function type: `cont ft`.
+  | CONT type_name { Cont($2) }
+  ;
+
+type_name -> Ident
+  : ident { $1 }
+  ;
+
+type_definition -> Annotated[(Ident, SubType), Location]
+  : TYPE type_name option(supertype_clause) "=" boption(OPEN)
+    ioption(describes_clause) ioption(descriptor_clause) composite_type ";" {
+      annot($sloc, ($2, {
+        typ: $8,
+        supertype: $3,
+        // `open` is the spelling; the AST stores the negation, because
+        // final-by-default is what WebAssembly encodes.
+        final_: not($5),
+        descriptor: $7,
+        describes: $6,
+      }))
+    }
+  ;
+
+%inline supertype_clause -> Ident
+  : ":" type_name { $2 }
+  ;
+
+%inline describes_clause -> Ident
+  : DESCRIBES type_name { $2 }
+  ;
+
+%inline descriptor_clause -> Ident
+  : DESCRIPTOR type_name { $2 }
+  ;
+
+rectype -> Annotated[Array[Annotated[(Ident, SubType), Location]], Location]
+  : REC "{" list_of(type_definition) "}" { annot($loc($1), $3) }
+  // Reuse the type definition's OWN already-registered span rather than
+  // registering a duplicate for the same range, which would split trivia
+  // between the two.
+  | type_definition { { desc: [$1], info: $1.info } }
+  ;
+
+// An array-returning list. The stdlib's `list` yields @list.List, but the AST
+// holds arrays; left recursion also keeps this linear rather than quadratic.
+list_of[T](X : T) -> Array[T]
+  : { [] }
+  | list_of(X) X { $1.push($2); $1 }
+  ;
+
+// ===========================================================================
+// Attributes
+// ===========================================================================
+
+attribute_expression -> Instr[Location]
+  : expression { $1 }
+  ;
+
+// `import` heads a grouped-import block, so it is a keyword rather than an
+// IDENT; accept it explicitly so `#[import = ...]` keeps working.
+%inline attribute_name -> String
+  : IDENT { $1 }
+  | IMPORT { "import" }
+  ;
+
+// An optional conditional-compilation guard on a SINGLE attribute,
+// `#[export = "n", if(not(portable))]`. It reuses the `#[if(...)]` condition
+// grammar, parentheses included; only `export` accepts one, which the typer
+// checks.
+attribute_guard -> Annotated[Cond, Location]?
+  : { None }
+  | "," IF "(" condition ")" { Some({ desc: $4, info: loc_of($loc($2)) }) }
+  ;
+
+attribute -> Attribute
+  : "#" "[" attribute_name "=" attribute_expression attribute_guard "]" {
+      {
+        attr_name: $3,
+        attr_value: Some($5),
+        attr_guard: $6,
+        attr_span: loc_of($sloc),
+      }
+    }
+  | "#" "[" attribute_name attribute_guard "]" {
+      {
+        attr_name: $3,
+        attr_value: None,
+        attr_guard: $4,
+        attr_span: loc_of($sloc),
+      }
+    }
+  ;
+
+// One hint attribute, carrying its own span so a diagnostic about a misplaced
+// hint points at the attribute rather than at the instruction it decorates.
+hint_attr -> ((Position, Position), HintSetter)
+  : attribute { ($loc($1), hint_of_attr($loc($1), $1)) }
+  | "#" "[" IDENT "(" sep_trailing(",", hint_target) ")" "]" {
+      ($sloc, targets_of_attr($sloc, $3, $5))
+    }
+  ;
+
+// One likely callee of an indirect call, with how often it is taken as a
+// fraction of 1.
+hint_target -> (Ident, Int)
+  : ident ":" target_fraction { ($1, $3) }
+  ;
+
+%inline target_fraction -> Int
+  : FLOAT { target_percent($loc($1), $1) }
+  | INT { target_percent($loc($1), $1) }
+  ;
+
+// A module-level inner attribute, `#![module = "name"]`.
+inner_attribute -> Attribute
+  : "#" "!" "[" IDENT "=" attribute_expression "]" {
+      {
+        attr_name: $4,
+        attr_value: Some($6),
+        attr_guard: None,
+        attr_span: loc_of($sloc),
+      }
+    }
+  | "#" "!" "[" IDENT "]" {
+      {
+        attr_name: $4,
+        attr_value: None,
+        attr_guard: None,
+        attr_span: loc_of($sloc),
+      }
+    }
+  ;
+
+// ===========================================================================
+// Function signatures
+// ===========================================================================
+
+simple_pattern -> Ident?
+  : ident { Some($1) }
+  | "_" { None }
+  ;
+
+function_parameter -> Annotated[(Ident?, ValType), Location]
+  : ident ":" value_type { annot($sloc, (Some($1), $3)) }
+  | value_type { annot($sloc, (None, $1)) }
+  ;
+
+parameter_list -> Array[Annotated[(Ident?, ValType), Location]]
+  : sep_trailing(",", function_parameter) { $1 }
+  ;
+
+// `ctx` is a PHANTOM parameter (Pottier, "Reachability and Error Diagnosis in
+// LR(1) Parsers", CC 2016, section 4 "Selective Duplication"): it is unused in
+// the body, but instantiating this rule at each of its homes makes the
+// generator expand it into distinct automaton nonterminals with their own LR
+// items. So the "after the parameter list" error state of a DECLARATION no
+// longer merges with the type-position one, and reports only the continuations
+// a signature admits (`->`, `{`, `;`) instead of their union with an
+// expression's operator FOLLOW.
+//
+// Never inline it: an inlined rule vanishes from the automaton and the split
+// goes with it. The two actuals are existing terminals chosen only as symbols
+// evocative of each home; the parameter is never referenced.
+function_type(ctx) -> FuncType
+  : "(" parameter_list ")" ioption(result_arrow) {
+      { params: $2, results: $4.unwrap_or([]) }
+    }
+  ;
+
+%inline result_arrow -> Array[ValType]
+  : "->" result_type { $2 }
+  ;
+
+%inline function_type_as -> FuncType
+  : function_type(AS) { $1 }
+  ;
+
+function_type_definition -> FuncType
+  : FN function_type(TYPE) { $2 }
+  ;
+
+function_name -> Ident
+  : ident { $1 }
+  ;
+
+// TEMPORARY: placeholder while the remaining sections are translated.
 parse -> Unit
   : EOF { () }
   ;
 
-function_type_as -> FuncType
-  : EOF { { params: [], results: [] } }
+expression -> Instr[Location]
+  : EOF { with_loc($sloc, Nop) }
+  ;
+
+condition -> Cond
+  : EOF { Not(Version(0, 0, 0)) }
   ;
