@@ -222,9 +222,15 @@ priv enum YYSymbol {
   NT_branch_expr
   NT_array_body
   NT_expression
-  NT_parse
-  NT_statement_list
+  NT_let_pattern
+  NT_let_pattern_
+  NT_compound_assign_op
   NT_hinted_statement
+  NT_statement
+  NT_statement_list
+  NT_raw_statement_list
+  NT_cond_stmt
+  NT_parse
   NT_condition
   NT_boption_QUESTIONMARK_
   NT_boption_BANG_
@@ -254,6 +260,8 @@ priv enum YYSymbol {
   NT_option_legacy_catch_all_
   NT_sep_trailing_COMMA_expression_
   NT_sep_trailing_COMMA_argument_
+  NT_sep_trailing_COMMA_let_pattern_
+  NT_option_semi_then_statements_
   NT_non_empty_sep_trailing_COMMA_structure_type_field_
   NT_non_empty_sep_trailing_COMMA_hint_target_
   NT_non_empty_sep_trailing_COMMA_function_parameter_
@@ -263,6 +271,7 @@ priv enum YYSymbol {
   NT_non_empty_sep_trailing_COMMA_catch_
   NT_non_empty_sep_trailing_COMMA_expression_
   NT_non_empty_sep_trailing_COMMA_argument_
+  NT_non_empty_sep_trailing_COMMA_let_pattern_
   EOI
 }
 
@@ -275,7 +284,7 @@ fn init {
 }
 
 // file:///./parser.mbty
-// 1043|    EOF { () }
+// 1217|    EOF { () }
 fn yy_action_0(_last_pos : Position, _args : ArrayView[(YYObj, Position, Position)]) -> YYObj {
   YYObj_Unit({();  () })
 }

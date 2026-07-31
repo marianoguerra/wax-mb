@@ -1052,17 +1052,169 @@ expression -> Instr[Location]
   | hint_attr expression %prec prec_block { hinted($1.0, [$1.1], $2) }
   ;
 
+// ===========================================================================
+// Statements
+// ===========================================================================
+
+let_pattern -> (Ident?, ValType?)
+  : simple_pattern ioption(type_annot) { ($1, $2) }
+  ;
+
+%inline type_annot -> ValType
+  : ":" value_type { $2 }
+  ;
+
+let_pattern_ -> Array[(Ident?, ValType?)]
+  : sep_trailing(",", let_pattern) { $1 }
+  ;
+
+// The operator of a compound assignment `x op= e`. Mirrors the value-producing
+// arithmetic and bitwise operators; comparisons are excluded, since `x <= e`
+// would be a comparison rather than an assignment.
+compound_assign_op -> Annotated[@ast.BinOp, Location]
+  : "+=" { annot($sloc, Add) }
+  | "-=" { annot($sloc, Sub) }
+  | "*=" { annot($sloc, Mul) }
+  | "/=" { annot($sloc, Div(None)) }
+  | "/s=" { annot($sloc, Div(Some(Signed))) }
+  | "/u=" { annot($sloc, Div(Some(Unsigned))) }
+  | "%s=" { annot($sloc, Rem(Signed)) }
+  | "%u=" { annot($sloc, Rem(Unsigned)) }
+  | "&=" { annot($sloc, And) }
+  | "|=" { annot($sloc, Or) }
+  | "^=" { annot($sloc, Xor) }
+  | "<<=" { annot($sloc, Shl) }
+  | ">>s=" { annot($sloc, Shr(Signed)) }
+  | ">>u=" { annot($sloc, Shr(Unsigned)) }
+  ;
+
+// A statement with an optional stack of hint attributes.
+//
+// Statement-LIST positions do not use this: there a hint is a prefix of the
+// list itself (see raw_statement_list), because `statement` excludes blockinstr
+// and a list position must also serve the `;`-less hinted block form. This
+// nonterminal is for the one isolated statement position -- the `while`
+// continue-expression -- where the closing `)` keeps the recursion
+// conflict-free.
+hinted_statement -> Instr[Location]
+  : statement { $1 }
+  | hint_attr hinted_statement { hinted($1.0, [$1.1], $2) }
+  ;
+
+statement -> Instr[Location]
+  : plaininstr { $1 }
+  | NOP { with_loc($sloc, Nop) }
+  | UNREACHABLE { with_loc($sloc, Unreachable) }
+  | ident "=" expression { with_loc($sloc, Set($1, None, $3)) }
+  // A discarded value: `_ = e` drops e. An optional type annotation pins a
+  // width the surface syntax of the value would not otherwise carry, so it
+  // round-trips at its original width. Represented as an ANONYMOUS Let --
+  // nothing is bound -- not a Set.
+  | "_" "=" expression { with_loc($sloc, Let([(None, None)], Some($3))) }
+  | "_" ":" value_type "=" expression {
+      with_loc($sloc, Let([(None, Some($3))], Some($5)))
+    }
+  | ident compound_assign_op expression {
+      with_loc($sloc, Set($1, Some($2), $3))
+    }
+  | LET simple_pattern { with_loc($sloc, Let([($2, None)], None)) }
+  | LET simple_pattern "=" expression {
+      with_loc($sloc, Let([($2, None)], Some($4)))
+    }
+  | LET simple_pattern ":" value_type "=" expression {
+      with_loc($sloc, Let([($2, Some($4))], Some($6)))
+    }
+  | LET simple_pattern ":" value_type {
+      with_loc($sloc, Let([($2, Some($4))], None))
+    }
+  | LET "(" let_pattern_ ")" ioption(let_init) {
+      with_loc($sloc, Let($3, $5))
+    }
+  | BR label ioption(expression) { with_loc($sloc, Br($2, $3)) }
+  | BR_TABLE "[" case_labels "]" expression {
+      let (lst, l) = $3
+      with_loc($sloc, BrTable([..lst, l], $5))
+    }
+  | RETURN ioption(expression) { with_loc($sloc, Return($2)) }
+  | THROW tag_name "(" expression_list ")" {
+      with_loc($sloc, Throw($2, $4))
+    }
+  | THROW_REF expression { with_loc($sloc, ThrowRef($2)) }
+  | BECOME expression "(" argument_list ")" {
+      with_loc($sloc, TailCall($2, $4))
+    }
+  ;
+
+%inline let_init -> Instr[Location]
+  : "=" expression { $2 }
+  ;
+
+// process_stmts pairs adjacent #[if]/#[else] groups; see raw.mbt.
+statement_list -> Array[Instr[Location]]
+  : raw_statement_list { process_stmts($1) }
+  ;
+
+raw_statement_list -> Array[RawStmt]
+  : { [] }
+  // A bare `;` is an empty statement. process_stmts strips it, so it
+  // contributes nothing -- which makes a redundant `;` harmless anywhere, most
+  // usefully after a block-shaped statement, which needs none (its `}` ends it)
+  // but where the `;`-per-statement habit is strong.
+  | ";" raw_statement_list { [Semi, ..$2] }
+  | blockinstr raw_statement_list { [Plain($1), ..$2] }
+  // A statement-level hint is NOT parsed together with its statement: it is a
+  // prefix of the LIST, attached afterwards to the first statement that
+  // follows.
+  //
+  // Parsing the pair as one unit cannot be done conflict-free. plaininstr has
+  // `expression "(" argument_list ")"`, so a hinted expression is reachable at
+  // statement start and any hint-plus-statement production overlaps it:
+  // `#[a] if c { ... }` becomes derivable two ways. Attaching after the fact
+  // leaves the grammar after the attribute EXACTLY the plain statement grammar
+  // -- same states, same precedence resolutions, no conflicts -- and the
+  // `;`-less block form and `;`-less stacking come for free.
+  //
+  // The hint must sit directly on its instruction: with nothing to land on (at
+  // the end of a block), or landing on something that is not an instruction (an
+  // empty `;` statement, still present in the raw list here, or an `#[if(...)]`
+  // group), it is rejected at the attribute.
+  | hint_attr raw_statement_list {
+      let l = $2
+      if l.length() > 0 && l[0] is Plain(i) {
+        [Plain(hinted($1.0, [$1.1], i)), ..l[1:]]
+      } else {
+        fail_at(loc_of($1.0), "A hint may only prefix an instruction.")
+      }
+    }
+  | cond_stmt raw_statement_list { [$1, ..$2] }
+  // A statement is followed by an optional `";" more-statements`: the final `;`
+  // of a block is OPTIONAL.
+  //
+  // This optional part is deliberately a real `option(...)` wrapper rather than
+  // `ioption`, which is %inline and would re-expand into a direct
+  // `raw_statement_list -> statement` production. Keeping it a distinct
+  // nonterminal is what lets a missing `;` stop at this post-statement state --
+  // where `;` is still shiftable -- and report the statement itself as the
+  // subject, instead of folding on into the enclosing block.
+  | statement option(semi_then_statements) {
+      [Plain($1), ..$2.unwrap_or([])]
+    }
+  ;
+
+%inline semi_then_statements -> Array[RawStmt]
+  : ";" raw_statement_list { $2 }
+  ;
+
+// Instruction-level conditional annotation. Braces are required, so the body is
+// a transparent statement list rather than a block.
+cond_stmt -> RawStmt
+  : "#" "[" IF "(" condition ")" "]" braced_block { If($sloc, $5, $8) }
+  | "#" "[" ELSE "]" braced_block { Else($sloc, $5) }
+  ;
+
 // TEMPORARY: placeholder while the remaining sections are translated.
 parse -> Unit
   : EOF { () }
-  ;
-
-statement_list -> Array[Instr[Location]]
-  : EOF { [] }
-  ;
-
-hinted_statement -> Instr[Location]
-  : EOF { with_loc($sloc, Nop) }
   ;
 
 condition -> Cond
