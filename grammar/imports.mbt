@@ -7,4 +7,15 @@ using @basic {type Location, type Position, type Annotated}
 using @tokens {type Token, type TokenKind, type LocString}
 
 ///|
-using @ast {type Instr, type InstrDesc, type FuncType, type Ident}
+using @ast {
+  type Instr,
+  type InstrDesc,
+  type FuncType,
+  type Ident,
+  type Body,
+  type ModuleField,
+  type Attributes,
+}
+
+///|
+using @wasm_types {type Cond}

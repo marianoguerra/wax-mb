@@ -46,11 +46,7 @@ let casttype_tbl : Map[String, @ast.CastType] = build_casttype_tbl()
 fn build_casttype_tbl() -> Map[String, @ast.CastType] {
   let m : Map[String, @ast.CastType] = Map([])
   fn add(t : @ast.NumType, s : @wasm_types.Signage, strict : Bool) -> Unit {
-    m[@ast.format_signed_type(t, s, strict)] = Signed(
-      typ=t,
-      signage=s,
-      strict~,
-    )
+    m[@ast.format_signed_type(t, s, strict)] = Signed(typ=t, signage=s, strict~)
   }
 
   add(I32, Signed, false)

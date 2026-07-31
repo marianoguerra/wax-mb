@@ -7,22 +7,59 @@ import {
   "waxmb/wax/basic",
   "waxmb/wax/tokens",
   "waxmb/wax/trivia",
+  "waxmb/wax/wasm_types",
 }
 
 // Values
+pub let always_opt : Int
+
 pub fn[T] annot((@basic.Position, @basic.Position), T) -> @basic.Annotated[T, @basic.Location]
+
+pub fn attributed((@basic.Position, @basic.Position), Array[@ast.Attribute], (Array[@ast.Attribute]) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]
 
 pub fn blocktype(@ast.FuncType?) -> @ast.FuncType
 
+pub fn cast_type_of((@basic.Position, @basic.Position), String) -> @ast.CastType raise SyntaxError
+
+pub fn decl_sign((@basic.Position, @basic.Position), @ast.Ident?, @ast.FuncType?) -> @ast.FuncType? raise SyntaxError
+
 pub fn[T] fail_at(@basic.Location, String, hint? : String?, fix? : @basic.Edit?) -> T raise SyntaxError
+
+pub fn freq_of_ratio(Double) -> Int
+
+pub fn heap_type_of(@ast.Ident) -> @wasm_types.HeapType[@ast.Ident]
+
+pub fn hint_of_attr((@basic.Position, @basic.Position), @ast.Attribute) -> HintSetter raise SyntaxError
+
+pub fn hinted((@basic.Position, @basic.Position), Array[HintSetter], @ast.Instr[@basic.Location]) -> @ast.Instr[@basic.Location] raise SyntaxError
 
 pub fn loc_of((@basic.Position, @basic.Position)) -> @basic.Location
 
+pub fn lower_fields(Array[RawField]) -> Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]] raise SyntaxError
+
+pub fn make_exact((@basic.Position, @basic.Position), @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@ast.Ident] raise SyntaxError
+
+pub let never_opt : Int
+
 pub fn parse(Array[(@tokens.Token, @basic.Position, @basic.Position)], initial_pos? : @basic.Position) -> Unit raise ParseError
+
+pub fn process_stmts(Array[RawStmt]) -> Array[@ast.Instr[@basic.Location]] raise SyntaxError
 
 pub fn[T] respan(@basic.Annotated[T, @basic.Location], (@basic.Position, @basic.Position)) -> @basic.Annotated[T, @basic.Location]
 
+pub fn scalar_storagetype((@basic.Position, @basic.Position), @ast.Ident) -> @wasm_types.StorageType[@ast.Ident] raise SyntaxError
+
 pub fn set_context(@trivia.Context) -> Unit
+
+pub fn storage_type_of((@basic.Position, @basic.Position), String) -> @wasm_types.StorageType[@ast.Ident] raise SyntaxError
+
+pub fn target_percent((@basic.Position, @basic.Position), String) -> Int raise SyntaxError
+
+pub fn targets_of_attr((@basic.Position, @basic.Position), String, Array[(@ast.Ident, Int)]) -> HintSetter raise SyntaxError
+
+pub fn value_type_of((@basic.Position, @basic.Position), String) -> @wasm_types.ValType[@ast.Ident] raise SyntaxError
+
+pub fn vec_shape((@basic.Position, @basic.Position), @ast.Ident) -> @wasm_types.V128Shape raise SyntaxError
 
 pub fn with_loc((@basic.Position, @basic.Position), @ast.InstrDesc[@basic.Location]) -> @ast.Instr[@basic.Location]
 
@@ -37,8 +74,27 @@ pub suberror SyntaxError {
 } derive(@debug.Debug)
 
 // Types and methods
+pub(all) enum HintSetter {
+  Branch(Bool)
+  Freq(Int)
+  Targets(Array[(@ast.Ident, Int)])
+} derive(@debug.Debug)
+
+pub(all) enum RawField {
+  FPlain(@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location])
+  FIf((@basic.Position, @basic.Position), @wasm_types.Cond, @basic.Annotated[Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @basic.Location])
+  FElse((@basic.Position, @basic.Position), @basic.Annotated[Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @basic.Location])
+}
+
+pub(all) enum RawStmt {
+  Plain(@ast.Instr[@basic.Location])
+  Semi
+  If((@basic.Position, @basic.Position), @wasm_types.Cond, @basic.Annotated[Array[@ast.Instr[@basic.Location]], @basic.Location])
+  Else((@basic.Position, @basic.Position), @basic.Annotated[Array[@ast.Instr[@basic.Location]], @basic.Location])
+}
 
 // Type aliases
+pub type LocatedFields = @basic.Annotated[Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @basic.Location]
 
 // Traits
 
