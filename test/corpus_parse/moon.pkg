@@ -7,4 +7,7 @@ import {
   "moonbitlang/core/json",
   "moonbitlang/core/test",
   "moonbitlang/core/cmp",
+  "waxmb/wax/ast",
+  "waxmb/wax/basic",
+  "moonbitlang/core/string",
 } for "test"

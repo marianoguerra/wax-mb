@@ -27,24 +27,16 @@ pub struct ParseResult {
 ///   * a SEMANTIC error raised from a grammar action -- recorded rather than
 ///     raised, since MoonYacc's actions cannot propagate one;
 ///   * a SYNTAX error from the automaton itself, `ParseError`.
-pub fn parse_string(
-  src : String,
-  fname~ : String = "",
-) -> ParseResult {
+pub fn parse_string(src : String, fname? : String = "") -> ParseResult {
   let ctx = @trivia.Context::new()
   set_context(ctx)
   let lexed = @lexer.tokens_from_string(src, fname~, trivia_ctx=ctx)
   if lexed.errors.length() > 0 {
     return { module_: None, errors: lexed.errors, trivia: ctx }
   }
-  let module_ = try parse(lexed.tokens) catch {
-    e => {
-      return {
-        module_: None,
-        errors: [report_of_parse_error(e)],
-        trivia: ctx,
-      }
-    }
+  let module_ = parse(lexed.tokens) catch {
+    e =>
+      return { module_: None, errors: [report_of_parse_error(e)], trivia: ctx }
   }
   // A semantic error is recorded rather than raised, so the parse "succeeds"
   // with a tree built partly from placeholders. Discard it.

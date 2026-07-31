@@ -1,6 +1,7 @@
 import {
   "waxmb/wax/basic",
   "waxmb/wax/wasm_types",
+  "moonbitlang/core/json",
 }
 
 import {

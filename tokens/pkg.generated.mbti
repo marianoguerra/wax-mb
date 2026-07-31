@@ -133,6 +133,7 @@ pub(all) enum Token {
   IMPORT
 } derive(@debug.Debug)
 pub fn Token::kind(Self) -> TokenKind
+pub fn Token::to_expect_string(Self) -> String
 
 pub(all) enum TokenKind {
   TK_IDENT
@@ -255,6 +256,7 @@ pub(all) enum TokenKind {
   TK_DESCRIBES
   TK_IMPORT
 } derive(Compare, Eq, Hash)
+pub fn TokenKind::to_expect_string(Self) -> String
 pub impl Show for TokenKind
 pub impl @debug.Debug for TokenKind
 

@@ -12,7 +12,11 @@ pub fn build(InstrDesc[@basic.Location], @basic.Location) -> Instr[@basic.Locati
 
 pub fn format_signed_type(NumType, @wasm_types.Signage, Bool) -> String
 
+pub fn heaptype_json(@wasm_types.HeapType[Ident]) -> Json
+
 pub fn is_splice_field(@basic.Annotated[(Ident, @wasm_types.MutType[@wasm_types.StorageType[Ident]]), @basic.Location]) -> Bool
+
+pub fn[Info] module_to_json(Array[@basic.Annotated[ModuleField[Info], @basic.Location]]) -> Json
 
 pub let no_hints : Hints
 
@@ -21,6 +25,8 @@ pub fn no_loc_instr(InstrDesc[@basic.Location]) -> Instr[@basic.Location]
 pub fn splice_field(@basic.Location) -> @basic.Annotated[(Ident, @wasm_types.MutType[@wasm_types.StorageType[Ident]]), @basic.Location]
 
 pub let splice_field_name : String
+
+pub fn valtype_json(@wasm_types.ValType[Ident]) -> Json
 
 // Errors
 
@@ -91,6 +97,7 @@ pub(all) struct FuncType {
   params : Array[@basic.Annotated[(Ident?, @wasm_types.ValType[Ident]), @basic.Location]]
   results : Array[@wasm_types.ValType[Ident]]
 } derive(Eq, @debug.Debug)
+pub fn FuncType::to_json(Self) -> Json
 
 pub(all) struct Hint[T] {
   value : T
@@ -109,6 +116,7 @@ pub(all) struct Ident {
   name : String
   loc : @basic.Location
 } derive(Eq, @debug.Debug)
+pub fn Ident::to_json(Self) -> Json
 
 pub(all) struct ImportDecl {
   id : Ident
@@ -130,6 +138,7 @@ pub(all) struct Instr[Info] {
   hints : Hints
   expected : @wasm_types.ValType[Ident]?
 } derive(Eq, @debug.Debug)
+pub fn[Info] Instr::to_json(Self[Info]) -> Json
 
 pub(all) enum InstrDesc[Info] {
   Block(label~ : Ident?, typ~ : FuncType, block~ : @basic.Annotated[Array[Instr[Info]], @basic.Location])
@@ -200,6 +209,7 @@ pub(all) enum InstrDesc[Info] {
   Select(Instr[Info], Instr[Info], Instr[Info])
   IfAnnotation(cond~ : @wasm_types.Cond, then_body~ : @basic.Annotated[Array[Instr[Info]], @basic.Location], else_body~ : @basic.Annotated[Array[Instr[Info]], @basic.Location]?)
 } derive(Eq, @debug.Debug)
+pub fn[Info] InstrDesc::to_json(Self[Info]) -> Json
 
 pub(all) enum MatchPattern {
   MatchCast(Ident?, @wasm_types.RefType[Ident])
@@ -226,6 +236,7 @@ pub(all) enum ModuleField[Info] {
   ModuleAnnotation(Array[Attribute])
   Conditional(cond~ : @wasm_types.Cond, then_fields~ : @basic.Annotated[Array[@basic.Annotated[ModuleField[Info], @basic.Location]], @basic.Location], else_fields~ : @basic.Annotated[Array[@basic.Annotated[ModuleField[Info], @basic.Location]], @basic.Location]?)
 } derive(Eq, @debug.Debug)
+pub fn[Info] ModuleField::to_json(Self[Info]) -> Json
 
 pub(all) enum NumType {
   I32

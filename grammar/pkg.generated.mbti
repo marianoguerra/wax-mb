@@ -55,6 +55,8 @@ pub fn page_size_log2((@basic.Position, @basic.Position), String) -> Int
 
 pub fn parse(Array[(@tokens.Token, @basic.Position, @basic.Position)], initial_pos? : @basic.Position) -> Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]] raise ParseError
 
+pub fn parse_string(String, fname? : String) -> ParseResult
+
 pub fn process_stmts(Array[RawStmt]) -> Array[@ast.Instr[@basic.Location]]
 
 pub fn record_error(@basic.Location, String, hint? : String?, fix? : @basic.Edit?) -> Unit
@@ -104,6 +106,12 @@ pub(all) enum HintSetter {
   Freq(Int)
   Targets(Array[(@ast.Ident, Int)])
 } derive(@debug.Debug)
+
+pub struct ParseResult {
+  module_ : Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]?
+  errors : Array[@basic.Report]
+  trivia : @trivia.Context
+}
 
 pub(all) enum RawField {
   FPlain(@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location])
