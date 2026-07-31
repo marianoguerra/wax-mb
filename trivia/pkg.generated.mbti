@@ -3,14 +3,28 @@ package "waxmb/wax/trivia"
 
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/set",
   "waxmb/wax/basic",
 }
 
 // Values
+pub fn associate(Context, (Locations) -> Unit) -> (Table, Array[Entry])
+
+pub fn drop_trailing_blank_lines(Array[Entry]) -> Array[Entry]
+
+pub let empty_assoc : Associated
+
+pub fn key_of(@basic.Location) -> SpanKey
 
 // Errors
 
 // Types and methods
+pub(all) struct Associated {
+  before : Array[Entry]
+  within : Array[Entry]
+  after : Array[Entry]
+} derive(Eq, @debug.Debug)
+
 pub struct Context {
   entries : Array[Entry]
   mut at_start_of_line : Bool
@@ -30,6 +44,25 @@ pub(all) struct Entry {
   trivia : Trivia
   position : TriviaPos
 } derive(Eq, @debug.Debug)
+
+pub struct Locations {
+  marked : @set.Set[SpanKey]
+}
+pub fn Locations::contains(Self, @basic.Location) -> Bool
+pub fn Locations::mark(Self, @basic.Location) -> Unit
+pub fn Locations::new() -> Self
+
+pub(all) struct SpanKey {
+  start : Int
+  end : Int
+} derive(Compare, Eq, Hash, @debug.Debug)
+
+pub struct Table {
+  entries : Map[SpanKey, Associated]
+  seen : @set.Set[SpanKey]
+}
+pub fn Table::empty() -> Self
+pub fn Table::get(Self, @basic.Location?) -> Associated
 
 pub(all) enum Trivia {
   Item(content~ : String, kind~ : TriviaKind, loc~ : @basic.Location)

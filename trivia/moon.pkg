@@ -1,7 +1,9 @@
 import {
   "waxmb/wax/basic",
+  "moonbitlang/core/set",
 }
 
 import {
   "moonbitlang/core/test",
+  "moonbitlang/core/debug",
 } for "test"
