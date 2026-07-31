@@ -293,40 +293,36 @@ fn Ctx::bracketed_labels(
 }
 
 ///|
-/// The postfix `on [tag -> 'label, ...]` handler clause.
+/// The bracketed `[tag -> 'label, ...]` handler list.
+///
+/// One plain box, with no indent and no cuts: the list packs and wraps as a
+/// unit rather than each handler landing on its own line.
 fn Ctx::on_clauses(
   self : Ctx[@basic.Location],
   handlers : Array[@ast.OnClause],
 ) -> Unit {
-  self.space()
-  self.kw("on")
-  self.space()
   self.punct("[")
-  self.p.indent(indent_level, () => {
-    self.cut()
+  self.p.box(() => {
     self.list_commasep(handlers, h => {
-      self.p.box(() => {
-        match h {
-          OnLabel(tag, label) => {
-            self.ident(tag.name)
-            self.space()
-            self.punct("->")
-            self.space()
-            self.ident("'")
-            self.ident(label.name)
-          }
-          OnSwitch(tag) => {
-            self.ident(tag.name)
-            self.space()
-            self.punct("->")
-            self.space()
-            self.kw("switch")
-          }
+      match h {
+        OnLabel(tag, label) => {
+          self.ident(tag.name)
+          self.space()
+          self.punct("->")
+          self.space()
+          self.ident("'")
+          self.ident(label.name)
         }
-      })
+        OnSwitch(tag) => {
+          self.ident(tag.name)
+          self.space()
+          self.punct("->")
+          self.space()
+          self.kw("switch")
+        }
+      }
     })
   })
-  self.cut()
   self.punct("]")
 }
 

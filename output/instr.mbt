@@ -495,10 +495,14 @@ fn Ctx::instr_desc(
         self.op(":")
         self.instr(Assignement, b)
       })
-    On(v, handlers) => {
-      self.instr(Cast, v)
-      self.on_clauses(handlers)
-    }
+    On(v, handlers) =>
+      self.p.box(indent=indent_level, () => {
+        self.instr(Cast, v)
+        self.space()
+        self.kw("on")
+        self.space()
+        self.on_clauses(handlers)
+      })
 
     // Anything not yet ported prints as a marker rather than silently emitting
     // nothing, so an unported form shows up as a diff rather than as valid-
@@ -508,64 +512,20 @@ fn Ctx::instr_desc(
 }
 
 ///|
-/// A character literal, re-escaped.
+/// A character literal.
+///
+/// Escaped by the same all-or-nothing rule as a string, with `x` hex prefixes:
+/// `escape_string` is what decides, not a hand-rolled table.
 pub fn char_literal(c : Char) -> String {
-  let body = match c {
-    '\t' => "\\t"
-    '\n' => "\\n"
-    '\r' => "\\r"
-    '\'' => "\\'"
-    '\\' => "\\\\"
-    _ =>
-      if c.to_int() < 0x20 || c.to_int() == 0x7F {
-        "\\u{" + hex(c.to_int()) + "}"
-      } else {
-        c.to_string()
-      }
-  }
+  let (_, body) = @unicode.escape_string(c.to_string(), hex_prefix="x")
   "'" + body + "'"
 }
 
 ///|
-/// A string literal, re-escaped.
+/// A string literal.
 pub fn string_literal(s : String) -> String {
-  let buf = StringBuilder::new()
-  buf.write_char('"')
-  for c in s {
-    match c {
-      '\t' => buf.write_string("\\t")
-      '\n' => buf.write_string("\\n")
-      '\r' => buf.write_string("\\r")
-      '"' => buf.write_string("\\\"")
-      '\\' => buf.write_string("\\\\")
-      _ =>
-        if c.to_int() < 0x20 || c.to_int() == 0x7F {
-          buf.write_string("\\u{" + hex(c.to_int()) + "}")
-        } else {
-          buf.write_char(c)
-        }
-    }
-  }
-  buf.write_char('"')
-  buf.to_string()
-}
-
-///|
-fn hex(n : Int) -> String {
-  let digits = "0123456789abcdef"
-  if n == 0 {
-    return "0"
-  }
-  let buf = StringBuilder::new()
-  let mut started = false
-  for shift in [28, 24, 20, 16, 12, 8, 4, 0] {
-    let d = (n >> shift) & 0xF
-    if d != 0 || started {
-      started = true
-      buf.write_char(digits.unsafe_get(d).to_int().unsafe_to_char())
-    }
-  }
-  buf.to_string()
+  let (_, body) = @unicode.escape_string(s, hex_prefix="x")
+  "\"" + body + "\""
 }
 
 ///|

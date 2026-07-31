@@ -27,12 +27,13 @@ pub fn Ctx::module_(
   m : @ast.LocModule,
   tail : Array[@trivia.Entry],
 ) -> Unit {
-  self.p.vbox(() => {
-    for f in m {
-      self.modulefield(f)
-      self.newline()
-    }
-    // Trailing comments belong to no field; without this they would be lost.
-    self.print_trivia(@trivia.drop_trailing_blank_lines(tail))
+  // An hvbox with SOFT separators, not a vbox with hard newlines: a module
+  // short enough to fit the width stays on one line, exactly as the reference
+  // prints it. Being all-or-nothing, anything longer puts every field on its
+  // own line.
+  self.p.hvbox(() => {
+    self.list(m, f => self.modulefield(f), sep=() => self.space())
   })
+  // Trailing comments belong to no field; without this they would be lost.
+  self.print_trivia(@trivia.drop_trailing_blank_lines(tail))
 }
