@@ -1,0 +1,9 @@
+import {
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
+
+// widths.mbt is transliterated generated data, not hand-written code.
+formatter(ignore: [ "widths.mbt" ])

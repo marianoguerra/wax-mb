@@ -1,0 +1,20 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/unicode"
+
+// Values
+pub fn char_width(Int, Char) -> Int
+
+pub fn expand_tabs(String, offset? : Int) -> String
+
+pub fn tab_width(Int) -> Int
+
+pub fn terminal_width(String, offset? : Int) -> Int
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

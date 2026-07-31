@@ -1,0 +1,14 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/unicode/widths"
+
+// Values
+pub fn get_width(Int) -> Int
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

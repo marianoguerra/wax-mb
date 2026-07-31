@@ -1,0 +1,7 @@
+import {
+  "waxmb/wax/unicode/widths",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
