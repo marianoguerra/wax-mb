@@ -272,3 +272,59 @@ wrong character. The seven affected corpus files are listed in
 `SPAN_DIVERGENCE_UPSTREAM` in `tools/waxdiff.py`, which fails if one of them
 ever starts agreeing -- so an upstream fix surfaces as a failing test rather
 than as silent drift.
+
+## 10. `--table` emits deprecated `suberror` syntax
+
+The default (direct-style) engine writes each semantic-value wrapper as
+
+```
+priv suberror YYObj_Int { YYObj_Int(Int) }
+```
+
+but the table engine writes the older payload form for the same declaration:
+
+```
+priv suberror YYObj_Int Int
+```
+
+which the compiler deprecates (warning 27, `deprecated_syntax`). There are 93 of
+them, so `moon check --deny-warn` fails on a project that selects `--table`
+until the package suppresses the warning — which suppresses it for the
+hand-written files too. The two engines generate the same declarations from the
+same grammar, so this is one code path lagging the other, not a language
+requirement.
+
+`grammar/moon.pkg` carries `-27` for this reason. Drop it when MoonYacc's table
+engine catches up; `moon check --deny-warn` then says so immediately.
+
+## 11. The error value carries no automaton state
+
+`ParseError` is
+
+```
+UnexpectedToken(Token, (Position, Position), Array[TokenKind])
+```
+
+— the offending token, its span, and the acceptable terminals. The state the
+parser was in is not there, and `error()` (which has the state stack in hand,
+since it walks it to compute `expected`) drops it.
+
+That set is not a substitute. Replaying the reference's 550 error sentences
+through this port shows 130 distinct acceptable-token sets, of which **27 stand
+for more than one reference message** — 283 of the 550 sentences. `Expecting an
+expression.`, `Expecting a condition expression.`, `Expecting a then-branch.`
+and `Expecting an index expression.` are one set: what separates them is the
+state, not the tokens.
+
+**Workaround**: `--table` makes a state an `Int` and both `yy_state` and
+`yy_input` are package-visible, so `grammar/state.mbt` replays the token stream
+through the same tables with the actions left out and recovers the state — and
+the stack, which the reference's `<N>` delimiter labels index. The replay is
+verified against the real parse on all 191 syntax-error corpus files
+(`test/corpus_parse/error_state_test.mbt`).
+
+The cost is a second pass on the error path and a hand-written copy of the
+engine's control flow, which a released version could invalidate silently — the
+test is what catches that. Exposing the state (and ideally the stack) on
+`UnexpectedToken` would delete all of it, and every grammar that wants good
+error messages needs the same thing.

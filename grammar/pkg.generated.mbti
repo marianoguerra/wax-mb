@@ -29,6 +29,8 @@ pub fn data_run((@basic.Position, @basic.Position), @ast.Ident, Array[DataRunIte
 
 pub fn decl_sign((@basic.Position, @basic.Position), @ast.Ident?, @ast.FuncType?) -> @ast.FuncType?
 
+pub fn error_state(Array[(@tokens.Token, @basic.Position, @basic.Position)]) -> ErrorState?
+
 pub fn[T] fail_at(@basic.Location, String, default~ : T, hint? : String?, fix? : @basic.Edit?) -> T
 
 pub fn freq_of_ratio(Double) -> Int
@@ -99,6 +101,12 @@ pub suberror SyntaxError {
 pub(all) enum DataRunItem {
   Num(@basic.Annotated[String, @basic.Location])
   Vec(@basic.Annotated[@wasm_types.V128, @basic.Location])
+}
+
+pub struct ErrorState {
+  state : Int
+  stack : Array[Int]
+  token_index : Int
 }
 
 pub(all) enum HintSetter {

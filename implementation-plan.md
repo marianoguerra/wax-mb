@@ -47,7 +47,7 @@ order it makes sense to do it.
 | Oracle 3 — same errors | 2112 / 2112 on severity, file, spans, offsets, exit code |
 | Unit tests | 135 |
 | Message drift | 231 entries: 182 message text, 23 related labels, 26 span (the 7 finding-9 exemptions) |
-| Upstream findings | 9, in `test/UPSTREAM-FINDINGS.md` |
+| Upstream findings | 11, in `test/UPSTREAM-FINDINGS.md` |
 | Cram tests in scope | 2 of 328; the other 326 are listed with reasons in `test/cram-scope.md` |
 
 The three oracles are the gate for everything below. Any task that changes
@@ -551,7 +551,7 @@ default to hidden; this is what makes them reachable.
 - **`wax/` and `parser/` are reference checkouts, never build inputs.** They are
   gitignored. The moment CI needs them, the hermetic property is gone.
 - **Divergences are recorded, not absorbed.** `test/UPSTREAM-FINDINGS.md` holds
-  9 findings. Two of them (7 and 8) are exemptions in the idempotence gate and
+  11 findings. Two of them (7 and 8) are exemptions in the idempotence gate and
   one (9) in the span gate — and each is written so the harness *fails* if
   upstream fixes it, rather than drifting silently.
 - **Run memory-hungry commands under a cap.** Upstream finding 1 is a fixture
