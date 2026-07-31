@@ -1,0 +1,111 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/printer"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn run_discard((Printer) -> Unit) -> Unit
+
+pub fn run_string((Printer) -> Unit, width? : Int) -> String
+
+// Errors
+
+// Types and methods
+pub(all) enum BreakStrength {
+  Cut
+  Space
+  Newline
+  BlankLine
+} derive(Eq, @debug.Debug)
+pub fn BreakStrength::strength(Self) -> Int
+
+pub struct Engine {
+  width : Int
+  out : StringBuilder
+  max_indent : Int
+  mut col : Int
+  mut emitted : Bool
+  mut pend_line : (Int, Bool)?
+  mut pend_flat : BreakStrength?
+  frames : Array[Frame]
+  queue : Array[Token]
+  mut qhd : Int
+  mut skip_depth : Int
+  sc : ScanState
+  mut scan_at_end : Bool
+  mut discarding : Bool
+}
+pub fn Engine::contents(Self) -> String
+pub fn Engine::feed(Self, Token) -> Unit
+pub fn Engine::finish_stream(Self) -> Unit
+pub fn Engine::new(width? : Int) -> Self
+
+pub(all) struct Frame {
+  findent : Int
+  fmode : Mode
+} derive(Eq, @debug.Debug)
+
+pub(all) enum GKind {
+  GBox
+  GHov
+  GHv
+  GV
+  GH
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Mode {
+  Flat
+  Brkm
+  Fill
+} derive(Eq, @debug.Debug)
+
+pub struct Printer {
+  engine : Engine
+  mut pending_break : BreakStrength?
+  mut has_emitted : Bool
+  mut pending_eol : (() -> Unit)?
+  mut holding_eol : Bool
+}
+pub fn Printer::blank_line(Self) -> Unit
+pub fn Printer::box(Self, () -> Unit, skip_space? : Bool, indent? : Int) -> Unit
+pub fn Printer::cut(Self) -> Unit
+pub fn Printer::defer_eol(Self, () -> Unit) -> Unit
+pub fn Printer::finalize(Self) -> Unit
+pub fn Printer::force_eol(Self) -> Unit
+pub fn Printer::has_pending_eol(Self) -> Bool
+pub fn Printer::hbox(Self, () -> Unit, skip_space? : Bool) -> Unit
+pub fn Printer::hovbox(Self, () -> Unit, skip_space? : Bool, indent? : Int) -> Unit
+pub fn Printer::hvbox(Self, () -> Unit, skip_space? : Bool, indent? : Int) -> Unit
+pub fn Printer::if_broken(Self, () -> Unit) -> Unit
+pub fn Printer::indent(Self, Int, () -> Unit) -> Unit
+pub fn Printer::new(width? : Int) -> Self
+pub fn Printer::newline(Self) -> Unit
+pub fn Printer::space(Self) -> Unit
+pub fn Printer::string(Self, String) -> Unit
+pub fn Printer::string_as(Self, Int, String) -> Unit
+pub fn Printer::vbox(Self, () -> Unit, skip_space? : Bool, indent? : Int) -> Unit
+pub fn Printer::with_held_eol(Self, () -> Unit) -> Unit
+
+pub(all) enum ScanResult {
+  Fits
+  Nofit
+  Susp
+} derive(Eq, @debug.Debug)
+
+type ScanState
+
+pub(all) enum Token {
+  TText(Int, String)
+  TBreak(BreakStrength)
+  TBegin(GKind)
+  TNest(Int)
+  TIfBroken
+  TEnd
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+
