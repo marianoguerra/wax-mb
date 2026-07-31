@@ -156,7 +156,25 @@ priv enum YYSymbol {
   T_DESCRIPTOR
   T_DESCRIBES
   T_IMPORT
+  NT_ident_or_keyword
+  NT_label_name
+  NT_heap_type
+  NT_reference_type
+  NT_value_type
+  NT_cast_type
+  NT_result_type_
+  NT_result_type
+  NT_storage_type
+  NT_field_type
+  NT_field_name
+  NT_structure_type_field
+  NT_structure_type
+  NT_structtype
   NT_parse
+  NT_function_type_as
+  NT_non_empty_sep_trailing_COMMA_value_type_
+  NT_sep_trailing_COMMA_structure_type_field_
+  NT_non_empty_sep_trailing_COMMA_structure_type_field_
   EOI
 }
 
@@ -169,7 +187,7 @@ fn init {
 }
 
 // file:///./parser.mbty
-// 194|    EOF { () }
+// 368|    EOF { () }
 fn yy_action_0(_last_pos : Position, _args : ArrayView[(YYObj, Position, Position)]) -> YYObj {
   YYObj_Unit({();  () })
 }

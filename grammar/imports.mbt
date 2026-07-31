@@ -7,4 +7,4 @@ using @basic {type Location, type Position, type Annotated}
 using @tokens {type Token, type TokenKind, type LocString}
 
 ///|
-using @ast {type Instr, type InstrDesc, type FuncType}
+using @ast {type Instr, type InstrDesc, type FuncType, type Ident}

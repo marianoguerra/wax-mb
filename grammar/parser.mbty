@@ -183,13 +183,191 @@
 %nonassoc "!"
 %left "." "(" "["
 
+
 %start parse
 
 %%
 
-// PLACEHOLDER. The 104 real productions arrive in phase 2; this exists only so
-// the grammar is well-formed enough for `--mode only-tokens` to emit the Token
-// and TokenKind enums, which the lexer is written against.
+// ===========================================================================
+// Generic list helpers
+// ===========================================================================
+//
+// Wax allows a trailing separator in every comma-separated list, so the
+// standard `separated_list` is not enough. The reference defines these as
+// parameterised rules and so do we -- MoonYacc supports the same form.
+
+non_empty_sep_trailing[T](sep : Unit, X : T) -> Array[T]
+  : X { [$1] }
+  | X sep { [$1] }
+  | X sep non_empty_sep_trailing(sep, X) { [$1, ..$3] }
+  ;
+
+sep_trailing[T](sep : Unit, X : T) -> Array[T]
+  : { [] }
+  | non_empty_sep_trailing(sep, X) { $1 }
+  ;
+
+// ===========================================================================
+// Identifiers
+// ===========================================================================
+
+%inline ident -> Ident
+  : IDENT { { name: $1, loc: loc_of($loc($1)) } }
+  ;
+
+// A label may be spelled with a keyword -- `'loop`, `'if` -- because a label
+// lives in its own namespace and the leading `'` already disambiguates. The
+// lexer cannot know that, so the grammar spells out every keyword here.
+ident_or_keyword -> String
+  : IDENT { $1 }
+  | FN { "fn" }
+  | TAG { "tag" }
+  | MUT { "mut" }
+  | TYPE { "type" }
+  | REC { "rec" }
+  | OPEN { "open" }
+  | NOP { "nop" }
+  | UNREACHABLE { "unreachable" }
+  | NULL { "null" }
+  | DO { "do" }
+  | WHILE { "while" }
+  | LOOP { "loop" }
+  | IF { "if" }
+  | ELSE { "else" }
+  | CONST { "const" }
+  | LET { "let" }
+  | AS { "as" }
+  | IS { "is" }
+  | BECOME { "become" }
+  | BR { "br" }
+  | BR_IF { "br_if" }
+  | BR_TABLE { "br_table" }
+  | RETURN { "return" }
+  | THROW { "throw" }
+  | THROW_REF { "throw_ref" }
+  | BR_ON_CAST { "br_on_cast" }
+  | BR_ON_CAST_FAIL { "br_on_cast_fail" }
+  | BR_ON_NULL { "br_on_null" }
+  | BR_ON_NON_NULL { "br_on_non_null" }
+  | TRY { "try" }
+  | TRY_LEGACY { "try_legacy" }
+  | CATCH { "catch" }
+  | CONT { "cont" }
+  | SUSPEND { "suspend" }
+  | ON { "on" }
+  | MEMORY { "memory" }
+  | IMPORT { "import" }
+  | PAGESIZE { "pagesize" }
+  | SHARED { "shared" }
+  | DATA { "data" }
+  | TABLE { "table" }
+  | ELEM { "elem" }
+  | DISPATCH { "dispatch" }
+  | MATCH { "match" }
+  | DESCRIPTOR { "descriptor" }
+  | DESCRIBES { "describes" }
+  | INF { "inf" }
+  | NAN { "nan" }
+  ;
+
+label_name -> String
+  : ident_or_keyword { $1 }
+  ;
+
+%inline label -> Ident
+  : "'" label_name { { name: $2, loc: loc_of($sloc) } }
+  ;
+
+// ===========================================================================
+// Types
+// ===========================================================================
+
+heap_type -> HeapType
+  : CONT { Cont }
+  | ident { heap_type_of($1) }
+  ;
+
+reference_type -> RefType
+  : "&" opt_question opt_bang heap_type {
+      let typ = if $3 { make_exact($sloc, $4) } else { $4 }
+      { nullable: $2, typ }
+    }
+  ;
+
+%inline opt_question -> Bool
+  : { false }
+  | "?" { true }
+  ;
+
+%inline opt_bang -> Bool
+  : { false }
+  | "!" { true }
+  ;
+
+value_type -> ValType
+  : IDENT { value_type_of($loc($1), $1) }
+  | reference_type { Ref($1) }
+  ;
+
+cast_type -> CastType
+  : IDENT { cast_type_of($loc($1), $1) }
+  | reference_type { Value(Ref($1)) }
+  | "&" opt_question FN function_type_as { Func(nullable=$2, sign=$4) }
+  ;
+
+result_type_ -> Array[ValType]
+  : non_empty_sep_trailing(",", value_type) { $1 }
+  ;
+
+result_type -> Array[ValType]
+  : "(" ")" { [] }
+  | value_type { [$1] }
+  | "(" result_type_ ")" { $2 }
+  ;
+
+storage_type -> StorageType
+  : IDENT { storage_type_of($loc($1), $1) }
+  | reference_type { Value(Ref($1)) }
+  ;
+
+field_type -> FieldType
+  : opt_mut storage_type { { mut_: $1, typ: $2 } }
+  ;
+
+%inline opt_mut -> Bool
+  : { false }
+  | MUT { true }
+  ;
+
+field_name -> Ident
+  : ident { $1 }
+  ;
+
+structure_type_field -> Annotated[(Ident, FieldType), Location]
+  : field_name ":" field_type { annot($sloc, ($1, $3)) }
+  ;
+
+structure_type -> Array[Annotated[(Ident, FieldType), Location]]
+  : sep_trailing(",", structure_type_field) { $1 }
+  ;
+
+// A leading `..` inherits the supertype's fields. It must come first and appear
+// at most once, which these three productions enforce structurally rather than
+// by a check in the action.
+structtype -> Array[Annotated[(Ident, FieldType), Location]]
+  : "{" ".." "}" { [@ast.splice_field(loc_of($sloc))] }
+  | "{" ".." "," structure_type "}" {
+      [@ast.splice_field(loc_of($sloc)), ..$4]
+    }
+  | "{" structure_type "}" { $2 }
+  ;
+
+// TEMPORARY: placeholder so the grammar is well-formed while the remaining
+// sections are translated. Replaced by the real `parse` rule.
 parse -> Unit
   : EOF { () }
+  ;
+
+function_type_as -> FuncType
+  : EOF { { params: [], results: [] } }
   ;

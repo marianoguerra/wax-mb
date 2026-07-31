@@ -3,8 +3,11 @@ import {
   "waxmb/wax/tokens",
   "waxmb/wax/trivia",
   "waxmb/wax/ast",
+  "waxmb/wax/wasm_types",
   "moonbitlang/core/ref",
   "moonbitlang/core/list",
+  "moonbitlang/core/strconv",
+  "moonbitlang/core/math",
 }
 
 import {
