@@ -15,7 +15,7 @@ order it makes sense to do it.
 **Phase 5 — harden the front end**
 
 - [x] 4. Reproduce the `Assuming that … is complete` subject phrase
-- [ ] 5. Reproduce the related labels (`this statement`, `This '{' opens …`)
+- [x] 5. Reproduce the related labels (`this statement`, `This '{' opens …`)
 - [ ] 6. Diff-fuzzing
 - [ ] 7. Error recovery and `--all-errors` *(research)*
 
@@ -45,8 +45,8 @@ order it makes sense to do it.
 | Oracle 1 — reprint parity | 1903 / 1903 byte-exact, idempotence gated alongside |
 | Oracle 2 — same wasm | 1592 / 1592 identical binaries |
 | Oracle 3 — same errors | 2112 / 2112 on severity, file, spans, offsets, exit code |
-| Unit tests | 148 |
-| Message drift | 78 entries: 29 message text, 23 related labels, 26 span (the 7 finding-9 exemptions) |
+| Unit tests | 152 |
+| Message drift | 75 entries: 29 message text, 20 related labels, 26 span (the 7 finding-9 exemptions) |
 | Upstream findings | 11, in `test/UPSTREAM-FINDINGS.md` |
 | Cram tests in scope | 2 of 328; the other 326 are listed with reasons in `test/cram-scope.md` |
 
@@ -309,7 +309,47 @@ recorded.
 
 ---
 
-## 5. Reproduce the related labels
+## 5. Reproduce the related labels — done
+
+**Done.** The labels are built and correct wherever the message table covers the
+state; `type t = { a: i32 b: i32 };` now renders byte-identically to the
+reference, snippet, spine and both labels included:
+
+```
+Error: Assuming that the structure type is complete, expecting '}'.
+ ──➤  t.wax:1:19
+1 │ type t = { a: i32 b: i32 };
+  ·                   ^
+  ·            ^^^^^^ this structure type
+  ·          ^ This '{' opens the enclosing construct.
+```
+
+**The labels' text** comes from the same table as the message: the `<^N>`/`<N>`
+marker lines the golden carries beside each message, recorded by
+`tools/gen_parser_messages.py` as `subject` and `opener`.
+
+**Where they point is computed, not recorded.** Both markers are 1-based indices
+into *Menhir's* stack, which is not ours — the two automata reduce at different
+moments, so the depth does not carry over. Each is resolved on its own terms:
+
+- `subject_span` (`grammar/state.mbt`) emulates what Menhir does with
+  `%on_error_reduce`: it reduces while the reduction is unambiguous — a state
+  whose only reduce action over every terminal lookahead is one production —
+  and the construct is what the last one covers. An empty construct yields a
+  zero-width span and no label, which is the reference's rule too.
+- `enclosing_opener` scans the shifted tokens for the innermost unclosed
+  `(`/`[`/`{`. The reference reaches the same token through a stack cell; a
+  bracket scan needs no correspondence between two automatons' layouts.
+
+**Measured against the reference before wiring it up**: on the 23 corpus files
+that carry a label, the subject span matches on all 15 where it resolves and is
+absent on 8 (never wrong), and the opener matches on all 10. Related drift 23 →
+20.
+
+**The residue is task 4's, not this one's.** 20 of the 23 stay because their
+*message* is not in the table — no message, no labels. One is the file where the
+reference reports a semantic error (`An '#[else]' must directly follow …`) and
+we report a syntax error, so its label has nothing to correspond to.
 
 **Summary.** 23 drift entries are `related`: the secondary spans a diagnostic
 carries, rendered under the snippet as `^^^^ this statement` or

@@ -109,3 +109,59 @@ test "the reference's own message is used when the stack is one it knows" {
     ),
   )
 }
+
+///|
+test "the labels the reference draws under the snippet" {
+  // Both kinds at once: the subject the hedge names, then the delimiter the
+  // construct opened with. Output is byte-identical to the reference's on this
+  // input, labels included.
+  let r = parse_string("type t = { a: i32 b: i32 };\n")
+  inspect(
+    r.errors[0].message,
+    content="Assuming that the structure type is complete, expecting '}'.",
+  )
+  inspect(
+    labels_of(r.errors[0]),
+    content=(
+      #|11-17 this structure type
+      #|9-10 This '{' opens the enclosing construct.
+    ),
+  )
+}
+
+///|
+test "a state the table does not cover falls back, labels and all" {
+  // The reference says "Assuming that the attributes are complete, expecting a
+  // definition." here and underlines the attributes. Its message table is
+  // keyed by ITS states; the sentence that produced this one lands in a
+  // different state of ours, so we have neither its wording nor its label.
+  // Falling back is the whole design: less specific, never wrong.
+  let r = parse_string("#[likely] if c { nop; }\n")
+  inspect(
+    r.errors[0].message,
+    content="Expecting '#', 'const', 'data', 'elem', 'fn', 'let', 'memory', 'table', or 'tag'.",
+  )
+  inspect(labels_of(r.errors[0]), content="")
+}
+
+///|
+test "no enclosing delimiter, no label" {
+  // The scan finds nothing open at the top level, and the reference emits no
+  // such label there either.
+  let lexed = @lexer.tokens_from_string("type t = i32;")
+  inspect(
+    enclosing_opener(lexed.tokens, lexed.tokens.length()) is None,
+    content="true",
+  )
+}
+
+///|
+/// `start-end text` per related label, one per line: what a diagnostic draws
+/// under the snippet, without the snippet.
+fn labels_of(report : @basic.Report) -> String {
+  let out = []
+  for l in report.related {
+    out.push("\{l.loc.start.cnum}-\{l.loc.end.cnum} \{l.message}")
+  }
+  out.join("\n")
+}

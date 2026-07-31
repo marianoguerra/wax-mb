@@ -31,6 +31,16 @@ pub struct ErrorState {
   /// Index into the token array of the offending token, or the array's length
   /// when the input ended early.
   token_index : Int
+  /// The source span each stack cell covers, parallel to `stack`.
+  ///
+  /// A cell holds one grammar symbol: a shifted token's own span, or, for a
+  /// cell a reduction pushed, the span of everything that reduction consumed.
+  /// That is what makes "this statement" underlineable -- the completed
+  /// construct is a cell, and the cell knows where it starts.
+  ///
+  /// The bottom cell is the automaton's start state, which stands for no
+  /// symbol; its span is empty.
+  spans : Array[(Position, Position)]
 }
 
 ///|
@@ -46,6 +56,11 @@ pub struct ErrorState {
 /// than raising.
 pub fn error_state(tokens : Array[(Token, Position, Position)]) -> ErrorState? {
   let stack = [0]
+  // Spans run parallel to `stack`, mirroring what `yy_parse` keeps on its data
+  // stack. The bottom cell stands for no symbol.
+  let origin = tokens[0].1
+  let spans = [(origin, origin)]
+  let mut last_pos = origin
   let mut state = 0
   let mut cursor = 0
   // The lookahead SYMBOL, once read. Symbol 0 doubles as "no lookahead needed"
@@ -74,7 +89,10 @@ pub fn error_state(tokens : Array[(Token, Position, Position)]) -> ErrorState? {
     match decision {
       Accept => return None
       Shift(next) => {
+        let (_, start_pos, end_pos) = tokens[cursor - 1]
         stack.push(next)
+        spans.push((start_pos, end_pos))
+        last_pos = end_pos
         state = next
         lookahead = None
       }
@@ -83,14 +101,27 @@ pub fn error_state(tokens : Array[(Token, Position, Position)]) -> ErrorState? {
         let mut count = count
         let mut symbol = symbol
         while true {
+          // The reduced symbol covers everything it consumed. An empty
+          // production covers nothing, and sits where the parser stands --
+          // which is how the reference decides an epsilon subject is not worth
+          // underlining.
+          let mut span = (last_pos, last_pos)
+          if count > 0 {
+            span = (
+              spans[spans.length() - count].0,
+              spans[spans.length() - 1].1,
+            )
+          }
           for _ in 0..<count {
             stack.unsafe_pop() |> ignore
+            spans.unsafe_pop() |> ignore
           }
           state = stack[stack.length() - 1]
           match yy_state(state, symbol) {
             Accept => return None
             Shift(next) => {
               stack.push(next)
+              spans.push(span)
               state = next
               break
             }
@@ -108,6 +139,7 @@ pub fn error_state(tokens : Array[(Token, Position, Position)]) -> ErrorState? {
         return Some({
           state,
           stack: stack.copy(),
+          spans: spans.copy(),
           token_index: if lookahead is Some(0) && cursor >= tokens.length() {
             tokens.length()
           } else {
@@ -117,4 +149,124 @@ pub fn error_state(tokens : Array[(Token, Position, Position)]) -> ErrorState? {
     }
   }
   None
+}
+
+///|
+/// The construct the parser was in the middle of, as a span.
+///
+/// The reference's `Assuming that the X is complete` messages carry a label
+/// pointing AT that X. Menhir names it by the reductions it performs once the
+/// error token is in hand -- annotated `%on_error_reduce` -- and the completed
+/// construct is what the outermost of them pushes.
+///
+/// Nothing here has those annotations, so this reduces while the reduction is
+/// unambiguous: a state whose only reduce action, over every terminal
+/// lookahead, is one production. That is the same move for the same reason, and
+/// where it is not the same the span simply does not match the reference's and
+/// the label is dropped (see the calibration in tools/gen_parser_messages.py).
+///
+/// `None` when the stack does not reduce at all, or when the construct is
+/// empty -- underlining nothing is noise, which is the rule the reference
+/// applies to an epsilon reduction too.
+pub fn ErrorState::subject_span(self : Self) -> (Position, Position)? {
+  let stack = self.stack.copy()
+  let spans = self.spans.copy()
+  let mut reduced = false
+  while true {
+    guard sole_reduction(stack[stack.length() - 1]) is Some((count, symbol)) else {
+      break
+    }
+    // Never eat the bottom cell: it stands for the whole parse, not a
+    // construct.
+    if count >= stack.length() {
+      break
+    }
+    let span = if count > 0 {
+      (spans[spans.length() - count].0, spans[spans.length() - 1].1)
+    } else {
+      (spans[spans.length() - 1].1, spans[spans.length() - 1].1)
+    }
+    for _ in 0..<count {
+      stack.unsafe_pop() |> ignore
+      spans.unsafe_pop() |> ignore
+    }
+    guard yy_state(stack[stack.length() - 1], symbol) is Shift(next) else {
+      break
+    }
+    stack.push(next)
+    spans.push(span)
+    reduced = true
+  }
+  guard reduced else { return None }
+  let span = spans[spans.length() - 1]
+  if span.0.cnum >= span.1.cnum {
+    None
+  } else {
+    Some(span)
+  }
+}
+
+///|
+/// The one production a state reduces by, if it has exactly one.
+///
+/// Probes every terminal lookahead. A goto (a nonterminal column) is a shift
+/// and cannot be confused with a reduction, so the terminal range is only a
+/// bound on the work, not on correctness.
+fn sole_reduction(state : Int) -> (Int, Int)? {
+  let mut found : (Int, Int)? = None
+  let last = terminal_symbol_count + 1
+  for sym in 1..<last {
+    match yy_state(state, sym) {
+      Reduce(count, symbol, _) | ReduceNoLookahead(count, symbol, _) =>
+        match found {
+          None => found = Some((count, symbol))
+          Some((c, s)) => if c != count || s != symbol { return None }
+        }
+      _ => ()
+    }
+  }
+  found
+}
+
+///|
+/// How many terminals the grammar declares, which is how many symbol columns
+/// at the front of a state's row are lookaheads rather than gotos.
+///
+/// Pinned by a test against the generated `yy_input`, which numbers the
+/// terminals in declaration order from 1.
+let terminal_symbol_count = 119
+
+///|
+/// The innermost delimiter still open at the failure.
+///
+/// The reference's `This '{' opens the enclosing construct.` label points at
+/// the opener of the construct the error is inside. It reaches it through a
+/// parser-stack cell; the same token is what a bracket scan of everything
+/// shifted so far finds, so that is what this does -- and it needs no
+/// correspondence between two automata's stack layouts.
+///
+/// `None` when nothing is open, which is when the reference emits no such
+/// label either.
+pub fn enclosing_opener(
+  tokens : Array[(Token, Position, Position)],
+  before : Int,
+) -> (Position, Position)? {
+  let open = []
+  let last = @cmp.minimum(before, tokens.length())
+  for i in 0..<last {
+    match tokens[i].0 {
+      LPAREN | LBRACKET | LBRACE => open.push(i)
+      RPAREN | RBRACKET | RBRACE =>
+        if open.length() > 0 {
+          open.unsafe_pop() |> ignore
+        }
+      _ => ()
+    }
+  }
+  if open.length() == 0 {
+    None
+  } else {
+    let i = open[open.length() - 1]
+    Some((tokens[i].1, tokens[i].2))
+  }
 }

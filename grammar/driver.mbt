@@ -82,23 +82,36 @@ fn report_of_parse_error(
     UnexpectedToken(_, (start, end), expected) => ({ start, end }, expected)
     UnexpectedEndOfInput(pos, expected) => ({ start: pos, end: pos }, expected)
   }
-  @basic.Report::error(
-    loc,
-    reference_message_for(e, tokens).unwrap_or(expecting_message(expected)),
-  )
+  match reference_message_for(e, tokens) {
+    None => @basic.Report::error(loc, expecting_message(expected))
+    Some((m, st)) => {
+      let report = @basic.Report::error(loc, m.text)
+      // Emission order, as the reference's runtime resolves them: the subject
+      // first, the delimiter hint second.
+      if m.subject != "" && st.subject_span() is Some((start, end)) {
+        report.related.push({ loc: { start, end }, message: m.subject })
+      }
+      if m.opener != "" &&
+        enclosing_opener(tokens, st.token_index) is Some((start, end)) {
+        report.related.push({ loc: { start, end }, message: m.opener })
+      }
+      report
+    }
+  }
 }
 
 ///|
-/// The reference's message for this failure, if the tables have one.
+/// The reference's message for this failure, with the state that found it.
 ///
 /// The state comes from replaying the parse (`error_state`), so it is only
 /// trusted when the replay stopped where the parse did -- a disagreement means
 /// the replay no longer mirrors the engine, and a message keyed on the wrong
-/// state would be worse than no message at all.
+/// state would be worse than no message at all. The state comes back with the
+/// message because the labels are resolved against its stack.
 fn reference_message_for(
   e : ParseError,
   tokens : Array[(Token, Position, Position)],
-) -> String? {
+) -> (Message, ErrorState)? {
   guard error_state(tokens) is Some(st) else { return None }
   let agrees = match e {
     UnexpectedToken(_, (start, end), _) =>
@@ -112,7 +125,10 @@ fn reference_message_for(
     UnexpectedToken(_, _, expected) | UnexpectedEndOfInput(_, expected) =>
       expected
   }
-  reference_message(st.stack[:], expected_signature(expected))
+  match reference_message(st.stack[:], expected_signature(expected)) {
+    Some(m) => Some((m, st))
+    None => None
+  }
 }
 
 ///|

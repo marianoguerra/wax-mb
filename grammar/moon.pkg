@@ -9,6 +9,7 @@ import {
   "moonbitlang/core/list",
   "moonbitlang/core/string",
   "moonbitlang/core/math",
+  "moonbitlang/core/cmp",
   "moonbitlang/core/set",
 }
 

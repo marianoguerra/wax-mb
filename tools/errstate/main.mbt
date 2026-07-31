@@ -70,8 +70,21 @@ fn main {
         } noraise {
           _ => ""
         }
+        let subject = match st.subject_span() {
+          Some((a, b)) => "\{a.cnum}-\{b.cnum}"
+          None => "-"
+        }
+        let opener = match
+          @grammar.enclosing_opener(lexed.tokens, st.token_index) {
+          Some((a, b)) => "\{a.cnum}-\{b.cnum}"
+          None => "-"
+        }
+        let spans = []
+        for sp in st.spans {
+          spans.push("\{sp.0.cnum}-\{sp.1.cnum}")
+        }
         println(
-          "\{st.state}\t\{stack.join(" ")}\t\{st.token_index}\t\{lexed.tokens.length()}\t\{signature}",
+          "\{st.state}\t\{stack.join(" ")}\t\{st.token_index}\t\{lexed.tokens.length()}\t\{signature}\t\{spans.join(" ")}\t\{subject}\t\{opener}",
         )
       }
     }

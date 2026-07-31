@@ -29,6 +29,8 @@ pub fn data_run((@basic.Position, @basic.Position), @ast.Ident, Array[DataRunIte
 
 pub fn decl_sign((@basic.Position, @basic.Position), @ast.Ident?, @ast.FuncType?) -> @ast.FuncType?
 
+pub fn enclosing_opener(Array[(@tokens.Token, @basic.Position, @basic.Position)], Int) -> (@basic.Position, @basic.Position)?
+
 pub fn error_state(Array[(@tokens.Token, @basic.Position, @basic.Position)]) -> ErrorState?
 
 pub fn expected_signature(Array[@tokens.TokenKind]) -> String
@@ -64,8 +66,6 @@ pub fn parse_string(String, fname? : String) -> ParseResult
 pub fn process_stmts(Array[RawStmt]) -> Array[@ast.Instr[@basic.Location]]
 
 pub fn record_error(@basic.Location, String, hint? : String?, fix? : @basic.Edit?) -> Unit
-
-pub fn reference_message(ArrayView[Int], String) -> String?
 
 pub fn[T] respan(@basic.Annotated[T, @basic.Location], (@basic.Position, @basic.Position)) -> @basic.Annotated[T, @basic.Location]
 
@@ -111,7 +111,9 @@ pub struct ErrorState {
   state : Int
   stack : Array[Int]
   token_index : Int
+  spans : Array[(@basic.Position, @basic.Position)]
 }
+pub fn ErrorState::subject_span(Self) -> (@basic.Position, @basic.Position)?
 
 pub(all) enum HintSetter {
   Branch(Bool)

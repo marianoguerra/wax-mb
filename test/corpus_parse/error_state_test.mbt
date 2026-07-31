@@ -66,3 +66,33 @@ test "the replay stops on the token the parse rejected" {
   // corpus stopped exercising this.
   inspect(checked, content="191")
 }
+
+///|
+/// The labels resolve, or they do not appear.
+///
+/// `subject_span` emulates the reduction Menhir performs at the error to find
+/// the construct the hedge names, and `enclosing_opener` scans the tokens for
+/// the delimiter still open. Neither can be checked against the reference here
+/// (the goldens are the harness's business), so what this pins is the property
+/// that costs users: a label that points somewhere must point INSIDE the file
+/// and span forwards.
+test "a resolved label points at real source" {
+  let mut labelled = 0
+  for c in load_index() {
+    if c.bucket != "syntax-bad" {
+      continue
+    }
+    let src = @fs.read_file_to_string("test/corpus/" + c.file)
+    let r = @grammar.parse_string(src, fname=c.file)
+    for report in r.errors {
+      for l in report.related {
+        labelled += 1
+        assert_true(l.loc.start.cnum < l.loc.end.cnum)
+        assert_true(l.loc.end.cnum <= src.length())
+        assert_true(l.message != "")
+      }
+    }
+  }
+  // The count is the coverage; it falling means the table stopped resolving.
+  inspect(labelled, content="6")
+}

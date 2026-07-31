@@ -124,7 +124,11 @@ def entries():
 
 
 def states_of(sources: list[str]) -> list[tuple | None]:
-    """(state, stack, index, count, signature) per source, via tools/errstate."""
+    """(state, stack, index, count, signature) per source, via tools/errstate.
+
+    errstate prints more columns than this needs (the per-cell spans and the
+    resolved label positions, for diagnosing by hand); the rest are ignored.
+    """
     if not ERRSTATE.exists():
         sys.exit("gen_parser_messages: run 'moon build --target native' first")
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as fh:
@@ -139,7 +143,7 @@ def states_of(sources: list[str]) -> list[tuple | None]:
         if r == "-":
             parsed.append(None)
             continue
-        state, stack, idx, count, signature = r.split("\t")
+        state, stack, idx, count, signature = r.split("\t")[:5]
         parsed.append(
             (int(state), [int(s) for s in stack.split()], int(idx), int(count), signature)
         )
@@ -148,6 +152,26 @@ def states_of(sources: list[str]) -> list[tuple | None]:
 
 def mbt_string(s: str) -> str:
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def labels_of(markers: list[str]) -> tuple[str, str]:
+    """The `<^N>subject` and `<N>opener` marker lines, as their label texts.
+
+    Both are 1-based indices into MENHIR's stack, which is not ours -- the two
+    automata reduce at different moments, so the depth does not carry over.
+    Only the label text does; where it points is worked out here at run time
+    (`subject_span` and `enclosing_opener` in grammar/state.mbt).
+    """
+    subject = opener = ""
+    for line in markers:
+        m = re.match(r"<(\^?)(\d+)>(.*)$", line)
+        if not m:
+            continue
+        if m.group(1) == "^":
+            subject = m.group(3).strip()
+        else:
+            opener = m.group(3).strip()
+    return subject, opener
 
 
 def key_of(stack: list[int], depth: int) -> str:
@@ -197,7 +221,8 @@ def main():
         if idx != len([t for t in e["sentence"] if lexeme(t) != ""]) - 1:
             misplaced += 1
             continue
-        items.append((stack, (signature, e["message"])))
+        subject, opener = labels_of(e["markers"])
+        items.append((stack, (signature, e["message"], subject, opener)))
 
     table: dict[str, str | None] = {}
     dropped = build(items, 1, table)
@@ -217,7 +242,12 @@ def main():
         v = table[key]
         arms.append(
             f'    {mbt_string(key)} => Some('
-            + ("Deeper" if v is None else f"Msg({mbt_string(v[0])}, {mbt_string(v[1])})")
+            + (
+                "Deeper"
+                if v is None
+                else "Msg({signature: %s, text: %s, subject: %s, opener: %s})"
+                % tuple(mbt_string(x) for x in v)
+            )
             + ")"
         )
     body = "\n".join(arms)
@@ -248,11 +278,24 @@ def main():
 // list, which is always correct if less specific.
 
 ///|
+/// One recorded message.
+priv struct Message {{
+  /// The acceptable-token signature it was recorded with. A stack suffix can
+  /// recur in a context whose continuations differ; this is what tells the two
+  /// apart.
+  signature : String
+  text : String
+  /// The label on the construct the hedge names ("this statement"), or "" when
+  /// the reference emits none. Where it points is `ErrorState::subject_span`.
+  subject : String
+  /// The label on the enclosing construct's opening delimiter, or "". Where it
+  /// points is `enclosing_opener`.
+  opener : String
+}}
+
+///|
 priv enum Entry {{
-  /// The acceptable-token signature this message was recorded with, and the
-  /// message. A stack suffix can recur in a context whose continuations
-  /// differ; the signature is what tells the two apart.
-  Msg(String, String)
+  Msg(Message)
   Deeper
 }}
 
@@ -261,7 +304,7 @@ priv enum Entry {{
 ///
 /// Walks from the top frame down, deepening only where the table says the
 /// shallower key stands for more than one message.
-pub fn reference_message(stack : ArrayView[Int], signature : String) -> String? {{
+fn reference_message(stack : ArrayView[Int], signature : String) -> Message? {{
   let key = StringBuilder::new()
   for depth = 1; depth <= stack.length() && depth <= {max_depth}; depth = depth + 1 {{
     // The key reads bottom-up within the suffix, as the generator writes it.
@@ -278,8 +321,8 @@ pub fn reference_message(stack : ArrayView[Int], signature : String) -> String? 
       // The signature is proof the recorded context is this one. Failing
       // that, the message may still be borrowed if it names only tokens this
       // state accepts -- see `message_fits`.
-      Some(Msg(sig, m)) =>
-        return if sig == signature || message_fits(m, signature) {{
+      Some(Msg(m)) =>
+        return if m.signature == signature || message_fits(m.text, signature) {{
           Some(m)
         }} else {{
           None
