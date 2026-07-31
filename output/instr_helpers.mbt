@@ -274,10 +274,14 @@ fn Ctx::label_seq(
     self.punct(",")
     self.space()
   }
-  self.kw("else")
-  self.space()
-  self.ident("'")
-  self.ident(default.name)
+  // The default sits in its own box, so a wrap puts `else 'x` on the next line
+  // whole rather than stranding `else` at the end of the previous one.
+  self.p.box(() => {
+    self.kw("else")
+    self.space()
+    self.ident("'")
+    self.ident(default.name)
+  })
 }
 
 ///|

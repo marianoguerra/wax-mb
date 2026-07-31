@@ -197,3 +197,39 @@ trip. `test/corpus/cram/custom-page-sizes__huge-pow2.wax` is the fixture.
 The port reproduces it, since Oracle 1 gates on byte-exact agreement with the
 reference and this is what the reference emits. Should upstream switch to an
 unsigned rendering, this port has to follow in the same commit.
+
+## 8. A comment ending a block escapes it on reformat
+
+A comment that is the last thing inside a block attaches to the block's last
+CHILD, not to the block. When that child is a function whose body is otherwise
+empty, the reprint hoists the comment out:
+
+```wax
+#[if(debug)]
+{
+    const debug_enabled: i32 = 1;
+    fn debug_log(msg: i32) {
+        // ...
+    }
+}
+```
+
+reprints as
+
+```wax
+#[if(debug)]
+{
+    const debug_enabled: i32 = 1;
+    fn debug_log(msg: i32) {}
+    // ...
+}
+```
+
+so the comment now sits beside the function rather than inside it, and a second
+pass leaves it there. The reference is not idempotent on these two fixtures
+(`docs/language__127_checked.wax`, `docs/reference__129_checked.wax`).
+
+Since Oracle 1 gates on byte-exact reprint parity, matching the reference means
+inheriting the instability. Both files are listed in `NON_IDEMPOTENT_UPSTREAM`
+in `tools/waxdiff.py`, which fails if one of them ever becomes stable — so the
+day upstream fixes this, the harness says so rather than quietly diverging.

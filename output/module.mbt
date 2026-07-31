@@ -300,7 +300,10 @@ fn Ctx::fundecl(
   tag~ : Bool,
   exact? : Bool = false,
 ) -> Unit {
-  self.p.hvbox(indent=indent_level, () => {
+  // NO indent on this box: the parameter list supplies its own, and adding one
+  // here would indent the parameters twice over and drag the closing `)` in
+  // with them.
+  self.p.hvbox(() => {
     self.p.hbox(() => {
       self.kw(if tag { "tag" } else { "fn" })
       self.space()

@@ -54,6 +54,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -602,7 +603,56 @@ def check_oracle1(
         out.failed += 1
         out.failures.append(Failure(rel, "reprint", _text_diff(want, got.out)))
         return
+    if not _check_idempotent(impl, rel, got.out, out):
+        return
     out.passed += 1
+
+
+# Files whose reprint the REFERENCE itself does not reproduce when fed back to
+# it. Reprint parity is the gate, so matching the reference means inheriting
+# its instability here; see test/UPSTREAM-FINDINGS.md findings 7 and 8. Listed
+# rather than silently tolerated so the set cannot grow unnoticed.
+NON_IDEMPOTENT_UPSTREAM = {
+    "cram/custom-page-sizes__huge-pow2.wax",
+    "docs/language__127_checked.wax",
+    "docs/reference__129_checked.wax",
+}
+
+
+def _check_idempotent(impl: list[str], rel: str, once: bytes, out: Outcome) -> bool:
+    """Formatting an already-formatted file must change nothing.
+
+    A cheap check that catches printer bugs reprint parity cannot: a layout
+    decision that depends on the input's incidental line breaks matches the
+    reference on the corpus and still drifts on its own output.
+    """
+    with tempfile.NamedTemporaryFile(suffix=".wax", delete=False) as f:
+        f.write(once)
+        tmp = f.name
+    try:
+        twice = impl_run(impl, tmp, "-f", "wax")
+    finally:
+        os.unlink(tmp)
+    stable = twice.code == 0 and twice.out == once
+    expected_unstable = rel in NON_IDEMPOTENT_UPSTREAM
+    if stable and expected_unstable:
+        out.failed += 1
+        out.failures.append(
+            Failure(
+                rel,
+                "idempotence",
+                "listed in NON_IDEMPOTENT_UPSTREAM but now stable; if upstream "
+                "fixed this, drop the entry and the finding",
+            )
+        )
+        return False
+    if not stable and not expected_unstable:
+        out.failed += 1
+        out.failures.append(
+            Failure(rel, "idempotence", _text_diff(once, twice.out))
+        )
+        return False
+    return True
 
 
 def check_oracle2(
