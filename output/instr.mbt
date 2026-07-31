@@ -268,6 +268,238 @@ fn Ctx::instr_desc(
       self.instr(UnaryPrefix, operand)
     }
 
+    // -- assignment ----------------------------------------------------------
+    Set(x, op, v) =>
+      self.p.box(indent=indent_level, () => {
+        self.ident(x.name)
+        self.space()
+        // `x op= e` for a compound assignment; a plain `=` otherwise.
+        self.op(
+          match op {
+            None => "="
+            Some(o) => binop_str(o.desc) + "="
+          },
+        )
+        self.space()
+        self.instr(Instruction, v)
+      })
+    Tee(x, v) =>
+      self.p.box(indent=indent_level, () => {
+        self.ident(x.name)
+        self.space()
+        self.op(":=")
+        self.space()
+        self.instr(Instruction, v)
+      })
+
+    // -- calls ---------------------------------------------------------------
+    Call(callee, args) => self.call_instr(callee, args)
+    TailCall(callee, args) =>
+      self.call_instr(callee, args, prefix=Some("become"))
+    Labelled(l, v) => self.key_value(l.name, v, x => self.instr(Instruction, x))
+
+    // -- casts and tests -----------------------------------------------------
+    Cast(v, t) =>
+      self.p.box(indent=indent_level, () => {
+        self.instr(Cast, v)
+        self.space()
+        self.p.box(() => {
+          self.kw("as")
+          self.space()
+          self.casttype(t)
+        })
+      })
+    CastDesc(v, nullable, d) =>
+      self.p.box(indent=indent_level, () => {
+        self.instr(Cast, v)
+        self.space()
+        self.p.box(() => {
+          self.kw("as")
+          self.space()
+          self.descriptor_operand(d, nullable~)
+        })
+      })
+    Test(v, t) =>
+      self.p.box(indent=indent_level, () => {
+        self.instr(Cast, v)
+        self.space()
+        self.p.box(() => {
+          self.kw("is")
+          self.space()
+          self.reftype(t)
+        })
+      })
+    NonNull(v) => {
+      self.instr(UnaryPostfix, v)
+      self.op("!")
+    }
+
+    // -- aggregates ----------------------------------------------------------
+    Struct(nm, fields) =>
+      self.struct_instr(nm, () => {
+        self.list_commasep_trailing(fields, f => self.struct_field_kv(f.0, f.1))
+      })
+    StructDefault(nm) => self.struct_instr(nm, () => self.punct(".."))
+    StructDesc(d, fields) =>
+      self.struct_desc_instr(() => self.descriptor_operand(d), () => {
+        self.list_commasep_trailing(fields, f => self.struct_field_kv(f.0, f.1))
+      })
+    StructDefaultDesc(d) =>
+      self.struct_desc_instr(() => self.descriptor_operand(d), () => {
+        self.punct("..")
+      })
+    StructGet(recv, field) => {
+      self.field_receiver(recv)
+      self.op(".")
+      self.ident(field.name)
+    }
+    GetDescriptor(recv) => {
+      self.field_receiver(recv)
+      self.op(".")
+      self.kw("descriptor")
+    }
+    StructSet(recv, field, v) =>
+      self.p.box(indent=indent_level, () => {
+        self.field_receiver(recv)
+        self.op(".")
+        self.ident(field.name)
+        self.space()
+        self.op("=")
+        self.space()
+        self.instr(Instruction, v)
+      })
+    ArrayGet(recv, idx) => {
+      self.instr(CallAndFieldAccess, recv)
+      self.punct("[")
+      self.p.box(() => self.instr(Instruction, idx))
+      self.punct("]")
+    }
+    ArraySet(recv, idx, v) =>
+      self.p.box(indent=indent_level, () => {
+        self.instr(CallAndFieldAccess, recv)
+        self.punct("[")
+        self.p.box(() => self.instr(Instruction, idx))
+        self.punct("]")
+        self.space()
+        self.op("=")
+        self.space()
+        self.instr(Instruction, v)
+      })
+
+    // -- branches ------------------------------------------------------------
+    Br(l, v) => self.branch_instr("br", l, v)
+    BrIf(l, v) => self.branch_instr("br_if", l, Some(v))
+    BrOnNull(l, v) => self.branch_instr("br_on_null", l, Some(v))
+    BrOnNonNull(l, v) => self.branch_instr("br_on_non_null", l, Some(v))
+    BrOnCast(l, t, v) => self.branch_ref_instr("br_on_cast", l, t, v)
+    BrOnCastFail(l, t, v) => self.branch_ref_instr("br_on_cast_fail", l, t, v)
+    BrOnCastDescEq(l, n, v, d) =>
+      self.branch_ref_desc_instr("br_on_cast", l, n, v, d)
+    BrOnCastDescEqFail(l, n, v, d) =>
+      self.branch_ref_desc_instr("br_on_cast_fail", l, n, v, d)
+    Return(v) =>
+      self.p.box(indent=indent_level, () => {
+        self.kw("return")
+        match v {
+          Some(x) => {
+            self.space()
+            self.instr(Branch, x)
+          }
+          None => ()
+        }
+      })
+    Throw(tag, args) =>
+      self.p.hvbox(() => {
+        self.p.hbox(() => {
+          self.kw("throw")
+          self.space()
+          self.ident(tag.name)
+        })
+        self.arg_list(args, a => self.instr(Instruction, a))
+      })
+    ThrowRef(v) =>
+      self.p.box(indent=indent_level, () => {
+        self.kw("throw_ref")
+        self.space()
+        self.instr(Branch, v)
+      })
+
+    // -- bindings ------------------------------------------------------------
+    Let(binds, init) =>
+      if binds.length() == 1 && binds[0].0 is None && init is Some(_) {
+        // An anonymous binding is a DISCARDED value: printed `_ = e`, or
+        // `_: t = e` when the width annotation is load-bearing -- without
+        // `let`, since nothing is bound. Mirrors the Set layout.
+        let typ = binds[0].1
+        let v = match init {
+          Some(x) => x
+          None => panic()
+        }
+        self.p.box(indent=indent_level, () => {
+          self.p.hbox(() => {
+            self.op("_")
+            match typ {
+              Some(t) => {
+                self.punct(":")
+                self.space()
+                self.valtype(t)
+              }
+              None => ()
+            }
+            self.space()
+            self.op("=")
+          })
+          self.space()
+          self.instr(Instruction, v)
+        })
+      } else {
+        self.p.box(indent=indent_level, () => {
+          // Keep `let pat =` together as one unit: when the value breaks the
+          // line after `=`, without this box the outer box would also split
+          // `let`/`pat`/`=` across lines.
+          self.p.hbox(() => {
+            self.kw("let")
+            self.space()
+            if binds.length() == 1 {
+              self.typed_pat(binds[0].0, binds[0].1)
+            } else {
+              self.paren_list(binds, b => self.typed_pat(b.0, b.1))
+            }
+            if init is Some(_) {
+              self.space()
+              self.kw("=")
+            }
+          })
+          match init {
+            Some(v) => {
+              self.space()
+              self.instr(Instruction, v)
+            }
+            None => ()
+          }
+        })
+      }
+
+    // -- misc ----------------------------------------------------------------
+    Sequence(items) => self.paren_list(items, x => self.instr(Instruction, x))
+    Select(c, a, b) =>
+      // No spaces around `?` and `:`: the separators are zero-width cuts, so a
+      // ternary prints as `x?1:2` when it fits and breaks AT the operators when
+      // it does not. Both branches print at Assignement, not at Select.
+      self.p.box(indent=indent_level, () => {
+        self.instr(Comparison, c)
+        self.cut()
+        self.op("?")
+        self.instr(Assignement, a)
+        self.cut()
+        self.op(":")
+        self.instr(Assignement, b)
+      })
+    On(v, handlers) => {
+      self.instr(Cast, v)
+      self.on_clauses(handlers)
+    }
+
     // Anything not yet ported prints as a marker rather than silently emitting
     // nothing, so an unported form shows up as a diff rather than as valid-
     // looking output that is quietly missing an instruction.
