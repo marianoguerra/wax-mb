@@ -28,7 +28,7 @@ pub type Attributes = Array[Attribute]
 pub(all) enum ImportKind {
   /// `exact` marks an exact function import, `fn f: !t`.
   Func(typ~ : Ident?, sign~ : FuncType?, exact~ : Bool)
-  Global(mut_~ : Bool, typ~ : ValType[Ident])
+  Global(mut_~ : Bool, typ~ : ValType)
   Tag(typ~ : Ident?, sign~ : FuncType?)
   Memory(
     address_type~ : AddressType,
@@ -38,7 +38,7 @@ pub(all) enum ImportKind {
   )
   Table(
     address_type~ : AddressType,
-    reftype~ : RefType[Ident],
+    reftype~ : RefType,
     limits~ : (UInt64, UInt64?)?
   )
 } derive(Eq, Debug)
@@ -64,7 +64,7 @@ pub(all) enum DataElem {
   /// A string literal's raw bytes.
   Str(String)
   /// A scalar numeric run, `[f32: 1.5, nan, ...]`.
-  Run(StorageType[Ident], Array[Annotated[String, Location]])
+  Run(StorageType, Array[Annotated[String, Location]])
   /// A v128 run, `[v128: i32x4(1,2,3,4), ...]`.
   V128Run(Array[Annotated[V128, Location]])
 } derive(Eq, Debug)
@@ -104,7 +104,7 @@ pub(all) enum ModuleField[Info] {
   Global(
     name~ : Ident,
     mut_~ : Bool,
-    typ~ : ValType[Ident]?,
+    typ~ : ValType?,
     def~ : Instr[Info],
     attributes~ : Attributes
   )
@@ -127,14 +127,14 @@ pub(all) enum ModuleField[Info] {
   Table(
     name~ : Ident,
     address_type~ : AddressType,
-    reftype~ : RefType[Ident],
+    reftype~ : RefType,
     limits~ : (UInt64, UInt64?)?,
     init~ : Instr[Info]?,
     attributes~ : Attributes
   )
   Elem(
     name~ : Ident,
-    reftype~ : RefType[Ident],
+    reftype~ : RefType,
     mode~ : ElemMode[Info],
     init~ : Array[Instr[Info]],
     attributes~ : Attributes

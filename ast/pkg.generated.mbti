@@ -266,11 +266,21 @@ pub type Attributes = Array[Attribute]
 
 pub type Body[Info] = @basic.Annotated[Array[Instr[Info]], @basic.Location]
 
+pub type FieldType = @wasm_types.MutType[@wasm_types.StorageType[Ident]]
+
+pub type HeapType = @wasm_types.HeapType[Ident]
+
 pub type LocModule = Array[@basic.Annotated[ModuleField[@basic.Location], @basic.Location]]
 
 pub type Module[Info] = Array[@basic.Annotated[ModuleField[Info], @basic.Location]]
 
 pub type RecType = Array[@basic.Annotated[(Ident, SubType), @basic.Location]]
+
+pub type RefType = @wasm_types.RefType[Ident]
+
+pub type StorageType = @wasm_types.StorageType[Ident]
+
+pub type ValType = @wasm_types.ValType[Ident]
 
 // Traits
 

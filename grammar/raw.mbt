@@ -27,9 +27,7 @@ pub(all) enum RawStmt {
 
 ///|
 /// Pair adjacent `#[if]`/`#[else]` markers into `IfAnnotation` nodes.
-fn pair_stmts(
-  l : ArrayView[RawStmt],
-) -> Array[Instr[Location]] raise SyntaxError {
+fn pair_stmts(l : ArrayView[RawStmt]) -> Array[Instr[Location]] {
   let out : Array[Instr[Location]] = []
   let mut i = 0
   while i < l.length() {
@@ -69,11 +67,13 @@ fn pair_stmts(
           )
           i += 1
         }
-      Else(p, _) =>
-        fail_at(
+      Else(p, _) => {
+        record_error(
           loc_of(p),
           "An '#[else]' must directly follow an '#[if(...)]' group.",
         )
+        i += 1
+      }
     }
   }
   out
@@ -81,9 +81,7 @@ fn pair_stmts(
 
 ///|
 /// Strip empty statements, then pair.
-pub fn process_stmts(
-  l : Array[RawStmt],
-) -> Array[Instr[Location]] raise SyntaxError {
+pub fn process_stmts(l : Array[RawStmt]) -> Array[Instr[Location]] {
   let kept : Array[RawStmt] = []
   for s in l {
     if !(s is Semi) {
@@ -116,7 +114,7 @@ pub(all) enum RawField {
 /// Pair adjacent `#[if]`/`#[else]` field markers into `Conditional` fields.
 pub fn lower_fields(
   l : Array[RawField],
-) -> Array[Annotated[ModuleField[Location], Location]] raise SyntaxError {
+) -> Array[Annotated[ModuleField[Location], Location]] {
   let out : Array[Annotated[ModuleField[Location], Location]] = []
   let mut i = 0
   while i < l.length() {
@@ -151,11 +149,13 @@ pub fn lower_fields(
           )
           i += 1
         }
-      FElse(p, _) =>
-        fail_at(
+      FElse(p, _) => {
+        record_error(
           loc_of(p),
           "An '#[else]' must directly follow an '#[if(...)]' field.",
         )
+        i += 1
+      }
     }
   }
   out

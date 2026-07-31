@@ -7,6 +7,8 @@ using @basic {type Location, type Position, type Annotated}
 using @tokens {type Token, type TokenKind, type LocString}
 
 ///|
+/// The Wax instantiations live in @ast; the grammar never needs the generic
+/// forms, since Wax refers to types by name throughout.
 using @ast {
   type Instr,
   type InstrDesc,
@@ -14,8 +16,21 @@ using @ast {
   type Ident,
   type Body,
   type ModuleField,
+  type Attribute,
   type Attributes,
+  type CompType,
+  type SubType,
+  type CastType,
+  type Catch,
+  type OnClause,
+  type MatchPattern,
+  type TryCatchArm,
+  type ValType,
+  type RefType,
+  type HeapType,
+  type StorageType,
+  type FieldType,
 }
 
 ///|
-using @wasm_types {type Cond}
+using @wasm_types {type Cond, type AddressType}

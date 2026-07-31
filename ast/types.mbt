@@ -23,16 +23,16 @@ pub(all) struct Ident {
 /// Parameters may be anonymous (`fn(i32)`) or named (`fn(x: i32)`), hence the
 /// optional name; results never are.
 pub(all) struct FuncType {
-  params : Array[Annotated[(Ident?, ValType[Ident]), Location]]
-  results : Array[ValType[Ident]]
+  params : Array[Annotated[(Ident?, ValType), Location]]
+  results : Array[ValType]
 } derive(Eq, Debug)
 
 ///|
 /// What a defined type actually is.
 pub(all) enum CompType {
   Func(FuncType)
-  Struct(Array[Annotated[(Ident, FieldType[Ident]), Location]])
-  Array(FieldType[Ident])
+  Struct(Array[Annotated[(Ident, FieldType), Location]])
+  Array(FieldType)
   /// A continuation type, from the stack-switching proposal.
   Cont(Ident)
 } derive(Eq, Debug)
@@ -68,17 +68,13 @@ pub type RecType = Array[Annotated[(Ident, SubType), Location]]
 pub let splice_field_name : String = ".."
 
 ///|
-pub fn is_splice_field(
-  f : Annotated[(Ident, FieldType[Ident]), Location],
-) -> Bool {
+pub fn is_splice_field(f : Annotated[(Ident, FieldType), Location]) -> Bool {
   f.desc.0.name == splice_field_name
 }
 
 ///|
 /// Build the `..` splice sentinel at the given span.
-pub fn splice_field(
-  loc : Location,
-) -> Annotated[(Ident, FieldType[Ident]), Location] {
+pub fn splice_field(loc : Location) -> Annotated[(Ident, FieldType), Location] {
   {
     desc: ({ name: splice_field_name, loc }, { mut_: false, typ: Value(I32) }),
     info: loc,
@@ -127,7 +123,7 @@ pub type Label = Ident
 ///|
 /// What an `as` cast targets.
 pub(all) enum CastType {
-  Value(ValType[Ident])
+  Value(ValType)
   /// `&fn(...)`, a function reference.
   Func(nullable~ : Bool, sign~ : FuncType)
   /// A numeric conversion that states signedness, e.g. `i32_s`. `strict` marks
@@ -192,7 +188,7 @@ pub(all) enum OnClause {
 /// A `match` arm pattern: an optionally-bound reference-type test, or a null
 /// test.
 pub(all) enum MatchPattern {
-  MatchCast(Ident?, RefType[Ident])
+  MatchCast(Ident?, RefType)
   MatchNull
 } derive(Eq, Debug)
 

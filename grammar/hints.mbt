@@ -46,29 +46,29 @@ pub fn freq_of_ratio(r : Double) -> Int {
 ///|
 /// A call-target frequency is written as a fraction of 1 and stored as a whole
 /// percent, which is what the section holds.
-pub fn target_percent(
-  p : (Position, Position),
-  n : String,
-) -> Int raise SyntaxError {
+pub fn target_percent(p : (Position, Position), n : String) -> Int {
   let f = @string.parse_double(n) catch {
-    _ => fail_at(loc_of(p), "A call-target frequency must be between 0 and 1.")
+    _ =>
+      fail_at(
+        loc_of(p),
+        "A call-target frequency must be between 0 and 1.",
+        default=0.0,
+      )
   }
   if f < 0.0 || f > 1.0 {
-    fail_at(loc_of(p), "A call-target frequency must be between 0 and 1.")
+    record_error(loc_of(p), "A call-target frequency must be between 0 and 1.")
   }
   (f * 100.0).round().to_int()
 }
 
 ///|
 /// Recover which hint an attribute stands for.
-pub fn hint_of_attr(
-  p : (Position, Position),
-  a : @ast.Attribute,
-) -> HintSetter raise SyntaxError {
-  fn bad() -> HintSetter raise SyntaxError {
+pub fn hint_of_attr(p : (Position, Position), a : @ast.Attribute) -> HintSetter {
+  fn bad() -> HintSetter {
     fail_at(
       loc_of(p),
       "Expected a hint attribute: '#[likely]', '#[unlikely]', '#[freq = n]', '#[never_opt]' or '#[always_opt]'.",
+      default=Branch(true),
     )
   }
 
@@ -98,9 +98,9 @@ pub fn targets_of_attr(
   p : (Position, Position),
   name : String,
   l : Array[(Ident, Int)],
-) -> HintSetter raise SyntaxError {
+) -> HintSetter {
   if name != "targets" {
-    fail_at(
+    record_error(
       loc_of(p),
       "Expected a hint attribute: the only one taking a list is '#[targets(f: 0.73, ...)]'.",
     )
@@ -170,7 +170,7 @@ pub fn hinted(
   aloc : (Position, Position),
   setters : Array[HintSetter],
   i : Instr[Location],
-) -> Instr[Location] raise SyntaxError {
+) -> Instr[Location] {
   let span = loc_of(aloc)
   let hint : String? = match i.desc {
     BinOpI(_)
@@ -197,6 +197,7 @@ pub fn hinted(
           fail_at(
             span,
             "A branch hint may only prefix a conditional branch (if, br_if, or br_on_*).",
+            default=(),
             hint~,
           )
         }
@@ -207,6 +208,7 @@ pub fn hinted(
           fail_at(
             span,
             "A frequency hint may only prefix a call or a control instruction.",
+            default=(),
             hint~,
           )
         }
@@ -214,7 +216,12 @@ pub fn hinted(
       }
       Targets(l) => {
         if !is_targets_target(i.desc) {
-          fail_at(span, "A call-target hint may only prefix a call.", hint~)
+          fail_at(
+            span,
+            "A call-target hint may only prefix a call.",
+            default=(),
+            hint~,
+          )
         }
         hints = { ..hints, targets: Some({ value: l, loc: span }) }
       }

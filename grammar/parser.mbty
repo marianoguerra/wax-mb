@@ -27,19 +27,16 @@
 // is out of scope. That matches the reference's DEFAULT behaviour, which stops
 // at the first syntax error.
 //
-// CONFLICTS ARE NOT VISIBLE. MoonYacc tracks them internally -- its
-// lr1/resolve_conflicts.mbt has a Shift_reduce_conflict_resolved_without_
-// precedence case -- but nothing surfaces them through `moon build`. Verified
-// by deleting the `%left "+" "-"` precedence level, which makes `a + b + c`
-// genuinely ambiguous: the build still succeeded silently, with no diagnostic
-// even under `moon build -v`.
+// CONFLICTS ARE REPORTED, but only on a fresh generation. MoonYacc prints
+// "Shift-reduce conflict resolved without precedence" (and the other cases in
+// its lr1/resolve_conflicts.mbt) while generating -- so a cached parser.mbt
+// hides them, and `moon check` after an unrelated edit says nothing. Delete
+// grammar/parser.mbt before trusting a clean run.
 //
-// So "zero conflicts" cannot be gated on the build. Two things stand in for it:
-// the precedence declarations here are transcribed verbatim from the
-// reference's (which Menhir accepts without conflicts, and both generators use
-// Pager LR(1), so the same declarations should resolve the same way), and the
-// corpus test parses every file the reference can parse -- a misresolved
-// conflict shows up there as a wrong parse rather than a silent one.
+// It does NOT report the number of conflicts or where they are, and an
+// unresolvable %nonassoc conflict is a panic rather than a diagnostic: see the
+// note on the comparison precedence level below, and
+// test/UPSTREAM-FINDINGS.md.
 
 %position<Position>
 
@@ -185,7 +182,15 @@
 %right prec_branch
 %right ":=" "="
 %right "?" ":"
-%nonassoc "==" "!=" "<" "<u" "<s" ">" ">u" ">s" "<=" "<=u" "<=s" ">=" ">=u" ">=s"
+// UPSTREAM BUG WORKAROUND. The reference declares this level %nonassoc, so
+// `1 < 2 < 3` is a syntax error while `1 < (2 < 3)` is fine. MoonYacc PANICS
+// when a %nonassoc conflict actually arises -- "RuntimeError: unreachable",
+// no diagnostic -- which is reproducible in a 20-line grammar; see
+// test/UPSTREAM-FINDINGS.md. So the level is declared %left here and the
+// non-associativity is enforced in the action instead, by
+// `reject_chained_comparison`, which reproduces the reference's rejection at
+// the same span.
+%left "==" "!=" "<" "<u" "<s" ">" ">u" ">s" "<=" "<=u" "<=s" ">=" ">=u" ">=s"
 %left "|"
 %left "^"
 %left "&"
@@ -385,7 +390,7 @@ type_definition -> Annotated[(Ident, SubType), Location]
         supertype: $3,
         // `open` is the spelling; the AST stores the negation, because
         // final-by-default is what WebAssembly encodes.
-        final_: not($5),
+        final_: !($5),
         descriptor: $7,
         describes: $6,
       }))
@@ -571,7 +576,7 @@ optional_function_type -> FuncType?
         None => (false, None)
       }
       if $3 && ex2 {
-        fail_at(loc_of($sloc), "Duplicate exact marker '!'.")
+        record_error(loc_of($sloc), "Duplicate exact marker '!'.")
       }
       ($2, t, decl_sign($sloc, t, $5), $3 || ex2)
     }
@@ -586,7 +591,7 @@ func -> (Attributes) -> Annotated[ModuleField[Location], Location]
       let (name, typ, sign, exact) = $1
       let body = $2
       if exact {
-        fail_at(
+        record_error(
           loc_of($sloc),
           "A function definition is always exact; the '!' marker is only allowed on an (imported) function declaration.",
         )
@@ -669,6 +674,7 @@ on_clause -> OnClause
         fail_at(
           loc_of($loc($3)),
           "Expected a label or 'switch' as the handler target.",
+          default=OnSwitch($1),
         )
       }
     }
@@ -917,7 +923,7 @@ plaininstr -> Instr[Location]
   | "_" { with_loc($sloc, Hole) }
   | ident %prec prec_ident { with_loc($sloc, Get($1)) }
   | ident "::" ident { with_loc($sloc, Path($1, $3)) }
-  | "(" parenthesized_expression ")" { $2 }
+  | "(" parenthesized_expression ")" { mark_parenthesized($2) }
   | "(" expression "," expression_list ")" {
       with_loc($sloc, Sequence([$2, ..$4]))
     }
@@ -1183,7 +1189,10 @@ raw_statement_list -> Array[RawStmt]
       if l.length() > 0 && l[0] is Plain(i) {
         [Plain(hinted($1.0, [$1.1], i)), ..l[1:]]
       } else {
-        fail_at(loc_of($1.0), "A hint may only prefix an instruction.")
+        {
+          record_error(loc_of($1.0), "A hint may only prefix an instruction.")
+          l
+        }
       }
     }
   | cond_stmt raw_statement_list { [$1, ..$2] }
@@ -1212,11 +1221,369 @@ cond_stmt -> RawStmt
   | "#" "[" ELSE "]" braced_block { Else($sloc, $5) }
   ;
 
-// TEMPORARY: placeholder while the remaining sections are translated.
-parse -> Unit
-  : EOF { () }
+// ===========================================================================
+// Module fields
+// ===========================================================================
+
+globalmut -> Bool
+  : LET { true }
+  | CONST { false }
   ;
 
+constant_expression -> Instr[Location]
+  : expression { $1 }
+  ;
+
+global -> (Attributes) -> Annotated[ModuleField[Location], Location]
+  : globalmut ident ioption(type_annot) "=" constant_expression ";" {
+      let (mut_, name, typ, def) = ($1, $2, $3, $5)
+      fn(attributes) {
+        annot($sloc, ModuleField::Global(name~, mut_~, typ~, def~, attributes~))
+      }
+    }
+  ;
+
+tag_def -> (Attributes) -> Annotated[ModuleField[Location], Location]
+  : tag_signature ";" {
+      let (name, typ, sign) = $1
+      fn(attributes) {
+        annot($sloc, ModuleField::Tag(name~, typ~, sign~, attributes~))
+      }
+    }
+  ;
+
+definition -> (Attributes) -> Annotated[ModuleField[Location], Location]
+  : func { $1 }
+  | global { $1 }
+  | memory { $1 }
+  | data { $1 }
+  | table { $1 }
+  | elem { $1 }
+  | tag_def { $1 }
+  ;
+
+address_type -> AddressType
+  : IDENT { address_type_of($sloc, $1) }
+  ;
+
+mem_limits -> (UInt64, UInt64?)
+  : "[" INT ioption(limit_max) "]" {
+      (u64_of_int_literal($loc($2), $2), $3)
+    }
+  ;
+
+%inline limit_max -> UInt64
+  : "," INT { u64_of_int_literal($loc($2), $2) }
+  ;
+
+data_name -> Ident?
+  : "_" { None }
+  | ident { Some($1) }
+  ;
+
+// A data segment's contents: one or more elements -- a string literal, a
+// numeric run, or a v128 constant -- concatenated with `++`.
+data_init -> Array[@ast.DataElem]
+  : data_element { [$1] }
+  | data_element "++" data_init { [$1, ..$3] }
+  ;
+
+data_element -> @ast.DataElem
+  : STRING { Str($1.desc) }
+  | "[" ident ":" sep_trailing(",", data_run_item) "]" {
+      data_run($loc($2), $2, $4)
+    }
+  ;
+
+// One element of a data run: a scalar literal, or a v128 lane group
+// `shape(lane, ...)`. data_run checks it matches the run's element type.
+data_run_item -> DataRunItem
+  : data_number { Num($1) }
+  | ident "(" sep_trailing(",", data_number) ")" {
+      let comps : Array[String] = []
+      for n in $3 {
+        comps.push(n.desc)
+      }
+      Vec(annot($sloc, { shape: vec_shape($loc($1), $1), components: comps }))
+    }
+  ;
+
+// A bare numeric literal in a data run, kept as RAW TEXT: values are
+// range-checked and encoded at typing and lowering, not here.
+data_number -> Annotated[String, Location]
+  : ioption(data_sign) raw_number { annot($sloc, $1.unwrap_or("") + $2) }
+  ;
+
+data_sign -> String
+  : "-" { "-" }
+  | "+" { "" }
+  ;
+
+raw_number -> String
+  : INT { $1 }
+  | FLOAT { $1 }
+  | INF { "inf" }
+  | NAN { "nan" }
+  ;
+
+data_item -> @ast.MemData[Location]
+  : DATA data_name "@" "[" constant_expression "]" loption_data_init ";" {
+      { data_name: $2, offset: $5, init: $7 }
+    }
+  ;
+
+// `loption` in the stdlib works on @list.List; the AST holds arrays.
+loption_data_init -> Array[@ast.DataElem]
+  : { [] }
+  | "=" data_init { $2 }
+  ;
+
+mem_pagesize -> Int
+  : PAGESIZE INT { page_size_log2($loc($2), $2) }
+  ;
+
+memory -> (Attributes) -> Annotated[ModuleField[Location], Location]
+  : MEMORY ident ":" address_type ioption(mem_limits) ioption(mem_pagesize)
+    boption(SHARED) ";" {
+      let (name, at, lim, ps, sh) = ($2, $4, $5, $6, $7)
+      fn(attributes) {
+        annot(
+          $sloc,
+          ModuleField::Memory(
+            name~,
+            address_type=at,
+            limits=lim,
+            page_size_log2=ps,
+            shared=sh,
+            data=[],
+            attributes~,
+          ),
+        )
+      }
+    }
+  | MEMORY ident ":" address_type ioption(mem_limits) ioption(mem_pagesize)
+    boption(SHARED) "{" list_of(data_item) "}" {
+      let (name, at, lim, ps, sh, items) = ($2, $4, $5, $6, $7, $9)
+      fn(attributes) {
+        annot(
+          $sloc,
+          ModuleField::Memory(
+            name~,
+            address_type=at,
+            limits=lim,
+            page_size_log2=ps,
+            shared=sh,
+            data=items,
+            attributes~,
+          ),
+        )
+      }
+    }
+  ;
+
+data -> (Attributes) -> Annotated[ModuleField[Location], Location]
+  : DATA data_name loption_data_init ";" {
+      let (n, init) = ($2, $3)
+      fn(attributes) {
+        annot(
+          $sloc,
+          ModuleField::Data(name=n, mode=Passive, init~, attributes~),
+        )
+      }
+    }
+  | DATA data_name "@" ident "[" constant_expression "]" loption_data_init ";" {
+      let (n, mem, off, init) = ($2, $4, $6, $8)
+      fn(attributes) {
+        annot(
+          $sloc,
+          ModuleField::Data(
+            name=n,
+            mode=Active(mem, off),
+            init~,
+            attributes~,
+          ),
+        )
+      }
+    }
+  ;
+
+table -> (Attributes) -> Annotated[ModuleField[Location], Location]
+  : TABLE ident ":" ioption(address_type) reference_type ioption(mem_limits)
+    ioption(table_init) ";" {
+      let (name, at, rt, lim, init) = ($2, $4, $5, $6, $7)
+      fn(attributes) {
+        annot(
+          $sloc,
+          ModuleField::Table(
+            name~,
+            address_type=at.unwrap_or(I32),
+            reftype=rt,
+            limits=lim,
+            init~,
+            attributes~,
+          ),
+        )
+      }
+    }
+  ;
+
+%inline table_init -> Instr[Location]
+  : "=" expression { $2 }
+  ;
+
+elem -> (Attributes) -> Annotated[ModuleField[Location], Location]
+  : ELEM ident ":" reference_type "=" "[" expression_list "]" ";" {
+      let (name, rt, l) = ($2, $4, $7)
+      fn(attributes) {
+        annot(
+          $sloc,
+          ModuleField::Elem(
+            name~,
+            reftype=rt,
+            mode=EPassive,
+            init=l,
+            attributes~,
+          ),
+        )
+      }
+    }
+  | ELEM ident ":" reference_type "@" ident "[" constant_expression "]" "=" "["
+    expression_list "]" ";" {
+      let (name, rt, tab, off, l) = ($2, $4, $6, $8, $12)
+      fn(attributes) {
+        annot(
+          $sloc,
+          ModuleField::Elem(
+            name~,
+            reftype=rt,
+            mode=EActive(tab, off),
+            init=l,
+            attributes~,
+          ),
+        )
+      }
+    }
+  ;
+
+// A module field yields a RawField. The `#[if]`/`#[else]` productions carry a
+// located field list (braces mandatory) and become markers that lower_fields
+// pairs into Conditionals. There is no standalone brace group: `{ ... }`
+// appears only as a conditional branch body.
+module_field -> RawField
+  : rectype { FPlain({ desc: ModuleField::Type($1.desc), info: $1.info }) }
+  | inner_attribute { FPlain(annot($sloc, ModuleField::ModuleAnnotation([$1]))) }
+  | list_of(attribute) definition { FPlain(attributed($sloc, $1, $2)) }
+  | IMPORT STRING import_item {
+      FPlain(annot($sloc, ModuleField::Import(module_=$2, decl=$3)))
+    }
+  | IMPORT STRING "{" semi_list(import_item) "}" {
+      FPlain(annot($sloc, ModuleField::ImportGroup(module_=$2, decls=$4)))
+    }
+  | "#" "[" IF "(" condition ")" "]" braced_fields { FIf($sloc, $5, $8) }
+  | "#" "[" ELSE "]" braced_fields { FElse($sloc, $5) }
+  ;
+
+// A brace-delimited, lowered field list carrying a span over the whole
+// `{ ... }`. A comment past the `}` is the branch's trailing trivia, emitted on
+// the far side of the closing brace.
+braced_fields -> LocatedFields
+  : "{" semi_list(module_field) "}" { annot($sloc, lower_fields($2)) }
+  ;
+
+// One entry of an import block: an fn/const/let/tag/memory/table declaration,
+// optionally carrying a name-only `#[import = "name"]` -- imported under that
+// name rather than the Wax one -- or other attributes such as `#[export]`.
+import_item -> Annotated[@ast.ImportDecl, Location]
+  : list_of(attribute) import_kind_decl ";" {
+      let (id, kind) = $2
+      annot($sloc, { id, kind, attributes: $1 })
+    }
+  ;
+
+import_kind_decl -> (Ident, @ast.ImportKind)
+  : fundecl {
+      let (name, typ, sign, exact) = $1
+      (name, Func(typ~, sign~, exact~))
+    }
+  | globalmut ident ":" value_type { ($2, Global(mut_=$1, typ=$4)) }
+  | tag_signature {
+      let (name, typ, sign) = $1
+      (name, Tag(typ~, sign~))
+    }
+  | MEMORY ident ":" address_type ioption(mem_limits) ioption(mem_pagesize)
+    boption(SHARED) {
+      (
+        $2,
+        Memory(
+          address_type=$4,
+          limits=$5,
+          page_size_log2=$6,
+          shared=$7,
+        ),
+      )
+    }
+  | TABLE ident ":" ioption(address_type) reference_type ioption(mem_limits) {
+      ($2, Table(address_type=$4.unwrap_or(I32), reftype=$5, limits=$6))
+    }
+  ;
+
+// ===========================================================================
+// Conditional-compilation conditions
+// ===========================================================================
+//
+// These are preserved, never evaluated here: the preprocessor consumes them.
+
 condition -> Cond
-  : EOF { Not(Version(0, 0, 0)) }
+  : ident { Var({ desc: $1.name, info: $1.loc }) }
+  | ident condition_relop condition_literal {
+      Cmp($2, Var({ desc: $1.name, info: $1.loc }), $3)
+    }
+  | ident "(" sep_trailing(",", condition) ")" {
+      match ($1.name, $3) {
+        ("all", l) => And(l)
+        ("any", l) => Or(l)
+        ("not", [c]) => Not(c)
+        _ =>
+          fail_at(
+            loc_of($sloc),
+            "Expected 'all', 'any', or 'not(<cond>)' in a condition.",
+            default=And($3),
+          )
+      }
+    }
+  ;
+
+condition_literal -> Cond
+  : "(" INT "," INT "," INT ")" {
+      Version(
+        int_of_version_component($loc($2), $2),
+        int_of_version_component($loc($4), $4),
+        int_of_version_component($loc($6), $6),
+      )
+    }
+  | STRING { Str($1) }
+  ;
+
+condition_relop -> @wasm_types.CmpOp
+  : "=" { Eq }
+  | "!=" { Ne }
+  | "<" { Lt }
+  | ">" { Gt }
+  | "<=" { Le }
+  | ">=" { Ge }
+  ;
+
+// ===========================================================================
+// Entry point
+// ===========================================================================
+
+// lower_fields pairs top-level #[if]/#[else] fields into Conditionals.
+parse -> @ast.LocModule
+  : raw_parse { lower_fields($1) }
+  ;
+
+raw_parse -> Array[RawField]
+  : EOF { [] }
+  | ";" raw_parse { $2 }
+  | module_field raw_parse { [$1, ..$2] }
   ;

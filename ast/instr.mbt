@@ -101,7 +101,7 @@ pub(all) enum InstrDesc[Info] {
   // -- casts and tests ------------------------------------------------------
   Cast(Instr[Info], CastType)
   CastDesc(Instr[Info], Bool, Instr[Info])
-  Test(Instr[Info], RefType[Ident])
+  Test(Instr[Info], RefType)
   /// `e!` -- assert non-null.
   NonNull(Instr[Info])
 
@@ -130,7 +130,7 @@ pub(all) enum InstrDesc[Info] {
   // -- bindings -------------------------------------------------------------
   /// `let` binds several names at once (a tuple pattern). A name is `None` for
   /// a discarded binding (`_`), and the type is `None` when inferred.
-  Let(Array[(Ident?, ValType[Ident]?)], Instr[Info]?)
+  Let(Array[(Ident?, ValType?)], Instr[Info]?)
 
   // -- branches -------------------------------------------------------------
   Br(Label, Instr[Info]?)
@@ -149,8 +149,8 @@ pub(all) enum InstrDesc[Info] {
   )
   BrOnNull(Label, Instr[Info])
   BrOnNonNull(Label, Instr[Info])
-  BrOnCast(Label, RefType[Ident], Instr[Info])
-  BrOnCastFail(Label, RefType[Ident], Instr[Info])
+  BrOnCast(Label, RefType, Instr[Info])
+  BrOnCastFail(Label, RefType, Instr[Info])
   BrOnCastDescEq(Label, Bool, Instr[Info], Instr[Info])
   BrOnCastDescEqFail(Label, Bool, Instr[Info], Instr[Info])
 
@@ -209,7 +209,7 @@ pub(all) struct Instr[Info] {
   ///
   /// Kept even though this port never populates it, because omitting it would
   /// force an AST change when the typer lands.
-  expected : ValType[Ident]?
+  expected : ValType?
 } derive(Eq, Debug)
 
 ///|
@@ -223,7 +223,7 @@ pub(all) struct TryCatchArm[Info] {
   ///
   /// EMPTY as parsed -- the typer fills it, and the lowering back to wasm reads
   /// it. Present here for the same reason as `Instr::expected`.
-  arm_types : Array[ValType[Ident]]
+  arm_types : Array[ValType]
   arm_body : Body[Info]
 } derive(Eq, Debug)
 

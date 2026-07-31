@@ -21,6 +21,69 @@ let context : Ref[@trivia.Context] = @ref.new(@trivia.Context::new())
 ///|
 pub fn set_context(ctx : @trivia.Context) -> Unit {
   context.val = ctx
+  parenthesized.clear()
+  semantic_error.val = None
+}
+
+///|
+/// Byte spans of expressions that were written inside parentheses.
+///
+/// Needed only to enforce the non-associativity of the comparison operators.
+/// The reference declares that precedence level `%nonassoc`, which makes
+/// `1 < 2 < 3` a syntax error while `1 < (2 < 3)` is accepted -- but MoonYacc
+/// panics when a %nonassoc conflict actually arises (see the note in
+/// parser.mbty), so the level is `%left` and the rule is enforced here instead.
+///
+/// The distinction is one the GRAMMAR knows and the AST does not: the
+/// parenthesized production returns its inner instruction unchanged, so the two
+/// forms are indistinguishable afterwards. Rather than add a paren node to the
+/// AST -- which the reference does not have, and which the printer would then
+/// have to ignore -- the parenthesized spans are recorded here, outside the
+/// tree, and consulted only by `reject_chained_comparison`.
+let parenthesized : Set[(Int, Int)] = Set([], capacity=64)
+
+///|
+/// Record that `i` was written inside parentheses.
+pub fn mark_parenthesized(i : Instr[Location]) -> Instr[Location] {
+  parenthesized.add((i.info.start.cnum, i.info.end.cnum))
+  i
+}
+
+///|
+/// Whether this operator is one of the comparison operators, which together
+/// form a single non-associative precedence level.
+fn is_comparison(op : @ast.BinOp) -> Bool {
+  match op {
+    Eq | Ne | Lt(_) | Gt(_) | Le(_) | Ge(_) => true
+    _ => false
+  }
+}
+
+///|
+/// Reject a chained comparison such as `1 < 2 < 3`.
+///
+/// Raised at the span of the SECOND operator, which is where the reference's
+/// parser stops: verified against the pinned binary, which reports
+/// startOffset/endOffset covering exactly that token.
+///
+/// A parenthesized operand is fine -- `1 < (2 < 3)` and `(1 < 2) < 3` are both
+/// accepted by the reference -- which is what the `parenthesized` set is for.
+fn reject_chained_comparison(
+  oploc : (Position, Position),
+  op : @ast.BinOp,
+  i : Instr[Location],
+) -> Unit {
+  if !is_comparison(op) {
+    return
+  }
+  if i.desc is BinOpI(inner, _, _) &&
+    is_comparison(inner.desc) &&
+    !parenthesized.contains((i.info.start.cnum, i.info.end.cnum)) {
+    record_error(
+      loc_of(oploc),
+      "Comparison operators are non-associative; parenthesize to say which comparison was meant.",
+    )
+  }
 }
 
 ///|
@@ -43,14 +106,54 @@ pub suberror SyntaxError {
 } derive(Debug)
 
 ///|
-/// Raise a syntax error spanning `loc`.
+/// The first semantic error of the running parse, if any.
+///
+/// MoonYacc generates its semantic actions as
+/// `(Position, ArrayView[...]) -> YYObj` -- no `raise` in the signature -- so an
+/// action CANNOT propagate an error. The reference simply raises from inside
+/// its actions; here the error is recorded instead, the action returns a
+/// harmless placeholder, and the driver reports it and discards the tree.
+///
+/// First error wins, which matches the reference: it raises on the first
+/// semantic error, so nothing after that is reported there either.
+let semantic_error : Ref[SyntaxError?] = @ref.new(None)
+
+///|
+/// Record a syntax error and return `default` so the action can complete.
+///
+/// The returned value is never used for anything: the driver discards the whole
+/// tree whenever an error was recorded. It exists only because the action has
+/// to return something of the right type.
 pub fn[T] fail_at(
+  loc : Location,
+  message : String,
+  default~ : T,
+  hint? : String? = None,
+  fix? : @basic.Edit? = None,
+) -> T {
+  if semantic_error.val is None {
+    semantic_error.val = Some(SyntaxError(loc~, message~, hint~, fix~))
+  }
+  default
+}
+
+///|
+/// Record a syntax error where the action has nothing to return.
+pub fn record_error(
   loc : Location,
   message : String,
   hint? : String? = None,
   fix? : @basic.Edit? = None,
-) -> T raise SyntaxError {
-  raise SyntaxError(loc~, message~, hint~, fix~)
+) -> Unit {
+  if semantic_error.val is None {
+    semantic_error.val = Some(SyntaxError(loc~, message~, hint~, fix~))
+  }
+}
+
+///|
+/// The semantic error the last parse recorded, if it hit one.
+pub fn taken_error() -> SyntaxError? {
+  semantic_error.val
 }
 
 ///|
@@ -120,6 +223,7 @@ pub fn binop(
   i : Instr[Location],
   j : Instr[Location],
 ) -> Instr[Location] {
+  reject_chained_comparison(oploc, op, i)
   with_loc(sloc, BinOpI(annot(oploc, op), i, j))
 }
 
