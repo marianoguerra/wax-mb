@@ -53,6 +53,8 @@ pub fn suffix_string(@wasm_types.StorageType[@ast.Ident]) -> String
 
 pub fn unop_str(@ast.UnOp) -> String
 
+pub fn vec_shape_name(@wasm_types.V128Shape) -> String
+
 pub let width : Int
 
 // Errors
@@ -74,6 +76,7 @@ pub struct Ctx[Info] {
 pub fn[Info, T] Ctx::arg_list(Self[Info], Array[T], (T) -> Unit) -> Unit
 pub fn[Info] Ctx::atomic_node(Self[Info], @basic.Location?, () -> Unit) -> Unit
 pub fn[Info] Ctx::attr(Self[Info], String) -> Unit
+pub fn Ctx::attribute_(Self[@basic.Location], @ast.Attribute) -> Unit
 pub fn[Info] Ctx::block_label(Self[Info], @ast.Ident?) -> Unit
 pub fn[Info] Ctx::blocktype(Self[Info], @ast.FuncType) -> Unit
 pub fn[Info] Ctx::casttype(Self[Info], @ast.CastType) -> Unit
@@ -85,6 +88,7 @@ pub fn[Info] Ctx::functype(Self[Info], @ast.FuncType) -> Unit
 pub fn[Info] Ctx::get_trivia(Self[Info], @basic.Location?) -> @trivia.Associated
 pub fn[Info] Ctx::heaptype(Self[Info], @wasm_types.HeapType[@ast.Ident]) -> Unit
 pub fn[Info] Ctx::ident(Self[Info], String) -> Unit
+pub fn Ctx::inner_attribute(Self[@basic.Location], @ast.Attribute) -> Unit
 pub fn Ctx::instr(Self[@basic.Location], Prec, @ast.Instr[@basic.Location]) -> Unit
 pub fn[Info, T] Ctx::key_value(Self[Info], String, T, (T) -> Unit) -> Unit
 pub fn[Info] Ctx::kw(Self[Info], String) -> Unit
@@ -102,6 +106,7 @@ pub fn[Info] Ctx::parenthesized(Self[Info], Prec, Prec, () -> Unit) -> Unit
 pub fn[Info] Ctx::print_trivia(Self[Info], Array[@trivia.Entry]) -> Unit
 pub fn[Info] Ctx::punct(Self[Info], String) -> Unit
 pub fn[Info] Ctx::raw_functype(Self[Info], @ast.FuncType) -> Unit
+pub fn Ctx::rectype(Self[@basic.Location], Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Unit
 pub fn[Info] Ctx::reftype(Self[Info], @wasm_types.RefType[@ast.Ident]) -> Unit
 pub fn[Info] Ctx::semicolon(Self[Info]) -> Unit
 pub fn[Info] Ctx::simple_pat(Self[Info], @ast.Ident?) -> Unit
@@ -109,6 +114,7 @@ pub fn[Info] Ctx::space(Self[Info]) -> Unit
 pub fn[Info] Ctx::storagetype(Self[Info], @wasm_types.StorageType[@ast.Ident]) -> Unit
 pub fn[Info] Ctx::str(Self[Info], String) -> Unit
 pub fn[Info] Ctx::styled(Self[Info], Style, String) -> Unit
+pub fn Ctx::subtype(Self[@basic.Location], @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]) -> Unit
 pub fn[Info, T] Ctx::trailing_comma(Self[Info], Array[T]) -> Unit
 pub fn[Info] Ctx::tuple(Self[Info], Bool, Array[@wasm_types.ValType[@ast.Ident]]) -> Unit
 pub fn[Info] Ctx::typ(Self[Info], String) -> Unit
