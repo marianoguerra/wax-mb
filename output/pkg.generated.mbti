@@ -37,6 +37,8 @@ pub fn need_blocktype(@ast.FuncType) -> Bool
 
 pub let never_opt : Int
 
+pub fn ocaml_escaped(Bytes) -> String
+
 pub fn prec_op(@ast.BinOp) -> (Prec, Prec, Prec)
 
 pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context) -> String

@@ -239,12 +239,18 @@ fn Ctx::data_init(
   self : Ctx[@basic.Location],
   init : Array[@ast.DataElem],
 ) -> Unit {
-  self.p.hvbox(() => {
-    self.list(init, e => self.data_elem(e), sep=() => {
-      self.space()
-      self.punct("++")
-      self.space()
-    })
+  self.p.box(indent=indent_level, () => {
+    for i, e in init {
+      if i > 0 {
+        // Folded like a binary operator: the break goes BEFORE `++`, which
+        // then leads its continuation line. The separator after it is a raw
+        // space, not a breakable one, so `++` can never end a line.
+        self.space()
+        self.op("++")
+        self.p.string(" ")
+      }
+      self.data_elem(e)
+    }
   })
 }
 

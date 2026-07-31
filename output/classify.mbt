@@ -206,7 +206,7 @@ pub fn cond_op_string(op : @wasm_types.CmpOp) -> String {
 pub fn cond_to_string(c : @wasm_types.Cond) -> String {
   match c {
     Var(v) => v.desc
-    Str(s) => "\"\{s.desc}\""
+    Str(s) => ocaml_escaped(s.desc)
     Version(a, b, cc) => "(\{a}, \{b}, \{cc})"
     Cmp(op, a, b) =>
       "\{cond_to_string(a)} \{cond_op_string(op)} \{cond_to_string(b)}"
@@ -235,4 +235,38 @@ pub fn[Info] simple_inline_instr(i : @ast.Instr[Info]) -> Bool {
     Get(_) | Path(_) | Char(_) | Str(_) | Int(_) | Float(_) => true
     _ => false
   }
+}
+
+///|
+/// A byte string quoted the way OCaml's `%S` does it, which is what the
+/// reference uses for a cfg string.
+///
+/// NOT `escape_string`: this is a different escaping dialect, with `\b` among
+/// the named escapes and DECIMAL `\ddd` -- three digits, always -- for
+/// anything else outside printable ASCII.
+pub fn ocaml_escaped(b : Bytes) -> String {
+  let out = StringBuilder::new()
+  out.write_char('"')
+  for byte in b {
+    let n = byte.to_int()
+    match n {
+      34 => out.write_string("\\\"")
+      92 => out.write_string("\\\\")
+      10 => out.write_string("\\n")
+      9 => out.write_string("\\t")
+      13 => out.write_string("\\r")
+      8 => out.write_string("\\b")
+      _ =>
+        if n >= 32 && n <= 126 {
+          out.write_char(n.unsafe_to_char())
+        } else {
+          out.write_string("\\")
+          out.write_string((n / 100).to_string())
+          out.write_string((n / 10 % 10).to_string())
+          out.write_string((n % 10).to_string())
+        }
+    }
+  }
+  out.write_char('"')
+  out.to_string()
 }

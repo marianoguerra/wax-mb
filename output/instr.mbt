@@ -368,18 +368,27 @@ fn Ctx::instr_desc(
         self.space()
         self.instr(Instruction, v)
       })
-    ArrayGet(recv, idx) => {
-      self.instr(CallAndFieldAccess, recv)
-      self.punct("[")
-      self.p.box(() => self.instr(Instruction, idx))
-      self.punct("]")
-    }
+    ArrayGet(recv, idx) =>
+      // The zero-width cut lets a long index break onto its own line, taking
+      // the whole `[...]` with it rather than splitting inside the brackets.
+      self.p.box(indent=indent_level, () => {
+        self.instr(CallAndFieldAccess, recv)
+        self.cut()
+        self.p.box(() => {
+          self.op("[")
+          self.instr(Instruction, idx)
+          self.op("]")
+        })
+      })
     ArraySet(recv, idx, v) =>
       self.p.box(indent=indent_level, () => {
         self.instr(CallAndFieldAccess, recv)
-        self.punct("[")
-        self.p.box(() => self.instr(Instruction, idx))
-        self.punct("]")
+        self.cut()
+        self.p.box(() => {
+          self.op("[")
+          self.instr(Instruction, idx)
+          self.op("]")
+        })
         self.space()
         self.op("=")
         self.space()
