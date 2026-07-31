@@ -1,0 +1,13 @@
+import {
+  "waxmb/wax/basic",
+  "waxmb/wax/ast",
+  "waxmb/wax/printer",
+  "waxmb/wax/trivia",
+  "waxmb/wax/unicode",
+  "waxmb/wax/wasm_types",
+}
+
+import {
+  "waxmb/wax/grammar",
+  "moonbitlang/core/test",
+} for "test"
