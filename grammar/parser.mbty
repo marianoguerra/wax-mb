@@ -23,6 +23,15 @@
 //   * Every rule must state its result type (`nonterm -> Type`), which Menhir
 //     infers from the OCaml actions.
 //
+//   * %inline is NOT used, though the reference uses it widely. MoonYacc's
+//     inliner mis-maps semantic-value indices when an inlined rule can expand
+//     to nothing: the generated action reads the wrong argument slot, or one
+//     past the end, and fails at run time with a guard mismatch or an
+//     index-out-of-bounds -- not at generation time. Inlining never changes the
+//     language a grammar accepts, only how many distinct LR states it has, so
+//     dropping it costs error-message granularity (which is not gated here) and
+//     nothing else. See test/UPSTREAM-FINDINGS.md.
+//
 // MoonYacc also has no error recovery, so `--all-errors` / panic-mode recovery
 // is out of scope. That matches the reference's DEFAULT behaviour, which stops
 // at the first syntax error.
@@ -230,7 +239,7 @@ sep_trailing[T](SEP, X : T) -> Array[T]
 // Identifiers
 // ===========================================================================
 
-%inline ident -> Ident
+ident -> Ident
   : IDENT { { name: $1, loc: loc_of($loc($1)) } }
   ;
 
@@ -293,7 +302,7 @@ label_name -> String
   : ident_or_keyword { $1 }
   ;
 
-%inline label -> Ident
+label -> Ident
   : "'" label_name { { name: $2, loc: loc_of($sloc) } }
   ;
 
@@ -397,15 +406,15 @@ type_definition -> Annotated[(Ident, SubType), Location]
     }
   ;
 
-%inline supertype_clause -> Ident
+supertype_clause -> Ident
   : ":" type_name { $2 }
   ;
 
-%inline describes_clause -> Ident
+describes_clause -> Ident
   : DESCRIBES type_name { $2 }
   ;
 
-%inline descriptor_clause -> Ident
+descriptor_clause -> Ident
   : DESCRIPTOR type_name { $2 }
   ;
 
@@ -417,11 +426,21 @@ rectype -> Annotated[Array[Annotated[(Ident, SubType), Location]], Location]
   | type_definition { { desc: [$1], info: $1.info } }
   ;
 
-// An array-returning list. The stdlib's `list` yields @list.List, but the AST
-// holds arrays; left recursion also keeps this linear rather than quadratic.
+// An array-returning list. The stdlib's `list` yields @list.List while the AST
+// holds arrays, so it is defined here.
+//
+// RIGHT-recursive, matching the reference's `list`. Left recursion would be
+// cheaper -- no repeated array copying -- but it changes the automaton: the
+// parser would have to reduce the empty list BEFORE shifting the first token,
+// and at the start of a module field that means committing to
+// `list_of(attribute) definition` while the lookahead is still `#`, which also
+// begins `#[if(...)]`. That is a shift-reduce conflict, and resolving it by
+// shift made every attributed definition in the corpus fail with
+// "Expecting 'if', 'else'". Right recursion defers the decision until after
+// the attribute is parsed.
 list_of[T](X : T) -> Array[T]
   : { [] }
-  | list_of(X) X { $1.push($2); $1 }
+  | X list_of(X) { [$1, ..$2] }
   ;
 
 // ===========================================================================
@@ -434,7 +453,7 @@ attribute_expression -> Instr[Location]
 
 // `import` heads a grouped-import block, so it is a keyword rather than an
 // IDENT; accept it explicitly so `#[import = ...]` keeps working.
-%inline attribute_name -> String
+attribute_name -> String
   : IDENT { $1 }
   | IMPORT { "import" }
   ;
@@ -482,7 +501,7 @@ hint_target -> (Ident, Int)
   : ident ":" target_fraction { ($1, $3) }
   ;
 
-%inline target_fraction -> Int
+target_fraction -> Int
   : FLOAT { target_percent($loc($1), $1) }
   | INT { target_percent($loc($1), $1) }
   ;
@@ -543,11 +562,11 @@ function_type(ctx) -> FuncType
     }
   ;
 
-%inline result_arrow -> Array[ValType]
+result_arrow -> Array[ValType]
   : "->" result_type { $2 }
   ;
 
-%inline function_type_as -> FuncType
+function_type_as -> FuncType
   : function_type(AS) { $1 }
   ;
 
@@ -569,7 +588,7 @@ optional_function_type -> FuncType?
 
 // The exactness marker `!` may be written in either of two places -- `fn f!` or
 // `fn f: !t` -- but not both.
-%inline fundecl -> (Ident, Ident?, FuncType?, Bool)
+fundecl -> (Ident, Ident?, FuncType?, Bool)
   : FN function_name boption("!") ioption(fundecl_type) optional_function_type {
       let (ex2, t) = match $4 {
         Some((e, ty)) => (e, Some(ty))
@@ -582,7 +601,7 @@ optional_function_type -> FuncType?
     }
   ;
 
-%inline fundecl_type -> (Bool, Ident)
+fundecl_type -> (Bool, Ident)
   : ":" boption("!") type_name { ($2, $3) }
   ;
 
@@ -612,7 +631,7 @@ tag_signature -> (Ident, Ident?, FuncType?)
     }
   ;
 
-%inline tag_type -> Ident
+tag_type -> Ident
   : ":" type_name { $2 }
   ;
 
@@ -620,11 +639,18 @@ tag_signature -> (Ident, Ident?, FuncType?)
 // Blocks
 // ===========================================================================
 
-%inline block_label -> Ident?
+// NOT %inline, unlike the reference. MoonYacc miscomputes semantic-value
+// indices when a production contains two %inline symbols that can each expand
+// to nothing: the `if` production reads _args[4] for its trailing
+// ioption(else_branch), which is out of bounds once an absent inline label has
+// also shrunk the argument list. Keeping this a real nonterminal makes it
+// always occupy one slot. The reference marks it %inline only to split error
+// states, which is message quality, not semantics.
+block_label -> Ident?
   : ioption(labelled) { $1 }
   ;
 
-%inline labelled -> Ident
+labelled -> Ident
   : label ":" { $1 }
   ;
 
@@ -645,7 +671,7 @@ block_type -> FuncType
   | value_type { { params: [], results: [$1] } }
   ;
 
-%inline block -> (Ident?, Array[Instr[Location]])
+block -> (Ident?, Array[Instr[Location]])
   : block_label "{" statement_list "}" { ($1, $3) }
   ;
 
@@ -847,11 +873,11 @@ blockinstr -> Instr[Location]
     }
   ;
 
-%inline if_block_type -> FuncType
+if_block_type -> FuncType
   : "=>" block_type { $2 }
   ;
 
-%inline else_branch -> Body[Location]
+else_branch -> Body[Location]
   : ELSE braced_block { $2 }
   ;
 
@@ -1066,7 +1092,7 @@ let_pattern -> (Ident?, ValType?)
   : simple_pattern ioption(type_annot) { ($1, $2) }
   ;
 
-%inline type_annot -> ValType
+type_annot -> ValType
   : ":" value_type { $2 }
   ;
 
@@ -1151,7 +1177,7 @@ statement -> Instr[Location]
     }
   ;
 
-%inline let_init -> Instr[Location]
+let_init -> Instr[Location]
   : "=" expression { $2 }
   ;
 
@@ -1210,7 +1236,7 @@ raw_statement_list -> Array[RawStmt]
     }
   ;
 
-%inline semi_then_statements -> Array[RawStmt]
+semi_then_statements -> Array[RawStmt]
   : ";" raw_statement_list { $2 }
   ;
 
@@ -1272,7 +1298,7 @@ mem_limits -> (UInt64, UInt64?)
     }
   ;
 
-%inline limit_max -> UInt64
+limit_max -> UInt64
   : "," INT { u64_of_int_literal($loc($2), $2) }
   ;
 
@@ -1427,7 +1453,7 @@ table -> (Attributes) -> Annotated[ModuleField[Location], Location]
     }
   ;
 
-%inline table_init -> Instr[Location]
+table_init -> Instr[Location]
   : "=" expression { $2 }
   ;
 

@@ -1,0 +1,10 @@
+import {
+}
+
+import {
+  "waxmb/wax/grammar",
+  "moonbitlang/x/fs",
+  "moonbitlang/core/json",
+  "moonbitlang/core/test",
+  "moonbitlang/core/cmp",
+} for "test"

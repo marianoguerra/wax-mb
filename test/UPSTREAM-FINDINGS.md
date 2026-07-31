@@ -134,3 +134,43 @@ clean when it is not. **Delete the generated file before trusting a clean run.**
 
 It reports neither the count nor the location of a conflict, so narrowing one
 down means bisecting the grammar by hand.
+
+## 5. `%inline` mis-maps semantic-value indices
+
+MoonYacc's inliner assigns the wrong argument slots when an inlined rule can
+expand to nothing. The failure is at RUN TIME, not generation time: the emitted
+action either reads one past the end of its argument view
+
+```
+at @moonbitlang/core/builtin.index_out_of_bounds[...]
+at @waxmb/wax/grammar.yy_action_326
+```
+
+or guards for the wrong payload type and throws — here, an action for
+`block_label "{" statement_list "}"` guarded `_args[0].0 is YYObj_Ident_` when
+`block_label` yields `Ident?`.
+
+Both were triggered by a production containing two `%inline` symbols that could
+each vanish (`block_label`, itself `ioption(labelled)`, plus a trailing
+`ioption(else_branch)`).
+
+**Workaround**: `%inline` is not used anywhere in this grammar, though the
+reference uses it on 21 rules. Inlining never changes the language a grammar
+accepts — only how many distinct LR states it has — so the cost is
+error-message granularity, which is not gated here, and nothing else.
+
+## 6. A note on list recursion (not a bug, but a trap)
+
+The stdlib's `list` is right-recursive. Defining an array-returning equivalent
+*left*-recursively — the obvious choice, since it avoids repeated array copying
+— silently changes the automaton: the parser must reduce the empty list before
+shifting the first token.
+
+At the start of a Wax module field that means committing to
+`list_of(attribute) definition` while the lookahead is still `#`, which also
+begins `#[if(...)]`. That is a shift-reduce conflict; resolved by shift, it made
+**1013 of 1903** corpus files fail with `Expecting 'if', 'else'`. It also
+accounted for all 6 of the shift-reduce conflicts the generator was reporting.
+
+Match the reference's recursion direction unless there is a specific reason not
+to.
