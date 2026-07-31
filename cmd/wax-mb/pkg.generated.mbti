@@ -29,6 +29,7 @@ pub(all) struct Options {
   error_format : @diagnostic.OutputFormat
   color : @colors.Flag
   check_only : Bool
+  inplace : Bool
   policy : @warning.Policy
 }
 

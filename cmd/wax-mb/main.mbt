@@ -155,24 +155,29 @@ fn run(argv : Array[String]) -> Status {
             }
           }
         }
-      (Some(m), Format) => {
-        let text = formatted(m, trivia, opts, false)
+      (Some(m), Format) =>
         if opts.check_only {
-          // A file that is already formatted is left alone and unreported;
-          // only the ones that would change are listed.
-          if text != src {
+          // A file already formatted is left alone and unreported; only the
+          // ones that would change are listed.
+          if formatted(m, trivia, opts, false) != src {
             @io.println(path)
             needs_format = true
           }
-        } else if text != src {
-          @fs.write_bytes_to_file(path, @utf8.encode(text)) catch {
-            _ => {
-              @io.eprintln("wax-mb: cannot write \{path}")
-              return Usage
+        } else if opts.inplace {
+          let text = formatted(m, trivia, opts, false)
+          if text != src {
+            @fs.write_bytes_to_file(path, @utf8.encode(text)) catch {
+              _ => {
+                @io.eprintln("wax-mb: cannot write \{path}")
+                return Usage
+              }
             }
           }
+        } else {
+          // WITHOUT `-i`, format writes to stdout and leaves the file alone.
+          // The opposite default would silently edit the user's files.
+          @io.print(formatted(m, trivia, opts, @io.stdout_is_tty()))
         }
-      }
     }
   }
   if rejected {

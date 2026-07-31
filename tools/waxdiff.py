@@ -896,6 +896,248 @@ def cmd_run(args) -> int:
     return 0
 
 
+# --------------------------------------------------------------------------
+# classify-cram -- select the cram tests this port can run
+# --------------------------------------------------------------------------
+
+CRAM_SRC = ROOT / "wax" / "test" / "cram-tests"
+CRAM_DST = ROOT / "test" / "cram"
+
+# Flags wax-mb implements. A test using anything else is out of scope: running
+# it would either fail on an unknown flag or, worse, pass while silently
+# ignoring one.
+CRAM_OK_FLAGS = {
+    "-f", "--output-format", "--format",
+    "-i", "--input-format",
+    "-o", "--output",
+    "--error-format",
+    "--color",
+    "-W", "--warn",
+    "-c", "--check",
+}
+
+# Formats the port handles. `-f wat`, `-f wasm` and `-i wasm` all need the back
+# end or the decompiler, neither of which exists yet.
+CRAM_OK_FORMATS = {"wax"}
+
+
+def _cram_commands(text: str) -> list[str]:
+    """The shell commands a cram file runs.
+
+    A command starts at a `  $ ` line and CONTINUES through the `  > ` lines
+    under it -- which is how a cram test writes a fixture with a heredoc.
+    Dropping the continuations would leave `cat > m.wax <<WAX` with no body.
+    """
+    out: list[str] = []
+    for raw in text.splitlines():
+        st = raw.strip()
+        if st.startswith("$ "):
+            out.append(st[2:])
+        elif st.startswith("> ") and out:
+            out[-1] += "\n" + st[2:]
+        elif st == ">" and out:
+            out[-1] += "\n"
+    return out
+
+
+# Interpreters that can invoke `wax` from inside a heredoc, where no static
+# inspection can see the flags it is given.
+CRAM_OPAQUE = {"python3", "python", "node", "perl", "ruby", "sh", "bash"}
+
+
+def _cram_reason(cmd: str) -> str | None:
+    """Why `cmd` is out of scope, or None when it is in scope.
+
+    Only `wax` invocations are judged. A cram test may also run `cat`, `diff`
+    or `printf` to set up or inspect a fixture, and cram runs those through a
+    real shell, so they work here unchanged.
+    """
+    head = cmd.split("\n")[0]
+    for seg in re.split(r"\|\||&&|[|;]", head):
+        words = seg.split()
+        while words and "=" in words[0] and not words[0].startswith("-"):
+            words.pop(0)
+        if words and words[0] in CRAM_OPAQUE:
+            return f"drives wax from a {words[0]} script, so its invocations cannot be inspected"
+        r = _cram_wax_reason(seg)
+        if r:
+            return r
+    return None
+
+
+# The subcommands wax-mb implements. `lsp`, `fmt-diff`, ... are not among them.
+CRAM_OK_COMMANDS = {"convert", "format", "check"}
+
+
+def _cram_wax_reason(seg: str) -> str | None:
+    """Why this `wax` invocation is out of scope, or None when it is in scope.
+
+    One pass, and it has to know which flags take a value: reading `-i wat` as
+    a positional would report `wat` as an unimplemented SUBCOMMAND, which is
+    both wrong and confusing in the scope report.
+    """
+    words = seg.split()
+    # Strip leading `VAR=value` assignments, so `WAX_WARN=... wax check` is
+    # recognised as a wax invocation -- and as a lint one.
+    env = []
+    while words and "=" in words[0] and not words[0].startswith("-"):
+        env.append(words.pop(0))
+    if not words or words[0] != "wax":
+        return None
+    if any(e.startswith("WAX_WARN=") for e in env):
+        return "sets WAX_WARN, so it exercises a lint, which needs the type checker"
+
+    valued = {"-f", "--output-format", "--format", "-i", "--input-format",
+              "-o", "--output", "--error-format", "--color", "-W", "--warn",
+              "-D", "--define", "-X", "--feature", "--debug"}
+    formats = {"-f", "--output-format", "--format", "-i", "--input-format"}
+    positionals: list[str] = []
+    i = 1
+    while i < len(words):
+        w = words[i]
+        if not w.startswith("-") or w == "-":
+            positionals.append(w)
+            i += 1
+            continue
+        name, eq, inline = w.partition("=")
+        if name in ("-W", "--warn"):
+            return "exercises a lint, which needs the type checker"
+        if name not in CRAM_OK_FLAGS:
+            return f"uses {name!r}, which wax-mb does not implement"
+        if name in valued:
+            val = inline if eq else (words[i + 1] if i + 1 < len(words) else "")
+            if name in formats and val not in CRAM_OK_FORMATS:
+                return f"converts to/from {val!r}; only wax is implemented"
+            i += 1 if eq else 2
+        else:
+            i += 1
+
+    # The first positional names a subcommand only when it is not a path.
+    if positionals:
+        head = positionals[0]
+        if "." not in head and "/" not in head:
+            if head not in CRAM_OK_COMMANDS:
+                return f"runs the {head!r} subcommand, which wax-mb does not implement"
+            positionals = positionals[1:]
+    for w in positionals:
+        if "." in w and not w.endswith(".wax"):
+            # With no -i, the format is inferred from the extension, so a .wat
+            # or .wasm argument needs the decompiler or the binary reader.
+            return f"reads {w.rsplit('.', 1)[1]!r} input; only wax is implemented"
+    return None
+
+
+def _cram_needs_typer(d: Path, text: str) -> str | None:
+    """Whether the test depends on the type checker.
+
+    Decided by the REFERENCE rather than by reading the expectations, and on a
+    MATERIALIZED copy of the test: most fixtures are written by a heredoc in
+    the test itself, so they do not exist until the setup commands have run.
+
+    The rule is precise. For each `wax` command, run the reference on the same
+    inputs twice: once as a plain reprint (`-f wax`, which does not validate)
+    and once as the command asks. A file that reprints cleanly but is rejected
+    anyway failed in the type checker, and this port would exit 0 where the
+    test expects 128.
+    """
+    if "Warning:" in text or "Suggestion:" in text:
+        return "expects a warning or suggestion, which needs the type checker"
+    with tempfile.TemporaryDirectory() as tmp:
+        sandbox = Path(tmp) / d.name
+        shutil.copytree(d, sandbox)
+        for cmd in _cram_commands(text):
+            if not any(seg.split()[:1] == ["wax"] for seg in
+                       re.split(r"\|\||&&|[|;]", cmd) if seg.split()):
+                # A setup command (a heredoc, a mkdir): run it, so the fixtures
+                # it writes exist for the commands that follow.
+                subprocess.run(cmd, shell=True, cwd=sandbox,
+                               capture_output=True, timeout=60)
+                continue
+            args = cmd.split()
+            inputs = [w for w in args[1:]
+                      if not w.startswith("-") and w.endswith(".wax")]
+            real = subprocess.run([str(REFERENCE), *args[1:]], cwd=sandbox,
+                                  capture_output=True, timeout=60)
+            if real.returncode == 0:
+                continue
+            for f in inputs:
+                parsed = subprocess.run([str(REFERENCE), f, "-f", "wax"],
+                                        cwd=sandbox, capture_output=True,
+                                        timeout=60)
+                if parsed.returncode == 0:
+                    return f"`{f}` parses but is rejected later, so the test needs the type checker"
+    return None
+
+
+def cmd_classify_cram(args) -> int:
+    """Copy the in-scope cram tests into test/cram/, and list the rest.
+
+    Selection is mechanical -- every `$` command is checked against the flags
+    wax-mb implements -- and the excluded set is WRITTEN OUT rather than
+    silently dropped, so "we run 40 of 329" cannot quietly become "we run 12".
+    """
+    if not CRAM_SRC.is_dir():
+        sys.exit(f"waxdiff: no cram tests at {CRAM_SRC}")
+    included, excluded = [], []
+    for d in sorted(CRAM_SRC.iterdir()):
+        run = d / "run.t"
+        if not run.is_file():
+            continue
+        text = run.read_text()
+        reasons = [r for r in (_cram_reason(c) for c in _cram_commands(text)) if r]
+        if "../" in text:
+            # Reaches outside its own directory -- typically into the wax
+            # checkout's docs -- so it cannot run from a copied-out sandbox.
+            reasons.append("reads paths outside its own directory")
+        if not reasons:
+            r = _cram_needs_typer(d, text)
+            if r:
+                reasons = [r]
+        if reasons:
+            excluded.append((d.name, sorted(set(reasons))[0]))
+        else:
+            included.append(d.name)
+
+    if not args.dry_run:
+        if CRAM_DST.exists():
+            shutil.rmtree(CRAM_DST)
+        CRAM_DST.mkdir(parents=True)
+        for name in included:
+            shutil.copytree(CRAM_SRC / name, CRAM_DST / name)
+
+    report = ROOT / "test" / "cram-scope.md"
+    lines = [
+        "# Cram tests: what this port runs",
+        "",
+        "Generated by `waxdiff.py classify-cram`. A test is in scope when every",
+        "`wax` command it runs uses only flags and formats wax-mb implements;",
+        "anything else is listed below with the reason, so the excluded set stays",
+        "visible instead of shrinking unnoticed.",
+        "",
+        f"In scope: **{len(included)}** of {len(included) + len(excluded)}.",
+        "",
+        "That is a small fraction, and the reasons below say why: the",
+        "reference's cram suite is overwhelmingly about the two things this",
+        "port does not implement -- conversion to and from wat/wasm, and the",
+        "type checker with its lints. The differential oracles are what cover",
+        "the front end, over 2112 corpus files; these tests add the CLI's own",
+        "behaviour (exit codes, which stream output goes to, flag handling).",
+        "",
+        "## Excluded",
+        "",
+        "| test | why |",
+        "|---|---|",
+    ]
+    for name, why in sorted(excluded):
+        lines.append(f"| `{name}` | {why} |")
+    lines.append("")
+    if not args.dry_run:
+        report.write_text("\n".join(lines))
+    print(f"  in scope  {len(included)}")
+    print(f"  excluded  {len(excluded)}  (see test/cram-scope.md)")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(prog="waxdiff", description=__doc__)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -919,6 +1161,13 @@ def main() -> int:
     c = sub.add_parser("classify", help="show bucket counts for the corpus")
     c.add_argument("-j", "--jobs", type=int, default=default_jobs())
     c.set_defaults(fn=cmd_classify)
+
+    c = sub.add_parser(
+        "classify-cram",
+        help="copy the in-scope cram tests into test/cram/ and list the rest",
+    )
+    c.add_argument("--dry-run", action="store_true", help="report without writing")
+    c.set_defaults(fn=cmd_classify_cram)
 
     c = sub.add_parser("golden", help="record reference outputs into test/golden/")
     c.add_argument("-j", "--jobs", type=int, default=default_jobs())

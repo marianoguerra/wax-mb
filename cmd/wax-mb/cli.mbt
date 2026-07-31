@@ -56,6 +56,12 @@ pub(all) struct Options {
   color : @colors.Flag
   /// `format --check`: list what would change, write nothing.
   check_only : Bool
+  /// `format --inplace`: rewrite each input file.
+  ///
+  /// OFF by default. `format` writes to stdout unless asked to rewrite, which
+  /// is worth getting right: the opposite default silently edits the user's
+  /// files.
+  inplace : Bool
   policy : @warning.Policy
 }
 
@@ -73,6 +79,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
   let mut error_format : @diagnostic.OutputFormat = Human
   let mut color : @colors.Flag = Auto
   let mut check_only = false
+  let mut inplace = false
   let mut policy = @warning.default_policy
   let mut i = 0
   // The first non-flag word is the command, but only when it names one --
@@ -122,15 +129,31 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
 
     let consumed_inline = inline_value is Some(_)
     match name {
-      "-f" | "--output-format" | "--format" =>
+      // `-f` and `-i` mean DIFFERENT things per command, and the reference is
+      // the authority: for `convert`, `-f` is the output format and `-i` the
+      // input format; for `format`, `-f` is the INPUT format and `-i` is the
+      // boolean `--inplace`.
+      "-f" | "--output-format" | "--format" | "--input-format" =>
         match value(i) {
           Ok(v) => {
-            output_format = v
+            if name == "--input-format" || (name == "-f" && command is Format) {
+              input_format = v
+            } else {
+              output_format = v
+            }
             i = i + (if consumed_inline { 1 } else { 2 })
           }
           Err(e) => return Err(e)
         }
-      "-i" | "--input-format" =>
+      "-i" if command is Format => {
+        inplace = true
+        i = i + 1
+      }
+      "--inplace" => {
+        inplace = true
+        i = i + 1
+      }
+      "-i" =>
         match value(i) {
           Ok(v) => {
             input_format = v
@@ -222,6 +245,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
     error_format,
     color,
     check_only,
+    inplace,
     policy,
   })
 }
