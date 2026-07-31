@@ -1,0 +1,7 @@
+import {
+  "waxmb/wax/basic",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

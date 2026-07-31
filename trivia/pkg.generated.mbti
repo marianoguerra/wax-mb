@@ -1,0 +1,53 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/trivia"
+
+import {
+  "moonbitlang/core/debug",
+  "waxmb/wax/basic",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Context {
+  entries : Array[Entry]
+  mut at_start_of_line : Bool
+  mut prev_token_end : Int
+  locations : Array[@basic.Location]
+}
+pub fn Context::entries(Self) -> ArrayView[Entry]
+pub fn Context::locations(Self) -> ArrayView[@basic.Location]
+pub fn Context::new() -> Self
+pub fn Context::record_pos(Self, @basic.Location) -> Unit
+pub fn Context::report_item(Self, TriviaKind, @basic.Location, String) -> Unit
+pub fn Context::report_newline(Self) -> Unit
+pub fn Context::report_token(Self, Int) -> Unit
+
+pub(all) struct Entry {
+  anchor : Int
+  trivia : Trivia
+  position : TriviaPos
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Trivia {
+  Item(content~ : String, kind~ : TriviaKind, loc~ : @basic.Location)
+  BlankLine
+} derive(Eq, @debug.Debug)
+
+pub(all) enum TriviaKind {
+  LineComment
+  BlockComment
+  Annotation
+} derive(Eq, @debug.Debug)
+
+pub(all) enum TriviaPos {
+  LineStart
+  Inline
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

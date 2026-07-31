@@ -1,0 +1,14 @@
+import {
+  "waxmb/wax/basic",
+  "waxmb/wax/tokens",
+  "waxmb/wax/trivia",
+  "waxmb/wax/unicode/xid",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
+
+import {
+  "moonbitlang/core/test",
+} for "wbtest"

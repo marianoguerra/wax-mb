@@ -1,0 +1,31 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/lexer"
+
+import {
+  "moonbitlang/core/debug",
+  "waxmb/wax/basic",
+}
+
+// Values
+pub fn utf8_len(StringView) -> Int
+
+pub fn utf8_len_of_char(Char) -> Int
+
+// Errors
+
+// Types and methods
+pub(all) enum LexError {
+  UnexpectedChar(String)
+  MalformedComment
+  MalformedString
+  MalformedUnicodeEscape
+  InvalidUnicodeChar
+} derive(Eq, @debug.Debug)
+pub fn LexError::hint(Self) -> String?
+pub fn LexError::message(Self) -> String
+pub fn LexError::to_report(Self, @basic.Location) -> @basic.Report
+
+// Type aliases
+
+// Traits
+
