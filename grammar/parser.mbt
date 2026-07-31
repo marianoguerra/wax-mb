@@ -186,8 +186,31 @@ priv enum YYSymbol {
   NT_parameter_list
   NT_function_type_definition
   NT_function_name
+  NT_optional_function_type
+  NT_func
+  NT_tag_name
+  NT_tag_signature
+  NT_block_param_type
+  NT_parameter_types
+  NT_block_type
+  NT_braced_block
+  NT_catch
+  NT_on_clause
+  NT_on_clauses
+  NT_legacy_catch
+  NT_catch_arm
+  NT_catch_all_arm
+  NT_legacy_catch_all
+  NT_structure_field
+  NT_structure
+  NT_dispatch_arm
+  NT_match_pattern
+  NT_match_arm
+  NT_match_default
+  NT_case_labels
   NT_parse
   NT_expression
+  NT_statement_list
   NT_condition
   NT_boption_QUESTIONMARK_
   NT_boption_BANG_
@@ -201,9 +224,17 @@ priv enum YYSymbol {
   NT_sep_trailing_COMMA_function_parameter_
   NT_function_type_AS_
   NT_function_type_TYPE_
+  NT_function_type_FN_
+  NT_option_function_type_FN__
+  NT_sep_trailing_COMMA_block_param_type_
+  NT_sep_trailing_COMMA_on_clause_
+  NT_sep_trailing_COMMA_structure_field_
   NT_non_empty_sep_trailing_COMMA_structure_type_field_
   NT_non_empty_sep_trailing_COMMA_hint_target_
   NT_non_empty_sep_trailing_COMMA_function_parameter_
+  NT_non_empty_sep_trailing_COMMA_block_param_type_
+  NT_non_empty_sep_trailing_COMMA_on_clause_
+  NT_non_empty_sep_trailing_COMMA_structure_field_
   EOI
 }
 
@@ -216,7 +247,7 @@ fn init {
 }
 
 // file:///./parser.mbty
-// 545|    EOF { () }
+// 756|    EOF { () }
 fn yy_action_0(_last_pos : Position, _args : ArrayView[(YYObj, Position, Position)]) -> YYObj {
   YYObj_Unit({();  () })
 }

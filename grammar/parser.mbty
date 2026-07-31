@@ -540,6 +540,217 @@ function_name -> Ident
   : ident { $1 }
   ;
 
+// ===========================================================================
+// Declarations
+// ===========================================================================
+
+optional_function_type -> FuncType?
+  : option(function_type(FN)) { $1 }
+  ;
+
+// The exactness marker `!` may be written in either of two places -- `fn f!` or
+// `fn f: !t` -- but not both.
+%inline fundecl -> (Ident, Ident?, FuncType?, Bool)
+  : FN function_name boption("!") ioption(fundecl_type) optional_function_type {
+      let (ex2, t) = match $4 {
+        Some((e, ty)) => (e, Some(ty))
+        None => (false, None)
+      }
+      if $3 && ex2 {
+        fail_at(loc_of($sloc), "Duplicate exact marker '!'.")
+      }
+      ($2, t, decl_sign($sloc, t, $5), $3 || ex2)
+    }
+  ;
+
+%inline fundecl_type -> (Bool, Ident)
+  : ":" boption("!") type_name { ($2, $3) }
+  ;
+
+func -> (Attributes) -> Annotated[ModuleField[Location], Location]
+  : fundecl block {
+      let (name, typ, sign, exact) = $1
+      let body = $2
+      if exact {
+        fail_at(
+          loc_of($sloc),
+          "A function definition is always exact; the '!' marker is only allowed on an (imported) function declaration.",
+        )
+      }
+      fn(attributes) {
+        annot($sloc, ModuleField::Func(name~, typ~, sign~, body~, attributes~))
+      }
+    }
+  ;
+
+tag_name -> Ident
+  : ident { $1 }
+  ;
+
+tag_signature -> (Ident, Ident?, FuncType?)
+  : TAG tag_name ioption(tag_type) optional_function_type {
+      ($2, $3, decl_sign($sloc, $3, $4))
+    }
+  ;
+
+%inline tag_type -> Ident
+  : ":" type_name { $2 }
+  ;
+
+// ===========================================================================
+// Blocks
+// ===========================================================================
+
+%inline block_label -> Ident?
+  : ioption(labelled) { $1 }
+  ;
+
+%inline labelled -> Ident
+  : label ":" { $1 }
+  ;
+
+// An anonymous block parameter, located at its value type so a trailing
+// comment attaches to it rather than to the enclosing list.
+block_param_type -> Annotated[(Ident?, ValType), Location]
+  : value_type { annot($sloc, (None, $1)) }
+  ;
+
+parameter_types -> Array[Annotated[(Ident?, ValType), Location]]
+  : sep_trailing(",", block_param_type) { $1 }
+  ;
+
+block_type -> FuncType
+  : "(" parameter_types ")" ioption(result_arrow) {
+      { params: $2, results: $4.unwrap_or([]) }
+    }
+  | value_type { { params: [], results: [$1] } }
+  ;
+
+%inline block -> (Ident?, Array[Instr[Location]])
+  : block_label "{" statement_list "}" { ($1, $3) }
+  ;
+
+braced_block -> Body[Location]
+  : "{" statement_list "}" { annot($sloc, $2) }
+  ;
+
+// ===========================================================================
+// Handler clauses
+// ===========================================================================
+
+catch -> Catch
+  : ident "->" label { Catch($1, $3) }
+  | ident "&" "->" label { CatchRef($1, $4) }
+  | "_" "->" label { CatchAll($3) }
+  | "_" "&" "->" label { CatchAllRef($4) }
+  ;
+
+on_clause -> OnClause
+  : ident "->" label { OnLabel($1, $3) }
+  // `switch` is a contextual identifier here, not a keyword.
+  | ident "->" ident {
+      if $3.name == "switch" {
+        OnSwitch($1)
+      } else {
+        fail_at(
+          loc_of($loc($3)),
+          "Expected a label or 'switch' as the handler target.",
+        )
+      }
+    }
+  ;
+
+on_clauses -> Array[OnClause]
+  : "[" sep_trailing(",", on_clause) "]" { $2 }
+  ;
+
+legacy_catch -> (Ident, Body[Location])
+  : ident "=>" braced_block { ($1, $3) }
+  ;
+
+// A structured `try`'s catch arm. The `&` form (catch_ref) delivers the `&exn`
+// above the payload. The catch-all is grammar-enforced last, matching
+// try_table's first-match-wins clause order.
+catch_arm -> TryCatchArm[Location]
+  : ident "=>" braced_block {
+      { arm_tag: Some($1), arm_ref: false, arm_types: [], arm_body: $3 }
+    }
+  | ident "&" "=>" braced_block {
+      { arm_tag: Some($1), arm_ref: true, arm_types: [], arm_body: $4 }
+    }
+  ;
+
+catch_all_arm -> TryCatchArm[Location]
+  : "_" "=>" braced_block {
+      { arm_tag: None, arm_ref: false, arm_types: [], arm_body: $3 }
+    }
+  | "_" "&" "=>" braced_block {
+      { arm_tag: None, arm_ref: true, arm_types: [], arm_body: $4 }
+    }
+  ;
+
+legacy_catch_all -> Body[Location]
+  : "_" "=>" braced_block { $3 }
+  ;
+
+// ===========================================================================
+// Aggregates and arms
+// ===========================================================================
+
+structure_field -> (Ident, Instr[Location]?)
+  : field_name ":" expression { ($1, Some($3)) }
+  // Punning: `{x}` abbreviates `{x: x}`, taking the value from the like-named
+  // local or global. Carried as None so the printer can put it back as written.
+  | field_name { ($1, None) }
+  ;
+
+structure -> Array[(Ident, Instr[Location]?)]
+  : sep_trailing(",", structure_field) { $1 }
+  ;
+
+// A `dispatch` case: a labelled, brace-delimited statement list. The label
+// names the case; the body runs when the index selects it, and falls through
+// into the following cases.
+dispatch_arm -> (Ident, Body[Location])
+  : label ":" braced_block { ($1, $3) }
+  ;
+
+// A `match` arm: a reference-type test, optionally binding the narrowed value,
+// or a `null` test.
+match_pattern -> MatchPattern
+  : ident ":" reference_type { MatchCast(Some($1), $3) }
+  | reference_type { MatchCast(None, $1) }
+  | NULL { MatchNull }
+  ;
+
+match_arm -> (MatchPattern, Body[Location])
+  : match_pattern "=>" braced_block { ($1, $3) }
+  ;
+
+// The default arm is required, like a dispatch's `else`: no-match always has a
+// written destination.
+match_default -> Body[Location]
+  : "_" "=>" braced_block { $3 }
+  ;
+
+// A list that also swallows bare `;` empty elements -- the list analogue of
+// statement_list's empty statement. Used where an entry carries no separator of
+// its own: module fields, import items, and the arm lists of
+// dispatch/match/try. Each entry begins with a distinctive token, never `;`, so
+// the empty case cannot clash.
+semi_list[T](X : T) -> Array[T]
+  : { [] }
+  | ";" semi_list(X) { $2 }
+  | X semi_list(X) { [$1, ..$2] }
+  ;
+
+// The comma-separated case labels of a br_table/dispatch bracket, ending in the
+// mandatory `else <default>`.
+case_labels -> (Array[Ident], Ident)
+  : ELSE label { ([], $2) }
+  | label "," case_labels { let (ls, d) = $3; ([$1, ..ls], d) }
+  ;
+
 // TEMPORARY: placeholder while the remaining sections are translated.
 parse -> Unit
   : EOF { () }
@@ -547,6 +758,10 @@ parse -> Unit
 
 expression -> Instr[Location]
   : EOF { with_loc($sloc, Nop) }
+  ;
+
+statement_list -> Array[Instr[Location]]
+  : EOF { [] }
   ;
 
 condition -> Cond
