@@ -208,9 +208,20 @@ priv enum YYSymbol {
   NT_match_arm
   NT_match_default
   NT_case_labels
+  NT_blockinstr
+  NT_parenthesized_expression
+  NT_descriptor_operand
+  NT_index_expression
+  NT_then_branch
+  NT_condition_expression
+  NT_length_expression
+  NT_expression_list
+  NT_argument
+  NT_argument_list
   NT_parse
   NT_expression
   NT_statement_list
+  NT_hinted_statement
   NT_condition
   NT_boption_QUESTIONMARK_
   NT_boption_BANG_
@@ -229,12 +240,26 @@ priv enum YYSymbol {
   NT_sep_trailing_COMMA_block_param_type_
   NT_sep_trailing_COMMA_on_clause_
   NT_sep_trailing_COMMA_structure_field_
+  NT_semi_list_dispatch_arm_
+  NT_semi_list_match_arm_
+  NT_option_block_type_
+  NT_option_if_block_type_
+  NT_sep_trailing_COMMA_catch_
+  NT_semi_list_catch_arm_
+  NT_option_catch_all_arm_
+  NT_semi_list_legacy_catch_
+  NT_option_legacy_catch_all_
+  NT_sep_trailing_COMMA_expression_
+  NT_sep_trailing_COMMA_argument_
   NT_non_empty_sep_trailing_COMMA_structure_type_field_
   NT_non_empty_sep_trailing_COMMA_hint_target_
   NT_non_empty_sep_trailing_COMMA_function_parameter_
   NT_non_empty_sep_trailing_COMMA_block_param_type_
   NT_non_empty_sep_trailing_COMMA_on_clause_
   NT_non_empty_sep_trailing_COMMA_structure_field_
+  NT_non_empty_sep_trailing_COMMA_catch_
+  NT_non_empty_sep_trailing_COMMA_expression_
+  NT_non_empty_sep_trailing_COMMA_argument_
   EOI
 }
 
@@ -247,7 +272,7 @@ fn init {
 }
 
 // file:///./parser.mbty
-// 756|    EOF { () }
+// 899|    EOF { () }
 fn yy_action_0(_last_pos : Position, _args : ArrayView[(YYObj, Position, Position)]) -> YYObj {
   YYObj_Unit({();  () })
 }
