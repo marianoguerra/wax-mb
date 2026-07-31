@@ -63,6 +63,15 @@ jobs:
       - name: differential harness (oracles 1 and 3, port under test)
         run: tools/waxdiff.py run --oracle 1 --oracle 3 --impl tools/wax-mb
 
+      # The reference's own cram tests, run against wax-mb -- the only thing
+      # covering the CLI's behaviour rather than the library's: exit codes,
+      # which stream output lands on, flag handling. test/cram/ and
+      # test/cram-scope.md are committed artifacts; `waxdiff.py classify-cram`
+      # regenerates them, needs the reference, and is a deliberate local act,
+      # like regenerating goldens. It deliberately does NOT run here.
+      - name: cram tests
+        run: tools/run-cram.sh
+
   # Validates the HARNESS, not the port: --self-test points --impl at the
   # reference, so every oracle must pass trivially and any failure is a waxdiff
   # bug. It needs the pinned reference binary, which is why it is a separate job

@@ -16,6 +16,13 @@ root="$(dirname "$here")"
 bin="$root/_build/native/debug/build/cmd/wax-mb/wax-mb.exe"
 [ -x "$bin" ] || { echo "run-cram: not built; run 'moon build --target native'" >&2; exit 127; }
 
+cram="$(command -v moon-cram || true)"
+[ -n "$cram" ] || cram="$HOME/.moon/bin/moon-cram"
+[ -x "$cram" ] || {
+  echo "run-cram: moon-cram not found (it ships with the moon toolchain)" >&2
+  exit 127
+}
+
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/bin"
@@ -28,13 +35,21 @@ for t in "$root"/test/cram/*.t; do
   name="$(basename "$t")"
   sandbox="$work/$name"
   cp -r "$t" "$sandbox"
-  if "$HOME/.moon/bin/moon-cram" test --cram-compat -w "$sandbox" "$sandbox/run.t" \
+  if "$cram" test --cram-compat -w "$sandbox" "$sandbox/run.t" \
        >"$work/$name.log" 2>&1; then
     pass=$((pass + 1))
   else
     fail=$((fail + 1)); failed+=("$name")
   fi
 done
+
+# An empty test/cram/ would otherwise report "0 passed, 0 failed" and exit 0 --
+# a green run that tested nothing. The suite is committed, so zero means the
+# checkout or the glob is wrong.
+if [ $((pass + fail)) -eq 0 ]; then
+  echo "run-cram: no tests found under $root/test/cram" >&2
+  exit 1
+fi
 
 echo "cram: $pass passed, $fail failed"
 if [ "$fail" -gt 0 ]; then

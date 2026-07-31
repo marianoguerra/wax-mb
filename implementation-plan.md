@@ -9,7 +9,7 @@ order it makes sense to do it.
 **Near-term — close the gaps in what already exists**
 
 - [x] 1. Point CI at the port, not at the reference
-- [ ] 2. Run the cram suite in CI
+- [x] 2. Run the cram suite in CI
 - [ ] 3. Readable token names for the `Expecting …` list
 
 **Phase 5 — harden the front end**
@@ -104,7 +104,20 @@ executable).
 
 ---
 
-## 2. Run the cram suite in CI
+## 2. Run the cram suite in CI — done
+
+**Done.** A `cram tests` step runs `tools/run-cram.sh` after the native build,
+in the same hermetic `check` job. `classify-cram` is not run in CI, as planned.
+
+`moon-cram` ships inside the `moonbit-linux-x86_64` tarball the install step
+already fetches, so no extra install is needed — but the script hard-coded
+`$HOME/.moon/bin/moon-cram`, and now resolves it from `PATH` first, failing
+with a message rather than a bare "no such file".
+
+Two false-green checks while wiring it up: the runner does catch a mismatch
+(verified by corrupting an expectation — 1 passed, 1 failed, exit 1), and an
+empty `test/cram/` used to report "0 passed, 0 failed" and exit 0. That now
+fails: the suite is committed, so zero tests means a broken checkout or glob.
 
 **Summary.** `tools/run-cram.sh` passes locally and is not wired into CI. It is
 only two tests today, but it is the only thing covering the CLI's own
