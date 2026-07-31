@@ -1,0 +1,8 @@
+import {
+  "waxmb/wax/grammar",
+  "waxmb/wax/output",
+  "moonbitlang/x/fs",
+  "moonbitlang/core/env",
+}
+
+pkgtype(kind: "executable")

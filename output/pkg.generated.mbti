@@ -11,11 +11,15 @@ import {
 }
 
 // Values
+pub let always_opt : Int
+
 pub fn[Info] array_element_precedence(@ast.Ident?, Bool, @ast.Instr[Info]) -> Prec
 
 pub fn binop_kind(@ast.BinOp) -> BinopKind
 
 pub fn binop_str(@ast.BinOp) -> String
+
+pub fn char_literal(Char) -> String
 
 pub fn cond_op_string(@wasm_types.CmpOp) -> String
 
@@ -31,13 +35,19 @@ pub fn[Info] is_block(@ast.Instr[Info]) -> Bool
 
 pub fn need_blocktype(@ast.FuncType) -> Bool
 
+pub let never_opt : Int
+
 pub fn prec_op(@ast.BinOp) -> (Prec, Prec, Prec)
+
+pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context) -> String
 
 pub fn run_string((@printer.Printer) -> Unit) -> String
 
 pub fn[Info] starts_with_block(@ast.Instr[Info]) -> Bool
 
 pub fn[Info] starts_with_block_prec(Prec, @ast.Instr[Info]) -> Bool
+
+pub fn string_literal(String) -> String
 
 pub fn suffix_string(@wasm_types.StorageType[@ast.Ident]) -> String
 
@@ -75,11 +85,14 @@ pub fn[Info] Ctx::functype(Self[Info], @ast.FuncType) -> Unit
 pub fn[Info] Ctx::get_trivia(Self[Info], @basic.Location?) -> @trivia.Associated
 pub fn[Info] Ctx::heaptype(Self[Info], @wasm_types.HeapType[@ast.Ident]) -> Unit
 pub fn[Info] Ctx::ident(Self[Info], String) -> Unit
+pub fn Ctx::instr(Self[@basic.Location], Prec, @ast.Instr[@basic.Location]) -> Unit
 pub fn[Info, T] Ctx::key_value(Self[Info], String, T, (T) -> Unit) -> Unit
 pub fn[Info] Ctx::kw(Self[Info], String) -> Unit
 pub fn[Info, T] Ctx::list(Self[Info], Array[T], (T) -> Unit, sep? : () -> Unit) -> Unit
 pub fn[Info, T] Ctx::list_commasep(Self[Info], Array[T], (T) -> Unit) -> Unit
 pub fn[Info, T] Ctx::list_commasep_trailing(Self[Info], Array[T], (T) -> Unit) -> Unit
+pub fn Ctx::module_(Self[@basic.Location], Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@trivia.Entry]) -> Unit
+pub fn Ctx::modulefield(Self[@basic.Location], @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]) -> Unit
 pub fn Ctx::new(@printer.Printer, trivia~ : @trivia.Table, collect? : @trivia.Locations?, locate? : (@basic.Location) -> @basic.Location?) -> Self[@basic.Location]
 pub fn[Info] Ctx::newline(Self[Info]) -> Unit
 pub fn[Info] Ctx::op(Self[Info], String) -> Unit
