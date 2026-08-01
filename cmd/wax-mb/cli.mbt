@@ -56,6 +56,11 @@ pub(all) struct Options {
   color : @colors.Flag
   /// `format --check`: list what would change, write nothing.
   check_only : Bool
+  /// `check --all-errors`: report every syntax error, not just the first.
+  ///
+  /// Off by default, matching the reference: the default path stops at the
+  /// first, and recovery's later reports are guesses about what the user meant.
+  all_errors : Bool
   /// `format --inplace`: rewrite each input file.
   ///
   /// OFF by default. `format` writes to stdout unless asked to rewrite, which
@@ -79,6 +84,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
   let mut error_format : @diagnostic.OutputFormat = Human
   let mut color : @colors.Flag = Auto
   let mut check_only = false
+  let mut all_errors = false
   let mut inplace = false
   let mut policy = @warning.default_policy
   let mut i = 0
@@ -227,6 +233,10 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
         check_only = true
         i = i + 1
       }
+      "--all-errors" => {
+        all_errors = true
+        i = i + 1
+      }
       _ =>
         if a.has_prefix("-") && a != "-" {
           return Err((BadArgs, "unknown option '\{a}'"))
@@ -245,6 +255,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
     error_format,
     color,
     check_only,
+    all_errors,
     inplace,
     policy,
   })

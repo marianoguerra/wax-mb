@@ -199,3 +199,69 @@ test "a semantic error earlier in the file beats a syntax error later" {
   )
   inspect(r.errors[0].loc.start.cnum, content="9")
 }
+
+///|
+test "recovery reports every syntax error, not just the first" {
+  // The reference's own `check-all-errors.t` fixture. Both errors, at the same
+  // spans it reports them at.
+  let r = parse_recover(
+    "fn f() -> i32 {\n    let x = ;\n    let y = * 2;\n    x + y;\n}\n",
+  )
+  inspect(
+    describe(r.errors),
+    content=(
+      #|2:12 Expecting an expression.
+      #|3:12 Expecting an expression.
+    ),
+  )
+}
+
+///|
+test "a dropped separator is repaired by inserting one" {
+  // Not by skipping to the next boundary: the state after a complete statement
+  // can shift a `;`, and inserting it keeps the rest of the file intact. The
+  // caret is where the `;` belongs, at the end of the previous line.
+  let r = parse_recover("fn f() -> i32 {\n    let x = 1\n    x;\n}\n")
+  inspect(describe(r.errors), content="2:13 Missing ';'.")
+  inspect(r.errors[0].edit.unwrap().new_text, content=";")
+}
+
+///|
+test "a `;` is not inserted where it would not help" {
+  // `;` is shiftable right after `{` -- an empty statement is legal -- so
+  // acceptability alone would report a missing separator in front of any junk
+  // that follows a brace. The insertion has to UNBLOCK the offending token.
+  let r = parse_recover("fn f() -> i32 {\n    @\n}\n")
+  inspect(
+    describe(r.errors),
+    content="2:4 Assuming that the statement list is complete, expecting '}'.",
+  )
+}
+
+///|
+test "input that ends inside a block auto-closes it" {
+  // Closing the construct keeps the function the user is still typing in the
+  // tree, and the closer becomes the quick fix.
+  let r = parse_recover("fn f() -> i32 {\n    let x = 1;\n")
+  inspect(r.errors.length(), content="1")
+  inspect(r.errors[0].edit.unwrap().new_text, content="}")
+}
+
+///|
+test "a clean file recovers to silence" {
+  let r = parse_recover("fn f() -> i32 {\n    1;\n}\n")
+  inspect(r.errors.length(), content="0")
+  inspect(r.module_ is Some(_), content="true")
+}
+
+///|
+/// `line:col message` per error, one per line.
+fn describe(errors : Array[@basic.Report]) -> String {
+  let out = []
+  for e in errors {
+    out.push(
+      "\{e.loc.start.lnum}:\{e.loc.start.cnum - e.loc.start.bol} \{e.message}",
+    )
+  }
+  out.join("\n")
+}

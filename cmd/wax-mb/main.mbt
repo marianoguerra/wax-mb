@@ -44,7 +44,15 @@ fn process(
   src : String,
   opts : Options,
 ) -> (@ast.LocModule?, @trivia.Context, Bool) {
-  let r = @grammar.parse_string(src, fname=path)
+  // `--all-errors` swaps the parser for the recovering one, which reports every
+  // syntax error it can resynchronize past instead of stopping at the first.
+  // Only `check` offers it: a recovered tree is a guess, and printing a guess
+  // back over the user's file is not a thing to do by accident.
+  let r = if opts.all_errors && opts.command is Check {
+    @grammar.parse_recover(src, fname=path)
+  } else {
+    @grammar.parse_string(src, fname=path)
+  }
   let mut failed = false
   if r.errors.length() > 0 {
     // Colour is decided by the DESTINATION: diagnostics go to stderr, so it

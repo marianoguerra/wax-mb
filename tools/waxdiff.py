@@ -1215,6 +1215,9 @@ CRAM_OK_FLAGS = {
     "--color",
     "-W", "--warn",
     "-c", "--check",
+    # Recovery landed in grammar/recover.mbt; see task 7 of
+    # implementation-plan.md for what its quality is measured against.
+    "--all-errors",
 }
 
 # Formats the port handles. `-f wat`, `-f wasm` and `-i wasm` all need the back

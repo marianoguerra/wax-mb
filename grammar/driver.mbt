@@ -142,13 +142,6 @@ fn earlier_syntax_error(
 
 ///|
 /// Turn the automaton's own error into a diagnostic.
-///
-/// The message is the reference's own where the state it failed in is one the
-/// reference has a message for -- that is what `parser_messages.mbt` is, and it
-/// is the only way to reach the "Assuming that the X is complete" subject,
-/// which names a grammar symbol nothing in MoonYacc's error value identifies.
-/// Otherwise it is the locally rendered acceptable-token list: less specific,
-/// never wrong.
 fn report_of_parse_error(
   e : ParseError,
   tokens : Array[(Token, Position, Position)],
@@ -157,9 +150,47 @@ fn report_of_parse_error(
     UnexpectedToken(_, (start, end), expected) => ({ start, end }, expected)
     UnexpectedEndOfInput(pos, expected) => ({ start: pos, end: pos }, expected)
   }
-  match reference_message_for(e, tokens) {
+  // The state comes from replaying the parse, so it is only trusted when the
+  // replay stopped where the parse did -- a disagreement means the replay no
+  // longer mirrors the engine, and a message keyed on the wrong state would be
+  // worse than no message at all.
+  guard error_state(tokens) is Some(st) else {
+    return @basic.Report::error(loc, expecting_message(expected))
+  }
+  let agrees = match e {
+    UnexpectedToken(_, (start, end), _) =>
+      st.token_index < tokens.length() &&
+      tokens[st.token_index].1 == start &&
+      tokens[st.token_index].2 == end
+    UnexpectedEndOfInput(_) => st.token_index >= tokens.length()
+  }
+  guard agrees else {
+    return @basic.Report::error(loc, expecting_message(expected))
+  }
+  syntax_report(st, tokens, loc, expected)
+}
+
+///|
+/// The diagnostic for a failure the parser has already located.
+///
+/// The message is the reference's own where the state it failed in is one the
+/// reference has a message for -- that is what `parser_messages.mbt` is, and it
+/// is the only way to reach the "Assuming that the X is complete" subject,
+/// which names a grammar symbol nothing in MoonYacc's error value identifies.
+/// Otherwise it is the locally rendered acceptable-token list: less specific,
+/// never wrong.
+///
+/// Shared with recovery (`recover.mbt`), which reaches the same situation
+/// without an exception to catch: it holds the stack already.
+fn syntax_report(
+  st : ErrorState,
+  tokens : Array[(Token, Position, Position)],
+  loc : @basic.Location,
+  expected : Array[TokenKind],
+) -> @basic.Report {
+  match reference_message(st.stack[:], expected_signature(expected)) {
     None => @basic.Report::error(loc, expecting_message(expected))
-    Some((m, st)) => {
+    Some(m) => {
       let report = @basic.Report::error(loc, m.text)
       // Emission order, as the reference's runtime resolves them: the subject
       // first, the delimiter hint second.
@@ -172,37 +203,6 @@ fn report_of_parse_error(
       }
       report
     }
-  }
-}
-
-///|
-/// The reference's message for this failure, with the state that found it.
-///
-/// The state comes from replaying the parse (`error_state`), so it is only
-/// trusted when the replay stopped where the parse did -- a disagreement means
-/// the replay no longer mirrors the engine, and a message keyed on the wrong
-/// state would be worse than no message at all. The state comes back with the
-/// message because the labels are resolved against its stack.
-fn reference_message_for(
-  e : ParseError,
-  tokens : Array[(Token, Position, Position)],
-) -> (Message, ErrorState)? {
-  guard error_state(tokens) is Some(st) else { return None }
-  let agrees = match e {
-    UnexpectedToken(_, (start, end), _) =>
-      st.token_index < tokens.length() &&
-      tokens[st.token_index].1 == start &&
-      tokens[st.token_index].2 == end
-    UnexpectedEndOfInput(_) => st.token_index >= tokens.length()
-  }
-  guard agrees else { return None }
-  let expected = match e {
-    UnexpectedToken(_, _, expected) | UnexpectedEndOfInput(_, expected) =>
-      expected
-  }
-  match reference_message(st.stack[:], expected_signature(expected)) {
-    Some(m) => Some((m, st))
-    None => None
   }
 }
 

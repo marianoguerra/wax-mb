@@ -96,3 +96,45 @@ test "a resolved label points at real source" {
   // The count is the coverage; it falling means the table stopped resolving.
   inspect(labelled, content="5")
 }
+
+///|
+/// Recovery must not change what a clean file parses to.
+///
+/// `parse_recover` drives the same tables as the generated `yy_parse` from a
+/// hand-written loop (recovery has to live outside a parser that raises), so
+/// the risk is not that recovery is poor -- it is that the copy drifts. On a
+/// file with no syntax error the two must be indistinguishable: same silence,
+/// same tree.
+test "recovery leaves a clean parse alone" {
+  let differing = []
+  let mut checked = 0
+  for c in load_index() {
+    if c.bucket == "syntax-bad" {
+      continue
+    }
+    let src = @fs.read_file_to_string("test/corpus/" + c.file)
+    let plain = @grammar.parse_string(src, fname=c.file)
+    let recovered = @grammar.parse_recover(src, fname=c.file)
+    checked += 1
+    if recovered.errors.length() != 0 {
+      differing.push(
+        "\{c.file}: recovery reported \{recovered.errors[0].message}",
+      )
+      continue
+    }
+    match (plain.module_, recovered.module_) {
+      (Some(a), Some(b)) =>
+        if @ast.module_to_json(a).stringify() !=
+          @ast.module_to_json(b).stringify() {
+          differing.push("\{c.file}: different tree")
+        }
+      (None, _) | (_, None) => differing.push("\{c.file}: one side parsed")
+    }
+  }
+  if differing.length() > 0 {
+    let sample = differing[:@cmp.minimum(8, differing.length())].to_owned()
+    let joined = sample.join("\n  ")
+    fail("\{differing.length()} of \{checked} differ:\n  \{joined}")
+  }
+  inspect(checked, content="1903")
+}

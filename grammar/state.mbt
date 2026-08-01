@@ -270,3 +270,93 @@ pub fn enclosing_opener(
     Some((tokens[i].1, tokens[i].2))
   }
 }
+
+///|
+/// Would this symbol be shifted, given this stack?
+///
+/// The same walk the generated `error()` does to build its expected set: ask
+/// the top state, and where it says reduce, perform the reduction on a COPY of
+/// the stack and ask again. It answers for the stack, not just for the top
+/// state, which is what "can the parser accept a `;` here" has to mean --
+/// after a complete statement the `;` is shiftable only once the statement has
+/// been reduced.
+pub fn acceptable(stack : Array[Int], symbol : Int) -> Bool {
+  shift_sim(stack, symbol) is Some(_)
+}
+
+///|
+/// The state stack this one becomes if `symbol` is shifted, or None if it
+/// cannot be.
+///
+/// The reductions the shift implies are performed on a copy, so this doubles as
+/// the acceptability test AND as the "what if" recovery needs: whether
+/// inserting a `;` would let the offending token through is a question about
+/// the stack AFTER the `;`.
+pub fn shift_sim(stack : Array[Int], symbol : Int) -> Array[Int]? {
+  let s = stack.copy()
+  // Every step either answers or pops at least one cell and pushes one goto,
+  // and the automaton has no reduction cycles -- the fuel is a backstop
+  // against a table that disagrees, not part of the algorithm.
+  let mut fuel = 4 * stack.length() + 64
+  while fuel > 0 {
+    fuel -= 1
+    match yy_state(s[s.length() - 1], symbol) {
+      Accept => return Some(s)
+      Shift(next) => {
+        s.push(next)
+        return Some(s)
+      }
+      Error => return None
+      Reduce(count, lhs, _) | ReduceNoLookahead(count, lhs, _) => {
+        let mut count = count
+        let mut lhs = lhs
+        let mut shifted = false
+        while !shifted && fuel > 0 {
+          fuel -= 1
+          if count >= s.length() {
+            return None
+          }
+          for _ in 0..<count {
+            s.unsafe_pop() |> ignore
+          }
+          match yy_state(s[s.length() - 1], lhs) {
+            Shift(next) => {
+              s.push(next)
+              shifted = true
+            }
+            Reduce(c, l, _) | ReduceNoLookahead(c, l, _) => {
+              count = c
+              lhs = l
+            }
+            _ => return None
+          }
+        }
+      }
+    }
+  }
+  None
+}
+
+///|
+/// The terminals this stack could shift.
+///
+/// What `UnexpectedToken` carries -- recomputed, because recovery needs it
+/// without an exception to catch. The generated `error()` builds exactly this
+/// set, so it is asked rather than reimplemented: it raises, and the raise is
+/// caught for the payload.
+pub fn expected_at(stack : Array[Int]) -> Array[TokenKind] {
+  let mut cells : @list.List[Int] = @list.empty()
+  for s in stack {
+    cells = @list.cons(s, cells)
+  }
+  let nowhere : Position = { fname: "", lnum: 0, bol: 0, cnum: 0 }
+  try {
+    error(cells, None, (nowhere, nowhere))
+    ([] : Array[TokenKind])
+  } catch {
+    UnexpectedToken(_, _, expected) | UnexpectedEndOfInput(_, expected) =>
+      expected
+  } noraise {
+    _ => []
+  }
+}

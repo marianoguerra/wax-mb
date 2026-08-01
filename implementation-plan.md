@@ -17,7 +17,7 @@ order it makes sense to do it.
 - [x] 4. Reproduce the `Assuming that … is complete` subject phrase
 - [x] 5. Reproduce the related labels (`this statement`, `This '{' opens …`)
 - [x] 6. Diff-fuzzing
-- [ ] 7. Error recovery and `--all-errors` *(research)*
+- [x] 7. Error recovery and `--all-errors`
 
 **Phase 6 — the type checker**
 
@@ -45,10 +45,10 @@ order it makes sense to do it.
 | Oracle 1 — reprint parity | 1903 / 1903 byte-exact, idempotence gated alongside |
 | Oracle 2 — same wasm | 1592 / 1592 identical binaries |
 | Oracle 3 — same errors | 2114 / 2114 on severity, file, spans, offsets, exit code |
-| Unit tests | 155 |
+| Unit tests | 161 |
 | Message drift | 64 entries: 28 message text, 19 related labels, 16 span (the 6 exempted files), 1 edit |
 | Upstream findings | 12, in `test/UPSTREAM-FINDINGS.md` |
-| Cram tests in scope | 2 of 328; the other 326 are listed with reasons in `test/cram-scope.md` |
+| Cram tests in scope | 3 of 328; the other 325 are listed with reasons in `test/cram-scope.md` |
 | Corpus | 2114 files: 2112 collected, 2 adopted fuzz finds |
 
 The three oracles are the gate for everything below. Any task that changes
@@ -450,7 +450,48 @@ described in `tools/waxdiff.py` (`WAXDIFF_MEM_CAP`).
 
 ---
 
-## 7. Error recovery and `--all-errors` *(research)*
+## 7. Error recovery and `--all-errors` — done
+
+**Done, and shipped rather than left as research.** The plan assumed recovery
+would have to re-parse the whole file per error ("cruder than Menhir's
+stack-unwinding recovery … quadratic"). It does not: task 4's switch to
+MoonYacc's `--table` engine left `yy_state`, `yy_input` and the ACTION table
+package-visible, so `grammar/recover.mbt` drives the same automaton from its own
+loop — with the actions, so the tree is real — and repairs the stream in place.
+One pass, no restarts.
+
+Three repairs, in the reference's order (`recover.ml` + `parse_recover`):
+
+1. **Insert a `;`** when that unblocks the parse. The validation matters: `;` is
+   shiftable right after `{` (an empty statement is legal), so acceptability
+   alone would report a missing separator in front of any junk following a
+   brace. The test is whether the OFFENDING token becomes acceptable once the
+   `;` is in — `shift_sim` answers it by performing the reductions on a copy of
+   the stack.
+2. **Auto-close** when the offending token is a closer, a `;` or end of input
+   and a construct in front of it is still open. Skipping would unwind past that
+   construct and discard it; closing it keeps the function the user is still
+   typing, and the inserted closers become the quick fix (`Help: insert '}'`).
+3. **Skip to a resynchronization point** and unwind the stack to it. The sync
+   classification is `recover.ml` ported directly, nesting-aware: a `;` or `}`
+   belonging to a group opened inside the skipped span does not resync the
+   construct the error is in.
+
+**Measured against the reference on its own fixtures** (`check-all-errors.t`):
+`multi.wax`, `missing-semi.wax` and `stack-cascade.wax` are byte-identical
+output; `unclosed-brace.wax` has the same span and the same `insert '}'` fix and
+differs only in wording (a message-table miss, task 4's residue); `clean.wax`
+and `mixed.wax` agree on everything except the reference's type-checker output.
+`wax-limit-overflow.t` now runs and passes — cram is 3 of 328.
+
+**What makes the hand-copied driver safe** is not care, it is a test: on all
+1903 files the reference parses, `parse_recover` must report nothing and build a
+tree identical to `parse_string`'s. A copy that drifts fails there, not in a
+user's file.
+
+**Still missing** is lexical recovery — our scan stops at a bad character where
+the reference resumes past it, so a file with two stray characters reports one.
+That needs a resuming entry point in the lexer, not anything from the parser.
 
 **Summary.** The single largest structural gap. MoonYacc has no error recovery
 (`doc/MANUAL.md`: *"MoonYacc does not support error recovery at the moment."*),
