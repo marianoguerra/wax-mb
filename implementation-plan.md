@@ -22,7 +22,7 @@ order it makes sense to do it.
 **Phase 6 — the type checker**
 
 - [x] 8. `ast_utils` — the surface-form desugarings
-- [ ] 9. `members` — the method and intrinsic table
+- [x] 9. `members` — the method and intrinsic table *(the checker-facing half)*
 - [x] 10. `infer` — inference cells and the numeric-literal lattice *(done before 9; see there)*
 - [ ] 11. `typing_env` — symbol tables
 - [ ] 12. `typing` — the checker
@@ -45,7 +45,7 @@ order it makes sense to do it.
 | Oracle 1 — reprint parity | 1903 / 1903 byte-exact, idempotence gated alongside |
 | Oracle 2 — same wasm | 1592 / 1592 identical binaries |
 | Oracle 3 — same errors | 2114 / 2114 on severity, file, spans, offsets, exit code |
-| Unit tests | 176 |
+| Unit tests | 180 |
 | Message drift | 64 entries: 28 message text, 19 related labels, 16 span (the 6 exempted files), 1 edit |
 | Upstream findings | 12, in `test/UPSTREAM-FINDINGS.md` |
 | Cram tests in scope | 3 of 328; the other 325 are listed with reasons in `test/cram-scope.md` |
@@ -573,7 +573,38 @@ first also validates that the surface constructors really are faithful before
 
 ---
 
-## 9. `members` — the method and intrinsic table
+## 9. `members` — the method and intrinsic table — done (the half that has a consumer)
+
+**Done, after task 10** — `members` is written against `Infer`'s types, so the
+plan's order had that dependency backwards.
+
+**The premise needed correcting.** The plan says this is "needed before the
+checker can resolve a method call". It is not: the reference's own `.mli` says
+the method dispatch "is match-based and not enumerable", and `members.ml` is the
+**editor's** completion registry — what `recv.<here>` offers, with rendered
+signatures. Of the 9 places `typing.ml` touches it, seven only RECORD a
+receiver descriptor for that completion; the two that do real work are
+`simd_valtype` and `cont_method_candidates`.
+
+So the new `members` package carries the half with a consumer: `MethodResult`,
+`ValueMethod`, `integer_methods`, `float_methods`, `MemberReceiver`,
+`numeric_receiver_kind` and `simd_valtype`. The two curated registries earn
+their place ahead of the typer for a different reason than the plan gave — they
+are the checklist the typer's method dispatch is written against, and upstream
+keeps them honest with a test that type-checks every entry.
+
+**Not ported: the candidate builders** — the `fn(i32) -> i32` renderings for a
+memory, table, array, struct, v128 or continuation receiver. They serve
+`recv.<here>` completion in an editor this port does not have, nothing in the
+checker consults them, and there is no test that could tell a faithful
+transcription from a plausible one. They are cheap to add the day an editor
+wants them.
+
+**An unlisted prerequisite, found here.** `simd_v128_methods` reads its
+signatures from `Wax_wasm.Simd` — `wax/src/lib-wasm/simd.ml`, **856 lines**, the
+registry of every vector op. It is not ported and appears in no task, and the
+type checker needs it too: `v.add_i32x4(w)` dispatches through it. Task 12 has
+to account for it.
 
 **Summary.** The table behind `x.extend8_s()`, `i64::add128`, `m.load32(…)` —
 which receiver types have which methods, and what each lowers to. Needed

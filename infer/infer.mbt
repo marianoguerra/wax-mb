@@ -19,7 +19,7 @@
 
 ///|
 /// A fully resolved value type, in both the forms the checker needs.
-pub struct InferredValType {
+pub(all) struct InferredValType {
   /// The Wax-side type, naming its referenced types.
   typ : @wasm_types.ValType[@ast.Ident]
   /// The wasm-side type, indexing them. The `wasm_types` package is generic

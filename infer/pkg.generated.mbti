@@ -67,7 +67,7 @@ pub(all) enum InferredType {
   Collecting(Collecting)
 }
 
-pub struct InferredValType {
+pub(all) struct InferredValType {
   typ : @wasm_types.ValType[@ast.Ident]
   internal : @wasm_types.ValType[TypeIdx]
   anon_comptype : @ast.CompType?
