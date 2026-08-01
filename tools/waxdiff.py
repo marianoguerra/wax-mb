@@ -1023,7 +1023,9 @@ def render_tokens(tokens: list[str]) -> str:
     return "".join(out).strip() + "\n"
 
 
-def _is_finding9(src: str, want: list[dict], got: list[dict]) -> bool:
+def _is_finding9(
+    src: str, want: list[dict], got: list[dict], policy: dict
+) -> bool:
     """Do these diagnostics differ only in the way finding 9 describes?
 
     On the corpus, finding 9 is handled by naming the four files it affects. A
@@ -1031,12 +1033,19 @@ def _is_finding9(src: str, want: list[dict], got: list[dict]) -> bool:
     generated input to bury everything else -- so here it is recognised by its
     SHAPE: same diagnostics, differing only in span, with the reference's span
     being the last character of ours and ours starting at a quote.
+
+    Only the GATED fields have to agree. A reported one -- the message above
+    all -- may differ for reasons that are not a finding at all: on a bare
+    string at the top level the span is finding 9's, while the message is a
+    message-table miss, and reporting the pair as a fuzz find buries the real
+    ones under a divergence already recorded.
     """
     if len(want) != len(got) or not want:
         return False
+    gated = set(policy["gated"])
     for w, g in zip(want, got):
         for k in set(w) | set(g):
-            if w.get(k) != g.get(k) and k not in SPAN_FIELDS:
+            if w.get(k) != g.get(k) and k in gated and k not in SPAN_FIELDS:
                 return False
         start, end = g.get("startOffset"), g.get("endOffset")
         if start is None or end is None or not 0 <= start < len(src):
@@ -1046,6 +1055,38 @@ def _is_finding9(src: str, want: list[dict], got: list[dict]) -> bool:
         if w.get("endOffset") != end or w.get("startOffset") != end - 1:
             return False
     return True
+
+
+def _reference_reproduces_instability(impl: list[str], path: Path) -> bool:
+    """Is the reference unstable on this input, in exactly the same way we are?
+
+    Finding 8: a comment that ends a block attaches to the block's last child,
+    so reformatting hoists it out -- upstream's own behaviour, which this port
+    reproduces. The corpus handles it by naming the three files it affects
+    (NON_IDEMPOTENT_UPSTREAM); a mutant has no name to put on a list, and
+    generated input hits it often, so here it is recognised by asking the
+    reference directly.
+
+    "In the same way" is the whole test: both must drift, and to the same bytes.
+    A mutant where only we drift is a real find and stays one.
+    """
+    once = impl_run(impl, str(path), "-f", "wax")
+    if once.code != 0:
+        return False
+    with tempfile.NamedTemporaryFile(suffix=".wax", delete=False) as fh:
+        fh.write(once.out)
+        tmp = fh.name
+    try:
+        ours_twice = impl_run(impl, tmp, "-f", "wax")
+        ref_twice = wax(tmp, "-f", "wax")
+    finally:
+        os.unlink(tmp)
+    return (
+        ours_twice.code == 0
+        and ref_twice.code == 0
+        and ours_twice.out != once.out
+        and ref_twice.out == ours_twice.out
+    )
 
 
 def grade(impl: list[str], src: str, policy: dict, oracles: list[int]) -> list[Failure]:
@@ -1068,7 +1109,7 @@ def grade(impl: list[str], src: str, policy: dict, oracles: list[int]) -> list[F
                 impl_run(impl, "check", "--error-format", "json", str(path))
                 .err.decode("utf-8", "replace")
             )
-            if _is_finding9(src, want, got):
+            if _is_finding9(src, want, got, policy):
                 SPAN_EXEMPT["mutant.wax"] = "finding 9 (string span)"
                 exempted = True
         out = Outcome()
@@ -1078,7 +1119,14 @@ def grade(impl: list[str], src: str, policy: dict, oracles: list[int]) -> list[F
             check_oracle2(impl, "mutant.wax", path, meta, out, policy)
         if 3 in oracles:
             check_oracle3(impl, "mutant.wax", path, meta, out, policy)
-        return out.failures
+        failures = out.failures
+        # An idempotence failure the reference shares is finding 8, not a find.
+        # Checked only when one has already been reported, so the ordinary
+        # mutant pays nothing for it.
+        if any(f.oracle == "idempotence" for f in failures):
+            if _reference_reproduces_instability(impl, path):
+                failures = [f for f in failures if f.oracle != "idempotence"]
+        return failures
     finally:
         if exempted:
             SPAN_EXEMPT.pop("mutant.wax", None)

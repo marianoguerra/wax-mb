@@ -428,6 +428,25 @@ Net: oracle 3 went from 2112 to 2114 files with zero failures, drift 75 → 64,
 and the span exemptions from 7 files under one wrong cause to 6 under two right
 ones.
 
+**A fuzzer has to recognise every recorded divergence by SHAPE**, because a
+mutant has no name to put on an exemption list. Two filters exist for that, and
+the second was added later, when `just fuzz` reported a find that turned out to
+be finding 8:
+
+- **Finding 9** (the reference points a syntax error at a string's closing
+  quote): same diagnostics, differing only in span, the reference's span being
+  the last character of ours and ours starting at a quote. Only the GATED fields
+  have to agree — the message may differ for an unrelated reason (a
+  message-table miss), and requiring it to match buried the real finds.
+- **Finding 8** (a comment ending a block escapes it on reformat): the reference
+  is asked directly whether it is unstable on the same input, and whether it
+  drifts to the same bytes. A mutant where only WE drift stays a find. The check
+  runs only once an idempotence failure has been reported, so the ordinary
+  mutant pays nothing for it.
+
+With both, a 250-mutant campaign reports one find, and that one is a fresh
+instance of finding 12's class rather than noise.
+
 **Summary.** The corpus is fixed: 2112 files, all hand-written, generated from
 the spec suite, or extracted from docs. It exercises what someone thought to
 write down. Fuzzing explores what nobody did.

@@ -53,10 +53,15 @@ three oracles:
 
 ## Build
 
+Every task lives in the [`justfile`](justfile), which doubles as the index of
+what can be done here — `just` on its own lists them, grouped:
+
 ```sh
-moon check --deny-warn
-moon test
-tools/waxdiff.py run          # differential suite (runs against committed goldens)
+just check      # moon check --deny-warn
+just test       # unit tests
+just diff       # the differential suite, against the committed goldens
+just quick      # all of the above plus the cram tests: the pre-commit gate
+just ci         # everything CI enforces, in CI's order
 ```
 
 The differential suite is **hermetic**: `test/corpus/` and `test/golden/` are
@@ -67,10 +72,10 @@ moving to a newer upstream commit, and the resulting diff is the review artifact
 showing what upstream's behaviour change actually was:
 
 ```sh
-tools/fetch-reference.sh         # the pinned reference binary (needs `gh`)
-tools/fetch-reference-source.sh  # the pinned reference sources, into wax/
-tools/waxdiff.py collect         # rebuild test/corpus/
-tools/waxdiff.py golden          # rebuild test/golden/
+just reference         # the pinned reference binary (needs `gh`)
+just reference-source  # the pinned reference sources, into wax/
+just corpus            # rebuild test/corpus/
+just goldens           # rebuild test/golden/
 ```
 
 Both pins live in `tools/reference.json` and must agree; see `AGENTS.md`.
