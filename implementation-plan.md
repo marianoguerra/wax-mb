@@ -21,7 +21,7 @@ order it makes sense to do it.
 
 **Phase 6 — the type checker**
 
-- [ ] 8. `ast_utils` — the surface-form desugarings
+- [x] 8. `ast_utils` — the surface-form desugarings
 - [ ] 9. `members` — the method and intrinsic table
 - [ ] 10. `infer` — inference cells and the numeric-literal lattice
 - [ ] 11. `typing_env` — symbol tables
@@ -45,7 +45,7 @@ order it makes sense to do it.
 | Oracle 1 — reprint parity | 1903 / 1903 byte-exact, idempotence gated alongside |
 | Oracle 2 — same wasm | 1592 / 1592 identical binaries |
 | Oracle 3 — same errors | 2114 / 2114 on severity, file, spans, offsets, exit code |
-| Unit tests | 161 |
+| Unit tests | 168 |
 | Message drift | 64 entries: 28 message text, 19 related labels, 16 span (the 6 exempted files), 1 edit |
 | Upstream findings | 12, in `test/UPSTREAM-FINDINGS.md` |
 | Cram tests in scope | 3 of 328; the other 325 are listed with reasons in `test/cram-scope.md` |
@@ -520,7 +520,41 @@ classification, small and readable); `wax/test/recovery/test_recover.expected`;
 
 ---
 
-## 8. `ast_utils` — the surface-form desugarings
+## 8. `ast_utils` — the surface-form desugarings — done
+
+**Done.** `ast/utils.mbt`, and it did what the plan hoped: the surface
+constructors are faithful enough that all four lowerings fall out of them
+directly, with no AST change.
+
+- **`map_desc`** — the one exhaustive rebuild of `InstrDesc`. The reference
+  writes that giant match twice (`map_desc` and `sub_instrs`); here `sub_instrs`
+  and `iter_instr` derive from the rebuild by pushing as they go, which costs
+  one shallow desc allocation per node visited (linear, and the tree is walked
+  once) and leaves ONE place to update when a constructor is added.
+- **`map_info`** — `Instr[A]` to `Instr[B]`, which is how the checker will
+  re-annotate the parser's tree.
+- **`lower_while` / `lower_dispatch` / `lower_match` / `lower_trycatch`** plus
+  `synthetic_loop_label`, each the exact inverse of a `recover_*` pass.
+- **`import_name`**, returning BYTES where the reference returns a string: a
+  wasm import name is a byte string, and this port keeps a string literal as the
+  bytes the lexer decoded rather than re-encoding at every use.
+
+**Not ported: `smart_map` / `smart_opt`.** They return the input list
+physically when nothing changed, so an untouched subtree allocates nothing. That
+is an allocation optimisation resting on OCaml's `==`, and it belongs with the
+rewrite pass that needs it — the checker's `simplify` — not ahead of it.
+
+**Tested on parsed input, not hand-built trees** (`test/corpus_parse/
+lowering_test.mbt`): each test parses real Wax, finds the construct with
+`iter_instr`, lowers it, and compares a compact structural sketch. So a change
+to how the parser shapes a `while` breaks these too, which is the point of
+putting them there. The sketch is used rather than the AST JSON because the JSON
+renderer spells out only the constructors the parse snapshots need — every
+branch instruction a lowering emits prints as `"..."`.
+
+Writing the `match` expectation surfaced the one asymmetry worth knowing: a
+`null` arm's block is VOID, so its result is not bound, while a cast arm's block
+yields the narrowed value the following `let` consumes.
 
 **Summary.** `lower_match`, `lower_while`, `lower_dispatch`: the transforms
 turning the surface constructors into the core forms the checker and the code

@@ -14,7 +14,17 @@ pub fn format_signed_type(NumType, @wasm_types.Signage, Bool) -> String
 
 pub fn heaptype_json(@wasm_types.HeapType[Ident]) -> Json
 
+pub fn import_name(ImportDecl) -> @basic.Annotated[Bytes, @basic.Location]
+
 pub fn is_splice_field(@basic.Annotated[(Ident, @wasm_types.MutType[@wasm_types.StorageType[Ident]]), @basic.Location]) -> Bool
+
+pub fn[I] lower_dispatch(I, index~ : Instr[I], cases~ : Array[Ident], default~ : Ident, arms~ : Array[(Ident, @basic.Annotated[Array[Instr[I]], @basic.Location])]) -> Array[Instr[I]]
+
+pub fn[I] lower_match(I, labels~ : Array[Ident], scrutinee~ : Instr[I], arms~ : Array[(MatchPattern, @basic.Annotated[Array[Instr[I]], @basic.Location])], default~ : @basic.Annotated[Array[Instr[I]], @basic.Location]) -> Array[Instr[I]]
+
+pub fn[I] lower_trycatch(I, join~ : Ident, arm_labels~ : Array[Ident], typ~ : FuncType, block~ : @basic.Annotated[Array[Instr[I]], @basic.Location], arms~ : Array[TryCatchArm[I]]) -> Instr[I]
+
+pub fn[I] lower_while(I, fresh_loop~ : Ident, label~ : Ident?, cond~ : Instr[I], step~ : Instr[I]?, block~ : Array[Instr[I]]) -> Array[Instr[I]]
 
 pub fn[Info] module_to_json(Array[@basic.Annotated[ModuleField[Info], @basic.Location]]) -> Json
 
@@ -25,6 +35,8 @@ pub fn no_loc_instr(InstrDesc[@basic.Location]) -> Instr[@basic.Location]
 pub fn splice_field(@basic.Location) -> @basic.Annotated[(Ident, @wasm_types.MutType[@wasm_types.StorageType[Ident]]), @basic.Location]
 
 pub let splice_field_name : String
+
+pub let synthetic_loop_label : String
 
 pub fn valtype_json(@wasm_types.ValType[Ident]) -> Json
 
@@ -138,6 +150,9 @@ pub(all) struct Instr[Info] {
   hints : Hints
   expected : @wasm_types.ValType[Ident]?
 } derive(Eq, @debug.Debug)
+pub fn[I] Instr::iter_instr(Self[I], (Self[I]) -> Unit) -> Unit
+pub fn[A, B] Instr::map_info(Self[A], (A) -> B) -> Self[B]
+pub fn[I] Instr::sub_instrs(Self[I]) -> Array[Self[I]]
 pub fn[Info] Instr::to_json(Self[Info]) -> Json
 
 pub(all) enum InstrDesc[Info] {
@@ -209,6 +224,7 @@ pub(all) enum InstrDesc[Info] {
   Select(Instr[Info], Instr[Info], Instr[Info])
   IfAnnotation(cond~ : @wasm_types.Cond, then_body~ : @basic.Annotated[Array[Instr[Info]], @basic.Location], else_body~ : @basic.Annotated[Array[Instr[Info]], @basic.Location]?)
 } derive(Eq, @debug.Debug)
+pub fn[A, B] InstrDesc::map_desc(Self[A], instr~ : (Instr[A]) -> Instr[B], block~ : (Array[Instr[A]]) -> Array[Instr[B]]) -> Self[B]
 pub fn[Info] InstrDesc::to_json(Self[Info]) -> Json
 
 pub(all) enum MatchPattern {
