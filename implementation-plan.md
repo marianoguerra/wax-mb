@@ -22,6 +22,8 @@ order it makes sense to do it.
 **Phase 6 — the type checker**
 
 - [x] 8. `ast_utils` — the surface-form desugarings
+- [ ] 8b. The unlisted prerequisites *(new; see below)* — `spell_check` and
+  `feature` done, ~1.9k lines left
 - [x] 9. `members` — the method and intrinsic table *(the checker-facing half)*
 - [x] 10. `infer` — inference cells and the numeric-literal lattice *(done before 9; see there)*
 - [ ] 11. `typing_env` — symbol tables
@@ -41,11 +43,11 @@ order it makes sense to do it.
 
 | | |
 |---|---|
-| MoonBit source | ~36k lines across 17 packages (`basic` `tokens` `lexer` `trivia` `wasm_types` `ast` `grammar` `unicode` `colors` `message` `warning` `printer` `output` `diagnostic` `infer` `io` `cmd/wax-mb`) |
+| MoonBit source | ~37k lines across 20 packages (`basic` `tokens` `lexer` `trivia` `wasm_types` `ast` `grammar` `unicode` `colors` `message` `warning` `printer` `output` `diagnostic` `infer` `members` `spell` `feature` `io` `cmd/wax-mb`) |
 | Oracle 1 — reprint parity | 1903 / 1903 byte-exact, idempotence gated alongside |
 | Oracle 2 — same wasm | 1592 / 1592 identical binaries |
 | Oracle 3 — same errors | 2114 / 2114 on severity, file, spans, offsets, exit code |
-| Unit tests | 180 |
+| Unit tests | 195 |
 | Message drift | 64 entries: 28 message text, 19 related labels, 16 span (the 6 exempted files), 1 edit |
 | Upstream findings | 12, in `test/UPSTREAM-FINDINGS.md` |
 | Cram tests in scope | 3 of 328; the other 325 are listed with reasons in `test/cram-scope.md` |
@@ -668,7 +670,43 @@ type-checker bugs hide.
 
 ---
 
+## 8b. The unlisted prerequisites of Phase 6 *(new)*
+
+Measured while starting task 11. `typing_env.ml` and `typing.ml` reach into
+nine modules that **no task lists and this port does not have**, and
+`typing_env`'s `module_context` cannot even be *typed* without the first three:
+
+| module | lines | uses in the typer | what it is |
+|---|---|---|---|
+| `lib-wasm/types.ml` | 372 | 71 | the interned type store: rec-group normalisation, canonical indices, subtyping info |
+| `lib-wasm/simd.ml` | 856 | — | every vector op, with its operand and result types; how `v.add_i32x4(w)` dispatches |
+| `lib-wasm/cond_solver.ml` | 240 | 4 | the conditional-compilation assumption every declaration carries |
+| `lib-wasm/atomics.ml` | 179 | 5 | the atomic memory operations |
+| `lib-wasm/cond_explore.ml` | 133 | 1 | enumerating the branches of a conditional module |
+| `lib-utils/spell_check.ml` | 126 | 8 | "did you mean" — **ported**, `spell/` |
+| `lib-wasm/misc.ml` | 100 | 13 | assorted wasm-side helpers |
+| `lib-utils/feature.ml` | 86 | 29 | the proposal gating — **ported**, `feature/` |
+
+**Two are done.**
+
+- **`spell/`** — OCaml's own Damerau-Levenshtein, banded around the diagonal so
+  a candidate that is obviously too far is abandoned rather than measured, with
+  the limit tightening as better candidates are found. Distances are over CODE
+  POINTS, so `é` is one edit from `e` and an emoji is one character. 7 tests.
+- **`feature/`** — the proposal gating. The state that matters and is easy to
+  lose: a feature can be off by DEFAULT or off because someone wrote
+  `-X name=off`, and a module declaring the second is a conflict to report where
+  the first is just an opt-in. 8 tests.
+
+**The rest is ~1.9k lines**, and `types.ml` is the one that blocks: 71 of the
+typer's references go through it, and `module_context` holds a
+`Wax_wasm.Types.t` and a `subtyping_info`. It is the natural next task, before
+11.
+
 ## 11. `typing_env` — symbol tables
+
+**Blocked on 8b** — `module_context` holds a `Wax_wasm.Types.t`, a
+`Cond_solver.t` and a `Feature.set`; two of the three are not ported yet.
 
 **Summary.** Scopes and bindings: locals, labels, globals, functions, types,
 tags. Straightforward, and a prerequisite for the checker.

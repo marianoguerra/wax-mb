@@ -1,0 +1,8 @@
+import {
+  "moonbitlang/core/sorted_set",
+  "moonbitlang/core/ref",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
