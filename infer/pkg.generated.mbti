@@ -1,0 +1,88 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/infer"
+
+import {
+  "moonbitlang/core/debug",
+  "waxmb/wax/ast",
+  "waxmb/wax/basic",
+  "waxmb/wax/output",
+  "waxmb/wax/wasm_types",
+}
+
+// Values
+pub let f32_cell : Cell[InferredType]
+
+pub let f32_valtype : InferredValType
+
+pub let f64_cell : Cell[InferredType]
+
+pub let f64_valtype : InferredValType
+
+pub let i32_cell : Cell[InferredType]
+
+pub let i32_valtype : InferredValType
+
+pub let i64_cell : Cell[InferredType]
+
+pub let i64_valtype : InferredValType
+
+pub fn is_unknown_or_error(Cell[InferredType]) -> Bool
+
+pub fn[Info] render(@output.Ctx[Info], Cell[InferredType]) -> Unit
+
+pub fn to_string(Cell[InferredType]) -> String
+
+pub fn valtype_cell(InferredValType) -> Cell[InferredType]
+
+// Errors
+
+// Types and methods
+pub struct Cell[A] {
+  mut state : State[A]
+}
+pub fn[A] Cell::get(Self[A]) -> A
+pub fn[A] Cell::make(A) -> Self[A]
+pub fn[A] Cell::merge(Self[A], Self[A], A) -> Unit
+pub fn[A] Cell::set(Self[A], A) -> Unit
+
+pub(all) struct Collecting {
+  collected : Array[(@basic.Location?, Cell[InferredType])]
+  exacts : Array[(@basic.Location?, Cell[InferredType])]
+  declared : Cell[InferredType]?
+  mut needed : Bool
+}
+
+pub(all) enum InferredType {
+  Unknown
+  Error
+  UnknownRef
+  Null
+  Number
+  Int8
+  Int16
+  Int
+  LargeInt
+  Float
+  Valtype(InferredValType)
+  Collecting(Collecting)
+}
+
+pub struct InferredValType {
+  typ : @wasm_types.ValType[@ast.Ident]
+  internal : @wasm_types.ValType[TypeIdx]
+  anon_comptype : @ast.CompType?
+} derive(Eq)
+
+pub(all) enum State[A] {
+  Link(Cell[A])
+  Root(A)
+}
+
+pub(all) struct TypeIdx {
+  index : Int
+} derive(Compare, Eq, Hash, @debug.Debug)
+
+// Type aliases
+
+// Traits
+

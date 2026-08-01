@@ -23,7 +23,7 @@ order it makes sense to do it.
 
 - [x] 8. `ast_utils` — the surface-form desugarings
 - [ ] 9. `members` — the method and intrinsic table
-- [ ] 10. `infer` — inference cells and the numeric-literal lattice
+- [x] 10. `infer` — inference cells and the numeric-literal lattice *(done before 9; see there)*
 - [ ] 11. `typing_env` — symbol tables
 - [ ] 12. `typing` — the checker
 - [ ] 13. `typing_lint` / `typing_suggest` — the warnings and quick fixes
@@ -41,11 +41,11 @@ order it makes sense to do it.
 
 | | |
 |---|---|
-| MoonBit source | ~34.5k lines across 16 packages (`basic` `tokens` `lexer` `trivia` `wasm_types` `ast` `grammar` `unicode` `colors` `message` `warning` `printer` `output` `diagnostic` `io` `cmd/wax-mb`) |
+| MoonBit source | ~36k lines across 17 packages (`basic` `tokens` `lexer` `trivia` `wasm_types` `ast` `grammar` `unicode` `colors` `message` `warning` `printer` `output` `diagnostic` `infer` `io` `cmd/wax-mb`) |
 | Oracle 1 — reprint parity | 1903 / 1903 byte-exact, idempotence gated alongside |
 | Oracle 2 — same wasm | 1592 / 1592 identical binaries |
 | Oracle 3 — same errors | 2114 / 2114 on severity, file, spans, offsets, exit code |
-| Unit tests | 168 |
+| Unit tests | 176 |
 | Message drift | 64 entries: 28 message text, 19 related labels, 16 span (the 6 exempted files), 1 edit |
 | Upstream findings | 12, in `test/UPSTREAM-FINDINGS.md` |
 | Cram tests in scope | 3 of 328; the other 325 are listed with reasons in `test/cram-scope.md` |
@@ -590,7 +590,37 @@ as a cross-check).
 
 ---
 
-## 10. `infer` — inference cells and the numeric-literal lattice
+## 10. `infer` — inference cells and the numeric-literal lattice — done
+
+**Done, and taken before task 9** — `members` is written against `Infer`'s
+types, so the plan's order had the dependency backwards. See task 9 for what
+else that reordering turned up.
+
+The new `infer` package is three files:
+
+- **`cell.mbt`** — the union-find. `merge` unions two cells and gives the class
+  one value, so narrowing either handle afterwards narrows both. The
+  self-merge case is guarded explicitly, as upstream does: linking a root to
+  itself would build a cycle `representative` could never leave.
+- **`infer.mbt`** — the lattice. The flexible literals (`Number`, `Int`,
+  `LargeInt`, `Float`, `Int8`, `Int16`) are what make keeping numeric literals
+  as raw strings pay off: a literal has no width yet, so there is nothing to
+  have chosen wrongly. `InferredValType` carries the type in BOTH forms —
+  Wax-side naming its types, wasm-side indexing them — which is the second
+  Phase 2 commitment cashed in, since `wasm_types` is generic over the index.
+- **`render.mbt`** — the diagnostic rendering. The flexible families print BY
+  FAMILY (`number`, `int`, `large number`, `float`), never as their default
+  width, and a block result under inference prints as the annotation being
+  tested rather than as `any`.
+
+**8 tests**, which is the exhaustive unit-testing the plan asked for: the
+union-find under chained merges and self-merge, every lattice case's rendering,
+and the three-way "nothing known" distinction (`Unknown` still earns an error,
+`Error` is already reported, `UnknownRef` is known to be a reference).
+
+**One deliberate difference.** `TypeIdx` is a struct rather than the
+reference's `Wax_wasm.Id.t`; `collected`/`exacts` are plain arrays where the
+reference needs `mutable`, since appending to an OCaml list means replacing it.
 
 **Summary.** The unification substrate: mutable inference cells, and the
 lattice that lets `1` be an `i32` or an `i64` until context decides. This is
