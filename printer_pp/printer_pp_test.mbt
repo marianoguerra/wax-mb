@@ -215,11 +215,13 @@ test "indent applies to breaks inside it" {
 }
 
 ///|
-test "indentation is NOT capped -- the one deliberate omission" {
-  // The reference engine caps every indent at width - 10, so deep nesting does
-  // not march off the right margin. A `@pp.Doc` indents by writing spaces after
-  // a break, and the column those land in is not known until the document is
-  // rendered, so there is nothing to clamp at build time. See README.
+test "indentation is capped, so deep nesting does not march off the margin" {
+  // The reference caps every indent at width - 10. At width 12 nothing may
+  // indent past column 2, however deeply nested it is.
+  //
+  // This is why relative indent is a `nest` and not a run of spaces: the cap is
+  // applied to the indent a BREAK asks for, and spaces written after the break
+  // are past the point where anything could clamp them.
   let build = fn(p : @printer.Printer) {
     p.vbox(indent=8, () => {
       p.string("aa")
@@ -231,16 +233,10 @@ test "indentation is NOT capped -- the one deliberate omission" {
     lay(12, build),
     content=(
       #|aa
-      #|        bb
-    ),
-  )
-  inspect(
-    ref_lay(12, build),
-    content=(
-      #|aa
       #|  bb
     ),
   )
+  assert_eq(lay(12, build), ref_lay(12, build))
 }
 
 ///|

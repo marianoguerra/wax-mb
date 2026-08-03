@@ -168,9 +168,9 @@ self-test:
 
 # `printer_pp` lays the SAME token stream out with
 # marianoguerra/pretty-fast-pretty-printer instead of the ported engine, so
-# every difference this reports is a layout difference and nothing else. It is
-# a measurement, not a gate: the two are not expected to agree everywhere, and
-# printer_pp/README.md says where they cannot. Add `--show N` for examples.
+# every difference this reports is a layout difference and nothing else. The two
+# agree on every module in the corpus, so this exits non-zero if any of them
+# stops agreeing. Add `--show N` for examples, `--dump` to see the tokens.
 #
 # Compare the alternative layout engine against the ported one.
 [group('diff')]

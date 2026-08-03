@@ -6,8 +6,8 @@ reference OCaml because byte-exact output is this project's whole point.
 what would a general-purpose library have done instead?
 
 The library is
-[marianoguerra/pretty-fast-pretty-printer](https://mooncakes.io/docs/marianoguerra/pretty-fast-pretty-printer@0.2.0)
-0.2.0, the MoonBit port of Brown PLT's `pretty-fast-pretty-printer`. It builds an
+[marianoguerra/pretty-fast-pretty-printer](https://mooncakes.io/docs/marianoguerra/pretty-fast-pretty-printer@0.2.1)
+0.2.1, the MoonBit port of Brown PLT's `pretty-fast-pretty-printer`. It builds an
 immutable `Doc` from four combinators — `txt`, `horz`, `vert`, `if_flat` — and
 picks a layout in one left-to-right pass.
 
@@ -33,38 +33,27 @@ just ppdiff
 ```
 files scanned:   2114
 modules parsed:  1903
-identical:       1901
-differing:       2
-agreement:       99%
-
-  overflow (fit decision ignores trailing context): 0
-  indent   (no max_indent cap):                     2
-  other:                                            0
+identical:       1903
+differing:       0
+agreement:       100%
 ```
 
-1901 of 1903 modules come out **byte for byte identical**. The two that do not
-are the same difference, and it is the only one left.
+Every module in the committed corpus comes out **byte for byte identical** under
+the two engines. `ppdiff` exits non-zero if that ever stops being true.
 
-## The difference that remains: indentation is not capped
+That is a statement about this corpus, not a theorem. The two engines are not
+the same algorithm — one streams with bounded lookahead, the other builds a tree
+and renders it in a pass — and they are reconciled by the lowering below rather
+than by construction. What the number says is that on 1903 real modules the
+reconciliation is complete.
 
-`printer` clamps every break indent to `width - 10`, so deeply nested code stops
-marching toward the right margin. That clamp needs a column, and a `Doc` has no
-columns until it is rendered: indentation there is a consequence of `horz`,
-`vert` and `nest`, decided during the render pass, not a number the builder ever
-holds.
-
-At the `wasm-test-suite` block and loop tests — sixteen nested `do { ... }` —
-the reference stacks everything at column 90 while `printer_pp` keeps indenting
-by four and eventually breaks `do` away from its `{`. Closing it would take a
-`max_indent` render option in the library; nothing expressible in a document can
-do it.
-
-## What it took to get here
+## What it took
 
 The first version of this package, against library 0.1.0, differed on 32 files.
-Four of the five things that closed the gap are 0.2.0 API added in response to
-this port; the fifth is a quirk of the reference that had to be modelled
-deliberately.
+Six pieces of API added in 0.2.0 and 0.2.1 account for most of the gap; three
+behaviours of the reference had to be modelled deliberately.
+
+### From the library
 
 **`if_flat`'s `reserve` — 30 files.** `if_flat` weighs its flat branch against
 the space left on the line. The engine instead scans the token stream *past* the
@@ -75,19 +64,24 @@ that trailing width. Computing it is what `suffix` and `after` do in
 enclosing body still has to fit, which is nothing at all unless the group ends
 it, because in a breaking mode the scan stops at the very next break.
 
+**`max_indent` — 2 files, the last of them.** The engine refuses to indent past
+`width - 10`, so sixteen nested `do { ... }` stack up at column 90 instead of
+marching off the margin. A `Doc` has no columns until it renders, so this can
+only be a render option — which is what it is.
+
 **`txt_as` — width.** `txt` measures UTF-16 code units. The builder measures
 display width, so a CJK character is two columns and a colour escape is none.
 The token stream carries the builder's number and `txt_as` states it, which is
-why a coloured render now breaks in exactly the same places as an uncoloured
-one.
+why a coloured render breaks in exactly the same places as an uncoloured one.
 
 **`txt_raw` — block comments.** A comment's content arrives as one `TText` with
 newlines in it. The engine writes it through verbatim; `txt_lines` would stack
 the lines with `vert` and re-indent the continuations.
 
-**`Doc::flat_width` and `nest`.** The first replaced a parallel
-re-implementation of the width the library already caches. The second models the
-`eff_col` quirk below without moving the line the group starts on.
+**`nest`** carries relative indentation, and **`Doc::flat_width`** replaced a
+parallel re-implementation of the width the library already caches.
+
+### From reading the reference
 
 **If-broken content is rendered but never measured.** The engine's scan drops
 the whole `TIfBroken` subtree, so the trailing comma a list grows when it breaks
@@ -97,10 +91,14 @@ must not be what tips it into breaking. Atoms carry a `hidden` flag for it.
 separator, while only `flush` looks at the strength — so a `cut`, which prints
 nothing, still moves the base of a group opening right after it. That base
 decides both the fit test and the indent, so it is a `reserve` of one plus a
-`nest` of one. It is worth being precise about the scope: the shift applies to
-that one group and does not accumulate down the nesting, because the engine
-bases every group on the real column it prints at. Propagating it was worth
-seven files in the wrong direction before that was fixed.
+`nest` of one. The scope matters: the shift applies to that one group and does
+not accumulate down the nesting, because the engine bases every group on the
+real column it prints at. Propagating it was worth seven files in the wrong
+direction before that was fixed.
+
+**A group kept on one line still resolves the groups inside it.** One of them
+can break anyway, so an `if_flat`'s flat branch is the body laid out in Flat
+*mode*, not the body flattened outright.
 
 ## How the lowering works
 
@@ -114,7 +112,7 @@ Three passes, in `doc.mbt` and `lower.mbt`:
    state, so it has to be done explicitly.
 3. **`lay`** lowers to a `Doc`.
 
-Three things in that lowering are worth knowing.
+Four things in that lowering are worth knowing.
 
 ### Where a collapsed run lands
 
@@ -127,11 +125,11 @@ part-way through the run takes its base from `eff_col`, which reports the
 `Pruner::settle` therefore keeps the last break when no group opened during the
 run — exact, since every frame still open was opened before the run and sits at
 the column `@pp` will render it at — and keeps the first, paying the indent
-difference in literal spaces, when one did.
+difference in spaces, when one did.
 
 Keeping the first unconditionally costs 202 files. Keeping the last
-unconditionally costs none — this corpus never opens a group inside a run — but
-it is wrong all the same, by one column per nested indent, and
+unconditionally costs none *here* — this corpus never opens a group inside a run
+— but it is wrong all the same, by one column per nested indent, and
 `printer_pp_test.mbt` pins the shape that shows it.
 
 ### Indentation has to be spelled out
@@ -139,19 +137,28 @@ it is wrong all the same, by one column per nested indent, and
 A group is joined to its left sibling with `horz2`, which is what rebases it to
 the column it opens at — the engine's `eff_col` semantics, for free. Everything
 else is joined with `concat2`, which leaves the ambient indent alone, so a
-body's own breaks return to the group's base. A `TNest` is then paid for in
-literal spaces written after each break inside it: `nest` wraps a whole
-document, and a nest has to interleave with the body's own breaks.
+body's own breaks return to the group's base. A `TNest` becomes a `nest` around
+the break itself.
+
+Writing that relative indent out as spaces after the break would land in the
+same column, and did until `max_indent` arrived — but the two are not
+interchangeable. The cap clamps the indent a *break* asks for, and spaces
+written after the break are past the point where anything could clamp them.
 
 ### Both branches, built once
 
-A group the engine keeps on one line still resolves the groups *inside* it one
-at a time, and one of them can break anyway — so the flat branch of an `if_flat`
-is the body laid out in Flat *mode*, not the body flattened outright. That means
-every `GHv` materialises its body twice, and a document nested `d` groups deep
-would cost `2^d`. `Memo` keys a built document on the group's identity, the mode
-and the reserve, which turns the tree back into a DAG; the corpus run is about
-ten seconds either way.
+Because a flat group still resolves the groups inside it, every `GHv`
+materialises its body twice, and a document nested `d` groups deep would cost
+`2^d`. `Memo` keys a built document on the group's identity, the mode and the
+reserve, which turns the tree back into a DAG; the corpus run is about ten
+seconds either way.
+
+### One thing still approximated
+
+`prune`'s compensating indent — the spaces it writes when a run opens a group —
+is text, so `max_indent` cannot clamp it. Everything else routes through a
+break. No corpus module reaches that path, since the run rule only needs it when
+a group opens mid-run.
 
 ## Cost
 

@@ -100,12 +100,18 @@ fn main {
     println("  indent   (no max_indent cap):                     \{indent}")
     println("  other:                                            \{other}")
   }
+  // The two engines agree on every module in the committed corpus, so a
+  // divergence is news whichever direction it came from -- a change to the
+  // formatter, to the lowering, or to the library.
   let n = if show < diffs.length() { show } else { diffs.length() }
   for k in 0..<n {
     let (path, a, b) = diffs[k]
     println("")
     println("--- \{path}")
     report_first_diff(a, b)
+  }
+  if diffs.length() > 0 {
+    @sys.exit(1)
   }
 }
 

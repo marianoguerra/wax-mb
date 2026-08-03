@@ -140,14 +140,18 @@ fn txt_of(w : Int, s : String) -> @pp.Doc {
 ///|
 /// A line ending, returning to the ambient indent plus `ind`.
 ///
-/// `vert` newlines to the AMBIENT indent -- the group's base column -- so the
-/// relative indent is written out as spaces on the new line.
+/// `vert` newlines to the AMBIENT indent -- the group's base column -- and
+/// `nest` is what adds the relative indent to it. Writing that indent out as
+/// spaces instead would land in the same column, but the two are not
+/// interchangeable: `max_indent` clamps the indent a break asks for, and spaces
+/// written after the break are past the point where anything can clamp them.
 fn line_break(ind : Int, blank : Bool) -> @pp.Doc {
-  if blank {
-    @pp.vert([@pp.empty, @pp.empty, @pp.txt(spaces(ind))])
+  let brk = if blank {
+    @pp.vert([@pp.empty, @pp.empty, @pp.empty])
   } else {
-    @pp.vert([@pp.empty, @pp.txt(spaces(ind))])
+    @pp.vert2(@pp.empty, @pp.empty)
   }
+  @pp.nest(ind, brk)
 }
 
 ///|
@@ -275,10 +279,7 @@ fn lay(
               acc,
               @pp.if_flat(
                 @pp.horz2(@pp.txt(sep), flat),
-                @pp.vert([
-                  @pp.empty,
-                  @pp.horz2(@pp.txt(spaces(ind)), seg_doc(i + 1)),
-                ]),
+                @pp.nest(ind, @pp.vert2(@pp.empty, seg_doc(i + 1))),
                 reserve=after[i + 1],
               ),
             )
@@ -432,20 +433,15 @@ pub fn to_doc(tokens : Array[@printer.Token]) -> @pp.Doc {
 ///|
 /// Lay a token stream out as text.
 ///
-/// Lines of nothing but the spaces a `TNest` asked for are emptied: the engine
-/// writes its indentation only ahead of content, so a line of pure whitespace
-/// is something it can never produce.
+/// `max_indent` is the engine's own: it refuses to indent past `width - 10`, so
+/// deeply nested code does not march off the right margin, and floors that at
+/// zero for widths under ten.
 pub fn render_tokens(
   tokens : Array[@printer.Token],
   width? : Int = 78,
 ) -> String {
-  let lines = to_doc(tokens).display(width~)
-  for i, line in lines {
-    if line != "" && line.iter().all(c => c == ' ') {
-      lines[i] = ""
-    }
-  }
-  lines.join("\n")
+  let max_indent = if width - 10 > 0 { width - 10 } else { 0 }
+  to_doc(tokens).display_string(width~, max_indent~)
 }
 
 ///|

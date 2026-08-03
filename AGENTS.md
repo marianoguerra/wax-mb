@@ -74,18 +74,18 @@ is the point: it shows exactly what upstream's behaviour change was.
 ## The second layout engine
 
 `printer_pp` lays the same documents out with
-[marianoguerra/pretty-fast-pretty-printer](https://mooncakes.io/docs/marianoguerra/pretty-fast-pretty-printer@0.2.0)
+[marianoguerra/pretty-fast-pretty-printer](https://mooncakes.io/docs/marianoguerra/pretty-fast-pretty-printer@0.2.1)
 instead of the engine ported from `printer.ml`. Only the layout is swapped: both
 are driven by the same `@printer.Printer`, whose token stream is
 engine-independent, so `just ppdiff` compares them on the same document over the
-same corpus. 1901 of 1903 modules come out identical; the 2 that do not are the
-one thing a `Doc` cannot express -- the reference's `max_indent` cap -- and
-`printer_pp/README.md` says why, along with what closed the rest.
+same corpus. All 1903 modules come out byte-identical, and `ppdiff` exits
+non-zero if that stops being true. `printer_pp/README.md` says what it took, and
+which parts of the reconciliation the corpus does not exercise.
 
-It is a **measurement, not a gate**, and it is not in the shipped path:
-`@output.render`, the CLI and all three oracles go through `printer`. Nothing
-about equivalence to the reference is decided by it. If `ppdiff` ever reports a
-divergence in its `other` bucket, that is a bug in `printer_pp`'s lowering.
+It is not in the shipped path: `@output.render`, the CLI and all three oracles
+go through `printer`, and nothing about equivalence to the reference is decided
+here. A divergence is not automatically a bug in the formatter -- it is more
+likely one in `printer_pp`'s lowering -- but it always wants explaining.
 
 ## Conventions (follow `parser/`)
 
