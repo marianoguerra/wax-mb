@@ -71,6 +71,22 @@ build or CI input** — the moment that happens the hermetic property is gone.
 Regenerating the corpus and goldens is a deliberate act, and the resulting diff
 is the point: it shows exactly what upstream's behaviour change was.
 
+## The second layout engine
+
+`printer_pp` lays the same documents out with
+[marianoguerra/pretty-fast-pretty-printer](https://mooncakes.io/docs/marianoguerra/pretty-fast-pretty-printer@0.1.0)
+instead of the engine ported from `printer.ml`. Only the layout is swapped: both
+are driven by the same `@printer.Printer`, whose token stream is
+engine-independent, so `just ppdiff` compares them on the same document over the
+same corpus. 1871 of 1903 modules come out identical; the 32 that do not are two
+known consequences of the library's model, spelled out in
+`printer_pp/README.md`.
+
+It is a **measurement, not a gate**, and it is not in the shipped path:
+`@output.render`, the CLI and all three oracles go through `printer`. Nothing
+about equivalence to the reference is decided by it. If `ppdiff` ever reports a
+divergence in its `other` bucket, that is a bug in `printer_pp`'s lowering.
+
 ## Conventions (follow `parser/`)
 
 - Config is the **new DSL**, not JSON: `moon.mod`, `moon.pkg`. Deps go in an

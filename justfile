@@ -166,6 +166,17 @@ drift: build
 self-test:
     {{waxdiff}} run --self-test
 
+# `printer_pp` lays the SAME token stream out with
+# marianoguerra/pretty-fast-pretty-printer instead of the ported engine, so
+# every difference this reports is a layout difference and nothing else. It is
+# a measurement, not a gate: the two are not expected to agree everywhere, and
+# printer_pp/README.md says where they cannot. Add `--show N` for examples.
+#
+# Compare the alternative layout engine against the ported one.
+[group('diff')]
+ppdiff *args: build
+    {{native}}/tools/ppdiff/ppdiff.exe test/corpus {{args}}
+
 # The only coverage of the CLI's behaviour rather than the library's: exit
 # codes, which stream output lands on, flag handling.
 #

@@ -51,6 +51,13 @@ pub struct Engine {
   mut scan_at_end : Bool
   /// Drop every token instead of laying it out. See `run_discard`.
   mut discarding : Bool
+  /// When set, every fed token is appended here before being laid out.
+  ///
+  /// The builder is engine-independent, so a recorded stream is the exact
+  /// input an ALTERNATIVE layout engine would receive -- which is what lets
+  /// `printer_pp` be compared against this one on the same document rather
+  /// than on a re-derived approximation of it. See `run_tokens`.
+  mut record : Array[Token]?
 }
 
 ///|
@@ -84,6 +91,7 @@ pub fn Engine::new(width? : Int = 78) -> Engine {
     },
     scan_at_end: false,
     discarding: false,
+    record: None,
   }
 }
 
@@ -436,6 +444,10 @@ fn Engine::advance(self : Engine, at_end~ : Bool) -> Unit {
 ///|
 /// Push one token.
 pub fn Engine::feed(self : Engine, tok : Token) -> Unit {
+  match self.record {
+    Some(r) => r.push(tok)
+    None => ()
+  }
   if self.discarding {
     return
   }

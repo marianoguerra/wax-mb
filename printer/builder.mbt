@@ -294,6 +294,23 @@ pub fn run_string(f : (Printer) -> Unit, width? : Int = 78) -> String {
 }
 
 ///|
+/// Run `f` and return the TOKEN STREAM it builds, laying nothing out.
+///
+/// The builder is engine-independent -- width never reaches it -- so this is
+/// the whole document, in the form a layout engine consumes it. It exists so an
+/// alternative engine can be fed exactly what this one is fed; see
+/// `printer_pp`.
+pub fn run_tokens(f : (Printer) -> Unit, width? : Int = 78) -> Array[Token] {
+  let p = Printer::new(width~)
+  let rec : Array[Token] = []
+  p.engine.record = Some(rec)
+  p.engine.discarding = true
+  f(p)
+  p.finalize()
+  rec
+}
+
+///|
 /// Run `f` producing NO output.
 ///
 /// For the dry pass that only needs the printer's side effects -- recording

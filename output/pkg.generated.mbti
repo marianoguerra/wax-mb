@@ -44,6 +44,8 @@ pub fn prec_op(@ast.BinOp) -> (Prec, Prec, Prec)
 
 pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context, theme? : @colors.Theme) -> String
 
+pub fn render_with(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context, theme? : @colors.Theme, lay~ : ((@printer.Printer) -> Unit) -> String) -> String
+
 pub fn run_string((@printer.Printer) -> Unit) -> String
 
 pub fn[Info] simple_inline_instr(@ast.Instr[Info]) -> Bool
@@ -152,4 +154,3 @@ pub(all) enum Prec {
 // Type aliases
 
 // Traits
-

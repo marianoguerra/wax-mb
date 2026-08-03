@@ -10,6 +10,8 @@ pub fn run_discard((Printer) -> Unit) -> Unit
 
 pub fn run_string((Printer) -> Unit, width? : Int) -> String
 
+pub fn run_tokens((Printer) -> Unit, width? : Int) -> Array[Token]
+
 // Errors
 
 // Types and methods
@@ -36,6 +38,7 @@ pub struct Engine {
   sc : ScanState
   mut scan_at_end : Bool
   mut discarding : Bool
+  mut record : Array[Token]?
 }
 pub fn Engine::contents(Self) -> String
 pub fn Engine::feed(Self, Token) -> Unit
@@ -108,4 +111,3 @@ pub(all) enum Token {
 // Type aliases
 
 // Traits
-

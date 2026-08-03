@@ -15,13 +15,30 @@ pub fn render(
   trivia_ctx : @trivia.Context,
   theme? : @colors.Theme = @colors.no_color,
 ) -> String {
+  render_with(m, trivia_ctx, theme~, lay=run_string)
+}
+
+///|
+/// As `render`, but laid out by `lay` rather than by `@printer`'s own engine.
+///
+/// Only the LAYOUT is swappable: the two passes, the trivia association and
+/// every printing decision above are the formatter's and stay put. That is the
+/// whole point -- an alternative engine has to be judged on the same document,
+/// not on a re-derived one. `tools/ppdiff` uses this to hold `printer_pp` up
+/// against `printer` over the corpus.
+pub fn render_with(
+  m : @ast.LocModule,
+  trivia_ctx : @trivia.Context,
+  theme? : @colors.Theme = @colors.no_color,
+  lay~ : ((@printer.Printer) -> Unit) -> String,
+) -> String {
   let (table, tail) = @trivia.associate(trivia_ctx, only => {
     @printer.run_discard(p => {
       let dry = Ctx::new(p, trivia=@trivia.Table::empty(), collect=Some(only))
       dry.module_(m, [])
     })
   })
-  run_string(p => {
+  lay(p => {
     let ctx = Ctx::new(p, trivia=table, theme~)
     ctx.module_(m, tail)
   })

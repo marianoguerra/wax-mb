@@ -1,0 +1,12 @@
+import {
+  "waxmb/wax/grammar",
+  "waxmb/wax/output",
+  "waxmb/wax/printer",
+  "waxmb/wax/printer_pp",
+  "moonbitlang/x/fs",
+  "moonbitlang/core/env",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/string",
+}
+
+pkgtype(kind: "executable")
