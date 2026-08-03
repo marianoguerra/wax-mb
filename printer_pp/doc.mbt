@@ -31,12 +31,15 @@
 /// what the `@pp` combinators need, and rebuilding it is the only thing the
 /// streaming engine never has to do.
 priv enum Node {
-  /// A literal. The token's measured width is dropped: `@pp` measures its own
-  /// text, and cannot be told otherwise. See README, "Width is UTF-16 units".
-  Text(String)
+  /// A literal, at the display width the builder measured it at. The width is
+  /// carried rather than recomputed because it is not the string's length: a
+  /// colour escape occupies no columns, and a CJK character occupies two.
+  Text(Int, String)
   Brk(@printer.BreakStrength)
-  /// A group and its body.
-  Group(@printer.GKind, Array[Node])
+  /// A group: its kind, an identity, and its body. The identity is what lets
+  /// the lowering memoise a group it reaches twice -- which it does whenever an
+  /// enclosing group has to be built both flat and broken.
+  Group(@printer.GKind, Int, Array[Node])
   /// Break-indentation, relative to the enclosing group's base column.
   Nest(Int, Array[Node])
   /// Body emitted only when the enclosing group is laid out broken.
@@ -68,6 +71,7 @@ priv enum Scope {
 /// `TEnd` handler refuses to pop the outermost frame.
 fn tree(tokens : Array[@printer.Token]) -> Array[Node] {
   let stack : Array[Level] = [{ scope: SRoot, items: [] }]
+  let mut next_id = 0
   fn top() {
     stack[stack.length() - 1]
   }
@@ -82,7 +86,10 @@ fn tree(tokens : Array[@printer.Token]) -> Array[Node] {
     }
     let lv = stack.unsafe_pop()
     let node = match lv.scope {
-      SGroup(k) => Group(k, lv.items)
+      SGroup(k) => {
+        next_id += 1
+        Group(k, next_id, lv.items)
+      }
       SNest(n) => Nest(n, lv.items)
       SIfBroken => IfBroken(lv.items)
       SRoot => Nop
@@ -92,7 +99,7 @@ fn tree(tokens : Array[@printer.Token]) -> Array[Node] {
 
   for tok in tokens {
     match tok {
-      TText(_, s) => top().items.push(Text(s))
+      TText(w, s) => top().items.push(Text(w, s))
       TBreak(s) => top().items.push(Brk(s))
       TBegin(k) => open(SGroup(k))
       TNest(n) => open(SNest(n))
@@ -180,7 +187,7 @@ priv struct Pruner {
 fn Pruner::walk(self : Pruner, items : Array[Node]) -> Unit {
   for i, n in items {
     match n {
-      Text(_) => {
+      Text(_, _) => {
         self.settle()
         self.seen_text = true
       }
@@ -202,7 +209,7 @@ fn Pruner::walk(self : Pruner, items : Array[Node]) -> Unit {
         self.walk(body)
         self.nd -= n
       }
-      Group(_, body) => {
+      Group(_, _, body) => {
         let (fb, nd) = (self.fb, self.nd)
         if self.run.length() > 0 {
           // Opened mid-run: the engine bases it on the pending indent, not on
@@ -254,7 +261,7 @@ fn Pruner::settle(self : Pruner) -> Unit {
       if j == 0 {
         Brk(self.strength)
       } else if j == last && self.delta > 0 {
-        Text(spaces(self.delta))
+        Text(self.delta, spaces(self.delta))
       } else {
         Nop
       }

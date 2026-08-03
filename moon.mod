@@ -5,7 +5,7 @@ version = "0.0.1"
 import {
   "moonbitlang/x@0.4.47",
   "moonbitlang/async@0.20.3",
-  "marianoguerra/pretty-fast-pretty-printer@0.1.0",
+  "marianoguerra/pretty-fast-pretty-printer@0.2.0",
 }
 
 readme = "README.md"

@@ -6,8 +6,8 @@ reference OCaml because byte-exact output is this project's whole point.
 what would a general-purpose library have done instead?
 
 The library is
-[marianoguerra/pretty-fast-pretty-printer](https://mooncakes.io/docs/marianoguerra/pretty-fast-pretty-printer@0.1.0),
-the MoonBit port of Brown PLT's `pretty-fast-pretty-printer`. It builds an
+[marianoguerra/pretty-fast-pretty-printer](https://mooncakes.io/docs/marianoguerra/pretty-fast-pretty-printer@0.2.0)
+0.2.0, the MoonBit port of Brown PLT's `pretty-fast-pretty-printer`. It builds an
 immutable `Doc` from four combinators — `txt`, `horz`, `vert`, `if_flat` — and
 picks a layout in one left-to-right pass.
 
@@ -33,81 +33,74 @@ just ppdiff
 ```
 files scanned:   2114
 modules parsed:  1903
-identical:       1871
-differing:       32
-agreement:       98%
+identical:       1901
+differing:       2
+agreement:       99%
 
-  overflow (fit decision ignores trailing context): 30
+  overflow (fit decision ignores trailing context): 0
   indent   (no max_indent cap):                     2
   other:                                            0
 ```
 
-1871 of 1903 modules come out **byte for byte identical**. Every one of the 32
-that do not is one of the two differences below, both of which follow from the
-library's model rather than from a mistake in the lowering. Nothing lands in
-`other`, and if a change ever puts something there, that is a bug in this
-package.
+1901 of 1903 modules come out **byte for byte identical**. The two that do not
+are the same difference, and it is the only one left.
 
-## The two differences
-
-### 1. A fit decision ignores what follows the group
-
-`if_flat(flat, broken)` takes `flat` when `column + flat.flat_width <= width`.
-It weighs the group and nothing else, because that precomputed width is exactly
-what makes the algorithm linear.
-
-The streaming engine asks a different question. Its scan runs *past* the end of
-the group, on to the next break that would end the line, so the closing `)`s and
-the trailing `;` that follow the group count against it:
-
-```moonbit
-p.hvbox(() => {
-  p.string("f(")
-  p.hvbox(() => { p.string("aaaa"); p.space(); p.string("bbbb") })
-  p.string("))")
-})
-```
-
-At width 12 `printer` breaks the inner box, because `aaaa bbbb))` is 11 columns
-after `f(`. `printer_pp` weighs `aaaa bbbb` alone, finds 9 columns, and keeps the
-line — 13 columns wide:
-
-```
-printer                 printer_pp
-f(aaaa                  f(aaaa bbbb))
-  bbbb))
-```
-
-This accounts for 30 of the 32 divergences, and in every one of them
-`printer_pp` is the one that overruns. There is no way to express it in the
-library's API: it would need a "measure this, but render that", and `if_flat`
-deliberately has no such thing.
-
-### 2. Indentation is not capped
+## The difference that remains: indentation is not capped
 
 `printer` clamps every break indent to `width - 10`, so deeply nested code stops
 marching toward the right margin. That clamp needs a column, and a `Doc` has no
-columns until it is rendered: indentation there is a consequence of `horz` and
-`vert`, decided during the render pass, not a number the builder ever holds.
+columns until it is rendered: indentation there is a consequence of `horz`,
+`vert` and `nest`, decided during the render pass, not a number the builder ever
+holds.
 
-At the `wasm-test-suite` block/loop tests — sixteen nested `do { ... }` — the
-reference stacks everything at column 90 while `printer_pp` keeps indenting by
-four and eventually breaks `do` away from its `{`. That is the whole of the
-`indent` category, 2 files.
+At the `wasm-test-suite` block and loop tests — sixteen nested `do { ... }` —
+the reference stacks everything at column 90 while `printer_pp` keeps indenting
+by four and eventually breaks `do` away from its `{`. Closing it would take a
+`max_indent` render option in the library; nothing expressible in a document can
+do it.
 
-## Two more, not visible in the corpus
+## What it took to get here
 
-**Width is UTF-16 units.** `@pp` measures `txt` with `String::length`, and takes
-no width hint. `printer` measures display width, so six CJK characters occupy
-twelve columns there and six here, and `string_as` — which the colour themes use
-to declare that an escape sequence occupies no columns — cannot be honoured at
-all. The corpus is ASCII and `-f wax` is uncoloured, so neither shows up in the
-numbers above; both are pinned as tests.
+The first version of this package, against library 0.1.0, differed on 32 files.
+Four of the five things that closed the gap are 0.2.0 API added in response to
+this port; the fifth is a quirk of the reference that had to be modelled
+deliberately.
 
-**Multi-line literals.** A block comment's content arrives as one `TText`
-containing newlines. `printer` writes it through verbatim; `@pp.txt` rejects a
-newline outright, so this package uses `txt_lines`, which stacks the lines with
-`vert` and therefore re-indents the continuation lines to the ambient indent.
+**`if_flat`'s `reserve` — 30 files.** `if_flat` weighs its flat branch against
+the space left on the line. The engine instead scans the token stream *past* the
+end of the group, to the next break that would end the line, so the closing
+`)`s and the trailing `;` count against it. `reserve` is how a caller states
+that trailing width. Computing it is what `suffix` and `after` do in
+`lower.mbt`: the rest of the group's own segment, plus — recursively — what the
+enclosing body still has to fit, which is nothing at all unless the group ends
+it, because in a breaking mode the scan stops at the very next break.
+
+**`txt_as` — width.** `txt` measures UTF-16 code units. The builder measures
+display width, so a CJK character is two columns and a colour escape is none.
+The token stream carries the builder's number and `txt_as` states it, which is
+why a coloured render now breaks in exactly the same places as an uncoloured
+one.
+
+**`txt_raw` — block comments.** A comment's content arrives as one `TText` with
+newlines in it. The engine writes it through verbatim; `txt_lines` would stack
+the lines with `vert` and re-indent the continuations.
+
+**`Doc::flat_width` and `nest`.** The first replaced a parallel
+re-implementation of the width the library already caches. The second models the
+`eff_col` quirk below without moving the line the group starts on.
+
+**If-broken content is rendered but never measured.** The engine's scan drops
+the whole `TIfBroken` subtree, so the trailing comma a list grows when it breaks
+must not be what tips it into breaking. Atoms carry a `hidden` flag for it.
+
+**A flat `cut` still costs a column.** `eff_col` adds one for *any* pending flat
+separator, while only `flush` looks at the strength — so a `cut`, which prints
+nothing, still moves the base of a group opening right after it. That base
+decides both the fit test and the indent, so it is a `reserve` of one plus a
+`nest` of one. It is worth being precise about the scope: the shift applies to
+that one group and does not accumulate down the nesting, because the engine
+bases every group on the real column it prints at. Propagating it was worth
+seven files in the wrong direction before that was fixed.
 
 ## How the lowering works
 
@@ -121,9 +114,7 @@ Three passes, in `doc.mbt` and `lower.mbt`:
    state, so it has to be done explicitly.
 3. **`lay`** lowers to a `Doc`.
 
-Two things in that lowering are worth knowing, because both are places the two
-models genuinely disagree and the disagreement had to be resolved rather than
-papered over.
+Three things in that lowering are worth knowing.
 
 ### Where a collapsed run lands
 
@@ -136,22 +127,35 @@ part-way through the run takes its base from `eff_col`, which reports the
 `Pruner::settle` therefore keeps the last break when no group opened during the
 run — exact, since every frame still open was opened before the run and sits at
 the column `@pp` will render it at — and keeps the first, paying the indent
-difference in literal spaces, when one did. Getting this wrong is expensive:
-against the 32 files the rule above leaves, keeping the first unconditionally
-leaves 66 and keeping the last unconditionally leaves 215.
+difference in literal spaces, when one did.
+
+Keeping the first unconditionally costs 202 files. Keeping the last
+unconditionally costs none — this corpus never opens a group inside a run — but
+it is wrong all the same, by one column per nested indent, and
+`printer_pp_test.mbt` pins the shape that shows it.
 
 ### Indentation has to be spelled out
 
-`@pp` has no indent operator. A group is joined to its left sibling with `horz`,
-which is what rebases it to the column it opens at — the engine's `eff_col`
-semantics, for free. Everything else is joined with `concat`, which leaves the
-ambient indent alone, so a body's own breaks return to the group's base. A
-`TNest` then has to be paid for in literal spaces written after each break
-inside it.
+A group is joined to its left sibling with `horz2`, which is what rebases it to
+the column it opens at — the engine's `eff_col` semantics, for free. Everything
+else is joined with `concat2`, which leaves the ambient indent alone, so a
+body's own breaks return to the group's base. A `TNest` is then paid for in
+literal spaces written after each break inside it: `nest` wraps a whole
+document, and a nest has to interleave with the body's own breaks.
+
+### Both branches, built once
+
+A group the engine keeps on one line still resolves the groups *inside* it one
+at a time, and one of them can break anyway — so the flat branch of an `if_flat`
+is the body laid out in Flat *mode*, not the body flattened outright. That means
+every `GHv` materialises its body twice, and a document nested `d` groups deep
+would cost `2^d`. `Memo` keys a built document on the group's identity, the mode
+and the reserve, which turns the tree back into a DAG; the corpus run is about
+ten seconds either way.
 
 ## Cost
 
-The dependency is a real one: `waxmb/wax` now pulls in
+The dependency is a real one: `waxmb/wax` pulls in
 `marianoguerra/pretty-fast-pretty-printer` for every consumer, to support a
-package the formatter does not use. `printer` remains the engine `@output.render`
-and the CLI go through; nothing in the shipped path changed.
+package the formatter does not use. `printer` remains the engine
+`@output.render` and the CLI go through; nothing in the shipped path changed.

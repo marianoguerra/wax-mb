@@ -74,13 +74,13 @@ is the point: it shows exactly what upstream's behaviour change was.
 ## The second layout engine
 
 `printer_pp` lays the same documents out with
-[marianoguerra/pretty-fast-pretty-printer](https://mooncakes.io/docs/marianoguerra/pretty-fast-pretty-printer@0.1.0)
+[marianoguerra/pretty-fast-pretty-printer](https://mooncakes.io/docs/marianoguerra/pretty-fast-pretty-printer@0.2.0)
 instead of the engine ported from `printer.ml`. Only the layout is swapped: both
 are driven by the same `@printer.Printer`, whose token stream is
 engine-independent, so `just ppdiff` compares them on the same document over the
-same corpus. 1871 of 1903 modules come out identical; the 32 that do not are two
-known consequences of the library's model, spelled out in
-`printer_pp/README.md`.
+same corpus. 1901 of 1903 modules come out identical; the 2 that do not are the
+one thing a `Doc` cannot express -- the reference's `max_indent` cap -- and
+`printer_pp/README.md` says why, along with what closed the rest.
 
 It is a **measurement, not a gate**, and it is not in the shipped path:
 `@output.render`, the CLI and all three oracles go through `printer`. Nothing

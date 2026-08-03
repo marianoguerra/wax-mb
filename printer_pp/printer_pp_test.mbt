@@ -316,10 +316,10 @@ test "with_held_eol lets a separator precede the comment" {
 }
 
 ///|
-test "width is UTF-16 units, so wide characters wrap LATER" {
-  // The reference engine measures display width: six CJK characters occupy
-  // twelve columns, so at width 14 the pair does not fit. `@pp` measures the
-  // string, and cannot be told otherwise, so it counts six. See README.
+test "width is DISPLAY width, so wide characters wrap sooner" {
+  // Six CJK characters occupy twelve columns, not six. `@pp` would count UTF-16
+  // units; `txt_as` states the width the BUILDER measured instead, so both
+  // engines break in the same place.
   let build = fn(p : @printer.Printer) {
     p.hvbox(() => {
       p.string("世界世界世界")
@@ -328,21 +328,41 @@ test "width is UTF-16 units, so wide characters wrap LATER" {
     })
   }
   inspect(lay(80, build), content="世界世界世界 !!")
-  inspect(lay(14, build), content="世界世界世界 !!")
   inspect(
-    ref_lay(14, build),
+    lay(14, build),
     content=(
       #|世界世界世界
       #|!!
     ),
   )
+  assert_eq(lay(14, build), ref_lay(14, build))
 }
 
 ///|
-test "a fit decision ignores what follows the group" {
+test "a zero-width span does not move the margin" {
+  // What `string_as` is for: a colour escape occupies no columns, so colouring
+  // must never change where a line breaks. Measured by its encoded length it
+  // would, and at width 12 this is exactly the difference between fitting and
+  // not.
+  let build = fn(p : @printer.Printer) {
+    p.hvbox(() => {
+      p.string_as(0, "\u{1b}[31m")
+      p.string("aaaa")
+      p.string_as(0, "\u{1b}[0m")
+      p.space()
+      p.string("bbbb")
+    })
+  }
+  inspect(lay(12, build), content="\u{1b}[31maaaa\u{1b}[0m bbbb")
+  assert_eq(lay(12, build), ref_lay(12, build))
+}
+
+///|
+test "a fit decision counts what follows the group" {
   // The reference engine's scan runs PAST the end of the group, to the next
   // break that would end the line, so the trailing `))` counts against the
-  // hvbox. `if_flat` weighs the group alone, so here it just fits. See README.
+  // inner hvbox. `if_flat` weighs its flat branch alone; `reserve` is how the
+  // trailing width is handed to it.
   let build = fn(p : @printer.Printer) {
     p.hvbox(() => {
       p.string("f(")
@@ -354,14 +374,76 @@ test "a fit decision ignores what follows the group" {
       p.string("))")
     })
   }
-  inspect(lay(12, build), content="f(aaaa bbbb))")
   inspect(
-    ref_lay(12, build),
+    lay(12, build),
     content=(
       #|f(aaaa
       #|  bbbb))
     ),
   )
+  assert_eq(lay(12, build), ref_lay(12, build))
+}
+
+///|
+test "a flat cut still costs a column when a group is based on it" {
+  // `eff_col` adds one for ANY pending flat separator, while only `flush` looks
+  // at the strength -- so a `cut` that prints nothing still moves the base of a
+  // group opening right after it, both for the fit test and for the indent.
+  //
+  // Here that one column is the whole decision: the body plus its `)` is 18
+  // wide and the line has 18 left, so without the cut's phantom column the box
+  // would stay flat. `@pp.nest(1, ...)` is what reproduces it.
+  let build = fn(p : @printer.Printer) {
+    p.hvbox(() => {
+      p.string("f(")
+      p.cut()
+      p.hvbox(indent=2, () => {
+        p.string("aaaaaaaa")
+        p.space()
+        p.string("bbbbbbbb")
+      })
+      p.string(")")
+    })
+  }
+  inspect(
+    lay(20, build),
+    content=(
+      #|f(aaaaaaaa
+      #|     bbbbbbbb)
+    ),
+  )
+  assert_eq(lay(20, build), ref_lay(20, build))
+  // One column wider and it fits, in both engines.
+  inspect(lay(21, build), content="f(aaaaaaaa bbbbbbbb)")
+  assert_eq(lay(21, build), ref_lay(21, build))
+}
+
+///|
+test "a run of breaks that opens a group lands at the last break's indent" {
+  // The engine collapses a run of breaks by accident: a break only sets
+  // `pend_line`, so nothing is written until the next TEXT flushes it. What
+  // survives is the LAST break's indent -- but the v-box between the two breaks
+  // takes its base from `eff_col`, which reports the FIRST break's, so the
+  // second indents four from zero rather than four from one.
+  //
+  // Keeping the last break alone would give five. The corpus never builds this
+  // shape, which is the reason to pin it here.
+  let build = fn(p : @printer.Printer) {
+    p.string("a")
+    p.newline()
+    p.vbox(indent=4, () => {
+      p.newline()
+      p.string("x")
+    })
+  }
+  inspect(
+    lay(40, build),
+    content=(
+      #|a
+      #|    x
+    ),
+  )
+  assert_eq(lay(40, build), ref_lay(40, build))
 }
 
 ///|
