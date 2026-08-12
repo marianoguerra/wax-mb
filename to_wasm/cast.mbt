@@ -96,3 +96,38 @@ pub fn signed_cast(
     _ => None
   }
 }
+
+///|
+/// Whether a heap type belongs to the `extern` hierarchy.
+pub fn is_extern_hierarchy(h : @wasm_types.HeapType[Int]) -> Bool {
+  h is (Extern | NoExtern)
+}
+
+///|
+/// Whether a heap type belongs to the `any` hierarchy.
+pub fn is_any_hierarchy(h : @wasm_types.HeapType[Int]) -> Bool {
+  match h {
+    Any | Eq | I31 | Struct | Array | None_ | Type(_) | Exact(_) => true
+    _ => false
+  }
+}
+
+///|
+/// The instruction that crosses between the `any` and `extern` hierarchies.
+///
+/// `e as &extern` is NOT a `ref.cast`. The two hierarchies share no value, so a
+/// cast between them could only ever trap -- what the source means is the
+/// lossless conversion, which never fails and is a different opcode. Reading it
+/// as a cast produces a module that validates and traps on every call.
+pub fn hierarchy_conversion(
+  from : @wasm_types.HeapType[Int],
+  to : @wasm_types.HeapType[Int],
+) -> @wasm_bin.Instruction? {
+  if is_any_hierarchy(from) && is_extern_hierarchy(to) {
+    Some(ExternConvertAny)
+  } else if is_extern_hierarchy(from) && is_any_hierarchy(to) {
+    Some(AnyConvertExtern)
+  } else {
+    None
+  }
+}

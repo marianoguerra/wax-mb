@@ -733,7 +733,14 @@ def _ladder(rel: str, got: bytes, want_sha: str, out: Outcome) -> bool:
         return False
 
     # T0 -- is it a wasm module at all?
-    valid = _wasm_tools("validate", "-", stdin=got)
+    #
+    # Every proposal is enabled. The corpus is full of modules that use GC,
+    # stack switching, custom page sizes and custom descriptors, and the
+    # reference compiles them happily -- so validating against the validator's
+    # conservative defaults would report OUR bytes as broken for using features
+    # the source declared. T0 asks "is this a wasm module", not "is this a wasm
+    # module a 2019 engine would take".
+    valid = _wasm_tools("validate", "--features", "all", "-", stdin=got)
     if valid.code != 0:
         detail.append("T0 invalid: " + valid.err.decode("utf-8", "replace")[:400])
         out.failures.append(Failure(rel, "wasm", "\n".join(detail)))

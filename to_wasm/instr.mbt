@@ -176,9 +176,11 @@ pub fn Lowering::instr(
       out.push(If(self.block_type(typ, loc), then_, else_))
     }
     Call(callee, args) => {
-      for a in args {
-        self.instr(out, a)
-      }
+      // The special forms come FIRST and emit their own operands, because they
+      // do not all take them in written order and some of the arguments are
+      // immediates rather than values. Only the ordinary call falls through to
+      // the plain left-to-right walk below.
+      //
       // A memory access: the receiver names the memory, and the labelled
       // immediates among the arguments are the memarg.
       if callee.desc is StructGet(recv, meth) && recv.desc is Get(memname) {
@@ -211,6 +213,9 @@ pub fn Lowering::instr(
         if self.mgmt_call(out, rname, meth, args, loc) {
           return
         }
+      }
+      for a in args {
+        self.instr(out, a)
       }
       guard callee.desc is Get(name) else {
         // Named precisely, because these are three different jobs wearing one
@@ -247,8 +252,15 @@ pub fn Lowering::instr(
             raise Unresolved("cast target type", loc)
           }
           match to {
-            // A reference target is a run-time check, not a conversion.
-            Ref(r) => out.push(RefCast(r))
+            Ref(r) =>
+              // Crossing between the `any` and `extern` hierarchies is a
+              // CONVERSION, not a check: the two share no value, so a cast
+              // between them could only trap, and what the source means is the
+              // lossless form.
+              match (from, hierarchy_conversion_of(from, r.typ)) {
+                (_, Some(conv)) => out.push(conv)
+                _ => out.push(RefCast(r))
+              }
             _ => {
               guard numeric_cast(from, to) is Some(instrs) else {
                 raise NotLowered("cast between these types", loc)
@@ -622,4 +634,14 @@ fn Lowering::mgmt_call(
     _ => return false
   }
   true
+}
+
+///|
+/// The hierarchy conversion between a value type and a target heap type.
+fn hierarchy_conversion_of(
+  from : @wasm_types.ValType[Int],
+  to : @wasm_types.HeapType[Int],
+) -> @wasm_bin.Instruction? {
+  guard from is Ref(r) else { return None }
+  hierarchy_conversion(r.typ, to)
 }

@@ -18,6 +18,12 @@ pub fn binop_instruction(@ast.BinOp, @wasm_types.ValType[Int]) -> @wasm_bin.Inst
 
 pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> String
 
+pub fn hierarchy_conversion(@wasm_types.HeapType[Int], @wasm_types.HeapType[Int]) -> @wasm_bin.Instruction?
+
+pub fn is_any_hierarchy(@wasm_types.HeapType[Int]) -> Bool
+
+pub fn is_extern_hierarchy(@wasm_types.HeapType[Int]) -> Bool
+
 pub fn is_packed(@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) -> Bool
 
 pub fn load_instruction(String, Int, Int, Int64, (@ast.NumType, @wasm_types.Signage)?) -> @wasm_bin.Instruction?

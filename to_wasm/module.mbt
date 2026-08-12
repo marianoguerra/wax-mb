@@ -38,6 +38,32 @@ pub fn lower_module(
     labels: [],
     source_types: source_type_index(ctx),
   }
+  // Imports come from the SOURCE, because the checker resolves them into its
+  // tables and drops them from the typed output -- and they are exactly what
+  // cannot be skipped, since each one starts an index space. Emitted first, in
+  // written order, which is the order their indices were assigned in.
+  let mut failure : LowerError? = None
+  @typing.walk_fields(ctx, source, field => {
+    if failure is Some(_) {
+      return
+    }
+    try {
+      match field.desc {
+        Import(module_~, decl~) =>
+          low.import_(m, module_.desc, decl.desc, field.info)
+        ImportGroup(module_~, decls~) =>
+          for d in decls {
+            low.import_(m, module_.desc, d.desc, field.info)
+          }
+        _ => ()
+      }
+    } catch {
+      e => failure = Some(e)
+    }
+  })
+  if failure is Some(e) {
+    raise e
+  }
   for field in typed {
     low.field(m, field)
   }
@@ -307,6 +333,79 @@ fn Lowering::global_index(
   match self.indices.globals.get(name.name) {
     Some(i) => i
     None => raise Unresolved("global index", loc)
+  }
+}
+
+///|
+/// One imported declaration.
+///
+/// The import section is where an index space STARTS, so an import that is not
+/// emitted does not merely go missing -- it shifts every definition after it,
+/// and a `call` compiled against the wax numbering then names the wrong
+/// function. Nothing here is optional for that reason.
+fn Lowering::import_(
+  self : Lowering,
+  m : @wasm_bin.Module,
+  module_ : Bytes,
+  decl : @ast.ImportDecl,
+  loc : @basic.Location,
+) -> Unit raise LowerError {
+  // The import's own name in the other module: `#[import = "nm"]` overrides it,
+  // and otherwise it is the name this module knows it by.
+  let mut name = utf8_of(decl.id.name)
+  for a in decl.attributes {
+    if a.attr_name == "import" && a.attr_value is Some(v) && v.desc is Str(_, b) {
+      name = b
+    }
+  }
+  let desc : @wasm_bin.ImportDesc = match decl.kind {
+    Func(..) => {
+      guard self.ctx.functions.find_no_mark(decl.id.name) is Some(Some(entry)) else {
+        raise Unresolved("imported function signature", loc)
+      }
+      Func(entry.0.to_int_for_tests_only())
+    }
+    Global(mut_~, typ~) => Global({ mut_, typ: self.valtype_index(typ, loc) })
+    Memory(address_type~, limits~, page_size_log2~, shared~) => {
+      let (mi, ma) = limits.unwrap_or((0UL, None))
+      Memory({ limits: { mi, ma, address_type, page_size_log2, shared } })
+    }
+    Table(address_type~, reftype~, limits~) => {
+      let (mi, ma) = limits.unwrap_or((0UL, None))
+      Table({
+        elem_type: self.reftype_index(reftype, loc),
+        limits: { mi, ma, address_type, page_size_log2: None, shared: false },
+      })
+    }
+    Tag(..) => raise NotLowered("imported tag", loc)
+  }
+  m.imports.push({ mod_name: module_, name, desc })
+  // An import may be re-exported, and then it is exported under the name THIS
+  // module gave it rather than the one it was imported as.
+  let export_desc : @wasm_bin.ExportDesc = match decl.kind {
+    Func(..) => Func(self.func_index(decl.id, loc))
+    Global(..) => Global(self.global_index(decl.id, loc))
+    Memory(..) => Memory(self.memory_index(decl.id, loc))
+    Table(..) => Table(self.table_index(decl.id, loc))
+    Tag(..) => raise NotLowered("imported tag", loc)
+  }
+  self.export_of(m, decl.attributes, export_desc, decl.id)
+}
+
+///|
+/// A source value type with its type names resolved to indices.
+fn Lowering::valtype_index(
+  self : Lowering,
+  v : @wasm_types.ValType[@ast.Ident],
+  loc : @basic.Location,
+) -> @wasm_types.ValType[Int] raise LowerError {
+  match v {
+    I32 => I32
+    I64 => I64
+    F32 => F32
+    F64 => F64
+    V128 => V128
+    Ref(r) => Ref(self.reftype_index(r, loc))
   }
 }
 
