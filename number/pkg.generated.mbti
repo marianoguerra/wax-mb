@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/number"
+
+// Values
+pub fn float32_bits(String) -> Int?
+
+pub fn float64_bits(String) -> Int64?
+
+pub fn is_float32(String) -> Bool
+
+pub fn is_float64(String) -> Bool
+
+pub fn is_int16(String) -> Bool
+
+pub fn is_int32(String) -> Bool
+
+pub fn is_int64(String) -> Bool
+
+pub fn is_int8(String) -> Bool
+
+pub fn parse_double(String) -> Double?
+
+pub fn parse_int32(String) -> Int?
+
+pub fn parse_int64(String) -> Int64?
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

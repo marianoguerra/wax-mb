@@ -1,0 +1,9 @@
+import {
+  "moonbitlang/core/double",
+  "moonbitlang/core/bigint",
+  "moonbitlang/core/string",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
