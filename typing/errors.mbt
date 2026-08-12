@@ -290,3 +290,22 @@ pub fn not_assignable(
     @message.ident(name).sep(@message.text("cannot be assigned.")),
   )
 }
+
+///|
+/// An operator applied to operands it has no meaning for.
+pub fn binop_type_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  ty1 : @infer.Cell[@infer.InferredType],
+  ty2 : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This operator cannot be applied to operands of types")
+    .sep(@message.type_(@infer.to_string(ty1)))
+    .sep(@message.text("and"))
+    .sep(@message.type_(@infer.to_string(ty2)))
+    .seq(@message.text(".")),
+  )
+}

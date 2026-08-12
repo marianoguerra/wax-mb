@@ -1442,3 +1442,128 @@ test "internalize keeps the name and the index" {
   guard! v.internal is Ref({ typ: Type(id), .. })
   inspect(id.to_int_for_tests_only(), content="0")
 }
+
+///|
+/// An operator is the commonest way a literal acquires a width, because `x + 1`
+/// says what `1` is the moment `x` is known. So the assertion is again what the
+/// cells hold afterwards.
+test "integer operators" {
+  fn op(a : @infer.InferredType, b : @infer.InferredType) -> String {
+    let ctx = module_ctx()
+    let c1 = @infer.Cell::make(a)
+    let c2 = @infer.Cell::make(b)
+    let _ = @typing.check_int_bin_op(ctx.diagnostics, loc_at(0, 1), c1, c2)
+    if ctx.diagnostics.collected().length() > 0 {
+      "rejected"
+    } else {
+      "\{@infer.to_string(c1)} \{@infer.to_string(c2)}"
+    }
+  }
+
+  let i32 : @infer.InferredType = Valtype(@infer.i32_valtype)
+  let i64 : @infer.InferredType = Valtype(@infer.i64_valtype)
+  let f64 : @infer.InferredType = Valtype(@infer.f64_valtype)
+  // A concrete operand pins the literal to its width.
+  inspect(op(i32, Number), content="i32 i32")
+  inspect(op(Number, i64), content="i64 i64")
+  // Two flexible operands become INT rather than staying Number: the operator
+  // has committed them to being integers without saying which width.
+  inspect(op(Number, Number), content="int int")
+  // A large literal is pinned to i64 outright -- it cannot be i32, and an
+  // integer operator's result cannot be a float, so nothing else is left.
+  inspect(op(LargeInt, Number), content="i64 i64")
+  inspect(op(LargeInt, LargeInt), content="i64 i64")
+  inspect(op(LargeInt, i64), content="i64 i64")
+  // Floats have no business here.
+  inspect(op(i32, f64), content="rejected")
+  inspect(op(Float, Number), content="rejected")
+  inspect(op(i32, i64), content="rejected")
+}
+
+///|
+/// A float operator takes a large literal without complaint: it has already
+/// ruled out every integer reading, so there is nothing to object to.
+test "float operators" {
+  fn op(a : @infer.InferredType, b : @infer.InferredType) -> String {
+    let ctx = module_ctx()
+    let c1 = @infer.Cell::make(a)
+    let c2 = @infer.Cell::make(b)
+    let _ = @typing.check_float_bin_op(ctx.diagnostics, loc_at(0, 1), c1, c2)
+    if ctx.diagnostics.collected().length() > 0 {
+      "rejected"
+    } else {
+      "\{@infer.to_string(c1)} \{@infer.to_string(c2)}"
+    }
+  }
+
+  let f32 : @infer.InferredType = Valtype(@infer.f32_valtype)
+  let f64 : @infer.InferredType = Valtype(@infer.f64_valtype)
+  let i32 : @infer.InferredType = Valtype(@infer.i32_valtype)
+  inspect(op(f32, Number), content="f32 f32")
+  inspect(op(Number, f64), content="f64 f64")
+  inspect(op(Number, Number), content="float float")
+  // A large literal is simply a float here.
+  inspect(op(LargeInt, f64), content="f64 f64")
+  inspect(op(LargeInt, Number), content="float float")
+  // Integers have no business here.
+  inspect(op(i32, Number), content="rejected")
+  inspect(op(Int, Number), content="rejected")
+  inspect(op(f32, f64), content="rejected")
+}
+
+///|
+/// The either-group operators, and the case that shows why the three rules are
+/// separate: what an operator has RULED OUT decides whether a large literal
+/// gets pinned.
+test "operators that accept either group" {
+  fn op(a : @infer.InferredType, b : @infer.InferredType) -> String {
+    let ctx = module_ctx()
+    let c1 = @infer.Cell::make(a)
+    let c2 = @infer.Cell::make(b)
+    @typing.check_num_concrete(ctx.diagnostics, loc_at(0, 1), c1, c2)
+    if ctx.diagnostics.collected().length() > 0 {
+      "rejected"
+    } else {
+      "\{@infer.to_string(c1)} \{@infer.to_string(c2)}"
+    }
+  }
+
+  let i32 : @infer.InferredType = Valtype(@infer.i32_valtype)
+  let f64 : @infer.InferredType = Valtype(@infer.f64_valtype)
+  // Two fully flexible operands stay Number: nothing has been ruled out, so the
+  // operator could still resolve either way. The integer rule would have
+  // committed them to `int` here.
+  inspect(op(Number, Number), content="number number")
+  // Either group is reachable.
+  inspect(op(i32, Number), content="i32 i32")
+  inspect(op(f64, Number), content="f64 f64")
+  // A large literal with a COMMITTED integer: the integer cannot be a float and
+  // the literal cannot be i32, so i64 is their only common type.
+  inspect(op(LargeInt, Int), content="i64 i64")
+  // But with another large literal, or a bare number, it stays flexible --
+  // a float is still reachable. This is exactly where this rule and the
+  // integer-only one part company.
+  inspect(op(LargeInt, LargeInt), content="large number large number")
+  inspect(op(LargeInt, Number), content="large number large number")
+  inspect(op(LargeInt, Float), content="float float")
+  // Mixing the groups is still a mistake.
+  inspect(op(i32, f64), content="rejected")
+  inspect(op(Int, Float), content="rejected")
+}
+
+///|
+/// The message names both operand types, because which one is wrong depends on
+/// what the author meant.
+test "the operator mismatch message" {
+  let ctx = module_ctx()
+  @typing.check_num_concrete(
+    ctx.diagnostics,
+    loc_at(4, 9),
+    @infer.valtype_cell(@infer.i32_valtype),
+    @infer.valtype_cell(@infer.f64_valtype),
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="This operator cannot be applied to operands of types 'i32' and 'f64'.",
+  )
+}
