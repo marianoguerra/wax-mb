@@ -162,3 +162,65 @@ pub fn escape_string(s : Bytes, hex_prefix? : String = "") -> (Int, String) {
   let out = buf.to_string()
   (terminal_width(out), out)
 }
+
+///|
+/// The "Trojan Source" bidirectional formatting characters.
+///
+/// Text-direction overrides, embeddings and isolates can reorder how a string
+/// DISPLAYS without changing a byte of it -- so what a reader sees and what runs
+/// are two different things. This is the same set `wasm-tools` rejects in string
+/// literals.
+pub fn is_confusable(c : Int) -> Bool {
+  match c {
+    0x202a
+    | 0x202b
+    | 0x202d
+    | 0x202e
+    | 0x2066
+    | 0x2067
+    | 0x2068
+    | 0x206c
+    | 0x2069 => true
+    _ => false
+  }
+}
+
+///|
+/// The first bidirectional control character in a byte string, if any.
+///
+/// Decoded as UTF-8; a malformed byte cannot be one of these, so the scan simply
+/// steps over it.
+pub fn first_confusable(b : Bytes) -> Int? {
+  let n = b.length()
+  let mut i = 0
+  while i < n {
+    let c = b[i].to_int()
+    let (cp, len) = if c < 0x80 {
+      (c, 1)
+    } else if c >= 0xC2 && c <= 0xDF && i + 1 < n {
+      (((c & 0x1F) << 6) | (b[i + 1].to_int() & 0x3F), 2)
+    } else if c >= 0xE0 && c <= 0xEF && i + 2 < n {
+      (
+        ((c & 0x0F) << 12) |
+        ((b[i + 1].to_int() & 0x3F) << 6) |
+        (b[i + 2].to_int() & 0x3F),
+        3,
+      )
+    } else if c >= 0xF0 && c <= 0xF4 && i + 3 < n {
+      (
+        ((c & 0x07) << 18) |
+        ((b[i + 1].to_int() & 0x3F) << 12) |
+        ((b[i + 2].to_int() & 0x3F) << 6) |
+        (b[i + 3].to_int() & 0x3F),
+        4,
+      )
+    } else {
+      (c, 1)
+    }
+    if is_confusable(cp) {
+      return Some(cp)
+    }
+    i = i + len
+  }
+  None
+}

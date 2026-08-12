@@ -238,6 +238,11 @@ pub fn lint_source(
         go(e)
       }
     }
+    BinOpI(op, e1, e2) => {
+      lint_precedence(ctx, op, e1, e2)
+      go(e1)
+      go(e2)
+    }
     Set(idx, op, e) => {
       // A plain self-assignment `x = x` does nothing. A compound `x op= x` is
       // not redundant -- `x += x` doubles it.
@@ -526,4 +531,135 @@ pub fn flush_deferred_lints(ctx : @typing_env.ModuleContext) -> Unit {
     f()
   }
   ctx.deferred_lints.clear()
+}
+
+///|
+/// The next significant character at or after `i`, skipping trivia.
+///
+/// Whitespace and comments -- line and NESTING block -- because a comment
+/// between an operand and its bracket would otherwise hide the parenthesis and
+/// make the lint fire on code that reads perfectly well.
+fn skip_trivia(src : String, start : Int) -> Int {
+  let n = src.length()
+  let mut i = start
+  while i < n {
+    let c = src[i]
+    if c == 32 || c == 9 || c == 10 || c == 13 {
+      i = i + 1
+    } else if i + 1 < n && c == 47 && src[i + 1] == 47 {
+      // A line comment, to the newline.
+      while i < n && src[i] != 10 {
+        i = i + 1
+      }
+    } else if i + 1 < n && c == 47 && src[i + 1] == 42 {
+      let mut depth = 1
+      let mut j = i + 2
+      while j + 1 < n && depth > 0 {
+        if src[j] == 47 && src[j + 1] == 42 {
+          depth = depth + 1
+          j = j + 2
+        } else if src[j] == 42 && src[j + 1] == 47 {
+          depth = depth - 1
+          j = j + 2
+        } else {
+          j = j + 1
+        }
+      }
+      i = if depth > 0 { n } else { j }
+    } else {
+      return i
+    }
+  }
+  i
+}
+
+///|
+/// Whether an operand was WRITTEN parenthesized.
+///
+/// The grammar erases parentheses -- `1 << (n - 1)` and `1 << n - 1` parse to
+/// the same tree -- so this can only be answered from the source text. Both
+/// sides are found by scanning FORWARD, since a parenthesized operand always has
+/// a bracket downstream: the right operand's `(` follows the operator, the left
+/// operand's `)` follows the operand.
+///
+/// With no source, assume it was: the lint then stays quiet rather than risking
+/// a false positive on text it cannot see.
+fn operand_parenthesized(
+  ctx : @typing_env.ModuleContext,
+  op : @basic.Annotated[@ast.BinOp, @basic.Location],
+  child : @ast.Instr[@basic.Location],
+  right~ : Bool,
+) -> Bool {
+  guard ctx.diagnostics.source is Some(src) else { return true }
+  let from = skip_trivia(
+    src,
+    if right {
+      op.info.end.cnum
+    } else {
+      child.info.end.cnum
+    },
+  )
+  guard from < src.length() else { return false }
+  src[from] == (if right { 40 } else { 41 })
+}
+
+///|
+/// The name of a binary operator's precedence class, for the message.
+fn binop_kind_name(k : @output.BinopKind) -> String {
+  match k {
+    Shift => "shift"
+    Arith => "arithmetic"
+    Bitwise => "bitwise"
+    Comparison => "comparison"
+  }
+}
+
+///|
+/// Report a binary operator whose operand is a tighter-binding operator of a
+/// confusingly-related class, written without disambiguating parentheses.
+///
+/// The classification is the PRINTER's -- it parenthesises exactly these mixes,
+/// so re-printed or decompiled Wax stays quiet under the lint. Sharing the table
+/// is what makes that true rather than merely likely.
+fn lint_precedence(
+  ctx : @typing_env.ModuleContext,
+  op : @basic.Annotated[@ast.BinOp, @basic.Location],
+  e1 : @ast.Instr[@basic.Location],
+  e2 : @ast.Instr[@basic.Location],
+) -> Unit {
+  let outer = @output.binop_kind(op.desc)
+  for side in [(e1, false), (e2, true)] {
+    let (child, right) = side
+    guard child.desc is BinOpI(inner_op, _, _) else { continue }
+    let inner = @output.binop_kind(inner_op.desc)
+    guard @output.confusing_precedence(outer, inner) else { continue }
+    guard !operand_parenthesized(ctx, op, child, right~) else { continue }
+    // The fix parenthesises the tighter-binding sub-expression the lint names.
+    // An edit is one contiguous replacement, so it replaces that span with its
+    // own source slice wrapped in brackets.
+    let edit = match ctx.diagnostics.source {
+      Some(src) => {
+        let s = child.info.start.cnum
+        let e = child.info.end.cnum
+        if 0 <= s && s <= e && e <= src.length() {
+          Some(
+            (
+              { loc: child.info, new_text: "(" + src[s:e].to_owned() + ")" } :
+              @diagnostic.Edit),
+          )
+        } else {
+          None
+        }
+      }
+      None => None
+    }
+    precedence(
+      ctx.diagnostics,
+      op.info,
+      inner_op.info,
+      binop_kind_name(outer),
+      binop_kind_name(inner),
+      edit~,
+    )
+  }
 }

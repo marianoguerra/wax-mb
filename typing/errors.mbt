@@ -1808,3 +1808,66 @@ pub fn division_by_zero(
     universal=true,
   )
 }
+
+///|
+/// A string carrying a bidirectional control character.
+///
+/// These reorder how the text DISPLAYS without changing a byte of it, so what a
+/// reader sees and what runs can differ -- the "Trojan Source" attack.
+pub fn confusable_unicode(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  codepoint : Int,
+) -> Unit {
+  let hex = codepoint.to_string(radix=16).to_upper()
+  let padded = if hex.length() < 4 {
+    "0".repeat(4 - hex.length()) + hex
+  } else {
+    hex
+  }
+  ctx.report(
+    location,
+    Warning,
+    @message.text(
+      "This string contains a bidirectional control character (U+\{padded}) that can make the displayed text read differently than it runs.",
+    ),
+    warning=Some(ConfusableUnicode),
+    universal=true,
+  )
+}
+
+///|
+/// Two operators whose relative precedence is easy to misremember, mixed
+/// without parentheses.
+///
+/// The printer parenthesises exactly these mixes, so re-printed or decompiled
+/// Wax stays quiet under the lint -- which is the property that makes it safe to
+/// have at all.
+pub fn precedence(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  inner : @basic.Location,
+  outer_kind : String,
+  inner_kind : String,
+  edit? : @diagnostic.Edit? = None,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("Operator precedence here is easy to misread."),
+    warning=Some(Precedence),
+    universal=true,
+    related=[
+      {
+        loc: inner,
+        message: @message.text("This")
+        .sep(@message.text(inner_kind))
+        .sep(@message.text("operator binds tighter than the"))
+        .sep(@message.text(outer_kind))
+        .sep(@message.text("operator.")),
+      },
+    ],
+    hint=Some(@message.text("Add parentheses to make the grouping explicit.")),
+    edit~,
+  )
+}

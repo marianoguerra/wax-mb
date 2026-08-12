@@ -1,11 +1,12 @@
 {
   "_comment": [
     "What each corpus bucket is expected to do, per oracle. This is data, not",
-    "code, because the expectations FLIP as the port grows: today there is no",
-    "type checker, so a type-bad file must draw no complaint from us; once the",
-    "checker lands (phase 6+) that same bucket becomes a positive test that must",
-    "reproduce the reference's diagnostics exactly. Switching `scope` is then the",
-    "whole change -- the corpus, the buckets and the goldens all stay as they are.",
+    "code, because the expectations FLIP as the port grows: with no type checker,",
+    "a type-bad file had to draw no complaint from us; with one, that same bucket",
+    "becomes a positive test that must reproduce the reference's diagnostics",
+    "exactly. Switching `scope` was the whole change -- the corpus, the buckets",
+    "and the goldens all stayed exactly as they were. It cost one file: 1945/169",
+    "under `front-end`, 1944/170 under `full`.",
     "",
     "The three buckets are decided by the REFERENCE's own behaviour, never by",
     "ours: `wax f.wax -f wax` re-prints without validating, so its exit status",
@@ -13,7 +14,7 @@
     "line between what this port implements and what it does not."
   ],
 
-  "scope": "front-end",
+  "scope": "full",
 
   "scopes": {
     "front-end": {
@@ -39,7 +40,7 @@
     },
 
     "full": {
-      "_comment": "Reserved for phase 6+, once the type checker is ported. The only change is that type-bad becomes a positive error-parity test and gains a wasm comparison.",
+      "_comment": "In force since the checker and its lints landed. type-bad is a positive error-parity test, and compiles-clean compares warnings too -- so a lint we do not implement is a visible failure rather than a silent gap.",
       "syntax-bad": { "oracle1": "skip", "oracle2": "skip", "oracle3": "match" },
       "compiles-clean": { "oracle1": "match", "oracle2": "match", "oracle3": "match" },
       "type-bad": { "oracle1": "match", "oracle2": "skip", "oracle3": "match" }

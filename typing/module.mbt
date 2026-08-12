@@ -134,6 +134,15 @@ fn check_field(
         attributes,
         label_decls=collect_labels(instrs),
       )
+      // The source-shape lints read what was WRITTEN, so they run over the
+      // original body -- and BEFORE it is typed, because the typing reports as
+      // it goes (dead code, chiefly) and the two streams interleave by the order
+      // they are produced, not by span.
+      if ctx.warn_unused {
+        for s in instrs {
+          lint_source(ctx, s)
+        }
+      }
       // The body runs on its own empty stack and must leave exactly the
       // function's results -- the same rule as any block, with the function's
       // own frame as the target.
@@ -152,14 +161,6 @@ fn check_field(
       // this function, so their diagnostics stay in source order among the rest
       // rather than all landing at the end of the module.
       flush_deferred_lints(ctx)
-      // The source-shape lints read what was WRITTEN, so they run over the
-      // original body rather than the typed one -- and here, so their
-      // diagnostics land in source order among this function's others.
-      if ctx.warn_unused {
-        for s in instrs {
-          lint_source(ctx, s)
-        }
-      }
       warn_unused_in_function(ctx)
       leave_function_scope(ctx)
       Some(Func(name~, typ~, sign~, body=(label, checked), attributes~))
@@ -297,6 +298,12 @@ pub fn check_module(
   // Before anything asks whether a feature is enabled: what the module declares
   // is part of its configuration, not a fact about one of its fields.
   apply_declared_features(diagnostics, features, fields)
+  // Before anything else: a bidirectional control character is invisible, so it
+  // has no shape for a later pass to notice -- only a walk over every place a
+  // string can hide will find one.
+  if warn_unused {
+    lint_confusable(diagnostics, fields)
+  }
   declare_fields(ctx, fields)
   let typed = check_fields(ctx, Operands::new(), fields)
   // Last: what counts as a USE of a module field is what reached it while every

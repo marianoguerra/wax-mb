@@ -14,6 +14,7 @@ import {
   "waxmb/wax/atomics",
   "waxmb/wax/simd",
   "waxmb/wax/unicode",
+  "waxmb/wax/output",
   "moonbitlang/core/ref",
   "moonbitlang/core/string",
 }

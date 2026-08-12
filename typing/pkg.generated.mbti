@@ -104,6 +104,8 @@ pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> 
 
 pub fn conditional_cast_types(@typing_env.ModuleContext, @basic.Location, @infer.Cell[@infer.InferredType], @wasm_types.RefType[@ast.Ident]) -> (@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType])?
 
+pub fn confusable_unicode(@diagnostic.Context, @basic.Location, Int) -> Unit
+
 pub fn constant_condition(@diagnostic.Context, @basic.Location, Bool) -> Unit
 
 pub fn construction_result(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.InferredType]?
@@ -318,6 +320,8 @@ pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.L
 
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
 
+pub fn lint_confusable(@diagnostic.Context, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
+
 pub fn lint_division(@typing_env.ModuleContext, @basic.Annotated[@ast.BinOp, @basic.Location], @ast.Instr[@basic.Location]) -> Unit
 
 pub fn lint_ref_cast(@typing_env.ModuleContext, @basic.Location, is_test~ : Bool, @infer.InferredType, @infer.InferredType, operand_location? : @basic.Location?) -> Unit
@@ -419,6 +423,8 @@ pub fn peel_match(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @ba
 pub fn peel_while(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], stepped~ : Bool, labelled~ : Bool) -> (@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]?, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]])?
 
 pub fn positional_memory_immediate(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn precedence(@diagnostic.Context, @basic.Location, @basic.Location, String, String, edit? : @diagnostic.Edit?) -> Unit
 
 pub fn receiver_is_array_ref(@typing_env.ModuleContext, @ast.Instr[@basic.Location]) -> Bool
 

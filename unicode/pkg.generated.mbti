@@ -8,6 +8,10 @@ pub fn escape_string(Bytes, hex_prefix? : String) -> (Int, String)
 
 pub fn expand_tabs(String, offset? : Int) -> String
 
+pub fn first_confusable(Bytes) -> Int?
+
+pub fn is_confusable(Int) -> Bool
+
 pub fn tab_width(Int) -> Int
 
 pub fn terminal_width(String, offset? : Int) -> Int
