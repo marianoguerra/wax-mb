@@ -121,6 +121,22 @@ fn Lowering::hinted(
       guard node_valtype(a) is Some(ty) else {
         raise Unresolved("operand type", loc)
       }
+      // Reference equality is its own instruction, and there is no `ref.ne`:
+      // `a != b` on references is the negation of `a == b`.
+      if ty is Ref(_) {
+        match op.desc {
+          Eq => {
+            out.push(RefEqInstr)
+            return
+          }
+          Ne => {
+            out.push(RefEqInstr)
+            out.push(I32Eqz)
+            return
+          }
+          _ => ()
+        }
+      }
       guard binop_instruction(op.desc, ty) is Some(instruction) else {
         raise NotLowered("operator at this type", loc)
       }
@@ -769,11 +785,15 @@ fn Lowering::hinted(
       }
       // The checker rebuilt the fields in DECLARED order, which is the order
       // `struct.new` takes them in -- so they are emitted as they stand.
+      //
+      // A field written with no value is the shorthand `{ x }`, which means
+      // the name in scope. It reads that name here rather than being an
+      // omission: `struct.new` takes every field, and there is no hole in it.
       for f in fields {
-        guard f.1 is Some(v) else {
-          raise Unresolved("struct field value", loc)
+        match f.1 {
+          Some(v) => self.instr(out, v)
+          None => out.push(self.read(f.0, loc))
         }
-        self.instr(out, v)
       }
       out.push(StructNew(t))
     }
