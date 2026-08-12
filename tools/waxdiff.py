@@ -875,6 +875,29 @@ SPAN_EXEMPT = {
 }
 
 
+def normalize_file(d: dict) -> dict:
+    """Reduce a diagnostic's `file` to a repo-relative path.
+
+    A diagnostic names the file it is about, and the reference prints whatever
+    path it was handed -- so a golden records the ABSOLUTE path of whatever
+    checkout generated it. Comparing those raw makes the goldens depend on where
+    the repository happens to live, which is exactly the hermeticity the
+    committed corpus exists to provide. What the field is actually asserting is
+    "the diagnostic is about THIS file", and a repo-relative path says that
+    without saying anything else.
+    """
+    f = d.get("file")
+    if not isinstance(f, str):
+        return d
+    # `test/corpus/...` is the only anchor that means anything across checkouts;
+    # a path that does not contain it is left exactly as it is.
+    marker = "test/corpus/"
+    at = f.rfind(marker)
+    if at < 0:
+        return d
+    return {**d, "file": f[at:]}
+
+
 def check_oracle3(
     impl: list[str], rel: str, path: Path, meta: dict, out: Outcome, policy: dict
 ) -> None:
@@ -885,9 +908,10 @@ def check_oracle3(
         return
 
     want_path = GOLDEN / (rel.removesuffix(".wax") + ".diag.jsonl")
-    want = parse_jsonl(want_path.read_text()) if want_path.exists() else []
+    want = [normalize_file(d)
+            for d in (parse_jsonl(want_path.read_text()) if want_path.exists() else [])]
     got_run = impl_run(impl, "check", "--error-format", "json", str(path))
-    got = parse_jsonl(got_run.err.decode("utf-8", "replace"))
+    got = [normalize_file(d) for d in parse_jsonl(got_run.err.decode("utf-8", "replace"))]
 
     if mode == "no-errors":
         # The file parses, so nothing in this port's scope can complain about

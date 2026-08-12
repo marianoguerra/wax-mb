@@ -79,6 +79,50 @@ fn process(
 }
 
 ///|
+/// Type-check one module and render what it reports.
+///
+/// `true` when anything was rejected. The diagnostics are collected rather than
+/// streamed because the checker makes them out of order -- a global initializer
+/// is checked before the function that reads it -- and a report that jumps
+/// backwards through the file is harder to read than one that does not.
+fn check(
+  path : String,
+  src : String,
+  m : @ast.LocModule,
+  opts : Options,
+) -> Bool {
+  let diagnostics = @diagnostic.collector(source=Some(src))
+  let (_, _) = @typing.check_module(
+    diagnostics,
+    @type_store.TypeStore::new(),
+    @feature.default(),
+    m,
+  )
+  ignore(path)
+  let collected = diagnostics.collected()
+  guard !collected.is_empty() else { return false }
+  let theme = @diagnostic.get_theme(
+    color=opts.color,
+    palette=@colors.wax_theme,
+    is_tty=@io.stderr_is_tty(),
+  )
+  let mut rejected = false
+  for d in collected {
+    @diagnostic.output_error(
+      stderr_sink(),
+      theme,
+      opts.error_format,
+      Some(src),
+      d,
+    )
+    if d.severity is Error {
+      rejected = true
+    }
+  }
+  rejected
+}
+
+///|
 /// The formatted form of a parsed module.
 ///
 /// Colour is decided by the OUTPUT destination, not the diagnostic stream: a
@@ -148,7 +192,13 @@ fn run(argv : Array[String]) -> Status {
     }
     match (module_, opts.command) {
       (None, _) => ()
-      (Some(_), Check) => ()
+      (Some(m), Check) =>
+        // A recovered tree is a guess, so checking it would report on
+        // instructions the author never wrote. The syntax errors are the ones
+        // to fix first.
+        if !failed && check(path, src, m, opts) {
+          rejected = true
+        }
       (Some(m), Convert) =>
         match opts.output_path {
           // Writing to stdout, which may be a terminal.
