@@ -756,3 +756,39 @@ pub fn missing_lane_immediate(
     .seq(@message.text(").")),
   )
 }
+
+///|
+/// A qualified intrinsic name used as a value rather than called.
+pub fn intrinsic_not_called(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  ns : String,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The qualified name")
+    .sep(@message.code(ns + "::" + name))
+    .sep(@message.text("can only be used as a function call.")),
+  )
+}
+
+///|
+/// A labelled argument outside a memory access, which is the only place they
+/// mean anything.
+pub fn labelled_argument_not_allowed(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Labelled arguments are only allowed for the")
+    .sep(@message.code("offset").seq(@message.text(",")))
+    .sep(@message.code("align"))
+    .sep(@message.text("and"))
+    .sep(@message.code("lane"))
+    .sep(@message.text("immediates of a memory access.")),
+  )
+}

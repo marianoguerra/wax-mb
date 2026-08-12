@@ -69,6 +69,8 @@ pub fn collected_natural(Array[(@basic.Location?, @infer.Cell[@infer.InferredTyp
 
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
 
+pub fn constructor_name(@ast.InstrDesc[@basic.Location]) -> String
+
 pub fn cont_functype(@type_store.SubtypingInfo, @wasm_types.HeapType[@type_store.Id]) -> @type_store.FuncType[@type_store.Id]?
 
 pub fn[Info] declare_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Unit
@@ -171,6 +173,8 @@ pub fn internalize(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.Val
 
 pub fn internalize_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @infer.InferredValType?
 
+pub fn intrinsic_not_called(@diagnostic.Context, @basic.Location, String, String) -> Unit
+
 pub fn invalid_lane_index(@diagnostic.Context, @basic.Location, Int) -> Unit
 
 pub fn is_defaultable(@wasm_types.ValType[@ast.Ident]) -> Bool
@@ -186,6 +190,8 @@ pub fn join_collected(@diagnostic.Context, @basic.Location, Array[(@basic.Locati
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn label_in_scope(@typing_env.ModuleContext, @ast.Ident) -> Bool
+
+pub fn labelled_argument_not_allowed(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn lane_bound(@simd.Imm) -> Int?
 
@@ -342,6 +348,15 @@ pub fn[A] with_empty_stack(Operands, @diagnostic.Context, @basic.Location, () ->
 // Errors
 
 // Types and methods
+pub struct Checker {
+  ctx : @typing_env.ModuleContext
+  ops : Operands
+  unported : Map[String, Int]
+}
+pub fn Checker::gaps(Self) -> Array[(String, Int)]
+pub fn Checker::new(@typing_env.ModuleContext, Operands) -> Self
+pub fn Checker::statement(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
+
 pub(all) enum MethodCall {
   Atomic(@atomics.Family)
   MemAccess

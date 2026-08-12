@@ -3425,3 +3425,148 @@ test "a lane index must be a literal in range" {
     content="Only integer literals are allowed here.",
   )
 }
+
+///|
+/// The dispatcher's match is TOTAL from the start. An arm with no
+/// implementation yet does not fall through silently -- it recurses into its
+/// children so they are still annotated, and tallies itself under its
+/// constructor name. That tally is the burn-down number for the rest of this
+/// stage, and a silent fallback here would be the vendored encoder's
+/// `_ => 0x00` all over again.
+test "an unwritten arm annotates its children and says so" {
+  let ctx = module_ctx()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // `Select` has no arm yet, but its three operands are literals that do.
+  let checked = checker.statement(
+    instr(Select(instr(Int("1"), 0), instr(Int("2"), 2), instr(Int("3"), 4)), 6),
+  )
+  // The node itself carries no values -- which is the truth, not a guess.
+  inspect(checked.info.0.length(), content="0")
+  // Its children do.
+  guard! checked.desc is Select(a, b, c)
+  inspect(
+    [a, b, c]
+    .map(x => x.info.0.map(t => @infer.to_string(t)).join(","))
+    .join(" | "),
+    content="number | number | number",
+  )
+  // And the gap is named.
+  inspect(
+    checker.gaps().map(g => g.0 + ":" + g.1.to_string()).join(","),
+    content="Select:1",
+  )
+}
+
+///|
+/// The arms that are written: literals, `nop`, `unreachable`, a variable read,
+/// and a sequence whose values are its last statement's.
+test "the dispatcher types what it has arms for" {
+  let ctx = module_ctx()
+  ctx.globals.add(
+    ctx.diagnostics,
+    "g",
+    loc_at(0, 1),
+    (false, Some(@infer.f64_valtype)),
+  )
+  let ops = @typing.Operands::new()
+  let checker = @typing.Checker::new(ctx, ops)
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn typed(d : @ast.InstrDesc[@basic.Location]) -> String {
+    checker.statement(instr(d, 0)).info.0
+    .map(t => @infer.to_string(t))
+    .join(",")
+  }
+
+  inspect(typed(Int("1")), content="number")
+  inspect(typed(Float("1.5")), content="float")
+  inspect(typed(Char('a')), content="i32")
+  inspect(typed(Null), content="null")
+  inspect(typed(Nop), content="")
+  inspect(typed(Get({ name: "g", loc: loc_at(0, 1) })), content="f64")
+  // A sequence takes its last statement's values.
+  inspect(
+    typed(
+      Sequence([
+        instr(Int("1"), 0),
+        instr(Get({ name: "g", loc: loc_at(0, 1) }), 2),
+      ]),
+    ),
+    content="f64",
+  )
+  // `unreachable` leaves nothing, and marks everything after it dead.
+  inspect(typed(Unreachable), content="")
+  inspect(ops.stack is Unreachable, content="true")
+  inspect(checker.gaps().length(), content="0")
+}
+
+///|
+/// A qualified intrinsic name is a call target, not a value, and a labelled
+/// argument means something only in a memory access. Both recover rather than
+/// stopping.
+test "a misplaced name or label is reported and recovered from" {
+  let ctx = module_ctx()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let _ = checker.statement(
+    instr(
+      Path({ name: "atomic", loc: loc_at(0, 6) }, {
+        name: "fence",
+        loc: loc_at(8, 13),
+      }),
+      0,
+    ),
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="The qualified name 'atomic::fence' can only be used as a function call.",
+  )
+  // The label is reported, and the expression it labelled is still typed.
+  let labelled = checker.statement(
+    instr(
+      Labelled({ name: "offset", loc: loc_at(0, 6) }, instr(Int("16"), 8)),
+      0,
+    ),
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[1].message),
+    content="Labelled arguments are only allowed for the 'offset', 'align' and 'lane' immediates of a memory access.",
+  )
+  inspect(
+    labelled.info.0.map(t => @infer.to_string(t)).join(","),
+    content="number",
+  )
+}
