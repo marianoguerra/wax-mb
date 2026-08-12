@@ -2382,3 +2382,121 @@ test "the declaration pass counts memories and honours branches" {
   // Both branches declared `m`, and neither is a duplicate of the other.
   inspect(ctx.memories.visible("m").length(), content="2")
 }
+
+///|
+/// Entering a function: the declared type resolved, the parameters bound and
+/// initialized, the results as cells the `return`s will be checked against.
+test "entering a function establishes its scope" {
+  let ctx = module_ctx()
+  let sig_ : @ast.FuncType = {
+    params: [
+      { desc: (Some(id("n")), I32), info: loc_at(0, 1) },
+      // An unnamed parameter binds nothing -- there is no name to bind.
+      { desc: (None, F64), info: loc_at(2, 3) },
+    ],
+    results: [I64],
+  }
+  let fields : @ast.Module[@basic.Location] = [
+    {
+      desc: Func(name=id("f"), typ=None, sign=Some(sig_), body=(None, []), attributes=[]),
+      info: loc_at(4, 5),
+    },
+  ]
+  @typing.declare_fields(ctx, fields)
+  let returns = @typing.enter_function_scope(ctx, id("f"), Some(sig_), [])
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(returns.map(c => @infer.to_string(c)).join(","), content="i64")
+  inspect(ctx.locals.contains("n"), content="true")
+  inspect(ctx.initialized_locals.contains("n"), content="true")
+  // Two parameters, one of them nameless, so one local.
+  inspect(ctx.locals.length(), content="1")
+  // References made while checking are attributed to the function.
+  inspect(origin_name(ctx.origin.val), content="fn:f")
+  @typing.leave_function_scope(ctx)
+  inspect(origin_name(ctx.origin.val), content="root")
+}
+
+///|
+/// A `#[start]` function is called by the host on instantiation, so there is
+/// nowhere for an argument to come from or a result to go.
+test "a start function takes and returns nothing" {
+  let ctx = module_ctx()
+  let sig_ : @ast.FuncType = {
+    params: [{ desc: (Some(id("n")), I32), info: loc_at(0, 1) }],
+    results: [],
+  }
+  let attrs : Array[@ast.Attribute] = [
+    {
+      attr_name: "start",
+      attr_value: None,
+      attr_guard: None,
+      attr_span: loc_at(6, 7),
+    },
+  ]
+  let fields : @ast.Module[@basic.Location] = [
+    {
+      desc: Func(
+        name=id("main"),
+        typ=None,
+        sign=Some(sig_),
+        body=(None, []),
+        attributes=attrs,
+      ),
+      info: loc_at(4, 5),
+    },
+  ]
+  @typing.declare_fields(ctx, fields)
+  let _ = @typing.enter_function_scope(ctx, id("main"), Some(sig_), attrs)
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="The start function must have no parameters and no results.",
+  )
+}
+
+///|
+/// A signature that failed to resolve was reported once, at registration. The
+/// body is still checked -- against a MUTED re-resolution, so the same mistake
+/// is not reported a second time and whatever fails again becomes poison.
+test "a poisoned signature is not reported twice" {
+  let ctx = module_ctx()
+  let sig_ : @ast.FuncType = {
+    params: [
+      {
+        desc: (Some(id("p")), Ref({ nullable: true, typ: Type(id("nope")) })),
+        info: loc_at(0, 1),
+      },
+    ],
+    results: [Ref({ nullable: true, typ: Type(id("nope")) })],
+  }
+  let fields : @ast.Module[@basic.Location] = [
+    {
+      desc: Func(name=id("f"), typ=None, sign=Some(sig_), body=(None, []), attributes=[]),
+      info: loc_at(4, 5),
+    },
+  ]
+  @typing.declare_fields(ctx, fields)
+  // Registration said it, once. Resolving a function type stops at the first
+  // parameter that fails, so the result -- the same unbound name -- is never
+  // reached, and one mistake is one report however many times it is written.
+  inspect(ctx.diagnostics.collected().length(), content="1")
+  let returns = @typing.enter_function_scope(ctx, id("f"), Some(sig_), [])
+  // Entering says nothing new: the re-resolution is muted.
+  inspect(ctx.diagnostics.collected().length(), content="1")
+  // And the body has something to check against: poison, which suppresses
+  // rather than cascades.
+  inspect(returns.length(), content="1")
+  inspect(returns[0].get() is Error, content="true")
+  // The parameter still binds its name, as a poison local.
+  inspect(ctx.locals.get("p").unwrap().0 is None, content="true")
+}
+
+///|
+/// An origin as a short string, `Origin` deriving Debug rather than Show.
+fn origin_name(o : @typing_env.Origin) -> String {
+  match o {
+    Root => "root"
+    FromFunction(f) => "fn:" + f
+    FromType(t) => "type:" + t
+    Ignored => "ignored"
+  }
+}

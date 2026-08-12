@@ -527,3 +527,19 @@ pub fn inline_function_type_mismatch(
     ),
   )
 }
+
+///|
+/// A `#[start]` function that takes or returns something.
+///
+/// There is nowhere for an argument to come from and nowhere for a result to
+/// go: the host calls it on instantiation.
+pub fn start_function_signature(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The start function must have no parameters and no results."),
+  )
+}

@@ -37,6 +37,8 @@ pub fn check_num_concrete(@diagnostic.Context, @basic.Location, @infer.Cell[@inf
 
 pub fn check_operands(@type_store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], Array[@infer.Cell[@infer.InferredType]]) -> Unit
 
+pub fn check_start_signature(@typing_env.ModuleContext, @ast.Ident, Array[@ast.Attribute], @ast.FuncType) -> Unit
+
 pub fn check_subtype(@type_store.SubtypingInfo, @diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], pin? : Bool, expected_at? : @basic.Location?) -> Unit
 
 pub fn check_subtypes(@type_store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], pin? : Bool) -> Unit
@@ -49,6 +51,8 @@ pub fn[Info] declare_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@a
 
 pub fn declare_local(@typing_env.ModuleContext, @ast.Ident, @wasm_types.ValType[@ast.Ident]) -> Unit
 
+pub fn declared_functype(@typing_env.ModuleContext, @ast.Ident) -> @ast.FuncType?
+
 pub fn descriptor_not_reciprocal(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
 
 pub fn descriptor_not_struct(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
@@ -60,6 +64,8 @@ pub fn diff_ref_type(@wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.I
 pub fn duplicated_field(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
 pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
+
+pub fn enter_function_scope(@typing_env.ModuleContext, @ast.Ident, @ast.FuncType?, Array[@ast.Attribute], label_decls? : Array[@ast.Ident], assigned_locals? : Map[String, Unit]) -> Array[@infer.Cell[@infer.InferredType]]
 
 pub fn expand_splices(@typing_env.TypeContext, @diagnostic.Context, Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]
 
@@ -110,6 +116,8 @@ pub fn join_collected(@diagnostic.Context, @basic.Location, Array[(@basic.Locati
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn label_in_scope(@typing_env.ModuleContext, @ast.Ident) -> Bool
+
+pub fn leave_function_scope(@typing_env.ModuleContext) -> Unit
 
 pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.Label]) -> Unit
 
@@ -181,6 +189,8 @@ pub fn splice_non_struct(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn splice_without_supertype(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn start_function_signature(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn storage_subtype(@type_store.SubtypingInfo, @wasm_types.StorageType[@type_store.Id], @wasm_types.StorageType[@type_store.Id]) -> Bool
 
 pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], location? : @basic.Location?, pin? : Bool) -> Bool
@@ -208,6 +218,8 @@ pub fn value_count_mismatch(@diagnostic.Context, @basic.Location, expected~ : In
 pub fn[Info] walk_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]], (@basic.Annotated[@ast.ModuleField[Info], @basic.Location]) -> Unit) -> Unit
 
 pub fn[A] with_cond(@typing_env.ModuleContext, @basic.Location, @wasm_types.Cond, Bool, () -> A) -> A
+
+pub fn[A] with_empty_stack(Operands, @diagnostic.Context, @basic.Location, () -> A) -> A
 
 // Errors
 
