@@ -22,8 +22,8 @@ order it makes sense to do it.
 **Phase 6 — the type checker**
 
 - [x] 8. `ast_utils` — the surface-form desugarings
-- [ ] 8b. The unlisted prerequisites *(new; see below)* — `spell_check`,
-  `feature`, `types` and `cond_solver` done, ~1.3k lines left
+- [ ] 8b. The unlisted prerequisites *(new; see below)* — all but `simd`
+  done; ~0.9k lines left
 - [x] 9. `members` — the method and intrinsic table *(the checker-facing half)*
 - [x] 10. `infer` — inference cells and the numeric-literal lattice *(done before 9; see there)*
 - [ ] 11. `typing_env` — symbol tables
@@ -700,13 +700,13 @@ nine modules that **no task lists and this port does not have**, and
 | `lib-wasm/types.ml` | 372 | 71 | the interned type store: rec-group normalisation, canonical indices, subtyping info | **done**, `type_store/` |
 | `lib-wasm/simd.ml` | 856 | — | every vector op, with its operand and result types; how `v.add_i32x4(w)` dispatches | |
 | `lib-wasm/cond_solver.ml` | 240 **+ 1545** | 4 | the conditional-compilation assumption every declaration carries | **done**, `cond/` |
-| `lib-wasm/atomics.ml` | 179 | 5 | the atomic memory operations | |
-| `lib-wasm/cond_explore.ml` | 133 | 1 | enumerating the branches of a conditional module | |
+| `lib-wasm/atomics.ml` | 179 | 5 | the atomic memory operations | **done**, `atomics/` |
+| `lib-wasm/cond_explore.ml` | 133 | 1 | enumerating the branches of a conditional module | **done**, `cond_explore/` |
 | `lib-utils/spell_check.ml` | 126 | 8 | "did you mean" | **done**, `spell/` |
-| `lib-wasm/misc.ml` | 100 | 13 | assorted wasm-side helpers | |
+| `lib-wasm/misc.ml` | 100 **+ 140** | 13 | assorted wasm-side helpers | **half done**, `number/` |
 | `lib-utils/feature.ml` | 86 | 29 | the proposal gating | **done**, `feature/` |
 
-**Four are done.**
+**Seven are done, and one is half done.**
 
 - **`spell/`** — OCaml's own Damerau-Levenshtein, banded around the diagonal so
   a candidate that is obviously too far is abandoned rather than measured, with
@@ -732,8 +732,24 @@ nine modules that **no task lists and this port does not have**, and
   sound, with the translation and its diagnostics following `cond_solver.ml`
   exactly because oracle 3 compares them. 10 tests.
 
-**The rest is ~1.3k lines**, dominated by `simd.ml`. None of it blocks
-`typing_env` the way `types.ml` did.
+- **`atomics/`** — 66 operations across four tables that must agree: mnemonic,
+  sub-opcode, alignment, signature. The reference generates all four from one
+  layout rather than writing them out, and that structure is what is ported.
+  Note the Wax surface is not one-to-one with the binary one: a method name
+  carries the ACCESS width only, so `i32.atomic.load` and `i64.atomic.load32_u`
+  share a family. 6 tests.
+- **`cond_explore/`** — the driver that makes a conditional module checkable:
+  explore every reachable configuration, report each distinct diagnostic once,
+  qualified by the union of the assumptions reaching it. It is what wanted a
+  structural dedup key on `cond.T`. 5 tests.
+- **`number/`** — `misc.ml`'s typer-facing half (`is_int8/16/32/64`,
+  `is_float32/64`) turned out to sit on `lib-utils/number_parsing.ml`, 140 lines
+  the table also does not list. Hex float parsing, NaN payloads, and an exact
+  double-rounding tie-break. The other half of `misc.ml` — encoding a data
+  segment's literals to bytes — has no consumer until the lowering exists and
+  needs the AST, so it goes with task 15. 9 tests.
+
+**`simd.ml` is what is left**, and nothing blocks `typing_env` any more.
 
 ## 11. `typing_env` — symbol tables
 
