@@ -543,3 +543,29 @@ pub fn start_function_signature(
     @message.text("The start function must have no parameters and no results."),
   )
 }
+
+///|
+/// An instruction used where a value is expected, that produces none or
+/// several.
+///
+/// Suppressed in error-recovery mode, like `short_stack`: past a syntax error
+/// the wrong number of values is usually a cascade from recovery dropping an
+/// operand or auto-closing a construct at EOF. Both callers recover with
+/// `Error`, so nothing downstream cascades either way, and a genuine arity
+/// mistake in intact code still surfaces on a clean re-check.
+pub fn not_an_expression(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  n : Int,
+) -> Unit {
+  if ctx.in_recovery() {
+    return
+  }
+  ctx.report(
+    location,
+    Error,
+    @message.text("An expression is expected here. This instruction returns")
+    .sep(@message.int(n))
+    .sep(@message.text("values.")),
+  )
+}

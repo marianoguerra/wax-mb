@@ -2576,3 +2576,74 @@ test "an exit that delivers nothing is reported, unless it is dead" {
   // underflow does.
   inspect(ctx.diagnostics.collected()[0].loc.start.cnum, content="50")
 }
+
+///|
+/// Asking a value-less instruction for its value is a diagnostic, not an
+/// option -- and one node is legitimately asked by several consumers, so the
+/// report fires once per rendered position and count.
+test "an instruction that produces no value is not an expression" {
+  let ctx = module_ctx()
+  let one = @infer.valtype_cell(@infer.i32_valtype)
+  // The ordinary case: exactly one value, no report.
+  inspect(
+    @infer.to_string(@typing.expression_type(ctx, ([one], loc_at(0, 4)))),
+    content="i32",
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // None: reported, and recovered with poison so the caller has something to
+  // carry on with.
+  let none_ = @typing.expression_type(ctx, ([], loc_at(10, 14)))
+  inspect(none_.get() is Error, content="true")
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="An expression is expected here. This instruction returns 0 values.",
+  )
+  // Asked again at the same position with the same count: still poison, but
+  // said only once.
+  let _ = @typing.expression_type(ctx, ([], loc_at(10, 99)))
+  inspect(ctx.diagnostics.collected().length(), content="1")
+  // A different count at the same position is a different mistake, and is said.
+  let _ = @typing.expression_type(ctx, ([one, one], loc_at(10, 14)))
+  inspect(ctx.diagnostics.collected().length(), content="2")
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[1].message),
+    content="An expression is expected here. This instruction returns 2 values.",
+  )
+}
+
+///|
+/// While a branch in this function has failed to resolve its label, the value
+/// shape is unreliable -- a block whose only delivery was that branch really
+/// does compute nothing -- so the complaint would anchor a derived error away
+/// from the unbound label.
+test "an unresolved label silences the value-shape complaint" {
+  let ctx = module_ctx()
+  ctx.unresolved_label.val = true
+  let ty = @typing.expression_type(ctx, ([], loc_at(10, 14)))
+  inspect(ty.get() is Error, content="true")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+}
+
+///|
+/// The literal arms need nothing but the token, and commit only as far as the
+/// spelling requires.
+test "a literal's type comes from its spelling alone" {
+  fn lat(d : @ast.InstrDesc[@basic.Location]) -> String {
+    match @typing.literal_type(d) {
+      Some(t) => @infer.to_string(@infer.Cell::make(t))
+      None => "not a literal"
+    }
+  }
+
+  inspect(lat(Char('a')), content="i32")
+  inspect(lat(Int("1")), content="number")
+  // Past the 32-bit range it cannot be an i32, so it defaults to i64 rather
+  // than to the i32-defaulting `number`.
+  inspect(lat(Int("4294967296")), content="large number")
+  // Past u64 it is no integer at all: only a float can hold it, so using it as
+  // an integer becomes a clean type error rather than a crash in the encoder.
+  inspect(lat(Int("18446744073709551616")), content="float")
+  inspect(lat(Float("1.5")), content="float")
+  inspect(lat(Null), content="null")
+  inspect(lat(Nop), content="not a literal")
+}

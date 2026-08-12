@@ -77,6 +77,8 @@ pub fn expand_splices(@typing_env.TypeContext, @diagnostic.Context, Array[@basic
 
 pub fn expected_func_type(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn expression_type(@typing_env.ModuleContext, (Array[@infer.Cell[@infer.InferredType]], @basic.Location)) -> @infer.Cell[@infer.InferredType]
+
 pub fn expression_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], expected_at? : @basic.Location?) -> Unit
 
 pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
@@ -135,6 +137,8 @@ pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.L
 
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
 
+pub fn literal_type(@ast.InstrDesc[@basic.Location]) -> @infer.InferredType?
+
 pub fn loc_first_char(@basic.Location) -> @basic.Location
 
 pub fn loc_last_char(@basic.Location) -> @basic.Location
@@ -162,6 +166,8 @@ pub fn n_subtype(@typing_env.TypeContext, @diagnostic.Context, Int, @ast.SubType
 pub fn n_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.RefIndex]?
 
 pub fn non_empty_stack(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn not_an_expression(@diagnostic.Context, @basic.Location, Int) -> Unit
 
 pub fn not_assignable(@diagnostic.Context, @basic.Location, String) -> Unit
 
