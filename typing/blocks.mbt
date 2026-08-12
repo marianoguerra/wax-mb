@@ -117,6 +117,11 @@ pub fn collect_exit(
 /// `check_body` is the instruction checker, passed in rather than called
 /// directly: an `if` runs this once per branch with the SAME cell, which is how
 /// both branches' exits come to be joined together.
+///
+/// `branch_target` defaults to the result cell, which is what a `br` to a
+/// block's label delivers. A LOOP passes the empty array instead: a branch there
+/// re-enters at the top with the loop's parameters, of which an inferred loop
+/// has none, so its value is only ever its fall-through.
 pub fn collect_into(
   ctx : @typing_env.ModuleContext,
   ops : Operands,
@@ -125,9 +130,11 @@ pub fn collect_into(
   cs : @infer.Collecting,
   r : @infer.Cell[@infer.InferredType],
   check_body : () -> Unit,
+  branch_target? : Array[@infer.Cell[@infer.InferredType]]? = None,
 ) -> Unit {
+  let br = branch_target.unwrap_or([r])
   with_empty_stack(ops, ctx.diagnostics, location, () => {
-    ctx.with_frame(@typing_env.ControlFrame::new([r], label~), check_body)
+    ctx.with_frame(@typing_env.ControlFrame::new(br, label~), check_body)
     // Outside the frame: the fall-through is not a branch to the label, and by
     // here the label is out of scope anyway.
     collect_exit(ops, cs, ctx.diagnostics, location)

@@ -83,9 +83,11 @@ pub fn checked_block(@typing_env.ModuleContext, Operands, @basic.Location, @ast.
 
 pub fn classify_method_call(@typing_env.ModuleContext, @ast.Ident, String) -> MethodCall
 
+pub fn classify_trailing(@typing_env.ModuleContext, @ast.InstrDesc[@basic.Location]) -> (Bool, Bool)
+
 pub fn collect_exit(Operands, @infer.Collecting, @diagnostic.Context, @basic.Location) -> Unit
 
-pub fn collect_into(@typing_env.ModuleContext, Operands, @basic.Location, @ast.Ident?, @infer.Collecting, @infer.Cell[@infer.InferredType], () -> Unit) -> Unit
+pub fn collect_into(@typing_env.ModuleContext, Operands, @basic.Location, @ast.Ident?, @infer.Collecting, @infer.Cell[@infer.InferredType], () -> Unit, branch_target? : Array[@infer.Cell[@infer.InferredType]]?) -> Unit
 
 pub fn collected_natural(Array[(@basic.Location?, @infer.Cell[@infer.InferredType])]) -> Array[@infer.InferredType]
 
@@ -248,6 +250,8 @@ pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 pub fn is_mem_method(String) -> Bool
 
 pub fn is_mgmt_method(String) -> Bool
+
+pub fn is_null_initializer(@ast.Instr[@basic.Location]) -> Bool
 
 pub fn is_unary_method(String) -> Bool
 
@@ -479,6 +483,7 @@ pub struct Checker {
   ops : Operands
   unpeeled : Map[String, Int]
 }
+pub fn Checker::expression(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::gaps(Self) -> Array[(String, Int)]
 pub fn Checker::new(@typing_env.ModuleContext, Operands) -> Self
 pub fn Checker::statement(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]

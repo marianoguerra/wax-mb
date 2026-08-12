@@ -124,7 +124,7 @@ pub fn Checker::statement(
       labelled_argument_not_allowed(ctx.diagnostics, loc)
       // Recover by checking the payload in place, so one misplaced label does
       // not lose the expression it labelled.
-      let e_ = self.statement(e)
+      let e_ = self.expression(e)
       self.rebuild_labelled(i, e_)
     }
 
@@ -134,7 +134,7 @@ pub fn Checker::statement(
       let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
       let mut types : Array[@infer.Cell[@infer.InferredType]] = []
       for s in l {
-        let c = self.statement(s)
+        let c = self.expression(s)
         types = c.info.0
         checked.push(c)
       }
@@ -155,7 +155,7 @@ pub fn Checker::statement(
       // The condition is checked FIRST, on the enclosing stack, because it is
       // consumed before the block is entered -- it is not part of the block's
       // parameters.
-      let cond_ = self.statement(cond)
+      let cond_ = self.expression(cond)
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
@@ -223,7 +223,7 @@ pub fn Checker::statement(
       let bound = label_in_scope(ctx, label)
       let checked = match operand {
         Some(e) => {
-          let c = self.statement(e)
+          let c = self.expression(e)
           if bound {
             check_subtypes(
               ctx.type_context.subtyping_info(),
@@ -257,7 +257,7 @@ pub fn Checker::statement(
       }
     }
     BrIf(label, operand) => {
-      let c = self.statement(operand)
+      let c = self.expression(operand)
       let (cond_ty, delivered) = self.split_on_last(operand.info, c.info.0)
       check_subtype(
         ctx.type_context.subtyping_info(),
@@ -289,7 +289,7 @@ pub fn Checker::statement(
       }
     }
     BrTable(labels, operand) => {
-      let c = self.statement(operand)
+      let c = self.expression(operand)
       let (index_ty, delivered) = self.split_on_last(operand.info, c.info.0)
       check_subtype(
         ctx.type_context.subtyping_info(),
@@ -350,7 +350,7 @@ pub fn Checker::statement(
     Return(operand) => {
       let checked = match operand {
         Some(e) => {
-          let c = self.statement(e)
+          let c = self.expression(e)
           check_subtypes(
             ctx.type_context.subtyping_info(),
             ctx.diagnostics,
@@ -385,7 +385,7 @@ pub fn Checker::statement(
     Throw(tag, args) => {
       let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
       for a in args {
-        checked.push(self.statement(a))
+        checked.push(self.expression(a))
       }
       if find(ctx.tags, ctx.diagnostics, tag) is Some(ft) {
         // A tag describes what is thrown, and a throw does not return, so there
@@ -437,7 +437,7 @@ pub fn Checker::statement(
       }
     }
     ThrowRef(e) => {
-      let c = self.statement(e)
+      let c = self.expression(e)
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
@@ -458,9 +458,9 @@ pub fn Checker::statement(
     Select(cond, a, b) => {
       // Typed in EMISSION order: the two branch values, then the condition,
       // because a `select` pops the condition last.
-      let a_ = self.statement(a)
-      let b_ = self.statement(b)
-      let cond_ = self.statement(cond)
+      let a_ = self.expression(a)
+      let b_ = self.expression(b)
+      let cond_ = self.expression(cond)
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
@@ -490,8 +490,8 @@ pub fn Checker::statement(
 
     // --- Arithmetic ---
     BinOpI(op, a, b) => {
-      let a_ = self.statement(a)
-      let b_ = self.statement(b)
+      let a_ = self.expression(a)
+      let b_ = self.expression(b)
       let ty1 = expression_type(ctx, a_.info)
       let ty2 = expression_type(ctx, b_.info)
       // Snapshotted BEFORE `type_binop`, which unifies an `Error` operand onto
@@ -521,7 +521,7 @@ pub fn Checker::statement(
       }
     }
     UnOpI(op, e) => {
-      let e_ = self.statement(e)
+      let e_ = self.expression(e)
       let typ = expression_type(ctx, e_.info)
       let poisoned = typ.get() is Error
       let ty = type_unop(ctx.diagnostics, op, e.info, typ)
@@ -555,7 +555,7 @@ pub fn Checker::statement(
         // in the typed AST, so it round-trips and lowers back to get/op/set.
         Some(binop) => {
           let read = type_get(ctx, idx)
-          let rhs = self.statement(value)
+          let rhs = self.expression(value)
           let ty = type_binop(
             ctx.type_context.subtyping_info(),
             ctx.diagnostics,
@@ -575,7 +575,7 @@ pub fn Checker::statement(
           rhs
         }
         None => {
-          let rhs = self.statement(value)
+          let rhs = self.expression(value)
           if target is Some(t) {
             check_subtype(
               ctx.type_context.subtyping_info(),
@@ -600,7 +600,7 @@ pub fn Checker::statement(
     }
     Tee(idx, value) => {
       let resolved = resolve_variable(ctx, idx)
-      let checked = self.statement(value)
+      let checked = self.expression(value)
       let operand = expression_type(ctx, checked.info)
       let ty = tee_target(ctx, idx, resolved, operand)
       // A tee assigns AND leaves the value, so where the target has a type the
@@ -625,7 +625,7 @@ pub fn Checker::statement(
 
     // --- Local binding ---
     Let(bindings, Some(init)) => {
-      let checked = self.statement(init)
+      let checked = self.expression(init)
       if bindings.length() == 1 {
         // One name takes the whole initializer, which must therefore be a
         // one-value expression -- `expression_type` says so if it is not.
@@ -677,7 +677,7 @@ pub fn Checker::statement(
 
     // --- Reading a struct field ---
     StructGet(recv, field) => {
-      let recv_ = self.statement(recv)
+      let recv_ = self.expression(recv)
       let ty = self.field_type_of(
         recv.info,
         expression_type(ctx, recv_.info),
@@ -694,13 +694,13 @@ pub fn Checker::statement(
     // --- Writing one ---
     StructSet(recv, field, value) => {
       // Emission order: the struct receiver, then the stored value.
-      let recv_ = self.statement(recv)
+      let recv_ = self.expression(recv)
       let declared = self.field_slot(
         recv.info,
         expression_type(ctx, recv_.info),
         field,
       )
-      let value_ = self.statement(value)
+      let value_ = self.expression(value)
       if declared is Some(ft) {
         if !ft.mut_ {
           immutable(ctx.diagnostics, field.loc, "field")
@@ -736,7 +736,7 @@ pub fn Checker::statement(
         Some(t) => t
         None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
       }
-      let index_ = self.statement(index)
+      let index_ = self.expression(index)
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
@@ -759,8 +759,8 @@ pub fn Checker::statement(
     // --- Reading an array element ---
     ArrayGet(recv, index) => {
       // Emission order: the array, then the index.
-      let recv_ = self.statement(recv)
-      let index_ = self.statement(index)
+      let recv_ = self.expression(recv)
+      let index_ = self.expression(index)
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
@@ -871,7 +871,7 @@ pub fn Checker::statement(
       // literal there can be inferred and drop its own name. The value is still
       // typed first and the count second, which is the emission order.
       let elt = self.element_of(loc, name)
-      let init_ = self.statement(init)
+      let init_ = self.expression(init)
       if elt is Some(cell) {
         check_subtype(
           ctx.type_context.subtyping_info(),
@@ -881,7 +881,7 @@ pub fn Checker::statement(
           cell,
         )
       }
-      let size_ = self.statement(size)
+      let size_ = self.expression(size)
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
@@ -898,7 +898,7 @@ pub fn Checker::statement(
       }
     }
     ArrayDefault(name, size) => {
-      let size_ = self.statement(size)
+      let size_ = self.expression(size)
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
@@ -926,7 +926,7 @@ pub fn Checker::statement(
       let elt = self.element_of(loc, name)
       let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
       for e in elems {
-        let c = self.statement(e)
+        let c = self.expression(e)
         if elt is Some(cell) {
           check_subtype(
             ctx.type_context.subtyping_info(),
@@ -949,7 +949,7 @@ pub fn Checker::statement(
 
     // --- Casts and tests ---
     Cast(operand, target) => {
-      let operand_ = self.statement(operand)
+      let operand_ = self.expression(operand)
       let natural = expression_type(ctx, operand_.info)
       let ty = match target {
         // `e as t` for a value type: the result IS the target, and a reference
@@ -1008,7 +1008,7 @@ pub fn Checker::statement(
       }
     }
     Test(operand, target) => {
-      let operand_ = self.statement(operand)
+      let operand_ = self.expression(operand)
       let natural = expression_type(ctx, operand_.info)
       if internalize(ctx.type_context, ctx.diagnostics, Ref(target)) is Some(w) {
         lint_ref_cast(
@@ -1030,7 +1030,7 @@ pub fn Checker::statement(
       }
     }
     NonNull(operand) => {
-      let operand_ = self.statement(operand)
+      let operand_ = self.expression(operand)
       let ty = match expression_type(ctx, operand_.info).get() {
         Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype }) => {
           let v : @infer.InferredValType = {
@@ -1106,8 +1106,8 @@ pub fn Checker::statement(
 
     // --- An array built from a segment ---
     ArraySegment(name, seg, off, len) => {
-      let off_ = self.statement(off)
-      let len_ = self.statement(len)
+      let off_ = self.expression(off)
+      let len_ = self.expression(len)
       let i32c = () => @infer.valtype_cell(@infer.i32_valtype)
       check_subtype(
         ctx.type_context.subtyping_info(),
@@ -1154,7 +1154,7 @@ pub fn Checker::statement(
 
     // --- The descriptor of a value ---
     GetDescriptor(recv) => {
-      let recv_ = self.statement(recv)
+      let recv_ = self.expression(recv)
       let ty = match expression_type(ctx, recv_.info).get() {
         Valtype({ typ: Ref({ typ: Type(n) | Exact(n) as ht, .. }), .. }) => {
           // Exactness carries through: the descriptor of an EXACT reference is
@@ -1455,7 +1455,7 @@ pub fn Checker::statement(
 
     // --- Branching on a reference being null, or not ---
     BrOnNull(label, operand) => {
-      let operand_ = self.statement(operand)
+      let operand_ = self.expression(operand)
       let (ref_ty, below) = self.split_on_last(operand.info, operand_.info.0)
       // The FALL-THROUGH value is the non-null form: the branch was not taken,
       // so the reference is known not to be null.
@@ -1481,7 +1481,7 @@ pub fn Checker::statement(
       }
     }
     BrOnNonNull(label, operand) => {
-      let operand_ = self.statement(operand)
+      let operand_ = self.expression(operand)
       let params = branch_target(ctx, label)
       let bound = label_in_scope(ctx, label)
       let (ref_ty, below) = self.split_on_last(operand.info, operand_.info.0)
@@ -1521,7 +1521,7 @@ pub fn Checker::statement(
 
     // --- Branching on a cast succeeding, or on it failing ---
     BrOnCast(label, target, operand) => {
-      let operand_ = self.statement(operand)
+      let operand_ = self.expression(operand)
       if is_cont_heaptype(ctx.type_context, target.typ) {
         invalid_cast_type(ctx.diagnostics, loc)
       }
@@ -1567,7 +1567,7 @@ pub fn Checker::statement(
       }
     }
     BrOnCastFail(label, target, operand) => {
-      let operand_ = self.statement(operand)
+      let operand_ = self.expression(operand)
       if is_cont_heaptype(ctx.type_context, target.typ) {
         invalid_cast_type(ctx.diagnostics, loc)
       }
@@ -1641,7 +1641,7 @@ pub fn Checker::statement(
             desc: Match(
               scrutinee=match scrutinee_ {
                 Some(sc) => sc
-                None => self.statement(scrutinee)
+                None => self.expression(scrutinee)
               },
               arms=rebuilt,
               default={ desc: default_body, info: default.info },
@@ -1684,7 +1684,7 @@ pub fn Checker::statement(
     // --- A free intrinsic: `v128::i8x16(..)`, `v128::bitselect(..)` ---
     Call(callee, args) if callee.desc is Path(_, _) => {
       guard callee.desc is Path(ns, name) else { return self.poisoned(i) }
-      let checked = args.map(a => self.statement(a))
+      let checked = args.map(a => self.expression(a))
       let ty = self.free_intrinsic(callee.info, ns, name, args, checked)
       {
         desc: Call(callee.map_info(_ => annotate([], callee.info)), checked),
@@ -1699,7 +1699,7 @@ pub fn Checker::statement(
       guard callee.desc is StructGet(recv, meth) else {
         return self.poisoned(i)
       }
-      let recv_ = self.statement(recv)
+      let recv_ = self.expression(recv)
       let ty = self.unary_intrinsic(
         recv.info,
         meth,
@@ -1842,7 +1842,7 @@ pub fn Checker::statement(
 
     // --- Creating a continuation ---
     ContNew(ct, f) => {
-      let f_ = self.statement(f)
+      let f_ = self.expression(f)
       if lookup_cont_inner(ctx.type_context, ctx.diagnostics, ct) is Some(ft) {
         // The function a continuation is made of, as a nullable reference: a
         // null one traps when resumed rather than being rejected here.
@@ -1872,7 +1872,7 @@ pub fn Checker::statement(
 
     // --- Binding a continuation's leading parameters ---
     ContBind(src, dst, args) => {
-      let checked = args.map(a => self.statement(a))
+      let checked = args.map(a => self.expression(a))
       self.check_cont_bind(loc, src, dst, args, checked)
       let ty = self.fresh_continuation(dst)
       {
@@ -1885,7 +1885,7 @@ pub fn Checker::statement(
 
     // --- Suspending to a tag ---
     Suspend(tag, args) => {
-      let checked = args.map(a => self.statement(a))
+      let checked = args.map(a => self.expression(a))
       let results = match find(ctx.tags, ctx.diagnostics, tag) {
         None => []
         Some(ft) => {
@@ -1939,7 +1939,7 @@ pub fn Checker::statement(
 
     // --- Resuming a continuation ---
     Resume(ct, handlers, args) => {
-      let checked = args.map(a => self.statement(a))
+      let checked = args.map(a => self.expression(a))
       let results = self.type_resume(
         loc,
         ct,
@@ -1956,7 +1956,7 @@ pub fn Checker::statement(
       }
     }
     ResumeThrow(ct, tag, handlers, args) => {
-      let checked = args.map(a => self.statement(a))
+      let checked = args.map(a => self.expression(a))
       // The operands are the TAG's parameters, not the continuation's: the
       // resume throws into the continuation rather than passing values to it.
       let results = self.type_resume(
@@ -1975,7 +1975,7 @@ pub fn Checker::statement(
       }
     }
     ResumeThrowRef(ct, handlers, args) => {
-      let checked = args.map(a => self.statement(a))
+      let checked = args.map(a => self.expression(a))
       let results = self.type_resume(
         loc,
         ct,
@@ -1994,7 +1994,7 @@ pub fn Checker::statement(
 
     // --- Switching directly to another continuation ---
     Switch(ct, tag, args) => {
-      let checked = args.map(a => self.statement(a))
+      let checked = args.map(a => self.expression(a))
       let results = self.type_switch(loc, ct, tag, checked)
       {
         desc: Switch(ct, tag, checked),
@@ -2017,7 +2017,7 @@ pub fn Checker::statement(
       }
       // Recover by typing the wrapped expression and carrying its result: the
       // handlers being misplaced says nothing about what it computes.
-      let inner_ = self.statement(inner)
+      let inner_ = self.expression(inner)
       {
         desc: On(inner_, handlers),
         info: annotate(inner_.info.0, loc),
@@ -2030,7 +2030,7 @@ pub fn Checker::statement(
     StructDesc(desc, fields) => {
       // The DESCRIPTOR is typed first, because it is what says which struct is
       // being built -- the type is not written down anywhere else.
-      let desc_ = self.statement(desc)
+      let desc_ = self.expression(desc)
       let target = descriptor_reftype(
         ctx,
         desc.info,
@@ -2064,7 +2064,7 @@ pub fn Checker::statement(
       }
     }
     StructDefaultDesc(desc) => {
-      let desc_ = self.statement(desc)
+      let desc_ = self.expression(desc)
       let target = descriptor_reftype(
         ctx,
         desc.info,
@@ -2103,8 +2103,8 @@ pub fn Checker::statement(
     // --- Casting through a descriptor ---
     CastDesc(value, nullable, desc) => {
       // Emission order: the value, then the descriptor on top of it.
-      let value_ = self.statement(value)
-      let desc_ = self.statement(desc)
+      let value_ = self.expression(value)
+      let desc_ = self.expression(desc)
       let target = descriptor_reftype(
         ctx,
         desc.info,
@@ -2153,7 +2153,7 @@ pub fn Checker::statement(
         Some(t) => t
         None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
       }
-      let index_ = self.statement(index)
+      let index_ = self.expression(index)
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
@@ -2161,7 +2161,7 @@ pub fn Checker::statement(
         expression_type(ctx, index_.info),
         address_cell(at),
       )
-      let value_ = self.statement(value)
+      let value_ = self.expression(value)
       if internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) is Some(want) {
         check_subtype(
           ctx.type_context.subtyping_info(),
@@ -2184,8 +2184,8 @@ pub fn Checker::statement(
     }
     ArraySet(recv, index, value) => {
       // Emission order: the array, the index, then the value.
-      let recv_ = self.statement(recv)
-      let index_ = self.statement(index)
+      let recv_ = self.expression(recv)
+      let index_ = self.expression(index)
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
@@ -2194,7 +2194,7 @@ pub fn Checker::statement(
         @infer.valtype_cell(@infer.i32_valtype),
       )
       let slot = self.element_slot(recv.info, expression_type(ctx, recv_.info))
-      let value_ = self.statement(value)
+      let value_ = self.expression(value)
       if slot is Some(ft) {
         if !ft.mut_ {
           immutable(ctx.diagnostics, loc, "array")
@@ -2309,7 +2309,7 @@ fn Checker::placeholder(
   i : @ast.Instr[@basic.Location],
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   {
-    desc: i.desc.map_desc(instr=s => self.statement(s), block=b => {
+    desc: i.desc.map_desc(instr=s => self.expression(s), block=b => {
       b.map(s => self.statement(s))
     }),
     info: annotate([], i.info),
@@ -2356,7 +2356,7 @@ fn Checker::body(
     results,
     branch_target,
     () => {
-      for c in self.statements(instrs) {
+      for c in self.block_contents(results, instrs) {
         checked.push(c)
       }
     },
@@ -2703,11 +2703,11 @@ fn Checker::field_value(
   written : @ast.Instr[@basic.Location]?,
 ) -> @ast.Instr[@typing_env.InferredAnnotation]? {
   match written {
-    Some(e) => Some(self.statement(e))
+    Some(e) => Some(self.expression(e))
     None => {
       @typing_env.record_pun(self.ctx.pun_spans, name.loc)
       Some(
-        self.statement({
+        self.expression({
           desc: Get(name),
           info: name.loc,
           hints: { branch: None, freq: None, targets: None },
@@ -3081,7 +3081,7 @@ fn Checker::call(
   Array[@infer.Cell[@infer.InferredType]],
 ) {
   let ctx = self.ctx
-  let callee_ = self.statement(callee)
+  let callee_ = self.expression(callee)
   // Asked ONCE: `expression_type` reports a callee that produces no value or
   // several, so asking twice would report it twice.
   let callee_type = expression_type(ctx, callee_.info)
@@ -3110,7 +3110,7 @@ fn Checker::call(
   // worked out in.
   let args_ : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
   for k, a in args {
-    let c = self.statement(a)
+    let c = self.expression(a)
     if have_params && k < params.length() {
       check_subtype(
         ctx.type_context.subtyping_info(),
@@ -3206,7 +3206,7 @@ fn Checker::mem_access(
   )
   let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
   for k, a in split.positional {
-    let c = self.statement(a)
+    let c = self.expression(a)
     let ty = expression_type(ctx, c.info)
     if k == 0 {
       // The address is checked against the MEMORY's address type, which is what
@@ -3385,7 +3385,7 @@ fn Checker::mem_mgmt(
       let _ = find(ctx.datas, ctx.diagnostics, n)
     }
   }
-  let typed = rest.map(a => self.statement(a))
+  let typed = rest.map(a => self.expression(a))
   for c in typed {
     checked.push(c)
   }
@@ -3486,7 +3486,7 @@ fn Checker::table_mgmt(
       _ => ()
     }
   }
-  let typed = rest.map(a => self.statement(a))
+  let typed = rest.map(a => self.expression(a))
   for c in typed {
     checked.push(c)
   }
@@ -3613,7 +3613,7 @@ fn Checker::atomic_access(
   let values : Array[@infer.Cell[@infer.InferredType]] = []
   let value_locs : Array[@basic.Location] = []
   for k, a in split.positional {
-    let c = self.statement(a)
+    let c = self.expression(a)
     let ty = expression_type(ctx, c.info)
     if k == 0 {
       check_subtype(
@@ -3815,7 +3815,7 @@ fn Checker::simd_mem_access(
   )
   let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
   for k, a in split.positional {
-    let c = self.statement(a)
+    let c = self.expression(a)
     let ty = expression_type(ctx, c.info)
     if k == 0 {
       check_subtype(
@@ -3900,10 +3900,10 @@ fn Checker::simd_vector_call(
     Lane(_) => 1
     Shuffle => 16
   }
-  let recv_ = self.statement(recv)
+  let recv_ = self.expression(recv)
   let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
   for a in args {
-    checked.push(self.statement(a))
+    checked.push(self.expression(a))
   }
   let nstack_extra = op.operands.length() - 1
   if args.length() != nimm + nstack_extra {
@@ -4305,8 +4305,8 @@ fn Checker::desc_branch(
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   let ctx = self.ctx
   let loc = i.info
-  let value_ = self.statement(value)
-  let desc_ = self.statement(desc)
+  let value_ = self.expression(value)
+  let desc_ = self.expression(desc)
   let target = descriptor_reftype(
     ctx,
     desc.info,

@@ -7619,10 +7619,12 @@ test "an on clause belongs to a resume" {
     .join(" / ")
   }
 
-  // Attached to something that is not a resume at all.
+  // Attached to something that is not a resume at all. Two complaints, and they
+  // are two different mistakes: the clause is in the wrong place, and recovery
+  // types the wrapped expression -- where a `nop` produces no value to carry.
   inspect(
     run(Nop),
-    content="An 'on' handler clause is only allowed on a 'resume', 'resume_throw' or 'resume_throw_ref' call.",
+    content="An 'on' handler clause is only allowed on a 'resume', 'resume_throw' or 'resume_throw_ref' call. / An expression is expected here. This instruction returns 0 values.",
   )
 }
 
@@ -8228,4 +8230,66 @@ test "a vector constant bounds each lane by its width" {
     konst("nope", []),
     content="any | There is no 'v128::nope' intrinsic.",
   )
+}
+
+///|
+/// A block used as a VALUE infers its result from what reaches its exit; the
+/// same block used as a STATEMENT does not, and its trailing value is a leftover.
+///
+/// That difference is the whole point of expression position. Before it existed
+/// every block was typed against its DECLARED results -- none, for a `do { .. }`
+/// with no annotation -- so a block used as a value produced nothing and its
+/// body's value stayed on the stack, and both were reported.
+test "a block used as a value infers what its exit delivers" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn block(
+    body : Array[@ast.Instr[@basic.Location]],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    instr(
+      Block(label=None, typ={ params: [], results: [] }, block={
+        desc: body,
+        info: loc_at(at, at + 1),
+      }),
+      at,
+    )
+  }
+
+  fn run(node : @ast.Instr[@basic.Location], as_value : Bool) -> String {
+    let ctx = module_ctx()
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = if as_value {
+      checker.expression(node)
+    } else {
+      checker.statement(node)
+    }
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  let five = block([instr(Int("5"), 20)], 10)
+  // As a value: the fall-through IS the block's result, and it commits to a
+  // width because there is no annotation to write anything else back.
+  inspect(run(five, true), content="i32 | ")
+  // As a statement: nothing is inferred, so the 5 is a value nobody took.
+  inspect(run(five, false), content=" | This value remains on the stack.")
+  // A trailing nested block is routed through the inferring result rather than
+  // typed as a void statement -- so the inner block synthesizes its own type and
+  // hands it out, instead of leaving its 5 behind.
+  inspect(run(block([five], 5), true), content="i32 | ")
 }
