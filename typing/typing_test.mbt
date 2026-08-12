@@ -4164,3 +4164,146 @@ test "a not takes an integer or a reference" {
     content="i32 | float | This expression has type 'float' but is expected to have type 'int'.",
   )
 }
+
+///|
+/// Assignment resolves its target FIRST -- a pure lookup -- so the value can be
+/// checked against the target's type. The local is marked initialized only
+/// after the value is typed, so `x = x + 1` still sees its pre-assignment
+/// state.
+test "an assignment checks its value against the target" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // A mutable f64 global, assigned an integer literal.
+  let ctx = module_ctx()
+  ctx.globals.add(
+    ctx.diagnostics,
+    "g",
+    loc_at(0, 1),
+    (true, Some(@infer.f64_valtype)),
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let value = instr(Int("1"), 10)
+  let checked = checker.statement(instr(Set(id("g"), None, value), 4))
+  // Assignment leaves nothing on the stack.
+  inspect(checked.info.0.length(), content="0")
+  // The literal was pinned to the target's type.
+  guard! checked.desc is Set(_, _, v)
+  inspect(v.info.0.map(t => @infer.to_string(t)).join(","), content="f64")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // Writing it records the global as actually assigned, which is what the
+  // unnecessary-mut warning reads.
+  inspect(ctx.assigned_globals.contains("g"), content="true")
+  inspect(checker.gaps().length(), content="0")
+
+  // An immutable global cannot be written.
+  let ctx2 = module_ctx()
+  ctx2.globals.add(
+    ctx2.diagnostics,
+    "k",
+    loc_at(0, 1),
+    (false, Some(@infer.i32_valtype)),
+  )
+  let checker2 = @typing.Checker::new(ctx2, @typing.Operands::new())
+  let _ = checker2.statement(instr(Set(id("k"), None, instr(Int("1"), 10)), 4))
+  inspect(
+    @message.to_plain_string(ctx2.diagnostics.collected()[0].message),
+    content="This global is immutable and cannot be assigned.",
+  )
+}
+
+///|
+/// A compound `x op= e` is checked as `x = x op e` -- so the operator validates
+/// against the target's type through the ordinary arithmetic path, and the
+/// desugared READ is what reports an unbound name, not the write.
+test "a compound assignment reports an unbound name once" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let ctx = module_ctx()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let _ = checker.statement(
+    instr(
+      Set(
+        id("nope"),
+        Some({ desc: Add, info: loc_at(6, 8) }),
+        instr(Int("1"), 10),
+      ),
+      4,
+    ),
+  )
+  // One report, from the read -- not two.
+  inspect(
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / "),
+    content="The variable 'nope' is not bound.",
+  )
+  // A plain assignment to an unbound name reports at the write instead.
+  let ctx2 = module_ctx()
+  let checker2 = @typing.Checker::new(ctx2, @typing.Operands::new())
+  let _ = checker2.statement(
+    instr(Set(id("nope"), None, instr(Int("1"), 10)), 4),
+  )
+  inspect(ctx2.diagnostics.collected().length(), content="1")
+}
+
+///|
+/// A `tee` assigns AND leaves the value, so it produces the TARGET's type
+/// rather than the operand's -- and only a local is assignable that way.
+test "a tee produces its target's type" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let ctx = module_ctx()
+  @typing.bind_local(ctx, id("x"), Some(@infer.f64_valtype))
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement(instr(Tee(id("x"), instr(Int("1"), 10)), 4))
+  inspect(checked.info.0.map(t => @infer.to_string(t)).join(","), content="f64")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // And the local now holds a value.
+  inspect(ctx.initialized_locals.contains("x"), content="true")
+
+  // A global is not tee-able.
+  let ctx2 = module_ctx()
+  ctx2.globals.add(
+    ctx2.diagnostics,
+    "g",
+    loc_at(0, 1),
+    (true, Some(@infer.i32_valtype)),
+  )
+  let checker2 = @typing.Checker::new(ctx2, @typing.Operands::new())
+  let _ = checker2.statement(instr(Tee(id("g"), instr(Int("1"), 10)), 4))
+  inspect(
+    @message.to_plain_string(ctx2.diagnostics.collected()[0].message),
+    content="'g' cannot be assigned.",
+  )
+}

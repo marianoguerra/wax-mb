@@ -541,6 +541,92 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Assignment ---
+    Set(idx, op, value) => {
+      // The target is resolved FIRST -- a pure lookup -- so the value can be
+      // checked against its type. The local is marked initialized only after
+      // the value is typed, so `x = x + 1` still sees its pre-assignment state.
+      let resolved = resolve_variable(ctx, idx)
+      let target = match resolved {
+        Local(Some(v), _) | Global(_, Some(v)) => Some(@infer.valtype_cell(v))
+        _ => None
+      }
+      let checked = match op {
+        // A compound `x op= e` is checked as `x = x op e`: reading `x` requires
+        // it to be initialized already, and the operator validates against its
+        // type through the ordinary arithmetic path. The compound form is kept
+        // in the typed AST, so it round-trips and lowers back to get/op/set.
+        Some(binop) => {
+          let read = type_get(ctx, idx)
+          let rhs = self.statement(value)
+          let ty = type_binop(
+            ctx.type_context.subtyping_info(),
+            ctx.diagnostics,
+            binop,
+            read,
+            expression_type(ctx, rhs.info),
+          )
+          if target is Some(t) {
+            check_subtype(
+              ctx.type_context.subtyping_info(),
+              ctx.diagnostics,
+              value.info,
+              ty,
+              t,
+            )
+          }
+          rhs
+        }
+        None => {
+          let rhs = self.statement(value)
+          if target is Some(t) {
+            check_subtype(
+              ctx.type_context.subtyping_info(),
+              ctx.diagnostics,
+              value.info,
+              expression_type(ctx, rhs.info),
+              t,
+            )
+          }
+          rhs
+        }
+      }
+      // A compound assignment's desugared READ already reported an unbound name
+      // at this span; reporting the write too would say it twice.
+      assign_target(ctx, idx, resolved, compound=op is Some(_))
+      {
+        desc: Set(idx, op, checked),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    Tee(idx, value) => {
+      let resolved = resolve_variable(ctx, idx)
+      let checked = self.statement(value)
+      let operand = expression_type(ctx, checked.info)
+      let ty = tee_target(ctx, idx, resolved, operand)
+      // A tee assigns AND leaves the value, so where the target has a type the
+      // operand is checked against it -- and the tee produces the target's
+      // type, not the operand's.
+      if resolved is Local(Some(_), _) {
+        check_subtype(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          value.info,
+          operand,
+          ty,
+        )
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: Tee(idx, checked),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
