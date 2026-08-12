@@ -645,3 +645,68 @@ pub fn expected_array_type(
 ) -> Unit {
   ctx.report(location, Error, @message.text("Expected array type."))
 }
+
+///|
+/// A memory offset or alignment that does not fit a 64-bit unsigned integer.
+pub fn memory_immediate_too_large(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "This memory offset or alignment must fit a 64-bit unsigned integer.",
+    ),
+  )
+}
+
+///|
+/// A memory offset past what the address type can reach.
+pub fn memory_offset_too_large(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  max_offset : UInt64,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The memory offset should be less than")
+    .sep(
+      @message.styled(
+        Constant,
+        "0x" + max_offset.reinterpret_as_int64().to_string(radix=16),
+      ),
+    )
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// An alignment claiming more than the access can use.
+pub fn memory_align_too_large(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  natural : Int,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The memory alignment is larger than the natural alignment")
+    .sep(@message.int(natural))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// An alignment that is not a power of two.
+pub fn bad_memory_align(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The memory alignment should be a power of two."),
+  )
+}

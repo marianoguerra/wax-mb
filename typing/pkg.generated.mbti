@@ -20,6 +20,8 @@ pub fn add_type(@typing_env.TypeContext, @diagnostic.Context, Array[@basic.Annot
 
 pub fn assign_target(@typing_env.ModuleContext, @ast.Ident, ResolvedVar, compound? : Bool) -> Unit
 
+pub fn bad_memory_align(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn bind_local(@typing_env.ModuleContext, @ast.Ident, @infer.InferredValType?) -> Unit
 
 pub fn binop_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
@@ -37,6 +39,8 @@ pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@inf
 pub fn check_inline_type(@typing_env.TypeContext, @diagnostic.Context, @basic.Location, @ast.FuncType, @ast.FuncType?) -> Unit
 
 pub fn check_int_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
+
+pub fn check_memarg(@diagnostic.Context, @wasm_types.AddressType, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?) -> Unit
 
 pub fn check_num_concrete(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
@@ -156,6 +160,8 @@ pub fn inline_function_type_mismatch(@diagnostic.Context, @basic.Location) -> Un
 
 pub fn int_literal_lattice(String) -> @infer.InferredType
 
+pub fn int_literal_u64(@ast.InstrDesc[@basic.Location]) -> UInt64?
+
 pub fn internalize(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident], inline? : @ast.CompType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn internalize_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @infer.InferredValType?
@@ -196,9 +202,21 @@ pub fn lookup_struct_type(@typing_env.TypeContext, @diagnostic.Context, @ast.Ide
 
 pub fn mark_initialized(@typing_env.ModuleContext, String) -> Unit
 
+pub let max_align : UInt64
+
+pub let max_offset_i32_exclusive : UInt64
+
 pub fn mem_load_result(String) -> @infer.InferredType?
 
+pub fn mem_natural_align(String) -> Int
+
 pub fn mem_store_method(String) -> Bool
+
+pub fn memory_align_too_large(@diagnostic.Context, @basic.Location, Int) -> Unit
+
+pub fn memory_immediate_too_large(@diagnostic.Context, @basic.Location) -> Unit
+
+pub fn memory_offset_too_large(@diagnostic.Context, @basic.Location, UInt64) -> Unit
 
 pub fn memory_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 

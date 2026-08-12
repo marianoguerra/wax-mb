@@ -3261,3 +3261,104 @@ test "function types match contravariantly in their parameters" {
     content="false",
   )
 }
+
+///|
+/// The alignment is a PROMISE, not a request: it tells the engine the address
+/// is already aligned so the access can skip a check. Promising more than the
+/// access needs is unverifiable and rejected; promising less merely forgoes an
+/// optimisation and is allowed.
+test "an alignment may not claim more than the access can use" {
+  fn complain(meth : String, align : String) -> String {
+    let d = @diagnostic.collector()
+    @typing.check_memarg(
+      d,
+      I32,
+      @typing.mem_natural_align(meth),
+      Some({ desc: Int(align), info: loc_at(0, 2) }),
+      None,
+    )
+    if d.collected().is_empty() {
+      "accepted"
+    } else {
+      @message.to_plain_string(d.collected()[0].message)
+    }
+  }
+
+  // Exactly natural, and below it.
+  inspect(complain("load32", "4"), content="accepted")
+  inspect(complain("load32", "1"), content="accepted")
+  inspect(complain("load32", "2"), content="accepted")
+  // Above natural: a guarantee the access cannot use.
+  inspect(
+    complain("load32", "8"),
+    content="The memory alignment is larger than the natural alignment 4.",
+  )
+  // A narrow access has a narrow natural alignment.
+  inspect(
+    complain("load8", "2"),
+    content="The memory alignment is larger than the natural alignment 1.",
+  )
+  // Not a power of two. Checked after the bound, so one that is both reports as
+  // too large -- the more specific complaint.
+  inspect(
+    complain("load64", "3"),
+    content="The memory alignment should be a power of two.",
+  )
+  inspect(
+    complain("load8", "3"),
+    content="The memory alignment is larger than the natural alignment 1.",
+  )
+}
+
+///|
+/// The offset is bounded by the ADDRESS TYPE rather than by the access: on a
+/// 32-bit memory an offset at or past 2^32 can never name a reachable address,
+/// whatever the base.
+test "an offset is bounded by what the address type can reach" {
+  fn complain(at : @wasm_types.AddressType, offset : String) -> String {
+    let d = @diagnostic.collector()
+    @typing.check_memarg(
+      d,
+      at,
+      4,
+      None,
+      Some({ desc: Int(offset), info: loc_at(0, 2) }),
+    )
+    if d.collected().is_empty() {
+      "accepted"
+    } else {
+      @message.to_plain_string(d.collected()[0].message)
+    }
+  }
+
+  inspect(complain(I32, "4294967295"), content="accepted")
+  inspect(
+    complain(I32, "4294967296"),
+    content="The memory offset should be less than 0x100000000.",
+  )
+  // A 64-bit memory reaches further, so the same offset is fine.
+  inspect(complain(I64, "4294967296"), content="accepted")
+  // Past u64 it is not an offset at all.
+  inspect(
+    complain(I64, "18446744073709551616"),
+    content="This memory offset or alignment must fit a 64-bit unsigned integer.",
+  )
+}
+
+///|
+/// The two immediates are checked independently, because they are two separate
+/// things the author wrote and either can be wrong on its own.
+test "a bad offset and a bad alignment are both reported" {
+  let d = @diagnostic.collector()
+  @typing.check_memarg(
+    d,
+    I32,
+    4,
+    Some({ desc: Int("8"), info: loc_at(10, 12) }),
+    Some({ desc: Int("4294967296"), info: loc_at(0, 2) }),
+  )
+  inspect(
+    d.collected().map(x => @message.to_plain_string(x.message)).join(" / "),
+    content="The memory offset should be less than 0x100000000. / The memory alignment is larger than the natural alignment 4.",
+  )
+}
