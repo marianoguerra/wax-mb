@@ -5942,3 +5942,161 @@ test "a br_on_null on a bare null falls through to the bottom reference" {
   )
   inspect(checker.gaps().length(), content="0")
 }
+
+///|
+/// The reference-hierarchy lub: the piece `join_value_types` has been taking as
+/// a parameter since the block-exit fold, because it is the only part of a join
+/// that needs the type table.
+test "the lub climbs to a common supertype, or finds none" {
+  let ctx = module_ctx()
+  // `dog <: animal <: struct`, and `rock` unrelated to both.
+  let module_ : @ast.Module[@basic.Location] = [
+    {
+      desc: Type([
+        {
+          desc: (
+            id("animal"),
+            {
+              typ: Struct([]),
+              supertype: None,
+              final_: false,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(0, 6),
+        },
+      ]),
+      info: loc_at(0, 6),
+    },
+    {
+      desc: Type([
+        {
+          desc: (
+            id("dog"),
+            {
+              // A field of its own: two structurally identical types ARE the same
+              // type after interning, which would make this test say nothing.
+              typ: Struct([
+                {
+                  desc: (id("bark"), { mut_: false, typ: Value(I32) }),
+                  info: loc_at(10, 11),
+                },
+              ]),
+              supertype: Some(id("animal")),
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(10, 13),
+        },
+      ]),
+      info: loc_at(10, 13),
+    },
+    {
+      desc: Type([
+        {
+          desc: (
+            id("cat"),
+            {
+              typ: Struct([
+                {
+                  desc: (id("purr"), { mut_: false, typ: Value(F64) }),
+                  info: loc_at(20, 21),
+                },
+              ]),
+              supertype: Some(id("animal")),
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(20, 23),
+        },
+      ]),
+      info: loc_at(20, 23),
+    },
+    {
+      desc: Type([
+        {
+          desc: (
+            id("thing"),
+            {
+              typ: Array({ mut_: false, typ: Value(I32) }),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(30, 35),
+        },
+      ]),
+      info: loc_at(30, 35),
+    },
+  ]
+  @typing.declare_fields(ctx, module_)
+  fn lub(
+    a : @wasm_types.HeapType[@ast.Ident],
+    b : @wasm_types.HeapType[@ast.Ident],
+  ) -> String {
+    match @typing.heap_lub(ctx.type_context, a, b) {
+      Some(h) =>
+        @infer.to_string(
+          @infer.Cell::make(
+            Valtype({
+              typ: Ref({ nullable: false, typ: h }),
+              internal: Ref({ nullable: false, typ: Any }),
+              anon_comptype: None,
+            }),
+          ),
+        )
+      None => "none"
+    }
+  }
+
+  // Two siblings meet at their declared supertype.
+  inspect(lub(Type(id("dog")), Type(id("cat"))), content="&animal")
+  // A type and its own supertype meet at the supertype.
+  inspect(lub(Type(id("dog")), Type(id("animal"))), content="&animal")
+  // A struct and an array meet at `eq`, which is where the hierarchy joins.
+  inspect(lub(Type(id("dog")), Type(id("thing"))), content="&eq")
+  // The bottom of a hierarchy is below everything in it, so it yields the
+  // other side rather than climbing past a named type to `struct`.
+  inspect(lub(None_, Type(id("dog"))), content="&dog")
+  // Different hierarchies share no value at all.
+  inspect(lub(Type(id("dog")), Func), content="none")
+  inspect(lub(Any, Extern), content="none")
+  // Exactness survives only when both sides are the same exact type.
+  inspect(lub(Exact(id("dog")), Exact(id("dog"))), content="&!dog")
+  inspect(lub(Exact(id("dog")), Exact(id("cat"))), content="&animal")
+}
+
+///|
+/// Nullability is the OR of the two sides: a value that may be null on either
+/// side may be null in the result.
+test "a lub is nullable if either side was" {
+  let ctx = module_ctx()
+  fn lub(n1 : Bool, n2 : Bool) -> String {
+    match
+      @typing.val_lub(
+        ctx.type_context,
+        Ref({ nullable: n1, typ: Struct }),
+        Ref({ nullable: n2, typ: Array }),
+      ) {
+      Some(v) =>
+        match
+          @typing.internalize_valtype(ctx.type_context, ctx.diagnostics, v) {
+          Some(iv) => @infer.to_string(@infer.valtype_cell(iv))
+          None => "unresolved"
+        }
+      None => "none"
+    }
+  }
+
+  inspect(lub(false, false), content="&eq")
+  inspect(lub(true, false), content="&?eq")
+  inspect(lub(false, true), content="&?eq")
+  inspect(lub(true, true), content="&?eq")
+}
