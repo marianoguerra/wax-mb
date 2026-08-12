@@ -151,11 +151,8 @@ fn Lowering::field(
       self.export_of(m, attributes, Table(self.table_index(name, loc)), name)
     }
     Tag(name~, attributes~, ..) => {
-      guard self.ctx.tags.find_no_mark(name.name) is Some(_) else {
-        raise Unresolved("tag signature", loc)
-      }
-      raise NotLowered("tag", loc)
-      ignore(attributes)
+      m.tags.push({ type_idx: self.tag_type_index(name, loc) })
+      self.export_of(m, attributes, Tag(self.tag_index(name, loc)), name)
     }
     Elem(name~, reftype~, mode~, init~, ..) => {
       let mode_ = match mode {
@@ -408,7 +405,7 @@ fn Lowering::import_(
         limits: { mi, ma, address_type, page_size_log2: None, shared: false },
       })
     }
-    Tag(..) => raise NotLowered("imported tag", loc)
+    Tag(..) => Tag(self.tag_type_index(decl.id, loc))
   }
   m.imports.push({ mod_name: module_, name, desc })
   // An import may be re-exported, and then it is exported under the name THIS
@@ -418,7 +415,7 @@ fn Lowering::import_(
     Global(..) => Global(self.global_index(decl.id, loc))
     Memory(..) => Memory(self.memory_index(decl.id, loc))
     Table(..) => Table(self.table_index(decl.id, loc))
-    Tag(..) => raise NotLowered("imported tag", loc)
+    Tag(..) => Tag(self.tag_index(decl.id, loc))
   }
   self.export_of(m, decl.attributes, export_desc, decl.id)
 }
@@ -437,6 +434,47 @@ fn Lowering::valtype_index(
     F64 => F64
     V128 => V128
     Ref(r) => Ref(self.reftype_index(r, loc))
+  }
+}
+
+///|
+/// The type index a tag's signature interned to.
+///
+/// A tag names a function type, and the store interned it structurally -- so
+/// the lookup is BY SHAPE, exactly as a block's is. A tag whose inline
+/// signature matches nothing in the store is one the checker never interned,
+/// and there is no index to name it by.
+fn Lowering::tag_type_index(
+  self : Lowering,
+  name : @ast.Ident,
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  guard self.ctx.tags.find_no_mark(name.name) is Some(ft) else {
+    raise Unresolved("tag signature", loc)
+  }
+  let params : Array[@wasm_types.ValType[Int]] = []
+  for p in ft.params {
+    params.push(self.valtype_index(p.desc.1, loc))
+  }
+  let results : Array[@wasm_types.ValType[Int]] = []
+  for r in ft.results {
+    results.push(self.valtype_index(r, loc))
+  }
+  guard self.functypes.get((params, results)) is Some(i) else {
+    raise Unresolved("tag type", loc)
+  }
+  i
+}
+
+///|
+fn Lowering::tag_index(
+  self : Lowering,
+  name : @ast.Ident,
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  match self.indices.tags.get(name.name) {
+    Some(i) => i
+    None => raise Unresolved("tag index", loc)
   }
 }
 

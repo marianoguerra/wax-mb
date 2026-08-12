@@ -235,22 +235,49 @@ pub fn Lowering::instr(
       for a in args {
         self.instr(out, a)
       }
-      guard callee.desc is Get(name) else {
-        // Named precisely, because these are three different jobs wearing one
-        // syntax and the burn-down needs to tell them apart.
-        raise NotLowered(
-          match callee.desc {
-            StructGet(_, meth) => "method '" + meth.name + "'"
-            Path(ns, meth) => "intrinsic '" + ns.name + "::" + meth.name + "'"
-            _ => "indirect call"
-          },
-          loc,
-        )
+      match callee.desc {
+        // A DIRECT call: the callee names a function, and the index is enough.
+        Get(name) if self.indices.funcs.get(name.name) is Some(_) &&
+          !self.locals.contains(name.name) => {
+          guard self.indices.funcs.get(name.name) is Some(f) else {
+            raise Unresolved("call target", loc)
+          }
+          out.push(Call(f))
+        }
+        // Anything else that produced a function REFERENCE is called through
+        // it. The type index comes from the reference's own type, which is
+        // what makes `call_ref` typed at all.
+        _ =>
+          if node_type_index(callee) is Some(t) {
+            self.instr(out, callee)
+            out.push(CallRef(t))
+          } else {
+            // Named precisely, because these are different jobs wearing one
+            // syntax and the burn-down needs to tell them apart.
+            raise NotLowered(
+              match callee.desc {
+                StructGet(_, meth) => "method '" + meth.name + "'"
+                Path(ns, meth) =>
+                  "intrinsic '" + ns.name + "::" + meth.name + "'"
+                _ => "indirect call"
+              },
+              loc,
+            )
+          }
       }
-      guard self.indices.funcs.get(name.name) is Some(f) else {
-        raise Unresolved("call target", loc)
+    }
+    Throw(tag, args) => {
+      for a in args {
+        self.instr(out, a)
       }
-      out.push(Call(f))
+      guard self.indices.tags.get(tag.name) is Some(t) else {
+        raise Unresolved("tag", loc)
+      }
+      out.push(Throw(t))
+    }
+    ThrowRef(e) => {
+      self.instr(out, e)
+      out.push(ThrowRef)
     }
     Cast(operand, target) => {
       // A narrow load and a following sign cast are ONE instruction: wax splits
