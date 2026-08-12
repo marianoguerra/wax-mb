@@ -686,45 +686,24 @@ fn Lowering::hinted(
         self.fused_packed_read(out, operand, signage, loc) {
         return
       }
+      // `(x as i32) as i64_s` where `x` is an i64 is ONE instruction. There is
+      // no wax spelling for `i64.extend32_s`, so the decompiler renders it as
+      // the wrap-then-widen pair; re-fuse it. Only a SIGNED widening of a
+      // genuinely wrapped i64 is that instruction -- an unsigned widen, or an
+      // i32 source where the inner cast is the identity, is something else.
+      if target is Signed(typ=I64, signage=Signed, ..) &&
+        operand.desc is Cast(inner, Value(I32)) &&
+        node_valtype(inner) is Some(I64) {
+        self.instr(out, inner)
+        out.push(I64Extend32S)
+        return
+      }
       self.instr(out, operand)
-      guard node_valtype(operand) is Some(from) else {
+      guard node_valtype(operand) is Some(operand_type) else {
         raise Unresolved("cast operand type", loc)
       }
-      match target {
-        Value(_) => {
-          guard node_valtype(i) is Some(to) else {
-            raise Unresolved("cast target type", loc)
-          }
-          match to {
-            Ref(r) =>
-              // Crossing between the `any` and `extern` hierarchies is a
-              // CONVERSION, not a check: the two share no value, so a cast
-              // between them could only trap, and what the source means is the
-              // lossless form.
-              match (from, hierarchy_conversion_of(from, r.typ)) {
-                (_, Some(conv)) => out.push(conv)
-                _ => out.push(RefCast(r))
-              }
-            _ => {
-              guard numeric_cast(from, to) is Some(instrs) else {
-                raise NotLowered("cast between these types", loc)
-              }
-              for x in instrs {
-                out.push(x)
-              }
-            }
-          }
-        }
-        Signed(typ~, signage~, strict~) => {
-          guard signed_cast(from, typ, signage, strict) is Some(instrs) else {
-            raise NotLowered("signed cast between these types", loc)
-          }
-          for x in instrs {
-            out.push(x)
-          }
-        }
-        Func(..) => raise NotLowered("function-type cast", loc)
-      }
+      let from = cast_prologue(out, operand_type, target)
+      self.cast_instruction(out, from, target, i, loc)
     }
     Null =>
       match node_valtype(i) {
@@ -1321,16 +1300,6 @@ fn Lowering::mgmt_call(
     _ => return false
   }
   true
-}
-
-///|
-/// The hierarchy conversion between a value type and a target heap type.
-fn hierarchy_conversion_of(
-  from : @wasm_types.ValType[Int],
-  to : @wasm_types.HeapType[Int],
-) -> @wasm_bin.Instruction? {
-  guard from is Ref(r) else { return None }
-  hierarchy_conversion(r.typ, to)
 }
 
 ///|

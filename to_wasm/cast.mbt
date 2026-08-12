@@ -131,3 +131,163 @@ pub fn hierarchy_conversion(
     None
   }
 }
+
+///|
+/// Emit whatever must happen BEFORE a cast's own instruction, and report the
+/// type the value then has.
+///
+/// Several wax casts are two wasm instructions, because the source names only
+/// the destination and the route there passes through a forced intermediate.
+/// `r as i64_s` on a reference is `i31.get_s` and then a widening; `n as
+/// &extern` on an i64 wraps to an i32, boxes it as an i31, and only then
+/// converts. Emitting the intermediate here -- and reporting the type it
+/// leaves -- is what lets the single match below finish every one of them the
+/// same way the equivalent double cast would.
+fn cast_prologue(
+  out : Array[@wasm_bin.Instruction],
+  from : @wasm_types.ValType[Int],
+  target : @ast.CastType,
+) -> @wasm_types.ValType[Int] {
+  let i31ref : @wasm_types.RefType[Int] = { nullable: false, typ: I31 }
+  match (from, target) {
+    // `r as i32_s/u`: an i31 is already one, and anything else in the `any`
+    // hierarchy is cast to one first. The `i31.get` follows in the match.
+    (Ref({ typ: I31, .. }), Signed(typ=I32, ..)) => from
+    (Ref(_), Signed(typ=I32, ..)) => {
+      out.push(RefCast(i31ref))
+      from
+    }
+    // `r as i64_s/u`: the same, and then the i32 it yields is widened.
+    (Ref({ typ: I31, .. }), Signed(typ=I64, signage~, ..)) => {
+      out.push(i31_get(signage))
+      I32
+    }
+    (Ref(_), Signed(typ=I64, signage~, ..)) => {
+      out.push(RefCast(i31ref))
+      out.push(i31_get(signage))
+      I32
+    }
+    // `ref.i31` takes an i32, so an i64 wraps first.
+    (I64, Value(Ref({ typ: I31, .. }))) => {
+      out.push(I32WrapI64)
+      I32
+    }
+    // Crossing into the `extern` hierarchy from a number: box as an i31 first,
+    // because the conversion takes a reference.
+    (I32, Value(Ref({ typ: Extern, .. }))) => {
+      out.push(RefI31)
+      Ref({ nullable: false, typ: I31 })
+    }
+    (I64, Value(Ref({ typ: Extern, .. }))) => {
+      out.push(I32WrapI64)
+      out.push(RefI31)
+      Ref({ nullable: false, typ: I31 })
+    }
+    // `extern as &T` for an `any`-hierarchy T: convert to `any` first, and let
+    // the match below do the `ref.cast` to T. A non-null `&any` target from a
+    // NULLABLE operand needs that cast too, to null-check the conversion's
+    // result; a non-null operand already yields a non-null `any`, so it does
+    // not, and falls to the convert alone.
+    (
+      Ref({ typ: Extern | NoExtern, .. }),
+      Value(
+        Ref({ typ: Eq | I31 | Struct | Array | Type(_) | Exact(_) | None_, .. })
+      ),
+    )
+    | (
+      Ref({ typ: Extern | NoExtern, nullable: true }),
+      Value(Ref({ typ: Any, nullable: false })),
+    ) => {
+      out.push(AnyConvertExtern)
+      Ref({ nullable: true, typ: Any })
+    }
+    _ => from
+  }
+}
+
+///|
+/// The `i31.get` of this signedness. An i31 is 31 bits wide, so reading it as
+/// an i32 has to say what the missing bit becomes.
+fn i31_get(signage : @wasm_types.Signage) -> @wasm_bin.Instruction {
+  match signage {
+    Signed => I31GetS
+    Unsigned => I31GetU
+  }
+}
+
+///|
+/// Emit a cast's own instruction, given the type the prologue left.
+///
+/// Every arm here is one instruction or none. An identity cast is real in the
+/// source -- it pins a width the checker used -- and nothing at all in the
+/// output, which is why the reference calls its sentinel `Nop` and then elides
+/// it.
+fn Lowering::cast_instruction(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  from : @wasm_types.ValType[Int],
+  target : @ast.CastType,
+  node : @ast.Instr[@typing_env.InferredAnnotation],
+  loc : @basic.Location,
+) -> Unit raise LowerError {
+  match (from, target) {
+    (I32, Value(Ref({ typ: I31, .. }))) => out.push(RefI31)
+    (Ref(_), Signed(typ=I32, signage~, ..)) => out.push(i31_get(signage))
+    (
+      Ref(
+        {
+          typ: Any
+          | Eq
+          | I31
+          | Struct
+          | Array
+          | Type(_)
+          | Exact(_)
+          | None_,
+          ..,
+        }
+      ),
+      Value(Ref({ typ: Extern, .. })),
+    ) => out.push(ExternConvertAny)
+    (Ref({ typ: Extern | NoExtern, .. }), Value(Ref({ typ: Any, .. }))) =>
+      out.push(AnyConvertExtern)
+    (Ref(_), Value(Ref(r))) => out.push(RefCast(self.reftype_index(r, loc)))
+    (I64, Value(I32)) => out.push(I32WrapI64)
+    (F64, Value(F32)) => out.push(F32DemoteF64)
+    (F32, Value(F64)) => out.push(F64PromoteF32)
+    (I32, Signed(typ=I64, signage~, ..)) =>
+      out.push(
+        match signage {
+          Signed => I64ExtendI32S
+          Unsigned => I64ExtendI32U
+        },
+      )
+    // A cast to an inline function type is a `ref.cast` to the anonymous type
+    // minted for the cast's own result.
+    (_, Func(..)) => {
+      guard node_valtype(node) is Some(Ref(r)) else {
+        raise Unresolved("function-type cast", loc)
+      }
+      out.push(RefCast(r))
+    }
+    (_, Signed(typ~, signage~, strict~)) => {
+      guard signed_cast(from, typ, signage, strict) is Some(instrs) else {
+        raise NotLowered("signed cast between these types", loc)
+      }
+      for x in instrs {
+        out.push(x)
+      }
+    }
+    (_, Value(_)) => {
+      guard node_valtype(node) is Some(to) else {
+        raise Unresolved("cast target type", loc)
+      }
+      guard numeric_cast(from, to) is Some(instrs) else {
+        raise NotLowered("cast between these types", loc)
+      }
+      for x in instrs {
+        out.push(x)
+      }
+    }
+  }
+}
