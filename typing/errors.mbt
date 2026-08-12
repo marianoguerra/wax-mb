@@ -1871,3 +1871,118 @@ pub fn precedence(
     edit~,
   )
 }
+
+///|
+/// Two exports of the same name.
+pub fn duplicated_export(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  prev_loc : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("There is already an export of name")
+    .sep(@message.code(name))
+    .seq(@message.text(".")),
+    related=[
+      { loc: prev_loc, message: @message.text("previously exported here") },
+    ],
+  )
+}
+
+///|
+/// More than one start function in one configuration.
+pub fn multiple_start(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  prev_loc : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A module can have at most one start function."),
+    related=[
+      { loc: prev_loc, message: @message.text("other start function here") },
+    ],
+  )
+}
+
+///|
+/// More than one module name annotation.
+pub fn multiple_module(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  prev_loc : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A module can have at most one name annotation."),
+    related=[
+      { loc: prev_loc, message: @message.text("other name annotation here") },
+    ],
+  )
+}
+
+///|
+/// A memory or table whose size exceeds what its address type can index.
+pub fn limit_too_large(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  kind : String,
+  max : UInt64,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The")
+    .sep(@message.text(kind))
+    .sep(@message.text("size is too large. It should be less than"))
+    .sep(@message.styled(Constant, "0x" + hex_u64(max)))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// A maximum size below the minimum.
+pub fn limit_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  kind : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The")
+    .sep(@message.text(kind))
+    .sep(@message.text("maximum size should be larger than the minimal size.")),
+  )
+}
+
+///|
+/// A page size that is neither the default nor one byte.
+pub fn invalid_page_size(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The custom page size must be 1 or 65536."),
+  )
+}
+
+///|
+/// A shared memory with no maximum.
+pub fn shared_memory_without_max(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A shared memory must have a maximum size."),
+  )
+}

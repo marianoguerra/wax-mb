@@ -9032,3 +9032,27 @@ test "an expression is effectless only when nothing it does can be observed" {
   inspect(pure(Call(instr(StructGet(one, id("sqrt"))), [])), content="true")
   inspect(pure(Call(instr(Get(id("f"))), [])), content="false")
 }
+
+///|
+/// A memory's ceiling is not a constant: it is what the ADDRESS TYPE can index,
+/// divided by the page size. So the two immediates that look independent decide
+/// the limit between them.
+test "a memory's size limit follows its address type and page size" {
+  fn max_of(t : @wasm_types.AddressType, p : Int?) -> String {
+    "0x" + @typing.hex_u64(@typing.max_memory_size(t, p))
+  }
+
+  // 32-bit addressing with the default 64KiB pages: 2^16 pages.
+  inspect(max_of(I32, None), content="0x10000")
+  inspect(max_of(I32, Some(16)), content="0x10000")
+  // One-byte pages: every address is a page, so the index space itself.
+  inspect(max_of(I32, Some(0)), content="0xffffffff")
+  // 64-bit addressing is capped at what a u64 index reaches, not 2^64 pages.
+  inspect(max_of(I64, Some(16)), content="0x1000000000000")
+  inspect(max_of(I64, Some(0)), content="0xffffffffffffffff")
+  // A table has no page size, so only its address type bounds it.
+  inspect(
+    "0x" + @typing.hex_u64(@typing.max_table_size(I32)),
+    content="0xffffffff",
+  )
+}

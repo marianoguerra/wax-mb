@@ -54,6 +54,8 @@ pub fn cast_is_total(@ast.CastType) -> Bool
 
 pub fn catch_target_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
+pub fn check_attributes(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
+
 pub fn check_elem_subtype(@typing_env.ModuleContext, @basic.Location, @wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> Unit
 
 pub fn check_fields(@typing_env.ModuleContext, Operands, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]]
@@ -65,6 +67,8 @@ pub fn check_inline_type(@typing_env.TypeContext, @diagnostic.Context, @basic.Lo
 pub fn check_int_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
 pub fn check_lane_immediate(@diagnostic.Context, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]) -> Unit
+
+pub fn check_limits(@typing_env.ModuleContext, @basic.Location, String, @wasm_types.AddressType, (UInt64, UInt64?)?, page_size_log2? : Int?, shared? : Bool) -> Unit
 
 pub fn check_memarg(@diagnostic.Context, @wasm_types.AddressType, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?) -> Unit
 
@@ -141,6 +145,8 @@ pub fn dispatch_duplicate_arm(@diagnostic.Context, @basic.Location, @basic.Locat
 pub fn division_by_zero(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn duplicate_argument_label(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
+
+pub fn duplicated_export(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
 pub fn duplicated_field(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
@@ -224,6 +230,8 @@ pub fn heap_lub(@typing_env.TypeContext, @wasm_types.HeapType[@ast.Ident], @wasm
 
 pub fn heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
 
+pub fn hex_u64(UInt64) -> String
+
 pub fn if_without_else(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn immediate_supertype(@ast.SubType) -> @wasm_types.HeapType[@ast.Ident]
@@ -274,6 +282,8 @@ pub fn invalid_management_call(@diagnostic.Context, @basic.Location, String) -> 
 
 pub fn invalid_method_receiver(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
 
+pub fn invalid_page_size(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn invalid_string_element_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn is_binary_method(String) -> Bool
@@ -320,6 +330,10 @@ pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.L
 
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
 
+pub fn limit_mismatch(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn limit_too_large(@diagnostic.Context, @basic.Location, String, UInt64) -> Unit
+
 pub fn lint_confusable(@diagnostic.Context, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
 
 pub fn lint_division(@typing_env.ModuleContext, @basic.Annotated[@ast.BinOp, @basic.Location], @ast.Instr[@basic.Location]) -> Unit
@@ -350,7 +364,11 @@ pub fn mark_initialized(@typing_env.ModuleContext, String) -> Unit
 
 pub let max_align : UInt64
 
+pub fn max_memory_size(@wasm_types.AddressType, Int?) -> UInt64
+
 pub let max_offset_i32_exclusive : UInt64
+
+pub fn max_table_size(@wasm_types.AddressType) -> UInt64
 
 pub fn mem_immediates(@diagnostic.Context, @basic.Location, String, Int, has_lane~ : Bool, Map[String, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]], Array[@ast.Instr[@basic.Location]]) -> (@basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?)
 
@@ -379,6 +397,10 @@ pub fn missing_field(@diagnostic.Context, @basic.Location, String) -> Unit
 pub fn missing_lane_immediate(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn module_name_in_conditional(@diagnostic.Context, @basic.Location) -> Unit
+
+pub fn multiple_module(@diagnostic.Context, @basic.Location, @basic.Location) -> Unit
+
+pub fn multiple_start(@diagnostic.Context, @basic.Location, @basic.Location) -> Unit
 
 pub fn n_fieldtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
 
@@ -475,6 +497,8 @@ pub fn segment_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 pub fn select_type_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn set_suggestions(@typing_env.ModuleContext, String) -> Array[String]
+
+pub fn shared_memory_without_max(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn shift_overflow(@diagnostic.Context, @basic.Location, Int, Int64) -> Unit
 

@@ -166,6 +166,7 @@ fn check_field(
       Some(Func(name~, typ~, sign~, body=(label, checked), attributes~))
     }
     Table(name~, address_type~, reftype~, limits~, init~, attributes~) => {
+      check_limits(ctx, field.info, "table", address_type, limits)
       let init_ = match init {
         Some(e) =>
           Some(
@@ -194,10 +195,11 @@ fn check_field(
       let mode_ = match mode {
         EPassive => @ast.ElemMode::EPassive
         EActive(tab, offset) => {
-          // An active segment NAMES its table, and that is a use of it.
-          note_use(ctx, ctx.tables, tab)
+          // An active segment NAMES its table -- a use of it, and a place the
+          // name can be wrong, so the lookup both marks and reports.
+          let resolved = find(ctx.tables, ctx.diagnostics, tab)
           let o = checker.statement(offset)
-          let at = match ctx.tables.find_no_mark(tab.name) {
+          let at = match resolved {
             Some((a, _)) => address_cell(a)
             None => i32c()
           }
@@ -211,9 +213,9 @@ fn check_field(
       let mode_ = match mode {
         Passive => @ast.DataMode::Passive
         Active(mem, offset) => {
-          note_use(ctx, ctx.memories, mem)
+          let resolved = find(ctx.memories, ctx.diagnostics, mem)
           let o = checker.statement(offset)
-          let at = match ctx.memories.find_no_mark(mem.name) {
+          let at = match resolved {
             Some((_, a)) => address_cell(a)
             None => i32c()
           }
@@ -232,6 +234,15 @@ fn check_field(
       data~,
       attributes~
     ) => {
+      check_limits(
+        ctx,
+        field.info,
+        "memory",
+        address_type,
+        limits,
+        page_size_log2~,
+        shared~,
+      )
       // An inline data segment's offset indexes THIS memory, so it takes its
       // address type rather than a default.
       let at = address_cell(address_type)
@@ -305,6 +316,9 @@ pub fn check_module(
     lint_confusable(diagnostics, fields)
   }
   declare_fields(ctx, fields)
+  // The module-wide attribute constraints -- one export per name, one start,
+  // one module name -- which no single field can answer on its own.
+  check_attributes(ctx, fields)
   let typed = check_fields(ctx, Operands::new(), fields)
   // Last: what counts as a USE of a module field is what reached it while every
   // body was checked, so this cannot be answered until they all have been.
