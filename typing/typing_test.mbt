@@ -6979,3 +6979,79 @@ test "a narrow atomic rmw takes its width from its value" {
     content="float | This operator cannot be applied to operands of types 'float' and 'int'.",
   )
 }
+
+///|
+/// A SIMD memory access is an ordinary one whose operands and result are
+/// vectors -- and the lane-taking forms need a `lane:` immediate, whose bound
+/// comes from the access WIDTH rather than from any shape.
+test "a simd memory access needs its lane immediate" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn access(
+    meth : String,
+    args : Array[@ast.Instr[@basic.Location]],
+  ) -> String {
+    let ctx = module_ctx()
+    ctx.memories.add(ctx.diagnostics, "mem", loc_at(0, 3), (0, I32))
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(
+      instr(
+        Call(
+          instr(
+            StructGet(instr(Get(id("mem")), 20), {
+              name: meth,
+              loc: loc_at(24, 36),
+            }),
+            20,
+          ),
+          args,
+        ),
+        10,
+      ),
+    )
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  fn labelled(name : String, v : String) -> @ast.Instr[@basic.Location] {
+    instr(Labelled({ name, loc: loc_at(40, 46) }, instr(Int(v), 48)), 40)
+  }
+
+  let addr = instr(Int("0"), 30)
+  // A whole-vector load produces a v128.
+  inspect(access("loadv128", [addr]), content="v128 |  | 0")
+  // A lane load takes the vector to write into, and the lane to write.
+  let vec = instr(Get(id("v")), 34)
+  ignore(vec)
+  // Written without its `lane:`, which is the one thing it cannot do without.
+  inspect(
+    access("load8_lane", [addr, instr(Int("0"), 34)]),
+    content="v128 | This expression has type 'number' but is expected to have type 'v128'. / This memory access needs a 'lane:' immediate (e.g. 'lane: 0'). | 0",
+  )
+  // A lane past the bound: a `load8_lane` writes one of SIXTEEN byte lanes.
+  inspect(
+    access("load8_lane", [addr, instr(Int("0"), 34), labelled("lane", "16")]),
+    content="v128 | This expression has type 'number' but is expected to have type 'v128'. / The lane index should be less than 16. | 0",
+  )
+  // And a `load64_lane` one of only two.
+  inspect(
+    access("load64_lane", [addr, instr(Int("0"), 34), labelled("lane", "2")]),
+    content="v128 | This expression has type 'number' but is expected to have type 'v128'. / The lane index should be less than 2. | 0",
+  )
+}

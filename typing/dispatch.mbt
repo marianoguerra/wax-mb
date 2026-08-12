@@ -1645,6 +1645,27 @@ pub fn Checker::statement(
         expected: i.expected,
       }
     }
+    Call(callee, args) if self.simd_mem_intrinsic(callee) is Some(_) => {
+      guard callee.desc is StructGet(recv, meth) else {
+        return self.poisoned(i)
+      }
+      guard recv.desc is Get(memname) else { return self.poisoned(i) }
+      guard self.simd_mem_intrinsic(callee) is Some(mop) else {
+        return self.poisoned(i)
+      }
+      let (checked_args, results) = self.simd_mem_access(
+        loc, memname, meth, mop, args,
+      )
+      {
+        desc: Call(
+          callee.map_info(_ => annotate([], callee.info)),
+          checked_args,
+        ),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
     Call(callee, args) if self.atomic_family(callee) is Some(_) => {
       guard callee.desc is StructGet(recv, meth) else {
         return self.poisoned(i)
@@ -3280,6 +3301,124 @@ fn Checker::atomic_access(
       Some(v) if v == natural.to_uint64() => ()
       _ => atomic_alignment(ctx.diagnostics, a.info, natural)
     }
+  }
+  (checked, results)
+}
+
+///|
+/// The SIMD memory intrinsic a call names, if any.
+fn Checker::simd_mem_intrinsic(
+  self : Checker,
+  callee : @ast.Instr[@basic.Location],
+) -> @simd.MemIntrinsic? {
+  guard callee.desc is StructGet(recv, meth) else { return None }
+  guard recv.desc is Get(memname) else { return None }
+  guard classify_method_call(self.ctx, memname, meth.name) is SimdMemAccess else {
+    return None
+  }
+  @simd.mem_method(meth.name)
+}
+
+///|
+/// The cell for a SIMD operand type.
+fn simd_cell(t : @simd.Ty) -> @infer.Cell[@infer.InferredType] {
+  match t {
+    // `infer` carries no v128 constant, the type having no flexible form to
+    // sit alongside -- a vector is only ever itself.
+    TV128 =>
+      @infer.valtype_cell({ typ: V128, internal: V128, anon_comptype: None })
+    TI32 => @infer.valtype_cell(@infer.i32_valtype)
+    TI64 => @infer.valtype_cell(@infer.i64_valtype)
+    TF32 => @infer.valtype_cell(@infer.f32_valtype)
+    TF64 => @infer.valtype_cell(@infer.f64_valtype)
+  }
+}
+
+///|
+/// Type a SIMD memory access: `mem.loadv128(a)`, `mem.load8_lane(a, v, lane: 0)`.
+///
+/// The lane-taking forms need their `lane:` immediate, and its bound comes from
+/// the access WIDTH -- a `load8_lane` writes into one of sixteen byte lanes, a
+/// `load64_lane` into one of two.
+fn Checker::simd_mem_access(
+  self : Checker,
+  location : @basic.Location,
+  memname : @ast.Ident,
+  meth : @ast.Ident,
+  mop : @simd.MemIntrinsic,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> (
+  Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  Array[@infer.Cell[@infer.InferredType]],
+) {
+  let ctx = self.ctx
+  let address_type = match ctx.memories.find_no_mark(memname.name) {
+    Some((_, at)) => at
+    None => @wasm_types.AddressType::I32
+  }
+  let nstack = mop.operands.length()
+  let split = split_labelled_args(args)
+  let allowed = if mop.lane {
+    ["lane", "offset", "align"]
+  } else {
+    ["offset", "align"]
+  }
+  let found = take_labels(ctx.diagnostics, allowed, split.labelled)
+  let example = memname.name +
+    "." +
+    meth.name +
+    (if mop.lane { "(..., lane: 0, offset: 16)" } else { "(..., offset: 16)" })
+  let (lane, align, offset) = mem_immediates(
+    ctx.diagnostics,
+    location,
+    example,
+    nstack,
+    has_lane=mop.lane,
+    found,
+    split.positional,
+  )
+  let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  for k, a in split.positional {
+    let c = self.statement(a)
+    let ty = expression_type(ctx, c.info)
+    if k == 0 {
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        a.info,
+        ty,
+        address_cell(address_type),
+      )
+    } else if k < nstack {
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        a.info,
+        ty,
+        simd_cell(mop.operands[k]),
+      )
+    }
+    checked.push(c)
+  }
+  if mop.lane {
+    match lane {
+      Some(l) =>
+        check_lane_immediate(ctx.diagnostics, mem_lane_bound(mop.nat_align), l)
+      None =>
+        // Only when the stack operands are exactly accounted for and no
+        // ill-formed `lane:` was written: too few or too many positional
+        // arguments were reported just above, and a non-constant lane payload
+        // by `take_labels`.
+        if split.positional.length() == nstack &&
+          !split.labelled.iter().any(p => p.0.name == "lane") {
+          missing_lane_immediate(ctx.diagnostics, meth.loc)
+        }
+    }
+  }
+  check_memarg(ctx.diagnostics, address_type, mop.nat_align, align, offset)
+  let results = match mop.result {
+    Some(t) => [simd_cell(t)]
+    None => []
   }
   (checked, results)
 }
