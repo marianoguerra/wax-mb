@@ -22,8 +22,8 @@ order it makes sense to do it.
 **Phase 6 — the type checker**
 
 - [x] 8. `ast_utils` — the surface-form desugarings
-- [ ] 8b. The unlisted prerequisites *(new; see below)* — all but `simd`
-  done; ~0.9k lines left
+- [x] 8b. The unlisted prerequisites *(new; see below)* — done, bar the
+  back-end half of `misc.ml`, which belongs with task 15
 - [x] 9. `members` — the method and intrinsic table *(the checker-facing half)*
 - [x] 10. `infer` — inference cells and the numeric-literal lattice *(done before 9; see there)*
 - [ ] 11. `typing_env` — symbol tables
@@ -698,7 +698,7 @@ nine modules that **no task lists and this port does not have**, and
 | module | lines | uses in the typer | what it is | |
 |---|---|---|---|---|
 | `lib-wasm/types.ml` | 372 | 71 | the interned type store: rec-group normalisation, canonical indices, subtyping info | **done**, `type_store/` |
-| `lib-wasm/simd.ml` | 856 | — | every vector op, with its operand and result types; how `v.add_i32x4(w)` dispatches | |
+| `lib-wasm/simd.ml` | 856 | 11 | every vector op, with its operand and result types; how `v.add_i32x4(w)` dispatches | **done**, `simd/` |
 | `lib-wasm/cond_solver.ml` | 240 **+ 1545** | 4 | the conditional-compilation assumption every declaration carries | **done**, `cond/` |
 | `lib-wasm/atomics.ml` | 179 | 5 | the atomic memory operations | **done**, `atomics/` |
 | `lib-wasm/cond_explore.ml` | 133 | 1 | enumerating the branches of a conditional module | **done**, `cond_explore/` |
@@ -706,7 +706,7 @@ nine modules that **no task lists and this port does not have**, and
 | `lib-wasm/misc.ml` | 100 **+ 140** | 13 | assorted wasm-side helpers | **half done**, `number/` |
 | `lib-utils/feature.ml` | 86 | 29 | the proposal gating | **done**, `feature/` |
 
-**Seven are done, and one is half done.**
+**Eight are done, and one is half done.**
 
 - **`spell/`** — OCaml's own Damerau-Levenshtein, banded around the diagonal so
   a candidate that is obviously too far is abandoned rather than measured, with
@@ -749,7 +749,13 @@ nine modules that **no task lists and this port does not have**, and
   segment's literals to bytes — has no consumer until the lowering exists and
   needs the AST, so it goes with task 15. 9 tests.
 
-**`simd.ml` is what is left**, and nothing blocks `typing_env` any more.
+- **`simd/`** — 233 operations, derived rather than listed: a Wax name is the
+  WAT mnemonic `A.B` rewritten `B_A`, and the signature follows the family. The
+  generator refuses to emit anything it cannot classify, and the compiler checks
+  every constructor name — it rejected one, where our enum spells
+  `RelaxedQ15mulrS` but `Q15MulrSatS`. 10 tests.
+
+**Task 8b is done.** Nothing blocks `typing_env` any more.
 
 ## 11. `typing_env` — symbol tables
 
