@@ -399,3 +399,211 @@ test "packed storage types" {
   inspect(@typing.storage_subtype(info, i32, i8), content="false")
   inspect(@typing.storage_subtype(info, i32, i32), content="true")
 }
+
+///|
+/// The stack has three ways of not having a value, and keeping them apart is
+/// what stops one mistake becoming a page of them.
+test "the operand stack's three empty states" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  fn describe(st : @typing.Stack) -> String {
+    match st {
+      Unreachable => "unreachable"
+      Empty => "empty"
+      Poisoned => "poisoned"
+      Cons(_, _, _) => "values"
+    }
+  }
+
+  // Popping from dead code consumes nothing and complains about nothing.
+  let dead = @typing.Operands::new()
+  dead.set_unreachable()
+  let d = @diagnostic.collector()
+  dead.pop(
+    info,
+    d,
+    Input,
+    loc_at(0, 1),
+    0,
+    1,
+    @infer.valtype_cell(@infer.i32_valtype),
+  )
+  inspect(describe(dead.stack), content="unreachable")
+  inspect(d.collected().length(), content="0")
+
+  // Popping from an empty stack IS an underflow, and reports -- once. The
+  // stack is poisoned so the next pop stays quiet rather than repeating it.
+  let empty = @typing.Operands::new()
+  let d2 = @diagnostic.collector()
+  empty.pop(
+    info,
+    d2,
+    Input,
+    loc_at(4, 9),
+    0,
+    2,
+    @infer.valtype_cell(@infer.i32_valtype),
+  )
+  inspect(describe(empty.stack), content="poisoned")
+  inspect(d2.collected().length(), content="1")
+  empty.pop(
+    info,
+    d2,
+    Input,
+    loc_at(4, 9),
+    1,
+    2,
+    @infer.valtype_cell(@infer.i32_valtype),
+  )
+  inspect(d2.collected().length(), content="1")
+  inspect(
+    @message.to_plain_string(d2.collected()[0].message),
+    content="Expecting 2 argument(s) from the stack, but there are 1.",
+  )
+}
+
+///|
+/// Where the caret goes says which value is missing: before the instruction for
+/// an argument, after it for a result.
+test "an underflow points where the value should have been" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  fn caret(kind : @typing.StackKind) -> String {
+    let ops = @typing.Operands::new()
+    let d = @diagnostic.collector()
+    ops.pop(
+      info,
+      d,
+      kind,
+      loc_at(10, 20),
+      0,
+      1,
+      @infer.valtype_cell(@infer.i32_valtype),
+    )
+    let l = d.collected()[0].loc
+    "\{l.start.cnum}..\{l.end.cnum}"
+  }
+
+  inspect(caret(Input), content="10..10")
+  inspect(caret(Output), content="20..20")
+  inspect(caret(Holes), content="10..20")
+}
+
+///|
+/// Pushing an error poisons rather than stacking it, because the failed
+/// producer's true arity is unknown -- a call that did not resolve may have
+/// produced any number of values, so later consumers must absorb any count
+/// silently.
+test "an error value poisons the stack" {
+  let ops = @typing.Operands::new()
+  ops.push(None, @infer.valtype_cell(@infer.i32_valtype))
+  inspect(ops.stack is Cons(_, _, _), content="true")
+  ops.push(None, @infer.Cell::make(@infer.InferredType::Error))
+  inspect(ops.stack is Poisoned, content="true")
+  // Dead code stays dead rather than becoming merely poisoned.
+  let dead = @typing.Operands::new()
+  dead.set_unreachable()
+  dead.push(None, @infer.Cell::make(@infer.InferredType::Error))
+  inspect(dead.stack is Unreachable, content="true")
+}
+
+///|
+/// A poison value on top is LEFT there rather than consumed. Consuming it would
+/// strip the poison and let a cascade surface: the genuine value beneath would
+/// read as a bogus leftover.
+test "popping a poison value does not consume it" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  let ops = @typing.Operands::new()
+  // A genuine value, with a second above it that later BECOMES an error --
+  // which is how this state actually arises, since cells are shared and a
+  // failed check downstream can poison one already on the stack. `push` itself
+  // never stacks an error.
+  ops.push(None, @infer.valtype_cell(@infer.i32_valtype))
+  let top = @infer.Cell::make(@infer.InferredType::Unknown)
+  ops.push(None, top)
+  top.set(Error)
+  let d = @diagnostic.collector()
+  ops.pop(
+    info,
+    d,
+    Input,
+    loc_at(0, 1),
+    0,
+    1,
+    @infer.valtype_cell(@infer.i32_valtype),
+  )
+  // Nothing consumed, nothing said.
+  inspect(ops.stack is Cons(_, _, _), content="true")
+  inspect(d.collected().length(), content="0")
+  let (locs, has_error) = @typing.leftovers(ops.stack)
+  inspect(has_error, content="true")
+  inspect(locs.length(), content="0")
+}
+
+///|
+/// Arguments come off rightmost first, because that is the order they went on.
+test "arguments are popped in reverse" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  let ops = @typing.Operands::new()
+  // f(i32, i64): the i32 was pushed first, so the i64 is on top.
+  ops.push(None, @infer.valtype_cell(@infer.i32_valtype))
+  ops.push(None, @infer.valtype_cell(@infer.i64_valtype))
+  let d = @diagnostic.collector()
+  ops.pop_args(info, d, Input, loc_at(0, 1), [
+    @infer.valtype_cell(@infer.i32_valtype),
+    @infer.valtype_cell(@infer.i64_valtype),
+  ])
+  inspect(ops.stack is Empty, content="true")
+  inspect(d.collected().length(), content="0")
+
+  // With the arguments the wrong way round, both mismatch.
+  let ops2 = @typing.Operands::new()
+  ops2.push(None, @infer.valtype_cell(@infer.i32_valtype))
+  ops2.push(None, @infer.valtype_cell(@infer.i64_valtype))
+  let d2 = @diagnostic.collector()
+  ops2.pop_args(info, d2, Input, loc_at(0, 1), [
+    @infer.valtype_cell(@infer.i64_valtype),
+    @infer.valtype_cell(@infer.i32_valtype),
+  ])
+  inspect(d2.collected().length(), content="2")
+  inspect(
+    @message.to_plain_string(d2.collected()[0].message),
+    // The reference quotes a type in the uncoloured rendering, which is where
+    // oracle 3 compares it.
+    content="Argument 1 should have type 'i32' but has type 'i64'.",
+  )
+}
+
+///|
+/// Results carry a location only when there is exactly one of them: with
+/// several, no single value is "the" thing at that span.
+test "results carry a location only when unambiguous" {
+  let ops = @typing.Operands::new()
+  ops.push_results(loc_at(3, 4), [@infer.valtype_cell(@infer.i32_valtype)])
+  guard! ops.stack is Cons(at, _, _)
+  inspect(at is Some(_), content="true")
+  let ops2 = @typing.Operands::new()
+  ops2.push_results(loc_at(3, 4), [
+    @infer.valtype_cell(@infer.i32_valtype),
+    @infer.valtype_cell(@infer.i64_valtype),
+  ])
+  guard! ops2.stack is Cons(at2, _, _)
+  inspect(at2 is None, content="true")
+}
+
+///|
+/// A block is checked on its own stack, and a snapshot really is a snapshot --
+/// which is what keeps its operands from leaking in or out.
+test "an inner stack does not leak" {
+  let ops = @typing.Operands::new()
+  ops.push(None, @infer.valtype_cell(@infer.i32_valtype))
+  let (_, inner) = ops.with_empty(() => {
+    ops.push(None, @infer.valtype_cell(@infer.i64_valtype))
+    ops.push(None, @infer.valtype_cell(@infer.i64_valtype))
+  })
+  // The outer stack is as it was.
+  guard! ops.stack is Cons(_, _, rest)
+  inspect(rest is Empty, content="true")
+  // And the inner one is available to be checked for leftovers.
+  let (_, has_error) = @typing.leftovers(inner)
+  inspect(has_error, content="false")
+  inspect(inner is Cons(_, _, _), content="true")
+}

@@ -2,6 +2,8 @@
 package "waxmb/wax/typing"
 
 import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/ref",
   "waxmb/wax/ast",
   "waxmb/wax/basic",
   "waxmb/wax/diagnostic",
@@ -21,6 +23,8 @@ pub fn duplicated_field(@diagnostic.Context, @basic.Location, @basic.Location, S
 
 pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
+pub fn expression_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], expected_at? : @basic.Location?) -> Unit
+
 pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
 
 pub fn field_subtype(@type_store.SubtypingInfo, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]], @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) -> Bool
@@ -30,6 +34,8 @@ pub fn get_type_definition(TypeContext, @ast.Ident) -> @ast.SubType?
 pub fn heaptype(TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
 
 pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
+
+pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
 
 pub fn n_fieldtype(TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
 
@@ -53,15 +59,52 @@ pub fn resolve_type_name(TypeContext, @ast.Ident) -> @type_store.Id?
 
 pub fn resolve_type_ref(TypeContext, @ast.Ident) -> @type_store.RefIndex?
 
+pub fn short_stack(@diagnostic.Context, StackKind, @basic.Location, Int, Int) -> Unit
+
 pub fn storage_subtype(@type_store.SubtypingInfo, @wasm_types.StorageType[@type_store.Id], @wasm_types.StorageType[@type_store.Id]) -> Bool
 
 pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], location? : @basic.Location?, pin? : Bool) -> Bool
+
+pub fn type_mismatch(@diagnostic.Context, @basic.Location, Int, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn valtype(TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.Id]?
 
 // Errors
 
 // Types and methods
+pub(all) struct MissingBatch {
+  mut hole_reported : Bool
+  hole_actual : Int
+  hole_expected : Int
+}
+
+pub struct Operands {
+  mut stack : Stack
+  missing_holes : Array[(@infer.Cell[@infer.InferredType], MissingBatch)]
+}
+pub fn Operands::new() -> Self
+pub fn Operands::pop(Self, @type_store.SubtypingInfo, @diagnostic.Context, StackKind, @basic.Location, Int, Int, @infer.Cell[@infer.InferredType]) -> Unit
+pub fn Operands::pop_any(Self, @ref.Ref[MissingBatch?], Int, Int) -> @infer.Cell[@infer.InferredType]
+pub fn Operands::pop_args(Self, @type_store.SubtypingInfo, @diagnostic.Context, StackKind, @basic.Location, Array[@infer.Cell[@infer.InferredType]]) -> Unit
+pub fn Operands::pop_many(Self, Int) -> (Array[@infer.Cell[@infer.InferredType]], MissingBatch?)
+pub fn Operands::push(Self, @basic.Location?, @infer.Cell[@infer.InferredType]) -> Unit
+pub fn Operands::push_results(Self, @basic.Location, Array[@infer.Cell[@infer.InferredType]]) -> Unit
+pub fn Operands::set_unreachable(Self) -> Unit
+pub fn[A] Operands::with_empty(Self, () -> A) -> (A, Stack)
+
+pub(all) enum Stack {
+  Unreachable
+  Empty
+  Poisoned
+  Cons(@basic.Location?, @infer.Cell[@infer.InferredType], Stack)
+}
+
+pub(all) enum StackKind {
+  Input
+  Output
+  Holes
+} derive(Eq, @debug.Debug)
+
 pub struct TypeContext {
   store : @type_store.TypeStore
   types : @typing_env.Tbl[(@type_store.RefIndex, @ast.SubType)]

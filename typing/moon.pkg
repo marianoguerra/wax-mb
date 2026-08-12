@@ -8,10 +8,10 @@ import {
   "waxmb/wax/diagnostic",
   "waxmb/wax/message",
   "waxmb/wax/infer",
+  "moonbitlang/core/ref",
 }
 
 import {
   "moonbitlang/core/test",
   "waxmb/wax/cond",
-  "moonbitlang/core/ref",
 } for "test"
