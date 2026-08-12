@@ -527,24 +527,16 @@ fn Lowering::hinted(
       // Both types are immediates: the SOURCE the value is known to have, and
       // the TARGET being tested for. The source comes from the operand's own
       // annotation, since the syntax writes only the target.
-      guard node_valtype(operand) is Some(Ref(from)) else {
-        raise Unresolved("br_on_cast operand type", loc)
-      }
+      let to = self.reftype_index(target, loc)
       out.push(
-        BrOnCast(self.depth(label, loc), from, self.reftype_index(target, loc)),
+        BrOnCast(self.depth(label, loc), br_on_cast_source(operand, to), to),
       )
     }
     BrOnCastFail(label, target, operand) => {
       self.instr(out, operand)
-      guard node_valtype(operand) is Some(Ref(from)) else {
-        raise Unresolved("br_on_cast operand type", loc)
-      }
+      let to = self.reftype_index(target, loc)
       out.push(
-        BrOnCastFail(
-          self.depth(label, loc),
-          from,
-          self.reftype_index(target, loc),
-        ),
+        BrOnCastFail(self.depth(label, loc), br_on_cast_source(operand, to), to),
       )
     }
     TryTable(label~, typ~, catches~, block~) => {
@@ -761,9 +753,11 @@ fn Lowering::hinted(
         return
       }
       self.instr(out, operand)
-      guard node_valtype(operand) is Some(operand_type) else {
-        raise Unresolved("cast operand type", loc)
-      }
+      // In UNREACHABLE code the operand has no type, and so the cast has no
+      // instruction: there is nothing on the stack to convert. Validation
+      // accepts whatever follows, which is exactly why nothing has to be
+      // invented here.
+      guard node_valtype(operand) is Some(operand_type) else { return }
       let from = cast_prologue(out, operand_type, target)
       self.cast_instruction(out, from, target, i, loc)
     }
@@ -1236,6 +1230,26 @@ fn atomic_op(
       let (t, n) = narrow(w, value_type())
       Rmw(op, t, n)
     }
+  }
+}
+
+///|
+/// The SOURCE type a branching cast emits, given the target it tests for.
+///
+/// Wax writes only the target; the binary wants both, and the typer recovers
+/// the source from the operand. When the operand has no usable heap type of its
+/// own -- a hole in dead code, or a literal `ref.null none` -- the TARGET
+/// stands in, which is always a valid source against itself. Its nullability
+/// still has to carry over, though: a nullable operand is not a subtype of a
+/// non-null target, and the check the instruction carries would reject it.
+fn br_on_cast_source(
+  operand : @ast.Instr[@typing_env.InferredAnnotation],
+  target : @wasm_types.RefType[Int],
+) -> @wasm_types.RefType[Int] {
+  match node_last_reftype(operand) {
+    Some(r) => r
+    None =>
+      { ..target, nullable: target.nullable || node_last_nullable(operand) }
   }
 }
 

@@ -44,6 +44,10 @@ pub fn lower_valtype(@wasm_types.ValType[@type_store.Id]) -> @wasm_types.ValType
 
 pub fn natural_align(String) -> Int
 
+pub fn node_last_nullable(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Bool
+
+pub fn node_last_reftype(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> @wasm_types.RefType[Int]?
+
 pub fn node_type_index(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Int?
 
 pub fn node_valtype(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> @wasm_types.ValType[Int]?

@@ -142,6 +142,51 @@ pub fn Lowering::depth_of(self : Lowering, name : String) -> Int? {
 }
 
 ///|
+/// The reference type of the LAST value this node produces, when it is one a
+/// branching cast can name as its SOURCE.
+///
+/// A `br_on_cast` tests the top of the stack, but a decompiled operand carries
+/// every value its label's arity needs, so the last is the one being tested.
+///
+/// A BOTTOM heap type -- `none`, `nofunc` and their siblings, which is what wax
+/// gives a polymorphic operand such as a hole in dead code -- is a subtype of
+/// every reference and a supertype of none, so it cannot serve: the `rt2 <:
+/// rt1` check the instruction carries would fail whenever the target is in
+/// another hierarchy. `None` here means "no determinable source", and the
+/// caller falls back to the target, which is always valid against itself.
+pub fn node_last_reftype(
+  i : @ast.Instr[@typing_env.InferredAnnotation],
+) -> @wasm_types.RefType[Int]? {
+  let tys = i.info.0
+  guard tys.length() > 0 else { return None }
+  guard @typing_env.standalone_valtype(tys[tys.length() - 1]) is Some(v) else {
+    return None
+  }
+  match lower_valtype(v.internal) {
+    Ref({ typ: None_ | NoFunc | NoExtern | NoExn | NoCont, .. }) => None
+    Ref(r) => Some(r)
+    _ => None
+  }
+}
+
+///|
+/// Whether the last value this node produces is a NULLABLE reference.
+///
+/// A bottom-heap operand has no usable heap type, so the cast target stands in
+/// for it -- but a nullable such operand is not a subtype of a non-null target,
+/// so its nullability has to carry over or the module is rejected.
+pub fn node_last_nullable(
+  i : @ast.Instr[@typing_env.InferredAnnotation],
+) -> Bool {
+  let tys = i.info.0
+  guard tys.length() > 0 else { return false }
+  guard @typing_env.standalone_valtype(tys[tys.length() - 1]) is Some(v) else {
+    return false
+  }
+  lower_valtype(v.internal) is Ref({ nullable: true, .. })
+}
+
+///|
 /// The value type a checked node produced, as an index-form value type.
 ///
 /// `None` when the node produced no single value, or one that never resolved --
