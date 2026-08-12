@@ -21,6 +21,8 @@ pub fn bind_local(@typing_env.ModuleContext, @ast.Ident, @infer.InferredValType?
 
 pub fn binop_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
+pub fn branch_target(@typing_env.ModuleContext, @ast.Ident) -> Array[@infer.Cell[@infer.InferredType]]
+
 pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
 pub fn check_int_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
@@ -74,6 +76,8 @@ pub fn is_defaultable(@wasm_types.ValType[@ast.Ident]) -> Bool
 pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
+
+pub fn label_in_scope(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
 pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.Label]) -> Unit
 

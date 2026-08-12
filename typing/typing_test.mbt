@@ -1702,3 +1702,114 @@ test "an argument literal is pinned by the parameter" {
   inspect(ctx.diagnostics.collected().length(), content="0")
   inspect(@infer.to_string(literal), content="i64")
 }
+
+///|
+/// A label is a lexical binding, so an inner one of the same name shadows the
+/// outer -- which is why the search runs innermost first.
+test "a branch finds the innermost matching label" {
+  let ctx = module_ctx()
+  let outer : @ast.Ident = { name: "l", loc: loc_at(2, 3) }
+  let inner : @ast.Ident = { name: "l", loc: loc_at(6, 7) }
+  let i32 = @infer.valtype_cell(@infer.i32_valtype)
+  let i64 = @infer.valtype_cell(@infer.i64_valtype)
+  let found = ctx.with_frame(
+    @typing_env.ControlFrame::new([i32], label=Some(outer)),
+    () => {
+      ctx.with_frame(@typing_env.ControlFrame::new([i64], label=Some(inner)), () => {
+        @typing.branch_target(ctx, { name: "l", loc: loc_at(20, 21) })
+      })
+    },
+  )
+  // The inner frame's types, not the outer's.
+  inspect(found.map(c => @infer.to_string(c)).join(","), content="i64")
+  // And the INNER declaration is the one marked used, keyed by its offset --
+  // so a shadowing inner label does not mask an unused outer one.
+  inspect(ctx.used_labels.map(o => o.to_string()).join(","), content="6")
+}
+
+///|
+/// An unresolved label reports once and sets a flag. That flag is what stops
+/// the failure becoming two: a block whose only value delivery was the
+/// unresolved branch legitimately computes no value, and saying so as well
+/// would anchor a derived error away from the label the reader must fix.
+test "an unbound label reports and marks the function" {
+  let ctx = module_ctx()
+  inspect(ctx.unresolved_label.val, content="false")
+  let found = @typing.branch_target(ctx, { name: "nope", loc: loc_at(20, 24) })
+  inspect(found.length(), content="0")
+  inspect(ctx.unresolved_label.val, content="true")
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="The label 'nope' is not bound.",
+  )
+}
+
+///|
+/// Suggestions come from the frames in SCOPE, because a label is lexical: one
+/// from a block that has already closed is not something the author could have
+/// meant here.
+test "label suggestions are lexical" {
+  let ctx = module_ctx()
+  // A closed block's label is gone by the time we ask.
+  ctx.with_frame(
+    @typing_env.ControlFrame::new(
+      [],
+      label=Some({ name: "closed", loc: loc_at(2, 8) }),
+    ),
+    () => (),
+  )
+  let outer : @ast.Ident = { name: "retry", loc: loc_at(10, 15) }
+  ctx.with_frame(@typing_env.ControlFrame::new([], label=Some(outer)), () => {
+    let _ = @typing.branch_target(ctx, { name: "retr", loc: loc_at(20, 24) })
+  })
+  guard! ctx.diagnostics.collected()[0].hint is Some(h)
+  inspect(@message.to_plain_string(h), content="Did you mean 'retry'?")
+  // The closed block's label is not offered, however close it is.
+  let ctx2 = module_ctx()
+  ctx2.with_frame(
+    @typing_env.ControlFrame::new(
+      [],
+      label=Some({ name: "closed", loc: loc_at(2, 8) }),
+    ),
+    () => (),
+  )
+  let _ = @typing.branch_target(ctx2, { name: "closd", loc: loc_at(20, 25) })
+  inspect(ctx2.diagnostics.collected()[0].hint is None, content="true")
+}
+
+///|
+/// An unbound label and a legitimately void target both deliver no types, so
+/// they need telling apart -- which is what `label_in_scope` is for.
+test "a void target is not an unbound one" {
+  let ctx = module_ctx()
+  let l : @ast.Ident = { name: "done", loc: loc_at(2, 6) }
+  let observed = ctx.with_frame(
+    @typing_env.ControlFrame::new([], label=Some(l)),
+    () => {
+      (
+        @typing.branch_target(ctx, { name: "done", loc: loc_at(20, 24) }).length(),
+        @typing.label_in_scope(ctx, { name: "done", loc: loc_at(20, 24) }),
+        @typing.label_in_scope(ctx, { name: "nope", loc: loc_at(20, 24) }),
+      )
+    },
+  )
+  let (delivered, done_in_scope, nope_in_scope) = observed
+  // In scope, and delivers nothing.
+  inspect(delivered, content="0")
+  inspect(done_in_scope, content="true")
+  // Not in scope, and also delivers nothing -- but for a different reason.
+  inspect(nope_in_scope, content="false")
+  // Asking did not report anything.
+  inspect(ctx.diagnostics.collected().length(), content="0")
+}
+
+///|
+/// An unlabelled frame is still a frame -- it just cannot be branched to by
+/// name.
+test "an unlabelled frame is not a branch target" {
+  let ctx = module_ctx()
+  let in_scope = ctx.with_frame(@typing_env.ControlFrame::new([]), () => {
+    @typing.label_in_scope(ctx, { name: "anything", loc: loc_at(0, 8) })
+  })
+  inspect(in_scope, content="false")
+}
