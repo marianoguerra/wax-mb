@@ -35,6 +35,8 @@ pub fn heaptype(TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Iden
 
 pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 
+pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
+
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
 
 pub fn n_fieldtype(TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
@@ -50,6 +52,8 @@ pub fn n_storagetype(TypeContext, @diagnostic.Context, @wasm_types.StorageType[@
 pub fn n_valtype(TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.RefIndex]?
 
 pub fn reftype(TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
+
+pub fn report_missing_hole(Operands, @diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn require_feature(TypeContext, @diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
 
@@ -116,5 +120,6 @@ pub fn TypeContext::new(@type_store.TypeStore, @typing_env.Tbl[(@type_store.RefI
 pub fn TypeContext::subtyping_info(Self) -> @type_store.SubtypingInfo
 
 // Type aliases
+pub type ValLub = (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?
 
 // Traits

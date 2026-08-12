@@ -74,3 +74,14 @@ pub fn[A] Cell::merge(self : Cell[A], other : Cell[A], value : A) -> Unit {
 pub fn[A] Cell::set(self : Cell[A], value : A) -> Unit {
   self.representative().state = Root(value)
 }
+
+///|
+/// Are these the same cell, rather than two cells that merely hold equal
+/// values?
+///
+/// Identity matters wherever a cell is used as a TOKEN rather than as a type:
+/// the underflow placeholders are looked up this way, because two missing
+/// values both recorded as `Error` are still two different missing values.
+pub fn[A] same_cell(a : Cell[A], b : Cell[A]) -> Bool {
+  physical_equal(a, b)
+}

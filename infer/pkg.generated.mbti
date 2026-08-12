@@ -30,6 +30,8 @@ pub fn is_unknown_or_error(Cell[InferredType]) -> Bool
 
 pub fn[Info] render(@output.Ctx[Info], Cell[InferredType]) -> Unit
 
+pub fn[A] same_cell(Cell[A], Cell[A]) -> Bool
+
 pub fn to_string(Cell[InferredType]) -> String
 
 pub fn valtype_cell(InferredValType) -> Cell[InferredType]

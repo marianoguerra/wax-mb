@@ -607,3 +607,153 @@ test "an inner stack does not leak" {
   inspect(has_error, content="false")
   inspect(inner is Cons(_, _, _), content="true")
 }
+
+///|
+/// A lub that only handles two identical types, which is enough for every join
+/// case the flexible-literal lattice decides on its own.
+fn no_lub(
+  a : @infer.InferredValType,
+  b : @infer.InferredValType,
+) -> @infer.InferredValType? {
+  if a == b {
+    Some(a)
+  } else {
+    None
+  }
+}
+
+///|
+/// The join is the other half of inference. `subtype` pins a literal against a
+/// type it is CHECKED against; this pins one against the types it is joined
+/// WITH -- and both mutate, so the assertion is again about the cells
+/// afterwards.
+test "joining flexible literals pins them" {
+  fn join(a : @infer.InferredType, b : @infer.InferredType) -> String {
+    let c1 = @infer.Cell::make(a)
+    let c2 = @infer.Cell::make(b)
+    match @typing.join_value_types(c1, c2, no_lub) {
+      None => "no common type"
+      Some(r) => @infer.to_string(r)
+    }
+  }
+
+  let i32 : @infer.InferredType = Valtype(@infer.i32_valtype)
+  let i64 : @infer.InferredType = Valtype(@infer.i64_valtype)
+  let f64 : @infer.InferredType = Valtype(@infer.f64_valtype)
+  // A bare number takes whatever it meets.
+  inspect(join(Number, i32), content="i32")
+  inspect(join(i32, Number), content="i32")
+  inspect(join(Number, Number), content="number")
+  // An integer literal and a float have nothing in common.
+  inspect(join(Int, f64), content="no common type")
+  inspect(join(Float, i32), content="no common type")
+  // Two identical concrete types join to themselves.
+  inspect(join(i32, i32), content="i32")
+  inspect(join(i32, i64), content="no common type")
+}
+
+///|
+/// A literal too big for i32 defaults to i64 and can also be a float. Joined
+/// with a COMMITTED integer, their sole common type is i64 -- so the join pins
+/// it there, or the result could later be coerced to a float the integer
+/// cannot be.
+test "a large literal joined with a committed integer pins to i64" {
+  let big = @infer.Cell::make(@infer.InferredType::LargeInt)
+  let int_ = @infer.Cell::make(@infer.InferredType::Int)
+  guard! @typing.join_value_types(big, int_, no_lub) is Some(r)
+  inspect(@infer.to_string(r), content="i64")
+  // Both cells were merged, so the commitment is visible from either.
+  inspect(@infer.to_string(big), content="i64")
+  inspect(@infer.to_string(int_), content="i64")
+  // Joined with a fully flexible number it stays large rather than committing.
+  let big2 = @infer.Cell::make(@infer.InferredType::LargeInt)
+  let num = @infer.Cell::make(@infer.InferredType::Number)
+  guard! @typing.join_value_types(big2, num, no_lub) is Some(r2)
+  inspect(@infer.to_string(r2), content="large number")
+  // And never with i32.
+  let big3 = @infer.Cell::make(@infer.InferredType::LargeInt)
+  let i32c = @infer.valtype_cell(@infer.i32_valtype)
+  inspect(@typing.join_value_types(big3, i32c, no_lub) is None, content="true")
+}
+
+///|
+/// The three bottoms behave differently here too. `Unknown` is pinned to what
+/// it meets -- a hole on the dead-code stack genuinely takes the block's result
+/// type -- while `Error` stays untouched, because pinning it would invent a
+/// type it never had.
+test "the bottoms in a join" {
+  let unknown = @infer.Cell::make(@infer.InferredType::Unknown)
+  let i32 = @infer.valtype_cell(@infer.i32_valtype)
+  guard! @typing.join_value_types(unknown, i32, no_lub) is Some(r)
+  inspect(@infer.to_string(r), content="i32")
+  // Pinned, so a branch that also passes it through sees the resolved width.
+  inspect(@infer.is_unknown_or_error(unknown), content="false")
+
+  // An error is accepted and left alone.
+  let err = @infer.Cell::make(@infer.InferredType::Error)
+  let i32b = @infer.valtype_cell(@infer.i32_valtype)
+  guard! @typing.join_value_types(err, i32b, no_lub) is Some(r2)
+  inspect(@infer.to_string(r2), content="i32")
+  inspect(@infer.is_unknown_or_error(err), content="true")
+
+  // Two bottom references merge, so pinning one later pins the other.
+  let a = @infer.Cell::make(@infer.InferredType::UnknownRef)
+  let b = @infer.Cell::make(@infer.InferredType::UnknownRef)
+  let _ = @typing.join_value_types(a, b, no_lub)
+  let anyref : @infer.InferredValType = {
+    typ: Ref({ nullable: true, typ: Any }),
+    internal: Ref({ nullable: true, typ: Any }),
+    anon_comptype: None,
+  }
+  let info = @type_store.TypeStore::new().subtyping_info()
+  let _ = @typing.subtype(info, a, @infer.valtype_cell(anyref))
+  inspect(@infer.to_string(b), content="&?any")
+
+  // A bottom reference and a non-reference have no common type.
+  let r3 = @infer.Cell::make(@infer.InferredType::UnknownRef)
+  inspect(
+    @typing.join_value_types(
+      r3,
+      @infer.valtype_cell(@infer.i32_valtype),
+      no_lub,
+    )
+    is None,
+    content="true",
+  )
+}
+
+///|
+/// An underflow is reported at the HOLE that ends up consuming it, because the
+/// pop that noticed it does not know how the missing values are distributed.
+/// And once, however many holes consume the batch.
+test "an underflow is reported at the hole" {
+  let ops = @typing.Operands::new()
+  // Two values wanted, none available.
+  let (cells, batch) = ops.pop_many(2)
+  inspect(cells.length(), content="2")
+  inspect(batch is Some(_), content="true")
+  // Nothing said yet: the pop records placeholders and stays quiet.
+  let d = @diagnostic.collector()
+  inspect(d.collected().length(), content="0")
+  // The hole that consumes the first placeholder reports, at its own location.
+  @typing.report_missing_hole(ops, d, loc_at(40, 41), cells[0])
+  inspect(d.collected().length(), content="1")
+  inspect(d.collected()[0].loc.start.cnum, content="40")
+  inspect(
+    @message.to_plain_string(d.collected()[0].message),
+    // Nothing was on the stack at all, so 0 -- `pop_many` counts up from the
+    // first missing value, where `pop_args` counts down from the last.
+    content="Expecting 2 value(s) from the stack, but there are 0.",
+  )
+  // The second hole of the same batch says nothing more.
+  @typing.report_missing_hole(ops, d, loc_at(50, 51), cells[1])
+  inspect(d.collected().length(), content="1")
+  // A cell that was never a placeholder is not one now.
+  @typing.report_missing_hole(
+    ops,
+    d,
+    loc_at(60, 61),
+    @infer.Cell::make(Unknown),
+  )
+  inspect(d.collected().length(), content="1")
+}
