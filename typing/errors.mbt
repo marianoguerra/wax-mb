@@ -1296,3 +1296,19 @@ pub fn on_clause_context(
     .sep(@message.text("call.")),
   )
 }
+
+///|
+/// An instruction method called on a receiver that has no such operation.
+pub fn invalid_method_receiver(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  ty : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This operation cannot be applied to a value of type")
+    .sep(@message.type_(@infer.to_string(ty)))
+    .seq(@message.text(".")),
+  )
+}

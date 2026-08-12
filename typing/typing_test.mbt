@@ -8003,3 +8003,98 @@ test "a global initializer sees only what precedes it" {
     content="The variable 'a' is not bound.",
   )
 }
+
+///|
+/// A no-argument instruction method takes its FAMILY from the method and its
+/// WIDTH from the receiver -- so a still-flexible receiver is pinned here, by
+/// the only thing that can pin it.
+test "an instruction method pins the receiver it is called on" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn call(recv : @ast.InstrDesc[@basic.Location], meth : String) -> String {
+    let ctx = module_ctx()
+    let module_ : @ast.Module[@basic.Location] = [
+      {
+        desc: Type([
+          {
+            desc: (
+              id("bytes"),
+              {
+                typ: Array({ mut_: true, typ: Packed(I8) }),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(0, 5),
+          },
+        ]),
+        info: loc_at(0, 5),
+      },
+    ]
+    @typing.declare_fields(ctx, module_)
+    @typing.bind_local(
+      ctx,
+      id("b"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: false, typ: Type(id("bytes")) }),
+      ),
+    )
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let inner = instr(recv, 20)
+    let c = checker.statement(
+      instr(
+        Call(instr(StructGet(inner, { name: meth, loc: loc_at(24, 30) }), 20), []),
+        10,
+      ),
+    )
+    guard! c.desc is Call(callee, _)
+    guard! callee.desc is StructGet(r, _)
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " from " +
+    r.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // `length` on an array answers i32 whatever the array holds.
+  inspect(call(Get(id("b")), "length"), content="i32 from &bytes | ")
+  // `clz` makes an INTEGER of a bare literal; `sqrt` makes a float of one.
+  inspect(call(Int("1"), "clz"), content="int from int | ")
+  inspect(call(Int("1"), "sqrt"), content="float from float | ")
+  // `to_bits` needs a float, and a literal written without a point still is
+  // one -- a float constant decompiled to a bare integer has not stopped being
+  // a float.
+  inspect(call(Int("1"), "to_bits"), content="i64 from f64 | ")
+  // But a value already committed to the integer family is not coerced:
+  // `to_bits` on an integer is meaningless, and moving its cell to f64 would
+  // make the operation below it lower against the wrong operand.
+  inspect(
+    call(
+      Cast(instr(Int("1"), 20), Signed(typ=I32, signage=Signed, strict=false)),
+      "to_bits",
+    ),
+    content="any from i32 | This operation cannot be applied to a value of type 'i32'.",
+  )
+  // `length` on something that is not an array.
+  inspect(
+    call(Int("1"), "length"),
+    content="any from number | This operation cannot be applied to a value of type 'number'.",
+  )
+}

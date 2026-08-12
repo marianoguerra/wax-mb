@@ -1651,6 +1651,32 @@ pub fn Checker::statement(
       }
     }
     // --- A SIMD operation written on a value: `x.add_i32x4(y)` ---
+    // --- A no-argument instruction method: `x.sqrt()`, `arr.length()` ---
+    Call(callee, args) if self.is_unary_intrinsic(callee, args) => {
+      guard callee.desc is StructGet(recv, meth) else {
+        return self.poisoned(i)
+      }
+      let recv_ = self.statement(recv)
+      let ty = self.unary_intrinsic(
+        recv.info,
+        meth,
+        expression_type(ctx, recv_.info),
+      )
+      {
+        desc: Call(
+          {
+            desc: StructGet(recv_, meth),
+            info: annotate([], callee.info),
+            hints: callee.hints,
+            expected: callee.expected,
+          },
+          [],
+        ),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
     Call(callee, args) if self.simd_vector_op(callee) is Some(_) => {
       guard callee.desc is StructGet(recv, meth) else {
         return self.poisoned(i)
@@ -4304,4 +4330,131 @@ fn Checker::is_table_receiver(
 ) -> Bool {
   guard recv.desc is Get(name) else { return false }
   table_receiver(self.ctx, name)
+}
+
+///|
+/// Whether a call is one of the no-argument instruction methods.
+///
+/// Checked AFTER the intrinsic families, so a name they claim wins: these are
+/// operations on a VALUE, and nothing here takes a memory or table receiver.
+fn Checker::is_unary_intrinsic(
+  self : Checker,
+  callee : @ast.Instr[@basic.Location],
+  args : Array[@ast.Instr[@basic.Location]],
+) -> Bool {
+  ignore(self)
+  guard args.is_empty() else { return false }
+  guard callee.desc is StructGet(_, meth) else { return false }
+  is_unary_method(meth.name)
+}
+
+///|
+/// Type a no-argument instruction method from its receiver.
+///
+/// The METHOD fixes the family and the receiver fixes the width -- so a
+/// still-flexible receiver is pinned here, by the only thing that can pin it.
+/// `clz` makes an integer of a bare literal, `sqrt` makes a float of one, and
+/// `to_bits` makes an f64 even of a literal written without a point, because a
+/// float constant decompiled to a bare integer is still a float.
+fn Checker::unary_intrinsic(
+  self : Checker,
+  location : @basic.Location,
+  meth : @ast.Ident,
+  ty : @infer.Cell[@infer.InferredType],
+) -> @infer.Cell[@infer.InferredType] {
+  let ctx = self.ctx
+  let i32c = () => @infer.valtype_cell(@infer.i32_valtype)
+  let i64c = () => @infer.valtype_cell(@infer.i64_valtype)
+  let f32c = () => @infer.valtype_cell(@infer.f32_valtype)
+  let f64c = () => @infer.valtype_cell(@infer.f64_valtype)
+  let err = () => @infer.Cell::make(@infer.InferredType::Error)
+  match (ty.get(), meth.name) {
+    (Valtype({ typ: Ref({ typ: Type(t) | Exact(t), .. }), .. }), "length") =>
+      match ctx.types.find_no_mark(t.name) {
+        Some((_, def)) =>
+          match def.typ {
+            Array(_) => i32c()
+            _ => {
+              expected_array(ctx.diagnostics, location)
+              err()
+            }
+          }
+        None => err()
+      }
+    // `array.len` accepts any subtype of `(ref null array)`: the abstract
+    // array, a bare null, and the bottom reference, which is below it.
+    (Null | Valtype({ typ: Ref({ typ: Array | None_, .. }), .. }), "length") =>
+      i32c()
+    (Valtype({ typ: I32, .. }), "from_bits") => f32c()
+    (Valtype({ typ: I64, .. }), "from_bits") => f64c()
+    (Valtype({ typ: F32, .. }), "to_bits") => i32c()
+    (Valtype({ typ: F64, .. }), "to_bits") => i64c()
+    // An abstract numeric receiver defaults like any other operation. A value
+    // already committed to the INTEGER family is not coerced: `to_bits` on an
+    // integer is meaningless, and coercing its shared cell to f64 would make
+    // the integer-producing operation below it lower against an f64 operand.
+    (Float | Number | LargeInt | Unknown, "to_bits") => {
+      ty.set(Valtype(@infer.f64_valtype))
+      i64c()
+    }
+    (Number | Int | Unknown, "from_bits") => {
+      ty.set(Valtype(@infer.i32_valtype))
+      f32c()
+    }
+    (LargeInt, "from_bits") => {
+      ty.set(Valtype(@infer.i64_valtype))
+      f64c()
+    }
+    (
+      Number
+      | Int
+      | LargeInt
+      | Unknown
+      | Valtype({ typ: I32 | I64, .. }),
+      "clz"
+      | "ctz"
+      | "popcnt"
+      | "extend8_s"
+      | "extend16_s",
+    ) => {
+      match ty.get() {
+        Number | Unknown => ty.set(Int)
+        LargeInt => ty.set(Valtype(@infer.i64_valtype))
+        _ => ()
+      }
+      ty
+    }
+    (
+      Number
+      | Float
+      | Unknown
+      | LargeInt
+      | Valtype({ typ: F32 | F64, .. }),
+      "abs"
+      | "ceil"
+      | "floor"
+      | "trunc"
+      | "nearest"
+      | "sqrt",
+    ) => {
+      // A large literal is a FLOAT here: this is a float intrinsic, so the
+      // literal's float-capability is what applies.
+      match ty.get() {
+        Number | Unknown | LargeInt => ty.set(Float)
+        _ => ()
+      }
+      ty
+    }
+    (Error, _) => err()
+    (Unknown | UnknownRef, _) => {
+      // Only a reference, so no method resolves; or unknown with a method that
+      // fixes no numeric family. Either way it cannot be compiled.
+      unknown_operand_type(ctx.diagnostics, location)
+      err()
+    }
+    _ => {
+      invalid_method_receiver(ctx.diagnostics, meth.loc, ty)
+      err()
+    }
+  }
 }

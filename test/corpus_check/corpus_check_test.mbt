@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 27059 poisoned 0 files 1903 clean 1102",
+    content="nodes 29108 poisoned 0 files 1903 clean 1124",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -132,14 +132,14 @@ test "the checker annotates every node it reaches" {
   }
   top.sort_by((a, b) => b.1 - a.1)
   let expected =
-    #|1360 This value remains on the stack.
+    #|1378 This value remains on the stack.
     #|749 Expecting 1 returned value(s) from the stack, but there are 0.
     #|708 An expression is expected here. This instruction returns 0 values.
     #|617 The variable 't' is not bound.
-    #|525 'length' is an instruction method and must be called with parentheses, as 'length()'.
     #|497 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
-    #|465 Expected struct.
+    #|468 Expected struct.
     #|455 Cannot infer the array type here; add an explicit type, as in '[T| ..]'.
+    #|427 This instruction provides 1 value(s) but 0 was/were expected.
   let n = if top.length() < 8 { top.length() } else { 8 }
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),
