@@ -4983,3 +4983,122 @@ test "a default array needs an element type with a zero" {
     content="This type has no default value for all its fields.",
   )
 }
+
+///|
+/// Under single-inheritance subtyping two heap types share a value only when
+/// one is a subtype of the other -- so unrelated types make a cast always trap
+/// and a test always false, unless a shared `null` slips through both.
+test "an unrelated cast can never succeed" {
+  let ctx = module_ctx()
+  fn ref_(
+    nullable : Bool,
+    h : @wasm_types.HeapType[@ast.Ident],
+    ih : @wasm_types.HeapType[@type_store.Id],
+  ) -> @infer.InferredType {
+    Valtype({
+      typ: Ref({ nullable, typ: h }),
+      internal: Ref({ nullable, typ: ih }),
+      anon_comptype: None,
+    })
+  }
+
+  fn lint(
+    op : @infer.InferredType,
+    target : @infer.InferredType,
+    is_test : Bool,
+  ) -> String {
+    let c = module_ctx()
+    @typing.lint_ref_cast(c, loc_at(0, 4), is_test~, op, target)
+    c.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  ignore(ctx)
+  let struct_ = ref_(false, Struct, Struct)
+  let array_ = ref_(false, Array, Array)
+  let any_ = ref_(false, Any, Any)
+  // A struct is never an array: neither is a subtype of the other.
+  inspect(
+    lint(struct_, array_, false),
+    content="This cast always traps: the value can never have this type.",
+  )
+  inspect(
+    lint(struct_, array_, true),
+    content="This type test is always false: the value can never have this type.",
+  )
+  // Related types are fine: narrowing `any` to `struct` may or may not succeed.
+  inspect(lint(any_, struct_, false), content="")
+  // Widening the other way is redundant -- the value already has that type.
+  inspect(
+    lint(struct_, any_, false),
+    content="This cast is redundant: the value already has this type.",
+  )
+  inspect(
+    lint(struct_, any_, true),
+    content="This type test is always true: the value already has this type.",
+  )
+  // Two NULLABLE unrelated references still share one value: null. So the cast
+  // is not impossible, only very likely to trap.
+  inspect(
+    lint(ref_(true, Struct, Struct), ref_(true, Array, Array), false),
+    content="",
+  )
+  // `any` <-> `extern` is the lossless cross-hierarchy convert, not a cast: it
+  // never traps and is never redundant, so linting it either way would be a
+  // false positive.
+  inspect(lint(any_, ref_(false, Extern, Extern), false), content="")
+  inspect(lint(ref_(false, Extern, Extern), any_, false), content="")
+}
+
+///|
+/// Only the INNERMOST always-trapping cast of a chain is reported: a cast over
+/// a value that can never be produced is unreachable, and what it says merely
+/// follows from the inner verdict. The fix belongs at the inner cast.
+test "a chain of trapping casts is reported once" {
+  let ctx = module_ctx()
+  fn ref_(
+    h : @wasm_types.HeapType[@ast.Ident],
+    ih : @wasm_types.HeapType[@type_store.Id],
+  ) -> @infer.InferredType {
+    Valtype({
+      typ: Ref({ nullable: false, typ: h }),
+      internal: Ref({ nullable: false, typ: ih }),
+      anon_comptype: None,
+    })
+  }
+
+  let inner = loc_at(0, 10)
+  let outer = loc_at(0, 20)
+  // The inner cast traps.
+  @typing.lint_ref_cast(
+    ctx,
+    inner,
+    is_test=false,
+    ref_(Struct, Struct),
+    ref_(Array, Array),
+  )
+  // The outer one, over that operand, also would -- but says nothing.
+  @typing.lint_ref_cast(
+    ctx,
+    outer,
+    is_test=false,
+    ref_(Array, Array),
+    ref_(Func, Func),
+    operand_location=Some(inner),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="1")
+  inspect(ctx.diagnostics.collected()[0].loc.end.cnum, content="10")
+  // A third cast over the second stays quiet too: the span was recorded whether
+  // or not the report came out.
+  @typing.lint_ref_cast(
+    ctx,
+    loc_at(0, 30),
+    is_test=false,
+    ref_(Func, Func),
+    ref_(Extern, Extern),
+    operand_location=Some(outer),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="1")
+}

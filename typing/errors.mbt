@@ -971,3 +971,50 @@ pub fn cannot_infer_array_type(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// A cast or test that can never succeed.
+///
+/// Universal: it is true of the code whatever configuration is being built, so
+/// it is reported once rather than per configuration.
+pub fn cast_always_fails(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  is_test~ : Bool,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text(
+      if is_test {
+        "This type test is always false: the value can never have this type."
+      } else {
+        "This cast always traps: the value can never have this type."
+      },
+    ),
+    warning=Some(CastAlwaysFails),
+    universal=true,
+  )
+}
+
+///|
+/// A cast or test whose answer is already known the other way.
+pub fn redundant_cast(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  is_test~ : Bool,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text(
+      if is_test {
+        "This type test is always true: the value already has this type."
+      } else {
+        "This cast is redundant: the value already has this type."
+      },
+    ),
+    warning=Some(RedundantOperation),
+    universal=true,
+  )
+}
