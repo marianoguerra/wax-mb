@@ -27,7 +27,7 @@ pub fn Lowering::instr(
     for k in 0..<(inner.length() - 1) {
       out.push(inner[k])
     }
-    out.push(Hinted(lower_hints(i.hints), inner[inner.length() - 1]))
+    out.push(Hinted(self.lower_hints(i.hints), inner[inner.length() - 1]))
     return
   }
   self.hinted(out, i)
@@ -35,13 +35,26 @@ pub fn Lowering::instr(
 
 ///|
 /// The hints an instruction carries, in the form the encoder writes.
-fn lower_hints(h : @ast.Hints) -> @wasm_bin.InstrHints {
+fn Lowering::lower_hints(
+  self : Lowering,
+  h : @ast.Hints,
+) -> @wasm_bin.InstrHints {
   {
     branch: h.branch.map(x => x.value),
     freq: h.freq.map(x => x.value),
-    // A call-target hint names functions, which this lowering has no index for
-    // at the point the hint is read; it is dropped rather than guessed.
-    targets: None,
+    // A call-target hint names FUNCTIONS, and the section stores indices, so
+    // it is the one hint that needs the index space resolved. A name that does
+    // not resolve drops that entry rather than the whole hint: the section is
+    // advisory, and a partial list is still true.
+    targets: h.targets.map(x => {
+      let out : Array[(Int, Int)] = []
+      for entry in x.value {
+        if self.indices.funcs.get(entry.0.name) is Some(f) {
+          out.push((f, entry.1))
+        }
+      }
+      out
+    }),
   }
 }
 

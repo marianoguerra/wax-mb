@@ -102,6 +102,10 @@ pub fn Lowering::target_features(
 }
 
 ///|
+/// The optimization level `#[run_once]` names.
+pub let run_once_level : Int = 127
+
+///|
 /// A function's compilation priority, if it declared one.
 ///
 /// `#[priority]` orders compilation and `#[optimization]` sets the effort; the
@@ -113,6 +117,13 @@ pub fn function_priority(
   let mut compilation : Int? = None
   let mut optimization : Int? = None
   for a in attributes {
+    // `#[run_once]` carries no value: it is the spelling of one particular
+    // optimization level, the highest, and the section stores it as that
+    // number rather than as a flag of its own.
+    if a.attr_name == "run_once" {
+      optimization = Some(run_once_level)
+      continue
+    }
     guard a.attr_value is Some(v) else { continue }
     guard v.desc is Int(s) else { continue }
     let n = @string.parse_int(s.split("_").join("")) catch { _ => continue }
