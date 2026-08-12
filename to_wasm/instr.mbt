@@ -470,6 +470,47 @@ fn Lowering::hinted(
       self.instr(out, e)
       out.push(ThrowRef)
     }
+    // The three constructs the CHECKER validated against a lowering are emitted
+    // from that same lowering: there is no second shape to keep in step, and
+    // the code that runs is the code that was checked. The synthetic labels the
+    // lowering invents are spelled `<..>`, so they never reach the name section.
+    While(label~, cond~, step~, block~) => {
+      let fresh : @ast.Ident = {
+        name: "<while:" + loc.start.cnum.to_string() + ">",
+        loc,
+      }
+      for
+        x in @ast.lower_while(
+          i.info,
+          fresh_loop=fresh,
+          label~,
+          cond~,
+          step~,
+          block=block.desc,
+        ) {
+        self.instr(out, x)
+      }
+    }
+    Dispatch(index~, cases~, default~, arms~) =>
+      for x in @ast.lower_dispatch(i.info, index~, cases~, default~, arms~) {
+        self.instr(out, x)
+      }
+    Match(scrutinee~, arms~, default~) => {
+      let labels : Array[@ast.Ident] = []
+      for k in 0..<=arms.length() {
+        labels.push({
+          name: "<match:" +
+          loc.start.cnum.to_string() +
+          ":" +
+          k.to_string() +
+          ">",
+          loc,
+        })
+      }
+      for x in @ast.lower_match(i.info, labels~, scrutinee~, arms~, default~) {
+        self.instr(out, x)
+      }
+    }
     Cast(operand, target) => {
       // A narrow load and a following sign cast are ONE instruction: wax splits
       // the width and the signedness across two constructs, and the binary has
