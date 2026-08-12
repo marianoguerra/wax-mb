@@ -2744,3 +2744,75 @@ test "a block whose shape does not resolve has none" {
   inspect(params.map(c => @infer.to_string(c)).join(","), content="i32")
   inspect(results.map(c => @infer.to_string(c)).join(","), content="f64")
 }
+
+///|
+/// A pass-through branch is the odd one out. An ordinary `br` delivers its
+/// value and leaves; a `br_if` delivers it when taken and KEEPS it when not, so
+/// the value is typed as the block's result either way. That makes the
+/// requirement exact rather than merely a subtype: the fall-through path goes
+/// on using it at that type.
+test "a br_if value must match the block's inferred result exactly" {
+  let ctx = module_ctx()
+  let info = ctx.type_context.subtyping_info()
+  let (cs, r) = @typing.fresh_collecting(None)
+  // The block's result is being inferred, and an ordinary exit made it f64.
+  let _ = @typing.subtype(
+    info,
+    @infer.valtype_cell(@infer.f64_valtype),
+    r,
+    location=Some(loc_at(2, 3)),
+  )
+  // A `br_if` passes an i32 through. Snapshotted at its natural type BEFORE the
+  // delivery pins anything -- after pinning there would be nothing to compare.
+  let passed = @infer.valtype_cell(@infer.i32_valtype)
+  let _ = @typing.deliver_to_branch_target(
+    info,
+    ctx.diagnostics,
+    loc_at(10, 12),
+    [passed],
+    [r],
+  )
+  inspect(cs.exacts.length(), content="1")
+  guard! @typing.infer_result(ctx, loc_at(0, 40), cs, no_lub) is Some(result)
+  @typing.report_exact_mismatches(
+    ctx.diagnostics,
+    loc_at(0, 40),
+    result,
+    cs.exacts,
+  )
+  inspect(
+    @message.to_plain_string(
+      ctx.diagnostics.collected()[ctx.diagnostics.collected().length() - 1].message,
+    ),
+    content="This 'br_if' value stays on the stack as the block's result, so its type must match the inferred result exactly; add a result annotation to the block.",
+  )
+}
+
+///|
+/// A flexible literal passed through forces the annotation to be kept: on
+/// re-parse something downstream could pin it to another width, and the
+/// fall-through value would then disagree with the block's inferred result.
+test "a flexible literal passed through keeps the annotation" {
+  let ctx = module_ctx()
+  let info = ctx.type_context.subtyping_info()
+  let (cs, r) = @typing.fresh_collecting(None)
+  inspect(cs.needed, content="false")
+  let _ = @typing.deliver_to_branch_target(
+    info,
+    ctx.diagnostics,
+    loc_at(10, 12),
+    [@infer.Cell::make(@typing.int_literal_lattice("7"))],
+    [r],
+  )
+  inspect(cs.needed, content="true")
+  // A committed type does not force it: nothing can move it later.
+  let (cs2, r2) = @typing.fresh_collecting(None)
+  let _ = @typing.deliver_to_branch_target(
+    info,
+    ctx.diagnostics,
+    loc_at(10, 12),
+    [@infer.valtype_cell(@infer.i32_valtype)],
+    [r2],
+  )
+  inspect(cs2.needed, content="false")
+}

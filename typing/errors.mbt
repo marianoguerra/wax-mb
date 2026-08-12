@@ -603,3 +603,27 @@ pub fn parameterized_block_expression(
     ),
   )
 }
+
+///|
+/// A `br_if` value that stays on the stack with a type the block's inferred
+/// result does not match exactly.
+pub fn br_if_result_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  loc : @basic.Location,
+  result : @infer.Cell[@infer.InferredType],
+  ty : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This ")
+    .sep(@message.code("br_if"))
+    .sep(
+      @message.text(
+        " value stays on the stack as the block's result, so its type must match the inferred result exactly; add a result annotation to the block.",
+      ),
+    ),
+    related=[typed_branch_label(loc, ty), typed_branch_label(location, result)],
+  )
+}

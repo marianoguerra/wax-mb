@@ -27,6 +27,8 @@ pub fn block_exit_type_mismatch(@diagnostic.Context, @basic.Location, @basic.Loc
 
 pub fn block_signature(@typing_env.TypeContext, @diagnostic.Context, @ast.FuncType) -> (Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]])?
 
+pub fn br_if_result_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
+
 pub fn branch_target(@typing_env.ModuleContext, @ast.Ident) -> Array[@infer.Cell[@infer.InferredType]]
 
 pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
@@ -62,6 +64,8 @@ pub fn declare_local(@typing_env.ModuleContext, @ast.Ident, @wasm_types.ValType[
 pub fn declared_functype(@typing_env.ModuleContext, @ast.Ident) -> @ast.FuncType?
 
 pub fn declared_result(@typing_env.TypeContext, @diagnostic.Context, @ast.FuncType) -> @infer.Cell[@infer.InferredType]?
+
+pub fn deliver_to_branch_target(@type_store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]]) -> Array[@infer.Cell[@infer.InferredType]]
 
 pub fn descriptor_not_reciprocal(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
 
@@ -190,6 +194,8 @@ pub fn register_function(@typing_env.ModuleContext, @ast.Ident, @ast.Ident?, @as
 pub fn register_tag(@typing_env.ModuleContext, @ast.Ident, @ast.Ident?, @ast.FuncType?) -> Unit
 
 pub fn render_stack(Stack) -> String
+
+pub fn report_exact_mismatches(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], Array[(@basic.Location?, @infer.Cell[@infer.InferredType])]) -> Unit
 
 pub fn report_leftovers(Stack, @diagnostic.Context, @basic.Location, (Stack) -> String) -> Unit
 

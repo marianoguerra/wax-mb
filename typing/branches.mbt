@@ -74,3 +74,91 @@ fn label_suggestions(
   }
   @spell.suggest(candidates.iter(), name)
 }
+
+///|
+/// Deliver the values below a `br_if` / `br_on_null` operand to the branch
+/// target, and answer what they are typed as on the fall-through.
+///
+/// A pass-through branch is the odd one out among branches: the value is
+/// delivered to the target when the branch is taken AND stays on the stack when
+/// it is not. So it is typed as the target's result either way -- which makes
+/// the requirement stricter than for an ordinary `br`. An ordinary delivery
+/// need only be a SUBTYPE of the result. A pass-through value has to be
+/// EXACTLY it, because the fall-through path will go on using it at that type.
+///
+/// That is what `exacts` records, and the snapshot has to be taken HERE, before
+/// the delivery below pins the value: after pinning, its natural type is gone
+/// and every value would look like it matched.
+pub fn deliver_to_branch_target(
+  info : @type_store.SubtypingInfo,
+  diagnostics : @diagnostic.Context,
+  location : @basic.Location,
+  types : Array[@infer.Cell[@infer.InferredType]],
+  params : Array[@infer.Cell[@infer.InferredType]],
+) -> Array[@infer.Cell[@infer.InferredType]] {
+  let same_arity = types.length() == params.length()
+  if same_arity {
+    for i in 0..<types.length() {
+      guard params[i].get() is Collecting(cs) else { continue }
+      cs.exacts.push((Some(location), @infer.Cell::make(types[i].get())))
+      // A flexible literal here can still be pinned to a non-default width by
+      // something downstream on re-parse, and the fall-through value would then
+      // disagree with the block's inferred result. Keeping the annotation is
+      // what makes the round trip stable.
+      if types[i].get() is (Number | Int | LargeInt | Float) {
+        cs.needed = true
+      }
+    }
+  }
+  check_subtypes(info, diagnostics, location, types, params)
+  // On the fall-through the values stay typed as the target's result. When the
+  // target has no declared result that cell would leak out of inference, so
+  // fall back to the operands' own types.
+  //
+  // Guarded on arity for the same reason as the snapshot: a mismatch has been
+  // reported already, and pairing unequal lengths would only crash.
+  let any_inferring = params.iter().any(p => is_inferring(p))
+  if any_inferring && same_arity {
+    let out : Array[@infer.Cell[@infer.InferredType]] = []
+    for i in 0..<types.length() {
+      out.push(
+        if params[i].get() is Collecting({ declared: None, .. }) {
+          types[i]
+        } else {
+          resolve_declared(params[i])
+        },
+      )
+    }
+    out
+  } else {
+    params
+  }
+}
+
+///|
+/// Report every pass-through value whose type is not exactly the block's
+/// inferred result.
+///
+/// Only when the result resolves to a single value type: with no standalone
+/// type there is nothing to compare against, and the block has other complaints
+/// already.
+pub fn report_exact_mismatches(
+  diagnostics : @diagnostic.Context,
+  location : @basic.Location,
+  result : @infer.Cell[@infer.InferredType],
+  exacts : Array[(@basic.Location?, @infer.Cell[@infer.InferredType])],
+) -> Unit {
+  guard @typing_env.standalone_valtype(result) is Some(t) else { return }
+  for e in exacts {
+    let (loc, ty) = e
+    if ty.get() is Valtype(v) && v.internal != t.internal {
+      br_if_result_mismatch(
+        diagnostics,
+        location,
+        loc.unwrap_or(location),
+        result,
+        ty,
+      )
+    }
+  }
+}
