@@ -1159,3 +1159,12 @@ pub fn invalid_cast(
     .sep(@message.text("cannot be cast to the target type.")),
   )
 }
+
+///|
+/// A call whose callee is not a function.
+pub fn expected_func(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(location, Error, @message.text("Expected function."))
+}

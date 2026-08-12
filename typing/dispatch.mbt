@@ -1623,6 +1623,39 @@ pub fn Checker::statement(
       }
     }
 
+    // --- An ordinary call through a function reference ---
+    Call(callee, args) => {
+      let (callee_, args_, results) = self.call(loc, callee, args)
+      {
+        desc: Call(callee_, args_),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    TailCall(callee, args) => {
+      // Typed exactly as the call it is, then re-tagged -- so `become f(x)` is
+      // accepted wherever `f(x)` is, with one extra demand: the callee's
+      // results must satisfy THIS function's, since its return is what the
+      // caller will see.
+      let (callee_, args_, results) = self.call(loc, callee, args)
+      check_subtypes(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        loc,
+        results,
+        ctx.return_types,
+      )
+      // A tail call does not return here, so nothing follows it.
+      self.ops.set_unreachable()
+      {
+        desc: TailCall(callee_, args_),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -2510,4 +2543,105 @@ fn peel_chain(
     BrOnCast(_, _, inner) | BrOnNull(_, inner) => peel_chain(inner)
     _ => chain
   }
+}
+
+///|
+/// Type a call: the callee, its arguments, and what it leaves behind.
+///
+/// The callee is typed FIRST, out of emission order -- the arguments are pushed
+/// before it at run time. That inversion is deliberate: the callee's function
+/// type is what gives the parameter types the arguments are checked against, so
+/// typing it first is what lets an argument that is a struct or array literal
+/// be inferred from the parameter and drop its own name.
+fn Checker::call(
+  self : Checker,
+  location : @basic.Location,
+  callee : @ast.Instr[@basic.Location],
+  args : Array[@ast.Instr[@basic.Location]],
+) -> (
+  @ast.Instr[@typing_env.InferredAnnotation],
+  Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  Array[@infer.Cell[@infer.InferredType]],
+) {
+  let ctx = self.ctx
+  let callee_ = self.statement(callee)
+  // Asked ONCE: `expression_type` reports a callee that produces no value or
+  // several, so asking twice would report it twice.
+  let callee_type = expression_type(ctx, callee_.info)
+  let functype = match callee_type.get() {
+    Valtype({ typ: Ref({ typ: Type(n) | Exact(n), .. }), .. }) =>
+      lookup_func_type(
+        ctx.type_context,
+        ctx.diagnostics,
+        n,
+        location=Some(callee.info),
+      )
+    _ => None
+  }
+  let params : Array[@infer.Cell[@infer.InferredType]] = []
+  let mut have_params = false
+  if functype is Some(ft) {
+    have_params = true
+    for p in ft.params {
+      match internalize(ctx.type_context, ctx.diagnostics, p.desc.1) {
+        Some(c) => params.push(c)
+        None => have_params = false
+      }
+    }
+  }
+  // The arguments are typed in EMISSION order, whatever order their types were
+  // worked out in.
+  let args_ : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  for k, a in args {
+    let c = self.statement(a)
+    if have_params && k < params.length() {
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        a.info,
+        expression_type(ctx, c.info),
+        params[k],
+      )
+    }
+    args_.push(c)
+  }
+  let results : Array[@infer.Cell[@infer.InferredType]] = match
+    callee_type.get() {
+    Valtype({ typ: Ref({ typ: Type(_) | Exact(_), .. }), .. }) =>
+      match functype {
+        // `lookup_func_type` already said the named type is not a function.
+        None => [@infer.Cell::make(@infer.InferredType::Error)]
+        Some(ft) => {
+          if have_params && params.length() != args.length() {
+            operand_count_mismatch(
+              ctx.diagnostics,
+              callee.info,
+              expected=params.length(),
+              provided=args.length(),
+            )
+          }
+          let out : Array[@infer.Cell[@infer.InferredType]] = []
+          for r in ft.results {
+            match internalize(ctx.type_context, ctx.diagnostics, r) {
+              Some(c) => out.push(c)
+              None => ()
+            }
+          }
+          out
+        }
+      }
+    // The callee already failed to type -- an unbound name, say. Recover
+    // silently rather than adding a spurious "expected function".
+    Error => [@infer.Cell::make(@infer.InferredType::Error)]
+    Unknown | UnknownRef => {
+      unknown_operand_type(ctx.diagnostics, callee.info)
+      [@infer.Cell::make(@infer.InferredType::Error)]
+    }
+    _ => {
+      expected_func(ctx.diagnostics, callee.info)
+      [@infer.Cell::make(@infer.InferredType::Error)]
+    }
+  }
+  ignore(location)
+  (callee_, args_, results)
 }

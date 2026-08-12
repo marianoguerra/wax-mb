@@ -6369,3 +6369,172 @@ test "a match with no arms is just its default" {
   )
   inspect(checker.gaps().length(), content="0")
 }
+
+///|
+/// A call types its CALLEE first, out of emission order -- the arguments are
+/// pushed before it at run time. That inversion is what lets an argument be
+/// checked against the parameter type, so a literal is pinned by what it is
+/// passed to rather than by its own default.
+test "a call pins its arguments to the parameter types" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn ctx_with_fn() -> @typing_env.ModuleContext {
+    let ctx = module_ctx()
+    let module_ : @ast.Module[@basic.Location] = [
+      {
+        desc: Type([
+          {
+            desc: (
+              id("ft"),
+              {
+                typ: Func({
+                  params: [{ desc: (None, F64), info: loc_at(0, 1) }],
+                  results: [I64],
+                }),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(0, 2),
+          },
+        ]),
+        info: loc_at(0, 2),
+      },
+      {
+        desc: Func(
+          name=id("f"),
+          typ=Some(id("ft")),
+          sign=None,
+          body=(None, []),
+          attributes=[],
+        ),
+        info: loc_at(4, 5),
+      },
+    ]
+    @typing.declare_fields(ctx, module_)
+    ctx
+  }
+
+  let ctx = ctx_with_fn()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement(
+    instr(Call(instr(Get(id("f")), 20), [instr(Int("1"), 30)]), 10),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // The call produces the function's results.
+  inspect(checked.info.0.map(t => @infer.to_string(t)).join(","), content="i64")
+  // And the integer literal was pinned to the f64 parameter, not to its own
+  // i32 default.
+  guard! checked.desc is Call(_, args)
+  inspect(args[0].info.0.map(t => @infer.to_string(t)).join(","), content="f64")
+  inspect(checker.gaps().length(), content="0")
+
+  // Too few arguments is reported against the callee.
+  let ctx2 = ctx_with_fn()
+  let checker2 = @typing.Checker::new(ctx2, @typing.Operands::new())
+  let _ = checker2.statement(instr(Call(instr(Get(id("f")), 20), []), 10))
+  inspect(
+    @message.to_plain_string(ctx2.diagnostics.collected()[0].message),
+    content="This instruction expects 1 operand(s) but 0 was/were provided.",
+  )
+
+  // A callee that is not a function at all.
+  let ctx3 = ctx_with_fn()
+  let checker3 = @typing.Checker::new(ctx3, @typing.Operands::new())
+  let _ = checker3.statement(instr(Call(instr(Int("1"), 20), []), 10))
+  inspect(
+    @message.to_plain_string(ctx3.diagnostics.collected()[0].message),
+    content="Expected function.",
+  )
+}
+
+///|
+/// `become f(x)` is typed exactly as `f(x)` and then re-tagged, with one extra
+/// demand: the callee's results must satisfy THIS function's, since its return
+/// is what the caller will see. And it does not return here, so nothing
+/// follows it.
+test "a tail call must return what its caller promised" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn run(returns : @wasm_types.ValType[@ast.Ident]) -> String {
+    let ctx = module_ctx()
+    let module_ : @ast.Module[@basic.Location] = [
+      {
+        desc: Type([
+          {
+            desc: (
+              id("ft"),
+              {
+                typ: Func({ params: [], results: [I64] }),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(0, 2),
+          },
+        ]),
+        info: loc_at(0, 2),
+      },
+      {
+        desc: Func(
+          name=id("f"),
+          typ=Some(id("ft")),
+          sign=None,
+          body=(None, []),
+          attributes=[],
+        ),
+        info: loc_at(4, 5),
+      },
+    ]
+    @typing.declare_fields(ctx, module_)
+    ctx.enter_function(
+      return_types=match
+        @typing.internalize(ctx.type_context, ctx.diagnostics, returns) {
+        Some(c) => [c]
+        None => []
+      },
+    )
+    let ops = @typing.Operands::new()
+    let checker = @typing.Checker::new(ctx, ops)
+    let _ = checker.statement(instr(TailCall(instr(Get(id("f")), 20), []), 10))
+    (if ops.stack is Unreachable { "diverges" } else { "continues" }) +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // The callee returns i64 and so does this function: fine, and control never
+  // comes back.
+  inspect(run(I64), content="diverges | ")
+  // Returning something else is not.
+  inspect(
+    run(F64),
+    content="diverges | This expression has type 'i64' but is expected to have type 'f64'.",
+  )
+}
