@@ -84,6 +84,7 @@ pub(all) struct FuncType {
 pub(all) struct FunctionCode {
   locals : Array[@wasm_types.ValType[Int]]
   body : Array[Instruction]
+  priority : Priority?
 } derive(Eq, @debug.Debug)
 
 pub(all) struct Global {
@@ -104,6 +105,14 @@ pub(all) enum ImportDesc {
   Global(@wasm_types.MutType[@wasm_types.ValType[Int]])
   Tag(Int)
 } derive(Eq, @debug.Debug)
+
+pub(all) struct InstrHints {
+  branch : Bool?
+  freq : Int?
+  targets : Array[(Int, Int)]?
+} derive(Eq, @debug.Debug)
+pub fn InstrHints::is_empty(Self) -> Bool
+pub fn InstrHints::none() -> Self
 
 pub(all) enum Instruction {
   Unreachable
@@ -178,6 +187,7 @@ pub(all) enum Instruction {
   ResumeThrow(Int, Int, Array[OnClause])
   ResumeThrowRef(Int, Array[OnClause])
   Switch(Int, Int)
+  Hinted(InstrHints, Instruction)
   RefNull(@wasm_types.HeapType[Int])
   RefIsNull
   RefFunc(Int)
@@ -656,6 +666,11 @@ pub fn Names::empty() -> Self
 pub(all) enum OnClause {
   OnLabel(Int, Int)
   OnSwitch(Int)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Priority {
+  compilation : Int
+  optimization : Int?
 } derive(Eq, @debug.Debug)
 
 pub(all) struct RecGroup {

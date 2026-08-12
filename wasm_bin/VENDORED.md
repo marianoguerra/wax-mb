@@ -88,9 +88,15 @@ None of them is on the path from a module to bytes.
 
 ### Added
 
-- **The custom sections.** Upstream emits none. `name` (all twelve subsections)
-  and `target_features` are here; `metadata.code.*` and `sourceMappingURL` are
-  not yet — see below.
+- **The custom sections.** Upstream emits none. `name` (all twelve
+  subsections), `target_features`, and the four `metadata.code.*` sections are
+  here.
+- **The hint sink.** A `metadata.code.*` entry is keyed by its instruction's
+  byte offset within the function body, which is knowable exactly once — while
+  that opcode is being written. So the writer carries an optional sink, present
+  only while a body is being encoded, and `Hinted` is a wrapper constructor
+  that emits no opcode of its own. This is what `wasm_output.ml` does with
+  `Encoder.hint_sink`, for the same reason.
 - **Stack switching.** Seven instructions (`cont.new`, `cont.bind`, `suspend`,
   `resume`, `resume_throw`, `resume_throw_ref`, `switch`) plus the resume table.
   Upstream's model could not express any of them, though the Wax AST has had
@@ -100,14 +106,9 @@ None of them is on the path from a module to bytes.
 
 ## What is still missing
 
-The `metadata.code.*` custom sections — `branch_hint`, `instr_freq`,
-`call_targets`, `compilation_priority`. 34 corpus files carry the hints that
-produce them. They need each hinted instruction's byte offset relative to the
-start of the function body, which means threading an offset sink through the
-opcode table the way `wasm_output.ml`'s `Encoder.hint_sink` does.
-
-`sourceMappingURL` and the source map itself are only emitted under
-`--source-map`, which the goldens do not use.
+`sourceMappingURL`, and the source map it points at. Both are only emitted
+under `--source-map`, which the goldens do not use, so this is the one gap that
+byte identity over the corpus will not notice.
 
 ## Upstreaming
 

@@ -683,6 +683,12 @@ fn encode_instruction(
       w.write_u32(11)
       encode_memarg(w, memidx, align, offset)
     }
+    // Hints carry no opcode: record where the instruction they belong to
+    // starts, then encode that instruction.
+    Hinted(hints, inner) => {
+      w.record_hint(hints)
+      encode_instruction(w, inner)
+    }
     // Stack switching. `wasm_core` had none of these; the encodings are
     // wasm_output.ml's, which is what they are measured against.
     ContNew(idx) => {

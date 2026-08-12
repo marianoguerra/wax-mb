@@ -132,3 +132,132 @@ fn encode_target_features_section(
   }
   write_custom_section(w, b"target_features", b.to_bytes())
 }
+
+///|
+/// One function's hints, as the `metadata.code.*` sections want them: a
+/// function index, then that function's (offset, payload) pairs.
+priv struct FuncHints {
+  funcidx : Int
+  entries : Array[(Int, Bytes)]
+}
+
+///|
+/// A `metadata.code.<kind>` section.
+///
+/// All four share a shape -- per function index, a vector of (offset within the
+/// body, payload length, payload) -- so only the name and the payload bytes
+/// differ. Both vectors are already in increasing order: functions are encoded
+/// in order, and a body's opcodes are written at strictly increasing offsets.
+fn encode_code_metadata_section(
+  w : BinaryWriter,
+  kind : Bytes,
+  funcs : Array[FuncHints],
+) -> Unit {
+  if funcs.is_empty() {
+    return
+  }
+  let b = BinaryWriter::new()
+  b.write_u32(funcs.length())
+  for f in funcs {
+    b.write_u32(f.funcidx)
+    b.write_u32(f.entries.length())
+    for e in f.entries {
+      let (offset, payload) = e
+      b.write_u32(offset)
+      b.write_u32(payload.length())
+      b.write_bytes(payload)
+    }
+  }
+  write_custom_section(w, b"metadata.code." + kind, b.to_bytes())
+}
+
+///|
+/// `#[likely]` and `#[unlikely]` are one byte, 1 and 0.
+fn branch_payload(likely : Bool) -> Bytes {
+  if likely {
+    b"\x01"
+  } else {
+    b"\x00"
+  }
+}
+
+///|
+/// A frequency is one byte, already reduced to the wire's offset logarithm.
+fn freq_payload(f : Int) -> Bytes {
+  let w = BinaryWriter::new()
+  w.write_byte(f)
+  w.to_bytes()
+}
+
+///|
+/// Call targets are a run of LEB128 pairs: function index, then percentage.
+fn call_targets_payload(targets : Array[(Int, Int)]) -> Bytes {
+  let w = BinaryWriter::new()
+  for t in targets {
+    let (idx, pct) = t
+    w.write_u32(idx)
+    w.write_u32(pct)
+  }
+  w.to_bytes()
+}
+
+///|
+/// A compilation priority, optionally followed by an optimization priority.
+fn priority_payload(p : Priority) -> Bytes {
+  let w = BinaryWriter::new()
+  w.write_u32(p.compilation)
+  if p.optimization is Some(o) {
+    w.write_u32(o)
+  }
+  w.to_bytes()
+}
+
+///|
+/// The hints gathered from every function body, already split across the four
+/// sections that carry them.
+priv struct CodeHints {
+  branch : Array[FuncHints]
+  freq : Array[FuncHints]
+  targets : Array[FuncHints]
+  priorities : Array[FuncHints]
+}
+
+///|
+fn CodeHints::new() -> CodeHints {
+  { branch: [], freq: [], targets: [], priorities: [] }
+}
+
+///|
+/// Split one function's hints across the sections. A section takes an entry for
+/// this function only if at least one of its hints is of that kind.
+fn CodeHints::take(
+  self : CodeHints,
+  funcidx : Int,
+  sink : Array[(Int, InstrHints)],
+  priority : Priority?,
+) -> Unit {
+  fn collect(
+    into : Array[FuncHints],
+    payload_of : (InstrHints) -> Bytes?,
+  ) -> Unit {
+    let entries = []
+    for e in sink {
+      let (offset, hints) = e
+      if payload_of(hints) is Some(payload) {
+        entries.push((offset, payload))
+      }
+    }
+    if !entries.is_empty() {
+      into.push({ funcidx, entries })
+    }
+  }
+
+  collect(self.branch, h => h.branch.map(branch_payload))
+  collect(self.freq, h => h.freq.map(freq_payload))
+  collect(self.targets, h => h.targets.map(call_targets_payload))
+  // A priority is about the function, not an instruction, so it is recorded at
+  // offset 0 -- the position that means "the function itself".
+  if priority is Some(p) {
+    self.priorities.push({ funcidx, entries: [(0, priority_payload(p))] })
+  }
+}

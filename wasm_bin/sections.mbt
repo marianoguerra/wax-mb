@@ -292,29 +292,42 @@ fn compress_locals(locals : Array[ValType]) -> Array[(Int, ValType)] {
 }
 
 ///|
-fn encode_code_section(mod : Module) -> Bytes raise EncodeError {
+/// The code section, and the hints collected while writing it.
+///
+/// The two come together because they can only come together: a hint is keyed
+/// by its instruction's byte offset within the function body, so it is knowable
+/// exactly once, while that body is being encoded.
+fn encode_code_section(mod : Module) -> (Bytes, CodeHints) raise EncodeError {
+  let hints = CodeHints::new()
   if mod.codes.is_empty() {
-    return b""
+    return (b"", hints)
   }
-  section_body(w => {
+  // Defined functions are indexed after the imported ones.
+  let num_func_imports = mod.imports
+    .iter()
+    .filter(i => i.desc is Func(_))
+    .count()
+  let body = section_body(w => {
     w.write_u32(mod.codes.length())
-    for code in mod.codes {
-      // Each body is length-prefixed, so it has to be built before it is
-      // written.
-      let body = section_body(b => {
-        let locals = compress_locals(code.locals)
-        b.write_u32(locals.length())
-        for entry in locals {
-          let (count, vt) = entry
-          b.write_u32(count)
-          encode_valtype(b, vt)
-        }
-        encode_expr(b, code.body)
-      })
-      w.write_u32(body.length())
-      w.write_bytes(body)
+    for i, code in mod.codes {
+      let funcidx = num_func_imports + i
+      let sink : Array[(Int, InstrHints)] = []
+      let fn_body = BinaryWriter::new_with_sink(sink)
+      let locals = compress_locals(code.locals)
+      fn_body.write_u32(locals.length())
+      for entry in locals {
+        let (count, vt) = entry
+        fn_body.write_u32(count)
+        encode_valtype(fn_body, vt)
+      }
+      encode_expr(fn_body, code.body)
+      let bytes = fn_body.to_bytes()
+      w.write_u32(bytes.length())
+      w.write_bytes(bytes)
+      hints.take(funcidx, sink, code.priority)
     }
   })
+  (body, hints)
 }
 
 ///|
@@ -362,6 +375,7 @@ fn encode_datacount_section(mod : Module) -> Bytes raise EncodeError {
 /// `metadata.code.*` ones, which the branch-hinting proposal requires between
 /// the function and code sections, and which are not emitted yet.
 pub fn encode(mod : Module) -> Bytes raise EncodeError {
+  let (code, code_hints) = encode_code_section(mod)
   let w = BinaryWriter::new()
   w.write_bytes(b"\x00\x61\x73\x6D") // "\0asm"
   w.write_bytes(b"\x01\x00\x00\x00") // version 1
@@ -376,7 +390,18 @@ pub fn encode(mod : Module) -> Bytes raise EncodeError {
   write_section(w, 8, encode_start_section(mod))
   write_section(w, 9, encode_element_section(mod))
   write_section(w, 12, encode_datacount_section(mod))
-  write_section(w, 10, encode_code_section(mod))
+  // The metadata.code.* sections go after the function section and before the
+  // code section, which all four proposals require -- so the code section has
+  // to be built before any of them can be written.
+  encode_code_metadata_section(w, b"branch_hint", code_hints.branch)
+  encode_code_metadata_section(w, b"instr_freq", code_hints.freq)
+  encode_code_metadata_section(w, b"call_targets", code_hints.targets)
+  encode_code_metadata_section(
+    w,
+    b"compilation_priority",
+    code_hints.priorities,
+  )
+  write_section(w, 10, code)
   write_section(w, 11, encode_data_section(mod))
   encode_target_features_section(w, mod.target_features)
   encode_name_section(w, mod.names)

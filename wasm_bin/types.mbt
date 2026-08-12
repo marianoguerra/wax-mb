@@ -222,6 +222,12 @@ pub(all) enum Instruction {
   ResumeThrow(Int, Int, Array[OnClause]) // type index, tag index, resume table
   ResumeThrowRef(Int, Array[OnClause]) // type index, resume table
   Switch(Int, Int) // type index, tag index
+  /// An instruction with compilation hints on it.
+  ///
+  /// A wrapper rather than a field on every instruction: hints are rare, the
+  /// enum is 500 constructors wide, and the encoder needs exactly one place to
+  /// notice them. It emits no opcode of its own.
+  Hinted(InstrHints, Instruction)
 
   // Reference type instructions
   RefNull(HeapType) // ref.null: push a null reference to this heap type
@@ -745,6 +751,44 @@ pub(all) enum BlockType {
 } derive(Eq, Debug)
 
 ///|
+/// The compilation hints attached to a single instruction.
+///
+/// These do not change what the instruction does; they are advice, carried out
+/// of line in the `metadata.code.*` sections, keyed by the instruction's byte
+/// offset within its function body. Which is why they hang off the instruction
+/// here: the offset is only knowable while encoding, and only the encoder knows
+/// it.
+pub(all) struct InstrHints {
+  /// `#[likely]` / `#[unlikely]` on a branch.
+  branch : Bool?
+  /// `#[freq]`: a saturating base-2 logarithm of executions per call, already
+  /// reduced to the byte the section stores.
+  freq : Int?
+  /// `#[targets]`: likely call targets, as (function index, percentage).
+  targets : Array[(Int, Int)]?
+} derive(Eq, Debug)
+
+///|
+/// No hints.
+pub fn InstrHints::none() -> InstrHints {
+  { branch: None, freq: None, targets: None }
+}
+
+///|
+pub fn InstrHints::is_empty(self : InstrHints) -> Bool {
+  self.branch is None && self.freq is None && self.targets is None
+}
+
+///|
+/// `#[priority]`: advice about the function as a whole rather than about one
+/// instruction, which is why it lives on the code entry and is recorded at
+/// offset 0 -- the position that means "the function itself".
+pub(all) struct Priority {
+  compilation : Int
+  optimization : Int?
+} derive(Eq, Debug)
+
+///|
 /// One arm of a resume table: what happens when the continuation suspends with
 /// a given tag.
 pub(all) enum OnClause {
@@ -837,6 +881,8 @@ pub(all) struct Export {
 pub(all) struct FunctionCode {
   locals : Array[ValType]
   body : Array[Instruction]
+  /// `#[priority]` on the function, if any.
+  priority : Priority?
 } derive(Eq, Debug)
 
 ///|

@@ -35,7 +35,7 @@ fn one_func(instrs : Array[@wasm_bin.Instruction]) -> @wasm_bin.Module {
   m.types.push(@wasm_bin.SubType::func([], []))
   m.rec_groups.push({ start: 0, len: 1, explicit: false })
   m.funcs.push(0)
-  m.codes.push({ locals: [], body: instrs })
+  m.codes.push({ locals: [], body: instrs, priority: None })
   m
 }
 
@@ -56,7 +56,11 @@ test "one exported function" {
   m.rec_groups.push({ start: 0, len: 1, explicit: false })
   m.funcs.push(0)
   m.exports.push({ name: b"add", desc: Func(0) })
-  m.codes.push({ locals: [], body: [LocalGet(0), LocalGet(1), I32Add] })
+  m.codes.push({
+    locals: [],
+    body: [LocalGet(0), LocalGet(1), I32Add],
+    priority: None,
+  })
   inspect(
     hex(@wasm_bin.encode(m)),
     content=header +
@@ -366,7 +370,7 @@ test "the name section carries every name space, in ascending id order" {
   m.types.push(@wasm_bin.SubType::func([I32], []))
   m.rec_groups.push({ start: 0, len: 1, explicit: false })
   m.funcs.push(0)
-  m.codes.push({ locals: [I64], body: [] })
+  m.codes.push({ locals: [I64], body: [], priority: None })
   m.names.module_ = Some(b"m")
   m.names.functions[0] = b"f"
   m.names.types[0] = b"t"
@@ -457,7 +461,7 @@ test "name entries are sorted by index, however they were inserted" {
   m.rec_groups.push({ start: 0, len: 1, explicit: false })
   for i in [2, 0, 1] {
     m.funcs.push(0)
-    m.codes.push({ locals: [], body: [] })
+    m.codes.push({ locals: [], body: [], priority: None })
     m.names.functions[i] = [b"a", b"b", b"c"][i]
   }
   // inserted 2, 0, 1; emitted 0, 1, 2
@@ -511,4 +515,72 @@ test "stack switching" {
 fn _tail_len(instrs : Array[@wasm_bin.Instruction]) -> Int raise {
   @wasm_bin.encode(one_func(instrs)).length() -
   @wasm_bin.encode(one_func([])).length()
+}
+
+///|
+/// The `metadata.code.*` sections. A hint is keyed by its instruction's byte
+/// offset within the function body, and a body begins with the locals
+/// declaration -- so offset 0 is the locals count byte, not the first opcode.
+///
+/// The reference gathers these the same way, with a sink the instruction
+/// encoder writes to, for the same reason: the offset is knowable exactly once,
+/// while the opcode is being written.
+test "metadata.code.branch_hint records the branch's offset in the body" {
+  let m = one_func([
+    I32Const(1),
+    Hinted({ ..@wasm_bin.InstrHints::none(), branch: Some(true) }, BrIf(0)),
+  ])
+  let h = hex(@wasm_bin.encode(m))
+  // body is: 00 (no locals) 41 01 (i32.const 1) 0d 00 (br_if 0) 0b
+  // so the br_if opcode sits at offset 3.
+  //
+  // custom section 0: the name is 25 bytes, then 1 function, index 0, 1 entry,
+  // offset 3, payload length 1, payload 01 (likely). And it sits between the
+  // function section and the code section, which the proposal requires.
+  inspect(
+    h.contains(
+      "19" +
+      "6d657461646174612e636f64652e6272616e63685f68696e74" +
+      "01" +
+      "00" +
+      "01" +
+      "03" +
+      "01" +
+      "01",
+    ),
+    content="true",
+  )
+}
+
+///|
+/// A priority is advice about the function, not about an instruction, so it is
+/// recorded at offset 0 -- the position that means "the function itself".
+test "metadata.code.compilation_priority is keyed at offset zero" {
+  let m = one_func([])
+  m.codes[0] = {
+    ..m.codes[0],
+    priority: Some({ compilation: 2, optimization: Some(3) }),
+  }
+  inspect(
+    hex(@wasm_bin.encode(m)).contains(
+      "6d657461646174612e636f64652e636f6d70696c6174696f6e5f7072696f72697479" +
+      "01" +
+      "00" +
+      "01" +
+      "00" +
+      "02" +
+      "0203",
+    ),
+    content="true",
+  )
+}
+
+///|
+/// A function with no hints of a given kind takes no entry in that section, and
+/// a section with no entries is not written at all.
+test "an unhinted module has no metadata sections" {
+  inspect(
+    hex(@wasm_bin.encode(one_func([Nop]))).contains("6d65746164617461"),
+    content="false",
+  )
 }

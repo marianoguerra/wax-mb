@@ -44,11 +44,34 @@ pub impl Show for EncodeError with fn output(self, logger) {
 ///|
 priv struct BinaryWriter {
   buf : @buffer.Buffer
+  /// Where hinted instructions report themselves, when one is encoding a
+  /// function body. Absent everywhere else, which is what makes an offset
+  /// meaningful: it is measured from the start of THIS buffer, and a body
+  /// buffer starts at the locals declaration.
+  ///
+  /// The reference does the same thing with a mutable `Encoder.hint_sink`,
+  /// reset to a no-op outside code encoding, for the same reason: the offset is
+  /// only knowable at the moment the opcode is written.
+  sink : Array[(Int, InstrHints)]?
 }
 
 ///|
 fn BinaryWriter::new() -> BinaryWriter {
-  { buf: @buffer.Buffer::Buffer() }
+  { buf: @buffer.Buffer::Buffer(), sink: None }
+}
+
+///|
+/// A writer that collects the hints of the instructions written into it.
+fn BinaryWriter::new_with_sink(sink : Array[(Int, InstrHints)]) -> BinaryWriter {
+  { buf: @buffer.Buffer::Buffer(), sink: Some(sink) }
+}
+
+///|
+/// Note that the instruction about to be written carries hints.
+fn BinaryWriter::record_hint(self : BinaryWriter, hints : InstrHints) -> Unit {
+  if self.sink is Some(sink) {
+    sink.push((self.buf.length(), hints))
+  }
 }
 
 ///|
