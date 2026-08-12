@@ -573,20 +573,32 @@ fn Lowering::hinted(
     // to the try has to leave the join block carrying the value; only when
     // there is no such label does the lowering invent one.
     TryCatch(label~, typ~, block~, arms~) => {
+      let inner : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+      for x in block.desc {
+        inner.push(x)
+      }
+      for a in arms {
+        for x in a.arm_body.desc {
+          inner.push(x)
+        }
+      }
+      let taken = self.enclosing_labels()
+      if label is Some(l) {
+        taken.push(l.name)
+      }
+      for name in labels_within(inner) {
+        taken.push(name)
+      }
       let arm_labels : Array[@ast.Ident] = []
       for k in 0..<arms.length() {
-        arm_labels.push({
-          name: "<catch:" +
-          loc.start.cnum.to_string() +
-          ":" +
-          k.to_string() +
-          ">",
-          loc,
-        })
+        let base = if k == 0 { "catch" } else { "catch_" + k.to_string() }
+        let name = fresh_name(taken, base, 0)
+        taken.push(name)
+        arm_labels.push({ name, loc })
       }
-      let join = match label {
+      let join : @ast.Ident = match label {
         Some(l) => l
-        None => { name: "<join:" + loc.start.cnum.to_string() + ">", loc }
+        None => { name: fresh_name(taken, "join", 0), loc }
       }
       self.instr(
         out,
@@ -689,10 +701,25 @@ fn Lowering::hinted(
     // the code that runs is the code that was checked. The synthetic labels the
     // lowering invents are spelled `<..>`, so they never reach the name section.
     While(label~, cond~, step~, block~) => {
-      let fresh : @ast.Ident = {
-        name: "<while:" + loc.start.cnum.to_string() + ">",
-        loc,
+      // The lowering's synthetic labels are the ones the DECOMPILER would have
+      // written, because they reach the name section: a label-less `while`
+      // becomes `loop`, and only a collision with an enclosing label, a label
+      // nested in the body, or the while's own gives it a number.
+      let inner = [cond]
+      if step is Some(x) {
+        inner.push(x)
       }
+      for x in block.desc {
+        inner.push(x)
+      }
+      let taken = self.enclosing_labels()
+      if label is Some(l) {
+        taken.push(l.name)
+      }
+      for name in labels_within(inner) {
+        taken.push(name)
+      }
+      let fresh : @ast.Ident = { name: fresh_name(taken, "loop", 1), loc }
       for
         x in @ast.lower_while(
           i.info,
@@ -710,17 +737,31 @@ fn Lowering::hinted(
         self.instr(out, x)
       }
     Match(scrutinee~, arms~, default~) => {
-      let labels : Array[@ast.Ident] = []
-      for k in 0..<=arms.length() {
-        labels.push({
-          name: "<match:" +
-          loc.start.cnum.to_string() +
-          ":" +
-          k.to_string() +
-          ">",
-          loc,
-        })
+      // One `arm`/`arm_1`/... per arm, then `default` for the escape block,
+      // each picked fresh so that neither an arm body's branch to an outer
+      // label nor its own labelled block is captured.
+      let inner : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+      for x in default.desc {
+        inner.push(x)
       }
+      for a in arms {
+        for x in a.1.desc {
+          inner.push(x)
+        }
+      }
+      let taken = self.enclosing_labels()
+      for name in labels_within(inner) {
+        taken.push(name)
+      }
+      let labels : Array[@ast.Ident] = []
+      for k in 0..<arms.length() {
+        let base = if k == 0 { "arm" } else { "arm_" + k.to_string() }
+        let name = fresh_name(taken, base, 0)
+        taken.push(name)
+        labels.push({ name, loc })
+      }
+      let escape = fresh_name(taken, "default", 0)
+      labels.push({ name: escape, loc })
       for x in @ast.lower_match(i.info, labels~, scrutinee~, arms~, default~) {
         self.instr(out, x)
       }

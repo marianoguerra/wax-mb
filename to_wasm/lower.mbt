@@ -200,3 +200,68 @@ pub fn node_valtype(
   }
   Some(lower_valtype(v.internal))
 }
+
+///|
+/// Every label name written anywhere inside these instructions.
+///
+/// The synthetic labels a lowering invents have to avoid these as well as the
+/// enclosing ones: a nested block that already takes the name would capture a
+/// branch meant for the synthetic one, and the two are only told apart by name.
+pub fn labels_within(
+  instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+) -> Array[String] {
+  let out : Array[String] = []
+  fn add(l : @ast.Label?) -> Unit {
+    if l is Some(name) {
+      out.push(name.name)
+    }
+  }
+
+  for top in instrs {
+    top.iter_instr(i => {
+      match i.desc {
+        Block(label~, ..)
+        | Loop(label~, ..)
+        | While(label~, ..)
+        | If(label~, ..)
+        | TryTable(label~, ..)
+        | Try(label~, ..)
+        | TryCatch(label~, ..) => add(label)
+        _ => ()
+      }
+    })
+  }
+  out
+}
+
+///|
+/// The first name of this series not already taken.
+///
+/// The reference numbers from the BARE name -- `loop`, then `loop2` -- so the
+/// common case reads as the author would have written it, and only a genuine
+/// collision gets a suffix.
+/// `first` is the number whose name is the BARE base -- 1 for the loop series,
+/// where the reference counts from one, and 0 for the arm and catch series.
+pub fn fresh_name(taken : Array[String], base : String, first : Int) -> String {
+  let mut k = first
+  while true {
+    let name = if k == first { base } else { base + k.to_string() }
+    if !taken.contains(name) {
+      return name
+    }
+    k = k + 1
+  }
+  base
+}
+
+///|
+/// Every label name currently in scope, innermost last.
+pub fn Lowering::enclosing_labels(self : Lowering) -> Array[String] {
+  let out : Array[String] = []
+  for l in self.labels {
+    if l is Some(name) {
+      out.push(name)
+    }
+  }
+  out
+}

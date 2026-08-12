@@ -20,6 +20,8 @@ pub fn binop_instruction(@ast.BinOp, @wasm_types.ValType[Int]) -> @wasm_bin.Inst
 
 pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> String
 
+pub fn fresh_name(Array[String], String, Int) -> String
+
 pub fn function_priority(Array[@ast.Attribute]) -> @wasm_bin.Priority?
 
 pub fn functype_index(@type_store.TypeStore) -> Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
@@ -33,6 +35,8 @@ pub fn is_extern_hierarchy(@wasm_types.HeapType[Int]) -> Bool
 pub fn is_packed(@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) -> Bool
 
 pub fn is_synthetic(String) -> Bool
+
+pub fn labels_within(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]]) -> Array[String]
 
 pub fn load_instruction(String, Int, Int, Int64, (@ast.NumType, @wasm_types.Signage)?) -> @wasm_bin.Instruction?
 
@@ -114,6 +118,7 @@ pub struct Lowering {
 }
 pub fn Lowering::array_element_of(Self, @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location) -> (Int, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) raise LowerError
 pub fn Lowering::depth_of(Self, String) -> Int?
+pub fn Lowering::enclosing_labels(Self) -> Array[String]
 pub fn Lowering::instr(Self, Array[@wasm_bin.Instruction], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Unit raise LowerError
 pub fn Lowering::memarg(Self, @ast.Ident, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @basic.Location) -> (Int, Int64) raise LowerError
 pub fn Lowering::memarg_natural(Self, Int, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @basic.Location) -> (Int, Int64) raise LowerError
