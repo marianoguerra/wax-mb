@@ -5102,3 +5102,109 @@ test "a chain of trapping casts is reported once" {
   )
   inspect(ctx.diagnostics.collected().length(), content="1")
 }
+
+///|
+/// The cast arms, through the dispatcher. A cast produces its TARGET's type; a
+/// test produces i32 whatever it asked; a non-null assertion produces the
+/// non-null form of what it was given.
+test "a cast produces its target and a test produces an answer" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn typed(d : @ast.InstrDesc[@basic.Location]) -> String {
+    let ctx = module_ctx()
+    @typing.bind_local(
+      ctx,
+      id("r"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: true, typ: Any }),
+      ),
+    )
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(instr(d, 0))
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  // A numeric cast produces exactly the named type.
+  inspect(
+    typed(
+      Cast(
+        instr(Float("1.5"), 4),
+        Signed(typ=I32, signage=Signed, strict=false),
+      ),
+    ),
+    content="i32 | 0",
+  )
+  // A reference cast produces the target reference.
+  inspect(
+    typed(
+      Cast(instr(Get(id("r")), 4), Value(Ref({ nullable: false, typ: Struct }))),
+    ),
+    content="&struct | 0",
+  )
+  // A test always answers with an i32.
+  inspect(
+    typed(Test(instr(Get(id("r")), 4), { nullable: false, typ: Struct })),
+    content="i32 | 0",
+  )
+  // A non-null assertion strips the nullability and keeps the heap type.
+  inspect(typed(NonNull(instr(Get(id("r")), 4))), content="&any | 0")
+  // On a bare null it is the INFERENCE bottom `&_`, not the concrete `&none`:
+  // it is a subtype of every reference type, so any consumer is satisfied, and
+  // it only concretizes when something makes it commit.
+  inspect(typed(NonNull(instr(Null, 4))), content="&_ | 0")
+}
+
+///|
+/// An inline `&fn(..)` cast target mints a function type, so the target has an
+/// index to point at. The name is unwritable, and the renderer shows the
+/// composite type rather than the synthesized name.
+test "an inline function cast target mints a type" {
+  let ctx = module_ctx()
+  @typing.bind_local(
+    ctx,
+    id("f"),
+    @typing.internalize_valtype(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: true, typ: Func }),
+    ),
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement({
+    desc: Cast(
+      {
+        desc: Get(id("f")),
+        info: loc_at(4, 5),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      },
+      Func(nullable=false, sign={ params: [], results: [I32] }),
+    ),
+    info: loc_at(0, 1),
+    hints: { branch: None, freq: None, targets: None },
+    expected: None,
+  })
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // Rendered by its shape, not by the generated name.
+  inspect(
+    checked.info.0.map(t => @infer.to_string(t)).join(","),
+    // By its SHAPE, not by the generated name -- which is what `anon_comptype`
+    // is carried for.
+    content="fn() -> i32",
+  )
+  inspect(checker.gaps().length(), content="0")
+}

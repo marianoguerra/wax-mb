@@ -928,6 +928,122 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Casts and tests ---
+    Cast(operand, target) => {
+      let operand_ = self.statement(operand)
+      let natural = expression_type(ctx, operand_.info)
+      let ty = match target {
+        // `e as t` for a value type: the result IS the target, and a reference
+        // target is worth linting -- it can be impossible or pointless before
+        // it is ever run.
+        Value(v) => {
+          let want = internalize(ctx.type_context, ctx.diagnostics, v)
+          if want is Some(w) {
+            lint_ref_cast(
+              ctx,
+              loc,
+              is_test=false,
+              natural.get(),
+              w.get(),
+              operand_location=Some(operand.info),
+            )
+          }
+          match want {
+            Some(w) => w
+            None => @infer.Cell::make(@infer.InferredType::Error)
+          }
+        }
+        // `e as &fn(..)` mints a function type for the target.
+        Func(nullable~, sign~) =>
+          match self.inline_functype(loc, sign) {
+            Some(name) =>
+              match
+                internalize(
+                  ctx.type_context,
+                  ctx.diagnostics,
+                  Ref({ nullable, typ: Type(name) }),
+                  inline=Some(Func(sign)),
+                ) {
+                Some(c) => c
+                None => @infer.Cell::make(@infer.InferredType::Error)
+              }
+            None => @infer.Cell::make(@infer.InferredType::Error)
+          }
+        // `e as i32_s` and friends: a numeric conversion, whose result is the
+        // named numeric type and nothing else.
+        Signed(typ~, ..) =>
+          @infer.valtype_cell(
+            match typ {
+              I32 => @infer.i32_valtype
+              I64 => @infer.i64_valtype
+              F32 => @infer.f32_valtype
+              F64 => @infer.f64_valtype
+            },
+          )
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: Cast(operand_, target),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    Test(operand, target) => {
+      let operand_ = self.statement(operand)
+      let natural = expression_type(ctx, operand_.info)
+      if internalize(ctx.type_context, ctx.diagnostics, Ref(target)) is Some(w) {
+        lint_ref_cast(
+          ctx,
+          loc,
+          is_test=true,
+          natural.get(),
+          w.get(),
+          operand_location=Some(operand.info),
+        )
+      }
+      // A test answers a question, so it produces an i32 whatever it asked.
+      let ty = @infer.valtype_cell(@infer.i32_valtype)
+      self.ops.push(Some(loc), ty)
+      {
+        desc: Test(operand_, target),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    NonNull(operand) => {
+      let operand_ = self.statement(operand)
+      let ty = match expression_type(ctx, operand_.info).get() {
+        Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype }) => {
+          let v : @infer.InferredValType = {
+            typ: Ref({ nullable: false, typ: r.typ }),
+            internal: Ref({ nullable: false, typ: ir.typ }),
+            anon_comptype,
+          }
+          @infer.Cell::make(@infer.InferredType::Valtype(v))
+        }
+        // A reference recovered from a polymorphic value -- dead code, a value
+        // known only as a reference, or a bare `null`. The bottom reference is
+        // a subtype of every reference type, so it satisfies any consumer, and
+        // `ref.as_non_null` of a null is valid wasm that always traps.
+        Unknown | UnknownRef | Null =>
+          @infer.Cell::make(@infer.InferredType::UnknownRef)
+        Error => @infer.Cell::make(@infer.InferredType::Error)
+        _ => {
+          expected_ref(ctx.diagnostics, operand.info)
+          @infer.Cell::make(@infer.InferredType::Error)
+        }
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: NonNull(operand_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -1516,5 +1632,40 @@ fn Checker::allocated(
         None => @infer.Cell::make(@infer.InferredType::Error)
       }
     None => @infer.Cell::make(@infer.InferredType::Error)
+  }
+}
+
+///|
+/// Mint a function type for an inline `&fn(..)` cast target.
+///
+/// The name is synthesized and unwritable -- it begins with `<` -- so it cannot
+/// collide with anything the author declared, and it exists only so the target
+/// has an index to point at. The renderer shows the composite type instead of
+/// the name, which is why `anon_comptype` rides along with it.
+fn Checker::inline_functype(
+  self : Checker,
+  location : @basic.Location,
+  sign : @ast.FuncType,
+) -> @ast.Ident? {
+  let name = "<fn:" + location.start.cnum.to_string() + ">"
+  let id : @ast.Ident = { name, loc: location }
+  match
+    add_type(self.ctx.type_context, self.ctx.diagnostics, [
+      {
+        desc: (
+          id,
+          {
+            typ: Func(sign),
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: None,
+          },
+        ),
+        info: location,
+      },
+    ]) {
+    Some(_) => Some(id)
+    None => None
   }
 }

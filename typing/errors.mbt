@@ -1018,3 +1018,12 @@ pub fn redundant_cast(
     universal=true,
   )
 }
+
+///|
+/// A non-null assertion on something that is not a reference.
+pub fn expected_ref(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(location, Error, @message.text("Expected a reference type."))
+}

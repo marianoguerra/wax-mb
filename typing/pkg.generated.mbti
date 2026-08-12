@@ -119,6 +119,8 @@ pub fn expected_array_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn expected_func_type(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn expected_ref(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn expected_struct(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn expected_struct_type(@diagnostic.Context, @basic.Location) -> Unit
