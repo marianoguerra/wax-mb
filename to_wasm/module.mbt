@@ -38,6 +38,7 @@ pub fn lower_module(
     local_names: Map([]),
     label_names: Map([]),
     label_counter: 0,
+    pending_handlers: [],
     labels: [],
     source_types: source_type_index(ctx),
     functypes: functype_index(store),

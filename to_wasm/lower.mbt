@@ -59,6 +59,9 @@ pub struct Lowering {
   /// stands, while a name belongs to the block itself.
   mut label_names : Map[Int, Bytes]
   mut label_counter : Int
+  /// The handlers an enclosing `on` clause wrote, waiting for the resume they
+  /// belong to. Empty everywhere else.
+  mut pending_handlers : Array[@ast.OnClause]
   /// The labels in scope, innermost last. A `br` names one; the binary counts
   /// outward from the innermost, so the depth is the distance from the end.
   mut labels : Array[String?]

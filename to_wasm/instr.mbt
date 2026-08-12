@@ -294,6 +294,29 @@ fn Lowering::hinted(
           return
         }
       }
+      // The stack-switching METHODS: `c.resume(x)` and its siblings, which are
+      // the same instructions as the raw forms written on the continuation.
+      // The type comes from the RECEIVER, because that is where the
+      // continuation is.
+      if callee.desc is StructGet(recv, meth) {
+        if cont_method_instruction(meth.name) is Some(_) {
+          if node_type_index(recv) is Some(ct) {
+            // Emission order is the payload arguments, then the continuation
+            // receiver on top -- which is the operand order the instruction
+            // takes, and the reverse of how it is written.
+            for a in args {
+              if !(a.desc is Labelled(_, _)) {
+                self.instr(out, a)
+              }
+            }
+            self.instr(out, recv)
+            out.push(
+              self.cont_method(meth, args, ct, self.pending_handlers, loc),
+            )
+            return
+          }
+        }
+      }
       // Memory and table management: the same five names on both, told apart
       // by which space the receiver is in -- `size` on a memory counts pages
       // and on a table counts elements.
@@ -454,9 +477,15 @@ fn Lowering::hinted(
       out.push(Switch(self.type_index_of(ct, loc), self.tag_of(tag, loc)))
     }
     // An `on` clause is the surface spelling that writes a resume's handlers
-    // outside the call; the handlers belong to the resume, which reads them
-    // from here.
-    On(inner, _) => self.instr(out, inner)
+    // OUTSIDE the call. They belong to the resume, so they are handed down to
+    // it rather than emitted here -- there is no instruction for the clause
+    // itself.
+    On(inner, handlers) => {
+      let saved = self.pending_handlers
+      self.pending_handlers = handlers
+      self.instr(out, inner)
+      self.pending_handlers = saved
+    }
     Throw(tag, args) => {
       for a in args {
         self.instr(out, a)
@@ -1157,4 +1186,53 @@ fn Lowering::on_clauses(
     }
   }
   out
+}
+
+///|
+/// Whether a method name is one of the stack-switching operations.
+fn cont_method_instruction(meth : String) -> Unit? {
+  match meth {
+    "resume" | "resume_throw" | "resume_throw_ref" | "switch" => Some(())
+    _ => None
+  }
+}
+
+///|
+/// The instruction a stack-switching method becomes.
+///
+/// `switch` and `resume_throw` name a TAG, written as a labelled immediate and
+/// as an invocation respectively -- neither is a value, so both are read out of
+/// the arguments rather than emitted from them.
+fn Lowering::cont_method(
+  self : Lowering,
+  meth : @ast.Ident,
+  args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  ct : Int,
+  handlers : Array[@ast.OnClause],
+  loc : @basic.Location,
+) -> @wasm_bin.Instruction raise LowerError {
+  let on = self.on_clauses(handlers, loc)
+  match meth.name {
+    "resume" => Resume(ct, on)
+    "resume_throw_ref" => ResumeThrowRef(ct, on)
+    "resume_throw" => {
+      guard args.length() >= 1 && args[0].desc is Call(callee, _) else {
+        raise Unresolved("resume_throw tag", loc)
+      }
+      guard callee.desc is Get(t) else {
+        raise Unresolved("resume_throw tag", loc)
+      }
+      ResumeThrow(ct, self.tag_of(t, loc), on)
+    }
+    _ => {
+      let mut tag : @ast.Ident? = None
+      for a in args {
+        if a.desc is Labelled(l, v) && l.name == "tag" && v.desc is Get(t) {
+          tag = Some(t)
+        }
+      }
+      guard tag is Some(t) else { raise Unresolved("switch tag", loc) }
+      Switch(ct, self.tag_of(t, loc))
+    }
+  }
 }
