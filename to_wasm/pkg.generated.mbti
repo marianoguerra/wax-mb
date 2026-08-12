@@ -18,11 +18,15 @@ pub fn binop_instruction(@ast.BinOp, @wasm_types.ValType[Int]) -> @wasm_bin.Inst
 
 pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> String
 
+pub fn load_instruction(String, Int, Int, Int64, (@ast.NumType, @wasm_types.Signage)?) -> @wasm_bin.Instruction?
+
 pub fn lower_module(@typing_env.ModuleContext, @type_store.TypeStore, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]]) -> @wasm_bin.Module raise LowerError
 
 pub fn lower_reftype(@wasm_types.RefType[@type_store.Id]) -> @wasm_types.RefType[Int]
 
 pub fn lower_valtype(@wasm_types.ValType[@type_store.Id]) -> @wasm_types.ValType[Int]
+
+pub fn natural_align(String) -> Int
 
 pub fn node_valtype(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> @wasm_types.ValType[Int]?
 
@@ -35,6 +39,8 @@ pub fn parse_i32(String, @basic.Location) -> Int raise LowerError
 pub fn parse_i64(String, @basic.Location) -> Int64 raise LowerError
 
 pub fn signed_cast(@wasm_types.ValType[Int], @ast.NumType, @wasm_types.Signage, Bool) -> Array[@wasm_bin.Instruction]?
+
+pub fn store_instruction(String, Int, Int, Int64) -> @wasm_bin.Instruction?
 
 pub fn type_section(@type_store.TypeStore) -> (Array[@wasm_bin.SubType], Array[@wasm_bin.RecGroup])
 
@@ -72,6 +78,7 @@ pub struct Lowering {
 }
 pub fn Lowering::depth_of(Self, String) -> Int?
 pub fn Lowering::instr(Self, Array[@wasm_bin.Instruction], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Unit raise LowerError
+pub fn Lowering::memarg(Self, @ast.Ident, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @basic.Location) -> (Int, Int64) raise LowerError
 
 pub struct Space {
   by_name : Map[String, Int]

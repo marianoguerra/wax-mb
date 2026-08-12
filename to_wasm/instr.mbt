@@ -164,6 +164,31 @@ pub fn Lowering::instr(
       for a in args {
         self.instr(out, a)
       }
+      // A memory access: the receiver names the memory, and the labelled
+      // immediates among the arguments are the memarg.
+      if callee.desc is StructGet(recv, meth) && recv.desc is Get(memname) {
+        if self.indices.memories.get(memname.name) is Some(mem) {
+          let (align, offset) = self.memarg(meth, args, loc)
+          if store_instruction(meth.name, mem, align, offset) is Some(st) {
+            for a in args {
+              if !(a.desc is Labelled(_, _)) {
+                self.instr(out, a)
+              }
+            }
+            out.push(st)
+            return
+          }
+          if load_instruction(meth.name, mem, align, offset, None) is Some(ld) {
+            for a in args {
+              if !(a.desc is Labelled(_, _)) {
+                self.instr(out, a)
+              }
+            }
+            out.push(ld)
+            return
+          }
+        }
+      }
       guard callee.desc is Get(name) else {
         // Named precisely, because these are three different jobs wearing one
         // syntax and the burn-down needs to tell them apart.
@@ -182,6 +207,13 @@ pub fn Lowering::instr(
       out.push(Call(f))
     }
     Cast(operand, target) => {
+      // A narrow load and a following sign cast are ONE instruction: wax splits
+      // the width and the signedness across two constructs, and the binary has
+      // no separate sign-extension to emit afterwards.
+      if target is Signed(typ~, signage~, ..) &&
+        self.fused_load(out, operand, typ, signage, loc) {
+        return
+      }
       self.instr(out, operand)
       guard node_valtype(operand) is Some(from) else {
         raise Unresolved("cast operand type", loc)
@@ -322,4 +354,38 @@ fn Lowering::write(
         None => raise Unresolved("assignment target", loc)
       }
   }
+}
+
+///|
+/// Emit a narrow load fused with the sign cast that follows it.
+///
+/// `true` when it applied. The pair is one instruction, so recognising it here
+/// is not an optimisation -- emitting the load and then the cast separately
+/// would emit a zero-extending load and no sign extension at all.
+fn Lowering::fused_load(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  operand : @ast.Instr[@typing_env.InferredAnnotation],
+  typ : @ast.NumType,
+  signage : @wasm_types.Signage,
+  loc : @basic.Location,
+) -> Bool raise LowerError {
+  guard operand.desc is Call(callee, args) else { return false }
+  guard callee.desc is StructGet(recv, meth) else { return false }
+  guard recv.desc is Get(memname) else { return false }
+  guard self.indices.memories.get(memname.name) is Some(mem) else {
+    return false
+  }
+  let (align, offset) = self.memarg(meth, args, loc)
+  guard load_instruction(meth.name, mem, align, offset, Some((typ, signage)))
+    is Some(ld) else {
+    return false
+  }
+  for a in args {
+    if !(a.desc is Labelled(_, _)) {
+      self.instr(out, a)
+    }
+  }
+  out.push(ld)
+  true
 }

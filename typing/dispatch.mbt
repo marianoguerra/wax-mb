@@ -3172,6 +3172,26 @@ fn Checker::mem_access(
     align,
     offset,
   )
+  // The immediates are kept on the typed node, re-wrapped with their labels.
+  // They are not values -- nothing pushes them -- but they ARE part of the
+  // instruction, and the code generator has no other place to read them from.
+  for entry in split.labelled {
+    let (label, value) = entry
+    checked.push({
+      desc: Labelled(label, {
+        desc: value.desc.map_desc(
+          instr=_ => abort("a memory immediate has no sub-instructions"),
+          block=_ => abort("a memory immediate has no blocks"),
+        ),
+        info: annotate([], value.info),
+        hints: value.hints,
+        expected: value.expected,
+      }),
+      info: annotate([], value.info),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    })
+  }
   let results = if is_store {
     []
   } else {
