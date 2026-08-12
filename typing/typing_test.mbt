@@ -8292,6 +8292,28 @@ test "a block used as a value infers what its exit delivers" {
   // typed as a void statement -- so the inner block synthesizes its own type and
   // hands it out, instead of leaving its 5 behind.
   inspect(run(block([five], 5), true), content="i32 | ")
+
+  // Checked against a type the context already knows, the block takes THAT as
+  // its result rather than inferring one -- and writes it into its own function
+  // type, since the lowering reads the type and not the annotation the source
+  // omitted.
+  let ctx = module_ctx()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let c = checker.check(@infer.valtype_cell(@infer.i32_valtype), five)
+  inspect(
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " results=" +
+    (match c.desc {
+      Block(typ~, ..) => typ.results.length().to_string()
+      _ => "?"
+    }) +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / "),
+    content="i32 results=1 | ",
+  )
 }
 
 ///|

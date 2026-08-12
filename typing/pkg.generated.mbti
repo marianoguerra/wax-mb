@@ -99,6 +99,8 @@ pub fn construction_result(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell
 
 pub fn cont_functype(@type_store.SubtypingInfo, @wasm_types.HeapType[@type_store.Id]) -> @type_store.FuncType[@type_store.Id]?
 
+pub fn context_result_cell(@typing_env.ModuleContext, @ast.FuncType, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
+
 pub fn[Info] declare_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Unit
 
 pub fn declare_local(@typing_env.ModuleContext, @ast.Ident, @wasm_types.ValType[@ast.Ident]) -> Unit

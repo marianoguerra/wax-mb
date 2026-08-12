@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 53678 poisoned 0 files 1903 clean 1362",
+    content="nodes 54135 poisoned 0 files 1903 clean 1385",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -135,11 +135,11 @@ test "the checker annotates every node it reaches" {
     #|497 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
     #|471 Expected struct.
     #|268 This instruction provides 0 value(s) but 1 was/were expected.
-    #|218 This value remains on the stack.
-    #|188 An expression is expected here. This instruction returns 0 values.
+    #|217 This value remains on the stack.
+    #|112 An expression is expected here. This instruction returns 0 values.
     #|101 Expecting 1 returned value(s) from the stack, but there are 0.
-    #|54 Cannot infer the array type here; add an explicit type, as in '[T| ..]'.
-    #|54 The two branches of this select have no common supertype, so its result type cannot be inferred.
+    #|49 Cannot infer the array type here; add an explicit type, as in '[T| ..]'.
+    #|42 This instruction provides 1 value(s) but 2 was/were expected.
   let n = if top.length() < 8 { top.length() } else { 8 }
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),

@@ -106,23 +106,248 @@ pub fn Checker::check(
   expected : @infer.Cell[@infer.InferredType],
   i : @ast.Instr[@basic.Location],
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
-  let pinned = if has_expectation(expected) &&
-    exact_named_type(expected) is Some(n) {
-    pin_construction_name(n, i.desc)
-  } else {
-    None
+  // Nothing is pinned: there is nothing to hand down, and nothing to check
+  // against either.
+  guard has_expectation(expected) else { return self.expression(i) }
+  match i.desc {
+    // A block-like form need not annotate its own result when the context
+    // already says what it is. Threading the expectation in as the result type
+    // is what makes `do { .. }` in a typed position produce a value at all.
+    Block(label~, typ~, block~) =>
+      self.check_block(expected, i, label, typ, block, loop_=false)
+    Loop(label~, typ~, block~) =>
+      self.check_block(expected, i, label, typ, block, loop_=true)
+    If(label~, typ~, cond~, if_block~, else_block~) =>
+      self.check_if(expected, i, label, typ, cond, if_block, else_block)
+    Select(cond, a, b) => self.check_select(expected, i, cond, a, b)
+    _ => {
+      let pinned = match exact_named_type(expected) {
+        Some(n) => pin_construction_name(n, i.desc)
+        None => None
+      }
+      match pinned {
+        Some(d) => {
+          let c = self.expression({ ..i, desc: d })
+          self.want(expected, i.info, c)
+          { ..c, desc: unpin_construction_name(c.desc) }
+        }
+        None => {
+          let c = self.expression(i)
+          self.want(expected, i.info, c)
+          c
+        }
+      }
+    }
   }
-  match pinned {
-    Some(d) => {
-      let c = self.expression({ ..i, desc: d })
-      self.want(expected, i.info, c)
-      { ..c, desc: unpin_construction_name(c.desc) }
+}
+
+///|
+/// The single cell a block-like form types its body against: its OWN declared
+/// result when it has one, and the context's expectation when it does not.
+///
+/// The two are not interchangeable. A block that annotates its result means it;
+/// one that does not is asking the context, and there is now a context to ask.
+pub fn context_result_cell(
+  ctx : @typing_env.ModuleContext,
+  typ : @ast.FuncType,
+  expected : @infer.Cell[@infer.InferredType],
+) -> @infer.Cell[@infer.InferredType] {
+  guard typ.results.length() == 1 else { return expected }
+  match internalize(ctx.type_context, ctx.diagnostics, typ.results[0]) {
+    Some(c) => c
+    None => expected
+  }
+}
+
+///|
+/// Write an omitted result back into a block's type from the cell it was typed
+/// against.
+///
+/// The lowering reads the function type, not the annotation the source happened
+/// to write, so a block that took its result from the context has to carry that
+/// result out. A block that declared its own keeps what it declared.
+fn fill_omitted_result(
+  typ : @ast.FuncType,
+  result_cell : @infer.Cell[@infer.InferredType],
+) -> @ast.FuncType {
+  guard typ.results.is_empty() else { return typ }
+  match @typing_env.standalone_valtype(result_cell) {
+    Some(iv) => { ..typ, results: [iv.typ] }
+    None => typ
+  }
+}
+
+///|
+/// A `do` or `loop` checked against a type the context knows.
+fn Checker::check_block(
+  self : Checker,
+  expected : @infer.Cell[@infer.InferredType],
+  i : @ast.Instr[@basic.Location],
+  label : @ast.Ident?,
+  typ : @ast.FuncType,
+  block : @basic.Annotated[Array[@ast.Instr[@basic.Location]], @basic.Location],
+  loop_~ : Bool,
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  if !typ.params.is_empty() {
+    parameterized_block_expression(self.ctx.diagnostics, i.info)
+  }
+  let result_cell = context_result_cell(self.ctx, typ, expected)
+  // A `br` to a LOOP re-enters at its top with the loop's parameters -- none
+  // here -- so it carries no result and the loop's value is its fall-through.
+  let branch_target : Array[@infer.Cell[@infer.InferredType]] = if loop_ {
+    []
+  } else {
+    [result_cell]
+  }
+  let checked = self.body(
+    i.info,
+    label,
+    [],
+    [result_cell],
+    branch_target,
+    block.desc,
+  )
+  check_subtype(
+    self.ctx.type_context.subtyping_info(),
+    self.ctx.diagnostics,
+    i.info,
+    result_cell,
+    expected,
+  )
+  let typ_ = fill_omitted_result(typ, result_cell)
+  let body : @basic.Annotated[
+    Array[@ast.Instr[@typing_env.InferredAnnotation]],
+    @basic.Location,
+  ] = { desc: checked, info: block.info }
+  {
+    desc: if loop_ {
+      Loop(label~, typ=typ_, block=body)
+    } else {
+      Block(label~, typ=typ_, block=body)
+    },
+    info: annotate([result_cell], i.info),
+    hints: i.hints,
+    expected: i.expected,
+  }
+}
+
+///|
+/// An `if` checked against a type the context knows: both branches deliver it.
+fn Checker::check_if(
+  self : Checker,
+  expected : @infer.Cell[@infer.InferredType],
+  i : @ast.Instr[@basic.Location],
+  label : @ast.Ident?,
+  typ : @ast.FuncType,
+  cond : @ast.Instr[@basic.Location],
+  if_block : @basic.Annotated[
+    Array[@ast.Instr[@basic.Location]],
+    @basic.Location,
+  ],
+  else_block : @basic.Annotated[
+    Array[@ast.Instr[@basic.Location]],
+    @basic.Location,
+  ]?,
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let cond_ = self.expression(cond)
+  check_subtype(
+    self.ctx.type_context.subtyping_info(),
+    self.ctx.diagnostics,
+    cond.info,
+    expression_type(self.ctx, cond_.info),
+    @infer.valtype_cell(@infer.i32_valtype),
+  )
+  if !typ.params.is_empty() {
+    parameterized_block_expression(self.ctx.diagnostics, i.info)
+  }
+  let result_cell = context_result_cell(self.ctx, typ, expected)
+  let results = [result_cell]
+  let then_ = self.body(i.info, label, [], results, results, if_block.desc)
+  let else_ = match else_block {
+    Some(b) => {
+      let checked = self.body(i.info, label, [], results, results, b.desc)
+      Some(
+        (
+          { desc: checked, info: b.info } :
+          @basic.Annotated[
+            Array[@ast.Instr[@typing_env.InferredAnnotation]],
+            @basic.Location,
+          ]),
+      )
     }
     None => {
-      let c = self.expression(i)
-      self.want(expected, i.info, c)
-      c
+      // No else, and a value is wanted: the false path delivers nothing.
+      if !missing_else_ok(self.ctx.type_context.subtyping_info(), [], results) {
+        if_without_else(self.ctx.diagnostics, i.info)
+      }
+      None
     }
+  }
+  check_subtype(
+    self.ctx.type_context.subtyping_info(),
+    self.ctx.diagnostics,
+    i.info,
+    result_cell,
+    expected,
+  )
+  {
+    desc: If(
+      label~,
+      typ=fill_omitted_result(typ, result_cell),
+      cond=cond_,
+      if_block={ desc: then_, info: if_block.info },
+      else_block=else_,
+    ),
+    info: annotate(results, i.info),
+    hints: i.hints,
+    expected: i.expected,
+  }
+}
+
+///|
+/// A `?:` checked against a type the context knows: the expectation goes into
+/// BOTH value branches, so a construction in either can take it as its type.
+///
+/// The result is still the branches' JOIN and not the expectation itself. Each
+/// branch is already a subtype of what was expected, so joining keeps the
+/// select's own precise type rather than widening it to whatever the context
+/// happened to ask for.
+fn Checker::check_select(
+  self : Checker,
+  expected : @infer.Cell[@infer.InferredType],
+  i : @ast.Instr[@basic.Location],
+  cond : @ast.Instr[@basic.Location],
+  a : @ast.Instr[@basic.Location],
+  b : @ast.Instr[@basic.Location],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  // Emission order: the two branch values, then the condition.
+  let a_ = self.check(expected, a)
+  let b_ = self.check(expected, b)
+  let cond_ = self.expression(cond)
+  check_subtype(
+    self.ctx.type_context.subtyping_info(),
+    self.ctx.diagnostics,
+    cond.info,
+    expression_type(self.ctx, cond_.info),
+    @infer.valtype_cell(@infer.i32_valtype),
+  )
+  let ty = match
+    join_value_types(
+      expression_type(self.ctx, a_.info),
+      expression_type(self.ctx, b_.info),
+      inferred_lub(self.ctx.type_context, self.ctx.diagnostics),
+    ) {
+    Some(t) => t
+    // Both branches already fit the expectation, so there IS a common type even
+    // when the join could not name one; recover with it rather than reporting a
+    // mismatch the context has already ruled out.
+    None => expected
+  }
+  {
+    desc: Select(cond_, a_, b_),
+    info: annotate([ty], i.info),
+    hints: i.hints,
+    expected: i.expected,
   }
 }
 

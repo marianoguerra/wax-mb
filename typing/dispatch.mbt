@@ -458,7 +458,12 @@ pub fn Checker::statement(
       // A select's two branch values join exactly as the values reaching a
       // block's exit do, so this is the same fold -- including the pinning of a
       // flexible literal against whatever it is chosen alongside.
-      let ty = match join_value_types(ty1, ty2, (_, _) => None) {
+      let ty = match
+        join_value_types(
+          ty1,
+          ty2,
+          inferred_lub(ctx.type_context, ctx.diagnostics),
+        ) {
         Some(r) => r
         None => {
           select_type_mismatch(ctx.diagnostics, loc, a.info, b.info, ty1, ty2)
