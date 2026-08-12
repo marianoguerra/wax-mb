@@ -2,8 +2,10 @@
 package "waxmb/wax/to_wasm"
 
 import {
+  "moonbitlang/core/debug",
   "waxmb/wax/ast",
   "waxmb/wax/basic",
+  "waxmb/wax/infer",
   "waxmb/wax/type_store",
   "waxmb/wax/typing_env",
   "waxmb/wax/wasm_bin",
@@ -13,13 +15,31 @@ import {
 // Values
 pub fn assign_indices(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Indices
 
+pub fn binop_instruction(@ast.BinOp, @wasm_types.ValType[Int]) -> @wasm_bin.Instruction?
+
+pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> String
+
+pub fn lower_module(@typing_env.ModuleContext, @type_store.TypeStore, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]]) -> @wasm_bin.Module raise LowerError
+
 pub fn lower_reftype(@wasm_types.RefType[@type_store.Id]) -> @wasm_types.RefType[Int]
 
 pub fn lower_valtype(@wasm_types.ValType[@type_store.Id]) -> @wasm_types.ValType[Int]
 
+pub fn node_valtype(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> @wasm_types.ValType[Int]?
+
+pub fn parse_f64(String, @basic.Location) -> Double raise LowerError
+
+pub fn parse_i32(String, @basic.Location) -> Int raise LowerError
+
+pub fn parse_i64(String, @basic.Location) -> Int64 raise LowerError
+
 pub fn type_section(@type_store.TypeStore) -> (Array[@wasm_bin.SubType], Array[@wasm_bin.RecGroup])
 
 // Errors
+pub suberror LowerError {
+  NotLowered(String, @basic.Location)
+  Unresolved(String, @basic.Location)
+} derive(@debug.Debug)
 
 // Types and methods
 pub struct Indices {
@@ -37,6 +57,17 @@ pub struct Indices {
   mut imported_tags : Int
 }
 pub fn Indices::new() -> Self
+
+pub struct Lowering {
+  ctx : @typing_env.ModuleContext
+  store : @type_store.TypeStore
+  indices : Indices
+  mut locals : Map[String, Int]
+  mut local_types : Array[@wasm_types.ValType[Int]]
+  mut labels : Array[String?]
+}
+pub fn Lowering::depth_of(Self, String) -> Int?
+pub fn Lowering::instr(Self, Array[@wasm_bin.Instruction], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Unit raise LowerError
 
 pub struct Space {
   by_name : Map[String, Int]
