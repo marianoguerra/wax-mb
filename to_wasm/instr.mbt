@@ -109,19 +109,17 @@ pub fn Lowering::instr(
             }
             _ => raise Unresolved("negation type", loc)
           }
-        // `!x` is `x == 0` on an integer.
-        Not =>
+        // `!x` is `x == 0` on an integer and `ref.is_null` on a reference --
+        // the same question, asked of two different kinds of nothing.
+        Not => {
+          self.instr(out, a)
           match node_valtype(a) {
-            Some(I32) => {
-              self.instr(out, a)
-              out.push(I32Eqz)
-            }
-            Some(I64) => {
-              self.instr(out, a)
-              out.push(I64Eqz)
-            }
+            Some(I32) => out.push(I32Eqz)
+            Some(I64) => out.push(I64Eqz)
+            Some(Ref(_)) => out.push(RefIsNull)
             _ => raise NotLowered("logical not at this type", loc)
           }
+        }
       }
     Sequence(l) =>
       for s in l {
@@ -137,17 +135,11 @@ pub fn Lowering::instr(
       if operand is Some(e) {
         self.instr(out, e)
       }
-      guard self.depth_of(label.name) is Some(d) else {
-        raise Unresolved("branch target", loc)
-      }
-      out.push(Br(d))
+      out.push(Br(self.depth(label, loc)))
     }
     BrIf(label, operand) => {
       self.instr(out, operand)
-      guard self.depth_of(label.name) is Some(d) else {
-        raise Unresolved("branch target", loc)
-      }
-      out.push(BrIf(d))
+      out.push(BrIf(self.depth(label, loc)))
     }
     Let(bindings, init) => {
       if init is Some(e) {
@@ -265,6 +257,55 @@ pub fn Lowering::instr(
             )
           }
       }
+    }
+    BrOnNull(label, operand) => {
+      self.instr(out, operand)
+      out.push(BrOnNull(self.depth(label, loc)))
+    }
+    BrOnNonNull(label, operand) => {
+      self.instr(out, operand)
+      out.push(BrOnNonNull(self.depth(label, loc)))
+    }
+    NonNull(e) => {
+      self.instr(out, e)
+      out.push(RefAsNonNull)
+    }
+    Test(e, target) => {
+      self.instr(out, e)
+      out.push(RefTest(self.reftype_index(target, loc)))
+    }
+    BrOnCast(label, target, operand) => {
+      self.instr(out, operand)
+      // Both types are immediates: the SOURCE the value is known to have, and
+      // the TARGET being tested for. The source comes from the operand's own
+      // annotation, since the syntax writes only the target.
+      guard node_valtype(operand) is Some(Ref(from)) else {
+        raise Unresolved("br_on_cast operand type", loc)
+      }
+      out.push(
+        BrOnCast(self.depth(label, loc), from, self.reftype_index(target, loc)),
+      )
+    }
+    BrOnCastFail(label, target, operand) => {
+      self.instr(out, operand)
+      guard node_valtype(operand) is Some(Ref(from)) else {
+        raise Unresolved("br_on_cast operand type", loc)
+      }
+      out.push(
+        BrOnCastFail(
+          self.depth(label, loc),
+          from,
+          self.reftype_index(target, loc),
+        ),
+      )
+    }
+    TryTable(label~, typ~, catches~, block~) => {
+      let handlers : Array[@wasm_bin.CatchHandler] = []
+      for c in catches {
+        handlers.push(self.catch_handler(c, loc))
+      }
+      let bt = self.block_type(typ, loc)
+      out.push(TryTable(bt, handlers, self.body(label, block.desc)))
     }
     Throw(tag, args) => {
       for a in args {
@@ -718,4 +759,43 @@ fn Lowering::block_functype_index(
     raise Unresolved("block type", loc)
   }
   i
+}
+
+///|
+/// The branch depth a label names.
+fn Lowering::depth(
+  self : Lowering,
+  label : @ast.Ident,
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  match self.depth_of(label.name) {
+    Some(d) => d
+    None => raise Unresolved("branch target", loc)
+  }
+}
+
+///|
+/// One `try_table` catch clause.
+///
+/// The handler branches OUT of the try, so its label is resolved in the
+/// enclosing scope -- which is where it is written, and where the checker
+/// resolved it too.
+fn Lowering::catch_handler(
+  self : Lowering,
+  c : @ast.Catch,
+  loc : @basic.Location,
+) -> @wasm_bin.CatchHandler raise LowerError {
+  fn tag_of(t : @ast.Ident) -> Int raise LowerError {
+    match self.indices.tags.get(t.name) {
+      Some(i) => i
+      None => raise Unresolved("catch tag", loc)
+    }
+  }
+
+  match c {
+    Catch(tag, label) => Catch(tag_of(tag), self.depth(label, loc))
+    CatchRef(tag, label) => CatchRef(tag_of(tag), self.depth(label, loc))
+    CatchAll(label) => CatchAll(self.depth(label, loc))
+    CatchAllRef(label) => CatchAllRef(self.depth(label, loc))
+  }
 }
