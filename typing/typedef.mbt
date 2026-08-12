@@ -154,10 +154,12 @@ pub fn expand_splices(
         splice_without_supertype(diagnostics, fields[0].info)
         None
       }
-      Some(sup) =>
-        // Looked up WITHOUT reporting: an unbound supertype is reported by
-        // `n_subtype`, and saying it twice would be a second complaint about
-        // one mistake.
+      Some(sup) => {
+        // Consulting the supertype for its fields IS a use of it, recorded
+        // separately from the lookup -- which is deliberately non-reporting,
+        // since an unbound supertype is reported by `n_subtype` and saying it
+        // twice would be a second complaint about one mistake.
+        ctx.types.mark_reference(sup.name, ctx.types.current.val)
         match ctx.types.find_no_mark(sup.name) {
           None => None
           Some((idx, parent)) => {
@@ -178,6 +180,7 @@ pub fn expand_splices(
             }
           }
         }
+      }
     }
     let fields_ = match parent_fields {
       Some(pf) => {

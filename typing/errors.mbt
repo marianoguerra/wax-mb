@@ -1695,3 +1695,116 @@ pub fn redundant_operation(
     universal=true,
   )
 }
+
+///|
+/// An operation inside a `?:` branch that runs whichever branch is chosen.
+///
+/// A `?:` compiles to a wasm `select`, which evaluates BOTH operands and then
+/// picks one -- so a trapping or effectful operation in the branch not taken
+/// still happens. The primary caret is on the operation; the secondary explains
+/// why it runs at all.
+pub fn eager_select(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  select : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text(
+      "This operation is evaluated even when the condition selects the other branch.",
+    ),
+    warning=Some(EagerSelect),
+    universal=true,
+    related=[
+      {
+        loc: select,
+        message: @message.text(
+          "This '?:' evaluates both branches (it compiles to a 'select').",
+        ),
+      },
+    ],
+    hint=Some(
+      @message.text(
+        "Use an 'if' expression to evaluate only the chosen branch.",
+      ),
+    ),
+  )
+}
+
+///|
+/// A statement that can never be reached.
+///
+/// Anchored at the unreachable statement, with a secondary caret pointing back
+/// at the instruction that took control away -- which is the one to look at.
+pub fn dead_code(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  diverged_at : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("This code is unreachable."),
+    warning=Some(DeadCode),
+    universal=true,
+    related=[
+      {
+        loc: diverged_at,
+        message: @message.text("Control never returns from here."),
+      },
+    ],
+  )
+}
+
+///|
+/// A shift whose constant count is at least the operand's width.
+///
+/// Wasm masks the count modulo the width, so the shift silently becomes a
+/// different one -- which is very unlikely to be what was meant. The hint says
+/// what it actually shifts by.
+pub fn shift_overflow(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  width : Int,
+  count : Int64,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("The shift count")
+    .sep(@message.uint64(count))
+    .sep(@message.text("is at least the operand width ("))
+    .seq(@message.int(width))
+    .seq(@message.text(" bits).")),
+    warning=Some(ShiftOverflow),
+    universal=true,
+    hint=Some(
+      @message.text("Wasm masks the count modulo")
+      .sep(@message.int(width))
+      .seq(@message.text(","))
+      .sep(@message.text("shifting by"))
+      .sep(
+        @message.uint64(
+          (count.reinterpret_as_uint64() % width.to_uint64()).reinterpret_as_int64(),
+        ),
+      )
+      .sep(@message.text("instead.")),
+    ),
+  )
+}
+
+///|
+/// An integer division or remainder by a constant zero.
+pub fn division_by_zero(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("This integer division or remainder by zero always traps."),
+    warning=Some(ConstantTrap),
+    universal=true,
+  )
+}

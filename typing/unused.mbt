@@ -283,6 +283,8 @@ fn report_unused_import(
 ) -> Unit {
   guard !externally_reachable(decl.attributes) else { return }
   let name = decl.id
+  // A leading `_` marks it deliberately unused, exactly as for a definition.
+  guard !intentional(name.name) else { return }
   match decl.kind {
     Func(..) => import_used(ctx, live_fns, ctx.functions, "function", name)
     Global(..) => import_used(ctx, live_fns, ctx.globals, "global", name)

@@ -500,6 +500,12 @@ fn Checker::block_contents(
   let n = instrs.length()
   for k in 0..<n {
     let s = instrs[k]
+    // Dead code: the stack was REACHABLE before this instruction, typing it
+    // left the stack polymorphic -- so it was a `br`, a `return`, an
+    // `unreachable` or the like -- and something still follows. Reported once,
+    // at the point control is lost, because everything after it is then typed
+    // on the unreachable stack and would repeat the same complaint.
+    let reachable_before = self.ops.stack is (Empty | Cons(_, _, _))
     let routed = k == n - 1 &&
       results.length() == 1 &&
       self.ops.stack is Empty &&
@@ -519,6 +525,12 @@ fn Checker::block_contents(
       let c = self.statement(s)
       self.ops.push_results(s.info, c.info.0)
       out.push(c)
+    }
+    if self.ctx.warn_unused &&
+      reachable_before &&
+      self.ops.stack is Unreachable &&
+      k + 1 < n {
+      dead_code(self.ctx.diagnostics, instrs[k + 1].info, s.info)
     }
   }
   out

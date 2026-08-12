@@ -96,6 +96,8 @@ pub fn collect_exit(Operands, @infer.Collecting, @diagnostic.Context, @basic.Loc
 
 pub fn collect_into(@typing_env.ModuleContext, Operands, @basic.Location, @ast.Ident?, @infer.Collecting, @infer.Cell[@infer.InferredType], () -> Unit, branch_target? : Array[@infer.Cell[@infer.InferredType]]?) -> Unit
 
+pub fn collect_labels(Array[@ast.Instr[@basic.Location]]) -> Array[@ast.Ident]
+
 pub fn collected_natural(Array[(@basic.Location?, @infer.Cell[@infer.InferredType])]) -> Array[@infer.InferredType]
 
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
@@ -109,6 +111,8 @@ pub fn construction_result(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell
 pub fn cont_functype(@type_store.SubtypingInfo, @wasm_types.HeapType[@type_store.Id]) -> @type_store.FuncType[@type_store.Id]?
 
 pub fn context_result_cell(@typing_env.ModuleContext, @ast.FuncType, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
+
+pub fn dead_code(@diagnostic.Context, @basic.Location, @basic.Location) -> Unit
 
 pub fn[Info] declare_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Unit
 
@@ -132,11 +136,15 @@ pub fn diff_ref_type(@wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.I
 
 pub fn dispatch_duplicate_arm(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
+pub fn division_by_zero(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn duplicate_argument_label(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
 pub fn duplicated_field(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
 pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
+
+pub fn eager_select(@diagnostic.Context, @basic.Location, @basic.Location) -> Unit
 
 pub fn enter_function_scope(@typing_env.ModuleContext, @ast.Ident, @ast.FuncType?, Array[@ast.Attribute], label_decls? : Array[@ast.Ident], assigned_locals? : Map[String, Unit]) -> Array[@infer.Cell[@infer.InferredType]]
 
@@ -186,6 +194,8 @@ pub fn finalize_inferred(@typing_env.ModuleContext, @ast.FuncType, @infer.Cell[@
 
 pub fn[A] find(@typing_env.Tbl[A], @diagnostic.Context, @ast.Ident) -> A?
 
+pub fn find_eager_hazard(@ast.Instr[@basic.Location]) -> @basic.Location?
+
 pub fn find_field(Array[@basic.Annotated[(@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]), @basic.Location]], String) -> (Int, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]])?
 
 pub fn flatten_operands(Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Array[(@infer.Cell[@infer.InferredType], @basic.Location)]
@@ -193,6 +203,8 @@ pub fn flatten_operands(Array[(Array[@infer.Cell[@infer.InferredType]], @basic.L
 pub fn flexible_default_internal(@infer.InferredType) -> @wasm_types.ValType[@type_store.Id]?
 
 pub fn float_literal_lattice(String) -> @infer.InferredType
+
+pub fn flush_deferred_lints(@typing_env.ModuleContext) -> Unit
 
 pub fn forward_use_of_described(@diagnostic.Context, @basic.Location) -> Unit
 
@@ -306,7 +318,11 @@ pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.L
 
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
 
+pub fn lint_division(@typing_env.ModuleContext, @basic.Annotated[@ast.BinOp, @basic.Location], @ast.Instr[@basic.Location]) -> Unit
+
 pub fn lint_ref_cast(@typing_env.ModuleContext, @basic.Location, is_test~ : Bool, @infer.InferredType, @infer.InferredType, operand_location? : @basic.Location?) -> Unit
+
+pub fn lint_shift(@typing_env.ModuleContext, @basic.Annotated[@ast.BinOp, @basic.Location], @infer.Cell[@infer.InferredType], @ast.Instr[@basic.Location]) -> Unit
 
 pub fn lint_source(@typing_env.ModuleContext, @ast.Instr[@basic.Location]) -> Unit
 
@@ -453,6 +469,8 @@ pub fn segment_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 pub fn select_type_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn set_suggestions(@typing_env.ModuleContext, String) -> Array[String]
+
+pub fn shift_overflow(@diagnostic.Context, @basic.Location, Int, Int64) -> Unit
 
 pub fn short_stack(@diagnostic.Context, StackKind, @basic.Location, Int, Int) -> Unit
 

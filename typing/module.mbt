@@ -124,7 +124,16 @@ fn check_field(
     Global(..) => None
     Func(name~, typ~, sign~, body~, attributes~) => {
       let (label, instrs) = body
-      let returns = enter_function_scope(ctx, name, sign, attributes)
+      // The labels this body declares, collected up front: the unused-label
+      // lint needs the whole SET, and the checker only ever sees them one scope
+      // at a time.
+      let returns = enter_function_scope(
+        ctx,
+        name,
+        sign,
+        attributes,
+        label_decls=collect_labels(instrs),
+      )
       // The body runs on its own empty stack and must leave exactly the
       // function's results -- the same rule as any block, with the function's
       // own frame as the target.
@@ -139,6 +148,10 @@ fn check_field(
       // Before leaving the scope, while the locals and labels this function
       // declared are still the current ones -- and here rather than at the end
       // of the module, so the diagnostics stay in source order among the rest.
+      // The lints that had to wait for their cells to be pinned: run here, in
+      // this function, so their diagnostics stay in source order among the rest
+      // rather than all landing at the end of the module.
+      flush_deferred_lints(ctx)
       // The source-shape lints read what was WRITTEN, so they run over the
       // original body rather than the typed one -- and here, so their
       // diagnostics land in source order among this function's others.

@@ -252,6 +252,13 @@ pub fn lint_source(
     }
     Select(c, t, e) => {
       lint_condition(ctx, c)
+      // Both branches run, so a hazard in either is reported -- against the
+      // `?:` itself, which is what makes it happen.
+      for arm in [t, e] {
+        if find_eager_hazard(arm) is Some(loc) {
+          eager_select(ctx.diagnostics, loc, i.info)
+        }
+      }
       go(c)
       go(t)
       go(e)
@@ -319,4 +326,204 @@ pub fn lint_source(
         go(sub)
       }
   }
+}
+
+///|
+/// The first operation in `e` that traps or has an effect, if any.
+///
+/// A `?:` compiles to a wasm `select`, which evaluates both operands before
+/// choosing -- so anything here runs whichever way the condition goes. Pure
+/// operators are descended into, because their operands run too; a nested
+/// CONTROL construct guards its own sub-expressions, so the walk stops there.
+pub fn find_eager_hazard(e : @ast.Instr[@basic.Location]) -> @basic.Location? {
+  fn descend(l : Array[@ast.Instr[@basic.Location]]) -> @basic.Location? {
+    for x in l {
+      if find_eager_hazard(x) is Some(loc) {
+        return Some(loc)
+      }
+    }
+    None
+  }
+
+  fn field_values(
+    fields : Array[(@ast.Ident, @ast.Instr[@basic.Location]?)],
+  ) -> Array[@ast.Instr[@basic.Location]] {
+    let out : Array[@ast.Instr[@basic.Location]] = []
+    for f in fields {
+      if f.1 is Some(v) {
+        out.push(v)
+      }
+    }
+    out
+  }
+
+  match e.desc {
+    // Trapping or effectful operations: the operation itself is the hazard.
+    ArrayGet(_, _)
+    | ArraySet(_, _, _)
+    | StructGet(_, _)
+    | StructSet(_, _, _)
+    | GetDescriptor(_)
+    | NonNull(_)
+    | CastDesc(_, _, _)
+    | ArraySegment(_, _, _, _)
+    | Unreachable
+    | Call(_, _)
+    | TailCall(_, _)
+    | Set(_, _, _)
+    | Tee(_, _)
+    | Throw(_, _)
+    | ThrowRef(_)
+    | ContNew(_, _)
+    | ContBind(_, _, _)
+    | Suspend(_, _)
+    | Resume(_, _, _)
+    | ResumeThrow(_, _, _, _)
+    | ResumeThrowRef(_, _, _)
+    | Switch(_, _, _) => Some(e.info)
+    // Division and remainder trap on a zero divisor; the other operators do
+    // not, so their operands are what to look at.
+    BinOpI(op, a, b) =>
+      if op.desc is (Div(Some(_)) | Rem(_)) {
+        Some(e.info)
+      } else {
+        descend([a, b])
+      }
+    UnOpI(_, a)
+    | Cast(a, _)
+    | Test(a, _)
+    | Labelled(_, a)
+    | ArrayDefault(_, a)
+    | StructDefaultDesc(a)
+    // An `on` clause only ever wraps a resume-family call -- itself a hazard --
+    // so descend into it rather than treating it as a control construct.
+    | On(a, _) => find_eager_hazard(a)
+    Array(_, a, b) => descend([a, b])
+    ArrayFixed(_, l) | Sequence(l) => descend(l)
+    Struct(_, fields) => descend(field_values(fields))
+    StructDesc(d, fields) =>
+      match find_eager_hazard(d) {
+        Some(loc) => Some(loc)
+        None => descend(field_values(fields))
+      }
+    Let(_, init) =>
+      match init {
+        Some(x) => find_eager_hazard(x)
+        None => None
+      }
+    // Constants, reads and default allocations never trap; a nested control
+    // construct guards its own sub-expressions, so the walk stops at both.
+    _ => None
+  }
+}
+
+///|
+/// Every label a function body declares.
+///
+/// Collected once, up front, because the unused-label lint needs the set of
+/// DECLARATIONS and the checker only ever sees them one scope at a time. Only
+/// the block-like forms carry a label; the function's own is not among them,
+/// since it is bound by the frame rather than declared in the body.
+pub fn collect_labels(
+  instrs : Array[@ast.Instr[@basic.Location]],
+) -> Array[@ast.Ident] {
+  let out : Array[@ast.Ident] = []
+  fn go(i : @ast.Instr[@basic.Location]) -> Unit {
+    let label = match i.desc {
+      Block(label~, ..)
+      | Loop(label~, ..)
+      | While(label~, ..)
+      | If(label~, ..)
+      | TryTable(label~, ..)
+      | Try(label~, ..)
+      | TryCatch(label~, ..) => label
+      _ => None
+    }
+    if label is Some(l) {
+      out.push(l)
+    }
+    for sub in i.sub_instrs() {
+      go(sub)
+    }
+  }
+
+  for s in instrs {
+    go(s)
+  }
+  out
+}
+
+///|
+/// A shift count parsed UNSIGNED.
+///
+/// A hex literal past 2^63 wraps to a negative `Int64` under a signed parse, so
+/// the count is read unsigned and compared that way. The sign folds exactly as
+/// the code generator folds it, for the same reason as `int_operand_value`.
+fn shift_count(e : @ast.Instr[@basic.Location]) -> Int64? {
+  fn of_int(s : String) -> Int64? {
+    let bits = s.split("_").join("")
+    Some(@string.parse_uint64(bits).reinterpret_as_int64()) catch {
+      _ => None
+    }
+  }
+
+  match e.desc {
+    Int(s) => of_int(s)
+    UnOpI(op, inner) =>
+      match (op.desc, inner.desc) {
+        (Neg, Int(s)) => of_int(s).map(v => -v)
+        (Pos, _) => shift_count(inner)
+        _ => None
+      }
+    _ => None
+  }
+}
+
+///|
+/// Report a shift whose constant count is at least the operand's width.
+///
+/// DEFERRED until typing finishes: the width comes from the result cell, and a
+/// later context can still widen it -- `1 << 40` typed `i64` is fine, typed
+/// `i32` is not. Only a genuinely unconstrained operand falls back to a default.
+pub fn lint_shift(
+  ctx : @typing_env.ModuleContext,
+  op : @basic.Annotated[@ast.BinOp, @basic.Location],
+  result : @infer.Cell[@infer.InferredType],
+  rhs : @ast.Instr[@basic.Location],
+) -> Unit {
+  guard op.desc is (Shl | Shr(_)) else { return }
+  let width = match result.get() {
+    Valtype({ internal: I32, .. }) | Number | Int => Some(32)
+    Valtype({ internal: I64, .. }) | LargeInt => Some(64)
+    _ => None
+  }
+  guard width is Some(width) else { return }
+  guard shift_count(rhs) is Some(n) else { return }
+  if n.reinterpret_as_uint64() >= width.to_uint64() {
+    shift_overflow(ctx.diagnostics, op.info, width, n)
+  }
+}
+
+///|
+/// Report an integer division or remainder by a constant zero.
+///
+/// `Div(None)` is float division, which does not trap on a zero divisor.
+pub fn lint_division(
+  ctx : @typing_env.ModuleContext,
+  op : @basic.Annotated[@ast.BinOp, @basic.Location],
+  rhs : @ast.Instr[@basic.Location],
+) -> Unit {
+  guard op.desc is (Div(Some(_)) | Rem(_)) else { return }
+  if int_operand_value(rhs) is Some(0) {
+    division_by_zero(ctx.diagnostics, op.info)
+  }
+}
+
+///|
+/// Run and clear the lints that were waiting for their result cells to settle.
+pub fn flush_deferred_lints(ctx : @typing_env.ModuleContext) -> Unit {
+  for f in ctx.deferred_lints {
+    f()
+  }
+  ctx.deferred_lints.clear()
 }

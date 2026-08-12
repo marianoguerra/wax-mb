@@ -498,6 +498,12 @@ pub fn Checker::statement(
         ty1,
         ty2,
       )
+      if ctx.warn_unused {
+        // DEFERRED: the shift lint reads the operand width off `ty`, which a
+        // later context can still widen -- `1 << 40` pinned to i64 is fine.
+        ctx.deferred_lints.push(() => lint_shift(ctx, op, ty, b))
+        lint_division(ctx, op, b)
+      }
       // An operand that already failed poisons the RESULT. The arms above treat
       // `Error` like `Unknown` on purpose, so the operand cells still get a
       // usable recovery type -- but the value this produces derives from a
