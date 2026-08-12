@@ -76,6 +76,49 @@ pub fn Checker::expression(
           )
       }
     }
+    // The try family infers exactly as the block forms do: type the body -- and,
+    // for the structured forms, every handler -- against ONE shared cell, so
+    // each value reaching an exit is recorded and the join decides the result. A
+    // handler produces the try's value just as the body does, which is why a try
+    // whose body always throws still has a type.
+    //
+    // Nothing here reads the record directly: the forms already check their
+    // exits against the result they were given, and checking against a
+    // `Collecting` cell IS the recording. Passing the cell in is the whole of
+    // it -- which is why these arms hand the same node builders the statement
+    // path uses, with one cell in place of the declared results.
+    TryTable(label~, typ~, catches~, block~) =>
+      match
+        self.infer_synthesized(i, typ, (cs, r) => {
+          ignore(cs)
+          let n = self.trytable_node(i, label, typ, catches, block, [], [r])
+          t => rebuilt_typ(n, t)
+        }) {
+        Some(n) => n
+        None => self.statement(i)
+      }
+    Try(label~, typ~, block~, catches~, catch_all~) =>
+      match
+        self.infer_synthesized(i, typ, (cs, r) => {
+          ignore(cs)
+          let n = self.try_node(i, label, typ, block, catches, catch_all, [], [
+            r,
+          ])
+          t => rebuilt_typ(n, t)
+        }) {
+        Some(n) => n
+        None => self.statement(i)
+      }
+    TryCatch(label~, typ~, block~, arms~) =>
+      match
+        self.infer_synthesized(i, typ, (cs, r) => {
+          ignore(cs)
+          let n = self.trycatch_node(i, label, typ, block, arms, [r])
+          t => rebuilt_typ(n, t)
+        }) {
+        Some(n) => n
+        None => self.statement(i)
+      }
     // A `dispatch` or `match` is checked against its LOWERING, and the position
     // decides where that lowering runs. As a statement it runs in the enclosing
     // stack, so a value its trailing arm leaves belongs to the enclosing block;
@@ -479,4 +522,23 @@ fn Checker::block_contents(
     }
   }
   out
+}
+
+///|
+/// Replace a typed try node's function type with the finalized one.
+///
+/// The result was inferred after the body was typed, so the annotation written
+/// back cannot be known until then -- but the node itself is already built.
+fn rebuilt_typ(
+  n : @ast.Instr[@typing_env.InferredAnnotation],
+  typ : @ast.FuncType,
+) -> @ast.InstrDesc[@typing_env.InferredAnnotation] {
+  match n.desc {
+    TryTable(label~, catches~, block~, ..) =>
+      TryTable(label~, typ~, catches~, block~)
+    Try(label~, block~, catches~, catch_all~, ..) =>
+      Try(label~, typ~, block~, catches~, catch_all~)
+    TryCatch(label~, block~, arms~, ..) => TryCatch(label~, typ~, block~, arms~)
+    d => d
+  }
 }

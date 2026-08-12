@@ -120,6 +120,23 @@ pub fn Checker::check(
     If(label~, typ~, cond~, if_block~, else_block~) =>
       self.check_if(expected, i, label, typ, cond, if_block, else_block)
     Select(cond, a, b) => self.check_select(expected, i, cond, a, b)
+    // The try family takes its result the same way, but has no arm of its own:
+    // pinning the omitted result INTO the node and then typing it is the same
+    // rewrite, and it reaches the body, every handler, and the annotation
+    // written back -- because all three read the block's declared result.
+    TryTable(typ~, ..) | Try(typ~, ..) | TryCatch(typ~, ..) =>
+      match pin_block_result(expected, typ, i.desc) {
+        Some(d) => {
+          let c = self.expression({ ..i, desc: d })
+          self.want(expected, i.info, c)
+          c
+        }
+        None => {
+          let c = self.expression(i)
+          self.want(expected, i.info, c)
+          c
+        }
+      }
     _ => {
       let pinned = match exact_named_type(expected) {
         Some(n) => pin_construction_name(n, i.desc)
@@ -398,4 +415,36 @@ pub fn Checker::check_against(
     expected,
   )
   c
+}
+
+///|
+/// A block-like form with its omitted result filled in from the context.
+///
+/// `None` when there is nothing to fill -- the form declares its own result, or
+/// takes parameters (which expression position has no stack to supply), or the
+/// expectation is not a value type that can be written down.
+///
+/// This is the `context_result_cell` rewrite done on the SOURCE rather than on
+/// the cells, which is what lets it reach a form whose arms compute their result
+/// from the declared type: the body, every handler, and the type written back
+/// all read the same place, so filling that one place reaches all of them.
+fn pin_block_result(
+  expected : @infer.Cell[@infer.InferredType],
+  typ : @ast.FuncType,
+  desc : @ast.InstrDesc[@basic.Location],
+) -> @ast.InstrDesc[@basic.Location]? {
+  guard typ.results.is_empty() && typ.params.is_empty() else { return None }
+  guard @typing_env.standalone_valtype(expected) is Some(iv) else {
+    return None
+  }
+  let filled : @ast.FuncType = { ..typ, results: [iv.typ] }
+  match desc {
+    TryTable(label~, catches~, block~, ..) =>
+      Some(TryTable(label~, typ=filled, catches~, block~))
+    Try(label~, block~, catches~, catch_all~, ..) =>
+      Some(Try(label~, typ=filled, block~, catches~, catch_all~))
+    TryCatch(label~, block~, arms~, ..) =>
+      Some(TryCatch(label~, typ=filled, block~, arms~))
+    _ => None
+  }
 }

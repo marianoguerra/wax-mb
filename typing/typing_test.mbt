@@ -8582,3 +8582,85 @@ test "a module declares its own features" {
     content="off | A '#![feature = \"…\"]' declaration states a fact about the whole module and must appear at the top level, not inside a conditional.",
   )
 }
+
+///|
+/// A `try` takes its result the same three ways a block does: from its own
+/// annotation, from the context, or -- with neither -- from what reaches its
+/// exits. A HANDLER produces the try's value just as the body does, which is why
+/// a try whose body always throws still has a type.
+test "a try takes its result from its annotation, its context, or its exits" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // `try_legacy { 1; } catch { t => { 2; } }`, with no result annotation.
+  fn node(
+    results : Array[@wasm_types.ValType[@ast.Ident]],
+  ) -> @ast.Instr[@basic.Location] {
+    instr(
+      TryCatch(
+        label=None,
+        typ={ params: [], results },
+        block={ desc: [instr(Int("1"), 20)], info: loc_at(20, 21) },
+        arms=[
+          {
+            arm_tag: Some(id("t", at=30)),
+            arm_ref: false,
+            arm_types: [],
+            arm_body: { desc: [instr(Int("2"), 40)], info: loc_at(40, 41) },
+          },
+        ],
+      ),
+      10,
+    )
+  }
+
+  fn run(annotated : Bool, checked : Bool) -> String {
+    let ctx = module_ctx()
+    ctx.tags.add(ctx.diagnostics, "t", loc_at(0, 1), { params: [], results: [] })
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let n = node(if annotated { [I64] } else { [] })
+    let c = if checked {
+      checker.check(@infer.valtype_cell(@infer.i32_valtype), n)
+    } else {
+      checker.expression(n)
+    }
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " results=" +
+    (match c.desc {
+      TryCatch(typ~, ..) =>
+        typ.results
+        .map(t => {
+          @infer.to_string(
+            @infer.valtype_cell(
+              @typing.internalize_valtype(ctx.type_context, ctx.diagnostics, t).unwrap(),
+            ),
+          )
+        })
+        .join(",")
+      _ => "?"
+    }) +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // Its own annotation wins outright.
+  inspect(run(true, false), content="i64 results=i64 | ")
+  // No annotation, and a context: the context supplies it, and it is written
+  // back into the type -- the lowering reads the type, not the source.
+  inspect(run(false, true), content="i32 results=i32 | ")
+  // Neither: the body's 1 and the handler's 2 both reach an exit, and their
+  // join is the result.
+  inspect(run(false, false), content="i32 results=i32 | ")
+}

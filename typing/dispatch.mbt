@@ -1213,20 +1213,7 @@ pub fn Checker::statement(
         loc,
         params,
       )
-      let body = self.body(loc, label, params, results, results, block.desc)
-      // Checked INSIDE the frame's lifetime is wrong: a catch branches to a
-      // label in the ENCLOSING scope, not to the try's own. Checking after the
-      // body has closed its frame is what makes that true.
-      check_trytable_catches(ctx, catches)
-      {
-        desc: TryTable(label~, typ~, catches~, block={
-          desc: body,
-          info: block.info,
-        }),
-        info: annotate(results, loc),
-        hints: i.hints,
-        expected: i.expected,
-      }
+      self.trytable_node(i, label, typ, catches, block, params, results)
     }
 
     // --- A structured try, with one handler per tag ---
@@ -1241,68 +1228,7 @@ pub fn Checker::statement(
         loc,
         params,
       )
-      let body = self.body(loc, label, params, results, results, block.desc)
-      let handled : Array[
-        (
-          @ast.Ident,
-          @basic.Annotated[
-            Array[@ast.Instr[@typing_env.InferredAnnotation]],
-            @basic.Location,
-          ],
-        ),
-      ] = []
-      for c in catches {
-        let (tag, arm) = c
-        // Each handler is a block of its own, entered on the tag's payload and
-        // producing the try's results, with the try's label in scope so a `br`
-        // to it exits carrying the value.
-        guard self.tag_payload(tag) is Some(entry) else { continue }
-        // The HANDLER's own span, not the try's: its parameters are pushed
-        // there, and anchoring a leftover at the try's opening would be both
-        // misleading and indistinguishable from the try's own report.
-        let checked = self.body(
-          arm.info,
-          label,
-          entry,
-          results,
-          results,
-          arm.desc,
-        )
-        handled.push((tag, { desc: checked, info: arm.info }))
-      }
-      let all = match catch_all {
-        Some(arm) => {
-          let checked = self.body(
-            arm.info,
-            label,
-            [],
-            results,
-            results,
-            arm.desc,
-          )
-          Some(
-            (
-              { desc: checked, info: arm.info } :
-              @basic.Annotated[
-                Array[@ast.Instr[@typing_env.InferredAnnotation]],
-                @basic.Location,
-              ]),
-          )
-        }
-        None => None
-      }
-      {
-        desc: Try(
-          label~,
-          typ~,
-          block={ desc: body, info: block.info },
-          catches=handled,
-          catch_all=all,
-        ),
-        info: annotate(results, loc),
-        hints: i.hints,
-        expected: i.expected,
-      }
+      self.try_node(i, label, typ, block, catches, catch_all, params, results)
     }
 
     // --- A structured try whose arms fall through into each other ---
@@ -1315,51 +1241,7 @@ pub fn Checker::statement(
       guard self.signature_of(typ) is Some((_, results)) else {
         return self.poisoned(i)
       }
-      let body = self.body(loc, label, [], results, results, block.desc)
-      // Arm k is entered on its tag's payload and must COMPLETE with arm k+1's
-      // entry stack -- the last arm's completion being the try's results. That
-      // chaining is the whole shape of this construct, and it is why the
-      // entries are computed for all the arms before any body is checked.
-      let entries = arms.map(a => self.arm_entry(a))
-      let checked : Array[@ast.TryCatchArm[@typing_env.InferredAnnotation]] = []
-      for k, arm in arms {
-        let exits = if k + 1 < entries.length() {
-          entries[k + 1]
-        } else {
-          Some(results)
-        }
-        // A type in the chain that did not resolve was already reported; the
-        // body is typed as a plain result-producing block rather than cascading.
-        let (params, exit_types) = match (entries[k], exits) {
-          (Some(p), Some(e)) => (p, e)
-          _ => ([], results)
-        }
-        let arm_body = self.body(
-          loc,
-          label,
-          params,
-          exit_types,
-          results,
-          arm.arm_body.desc,
-        )
-        checked.push({
-          arm_tag: arm.arm_tag,
-          arm_ref: arm.arm_ref,
-          arm_types: arm.arm_types,
-          arm_body: { desc: arm_body, info: arm.arm_body.info },
-        })
-      }
-      {
-        desc: TryCatch(
-          label~,
-          typ~,
-          block={ desc: body, info: block.info },
-          arms=checked,
-        ),
-        info: annotate(results, loc),
-        hints: i.hints,
-        expected: i.expected,
-      }
+      self.trycatch_node(i, label, typ, block, arms, results)
     }
 
     // --- A while loop, checked as what it lowers to ---
