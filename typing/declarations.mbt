@@ -229,9 +229,13 @@ pub fn register_tag(
     None =>
       match sign {
         Some(sign) => {
-          // Nothing interns this one, so the duplicate-parameter check that
-          // `add_type` would have run has to happen here.
           check_unique_param_names(ctx.diagnostics, sign.params)
+          // Interned like any other function type. A tag's signature is a type
+          // the binary format refers to BY INDEX, so leaving it out of the
+          // store would leave the code generator with a tag it cannot name --
+          // and interning is idempotent, so a signature that matches an
+          // existing type simply reuses it rather than adding one.
+          intern_functype(ctx, name, sign)
           Some(sign)
         }
         None => None
@@ -476,6 +480,41 @@ pub fn[Info] uses_string_literal(fields : @ast.Module[Info]) -> Bool {
 
   walk(fields)
   found
+}
+
+///|
+/// Intern an inline function signature, so it has an index to be named by.
+///
+/// The generated name is unwritable, so it collides with nothing; what matters
+/// is the TYPE it interns to, which a structurally identical declaration
+/// elsewhere shares.
+pub fn intern_functype(
+  ctx : @typing_env.ModuleContext,
+  owner : @ast.Ident,
+  sign : @ast.FuncType,
+) -> Unit {
+  // Named after the declaration that needed it. A store index would not do:
+  // two signatures that intern to the SAME existing type leave the index
+  // unmoved, and the second would collide with the first.
+  let name : @ast.Ident = {
+    name: "<functype:" + owner.name + ">",
+    loc: @basic.dummy_loc,
+  }
+  let _ = add_type(ctx.type_context, ctx.diagnostics, [
+    {
+      desc: (
+        name,
+        {
+          typ: Func(sign),
+          supertype: None,
+          final_: true,
+          descriptor: None,
+          describes: None,
+        },
+      ),
+      info: @basic.dummy_loc,
+    },
+  ])
 }
 
 ///|
