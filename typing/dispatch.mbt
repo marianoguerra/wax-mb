@@ -1569,6 +1569,60 @@ pub fn Checker::statement(
       }
     }
 
+    // --- A match, checked as the type-test ladder it becomes ---
+    Match(scrutinee~, arms~, default~) => {
+      // One block label per arm plus an escape label. Synthesized and
+      // unwritable, so they cannot capture a `br` the author wrote.
+      let labels : Array[@ast.Ident] = []
+      for k in 0..<=arms.length() {
+        labels.push({
+          name: "<match:" +
+          loc.start.cnum.to_string() +
+          ":" +
+          k.to_string() +
+          ">",
+          loc,
+        })
+      }
+      let lowered = @ast.lower_match(loc, labels~, scrutinee~, arms~, default~)
+      let typed = self.body(loc, None, [], [], [], lowered)
+      match peel_match(typed, arms.length()) {
+        Some((bodies, default_body, scrutinee_)) => {
+          let rebuilt : Array[
+            (
+              @ast.MatchPattern,
+              @basic.Annotated[
+                Array[@ast.Instr[@typing_env.InferredAnnotation]],
+                @basic.Location,
+              ],
+            ),
+          ] = []
+          for k, a in arms {
+            rebuilt.push((a.0, { desc: bodies[k], info: a.1.info }))
+          }
+          {
+            // With no arms the scrutinee never reaches the lowering, so there
+            // is nothing typed to recover and it is checked here instead.
+            desc: Match(
+              scrutinee=match scrutinee_ {
+                Some(sc) => sc
+                None => self.statement(scrutinee)
+              },
+              arms=rebuilt,
+              default={ desc: default_body, info: default.info },
+            ),
+            info: annotate([], loc),
+            hints: i.hints,
+            expected: i.expected,
+          }
+        }
+        None => {
+          self.tally("Match")
+          self.placeholder(i)
+        }
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -2390,5 +2444,70 @@ fn Checker::non_null_of(
       expected_ref(self.ctx.diagnostics, location)
       @infer.Cell::make(@infer.InferredType::Error)
     }
+  }
+}
+
+///|
+/// Peel a checked `match` lowering back to its arm bodies, default and
+/// scrutinee.
+///
+/// The lowering nests one block per arm inside an outer escape block, each
+/// wrapping the previous block -- whose result the previous arm consumes --
+/// then that arm's body. So descending from the escape block meets the arms in
+/// REVERSE source order, and the innermost block holds the threaded test chain
+/// with the scrutinee at its bottom.
+pub fn peel_match(
+  typed : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  arm_count : Int,
+) -> (
+  Array[Array[@ast.Instr[@typing_env.InferredAnnotation]]],
+  Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  @ast.Instr[@typing_env.InferredAnnotation]?,
+)? {
+  // No arms: the lowering IS the default, and the scrutinee never appears in it.
+  if arm_count == 0 {
+    return Some(([], typed, None))
+  }
+  guard typed.length() >= 1 else { return None }
+  guard typed[0].desc is Block(block=escape, ..) else { return None }
+  let default_body = typed[1:].to_owned()
+  let bodies : Array[Array[@ast.Instr[@typing_env.InferredAnnotation]]] = Array::makei(
+    arm_count,
+    _ => [],
+  )
+  let mut contents = escape.desc
+  for k = arm_count - 1; k >= 0; k = k - 1 {
+    guard contents.length() >= 1 else { return None }
+    // The wrapped block is bound by a `let` for a cast arm -- which names what
+    // it matched -- and stands bare for a null arm, which binds nothing.
+    let inner = match contents[0].desc {
+      Let(_, Some(b)) => b
+      _ => contents[0]
+    }
+    bodies[k] = contents[1:].to_owned()
+    guard inner.desc is Block(block~, ..) else { return None }
+    if k == 0 {
+      // The innermost block holds the test chain and the escape branch.
+      guard block.desc.length() >= 1 else { return None }
+      guard block.desc[0].desc is Let(_, Some(chain)) else { return None }
+      return Some((bodies, default_body, Some(peel_chain(chain))))
+    }
+    contents = block.desc
+  }
+  None
+}
+
+///|
+/// The scrutinee at the bottom of a threaded test chain.
+///
+/// Each test passes the value through to the next, so the innermost operand is
+/// the one the author wrote -- typed once, inside the chain, rather than a
+/// second time out here.
+fn peel_chain(
+  chain : @ast.Instr[@typing_env.InferredAnnotation],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  match chain.desc {
+    BrOnCast(_, _, inner) | BrOnNull(_, inner) => peel_chain(inner)
+    _ => chain
   }
 }

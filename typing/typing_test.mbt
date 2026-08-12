@@ -6253,3 +6253,119 @@ test "a cast branch may not target a continuation" {
     content="Continuation types cannot be used in a cast instruction.",
   )
 }
+
+///|
+/// A `match` is checked as the type-test ladder it becomes: the scrutinee is
+/// threaded ONCE through a chain of `br_on_cast`/`br_on_null` tests that branch
+/// out to the arm blocks, and each cast arm binds what its test matched.
+test "a match is checked as the test ladder it becomes" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let ctx = module_ctx()
+  @typing.bind_local(
+    ctx,
+    id("v"),
+    @typing.internalize_valtype(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: true, typ: Any }),
+    ),
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  // `match v { null => nop ; s: &struct => nop } else { nop }`
+  let checked = checker.statement(
+    instr(
+      Match(
+        scrutinee=instr(Get(id("v")), 20),
+        // Each arm body DIVERGES. A block's result is supplied only on the
+        // matching-branch path, so an arm that falls out of its block would
+        // owe a value its fall-through never produces -- which the lowered
+        // block check is exactly what catches.
+        arms=[
+          (MatchNull, { desc: [instr(Unreachable, 30)], info: loc_at(30, 31) }),
+          (
+            MatchCast(Some(id("s")), { nullable: false, typ: Struct }),
+            { desc: [instr(Unreachable, 40)], info: loc_at(40, 41) },
+          ),
+        ],
+        default={ desc: [instr(Nop, 50)], info: loc_at(50, 51) },
+      ),
+      10,
+    ),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(checker.gaps().length(), content="0")
+  // Peeled back to a match: the scrutinee typed once inside the chain, the arm
+  // bodies recovered in SOURCE order, and the default kept.
+  guard! checked.desc is Match(scrutinee~, arms~, default~)
+  inspect(
+    scrutinee.info.0.map(t => @infer.to_string(t)).join(","),
+    content="&?any",
+  )
+  inspect(arms.map(a => a.1.desc.length().to_string()).join(","), content="1,1")
+  inspect(default.desc.length(), content="1")
+  // The cast arm bound its name, so its body could have used it.
+  inspect(ctx.locals.contains("s"), content="true")
+}
+
+///|
+/// With no arms at all the lowering IS the default, and the scrutinee never
+/// reaches it -- so there is nothing typed to recover from the lowered form and
+/// it is checked directly instead.
+test "a match with no arms is just its default" {
+  let ctx = module_ctx()
+  @typing.bind_local(
+    ctx,
+    id("v"),
+    @typing.internalize_valtype(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: true, typ: Any }),
+    ),
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement({
+    desc: Match(
+      scrutinee={
+        desc: Get(id("v")),
+        info: loc_at(20, 21),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      },
+      arms=[],
+      default={
+        desc: [
+          {
+            desc: Nop,
+            info: loc_at(50, 51),
+            hints: { branch: None, freq: None, targets: None },
+            expected: None,
+          },
+        ],
+        info: loc_at(50, 51),
+      },
+    ),
+    info: loc_at(10, 11),
+    hints: { branch: None, freq: None, targets: None },
+    expected: None,
+  })
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  guard! checked.desc is Match(arms~, default~, scrutinee~)
+  inspect(arms.length(), content="0")
+  inspect(default.desc.length(), content="1")
+  inspect(
+    scrutinee.info.0.map(t => @infer.to_string(t)).join(","),
+    content="&?any",
+  )
+  inspect(checker.gaps().length(), content="0")
+}

@@ -329,6 +329,8 @@ pub fn parameterized_block_expression(@diagnostic.Context, @basic.Location) -> U
 
 pub fn peel_dispatch(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], Int) -> (@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], Array[Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]]])?
 
+pub fn peel_match(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], Int) -> (Array[Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]]], Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]?)?
+
 pub fn peel_while(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], stepped~ : Bool, labelled~ : Bool) -> (@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]?, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]])?
 
 pub fn redundant_cast(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
