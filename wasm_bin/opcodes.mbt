@@ -1798,6 +1798,14 @@ fn encode_instruction(
       w.write_byte(0xFC)
       w.write_u32(0x16)
     }
+    I64Add128 => {
+      w.write_byte(0xFC)
+      w.write_u32(0x13)
+    }
+    I64Sub128 => {
+      w.write_byte(0xFC)
+      w.write_u32(0x14)
+    }
     I64MulWideS => {
       w.write_byte(0xFC)
       w.write_u32(0x15)

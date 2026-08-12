@@ -270,6 +270,35 @@ fn Lowering::hinted(
           }
         }
       }
+      // The qualified-path intrinsics, which have no receiver: the `v128::`
+      // constants and bitselect, `atomic::fence`, and the wide arithmetic.
+      if callee.desc is Path(ns, name) {
+        if self.path_intrinsic(out, ns, name, args, loc) {
+          return
+        }
+      }
+      // The ATOMIC accesses: `m.atomic_load32(p)`, `m.atomic_rmw_add32(p, v)`.
+      // The method name carries the width -- which is also the natural
+      // alignment, and an atomic's alignment is not merely a hint -- but not
+      // the operand type, which comes from the VALUE the access is given.
+      if callee.desc is StructGet(recv, meth) && recv.desc is Get(memname) {
+        if self.indices.memories.get(memname.name) is Some(mem) {
+          if @atomics.of_method_name(meth.name) is Some(family) {
+            let (align, offset) = self.memarg_natural(
+              log2_exact(@atomics.family_bytes(family).to_int64(), loc),
+              args,
+              loc,
+            )
+            let operands = args.filter(a => !(a.desc is Labelled(_, _)))
+            let op = atomic_op(family, operands)
+            for a in operands {
+              self.instr(out, a)
+            }
+            out.push(Atomic(mem, @atomics.opcode(op), align, offset))
+            return
+          }
+        }
+      }
       // The SIMD memory accesses: `m.loadv128(p)`, `m.load8_lane(p, v, lane:
       // 3)`. Their widths -- and so their natural alignments -- come from the
       // registry rather than from the name, and a lane access takes a
@@ -1009,6 +1038,160 @@ fn Lowering::table_of(
   // resolved it in too.
   guard !self.locals.contains(name.name) else { return None }
   self.indices.tables.get(name.name)
+}
+
+///|
+/// Lower a qualified-path intrinsic, returning whether it applied.
+///
+/// These are the operations with no receiver to hang a method off. A `v128::`
+/// constant is the odd one: its arguments are not operands at all but the lane
+/// LITERALS of a single 16-byte immediate, so nothing is emitted for them.
+fn Lowering::path_intrinsic(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  ns : @ast.Ident,
+  name : @ast.Ident,
+  args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  loc : @basic.Location,
+) -> Bool raise LowerError {
+  match (ns.name, name.name) {
+    ("v128", part) => {
+      let full = @simd.free_full(part)
+      if @simd.const_shape_of_name(full) is Some(shape) {
+        out.push(V128Const(self.vector_constant(shape, args, loc)))
+        return true
+      }
+      guard @simd.classify(full) is Some(op) else { return false }
+      for a in args {
+        self.instr(out, a)
+      }
+      out.push((op.build)([]))
+      true
+    }
+    ("atomic", "fence") => {
+      out.push(AtomicFence)
+      true
+    }
+    // The wide arithmetic: two 64-bit halves in, two out. The operands are
+    // already on the stack in call order, so there is nothing to reorder.
+    ("i64", wide) => {
+      let instruction : @wasm_bin.Instruction = match wide {
+        "add128" => I64Add128
+        "sub128" => I64Sub128
+        "mul_wide_s" => I64MulWideS
+        "mul_wide_u" => I64MulWideU
+        _ => return false
+      }
+      for a in args {
+        self.instr(out, a)
+      }
+      out.push(instruction)
+      true
+    }
+    _ => false
+  }
+}
+
+///|
+/// The 16 bytes of a `v128::<shape>(..)` constant.
+///
+/// Each argument is one lane's literal, written in the lane's own type and
+/// stored little-endian at its own width -- which is what makes the shape part
+/// of the constant rather than of the instruction: the bytes are all the
+/// binary keeps.
+fn Lowering::vector_constant(
+  self : Lowering,
+  shape : @simd.Shape,
+  args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  loc : @basic.Location,
+) -> Bytes raise LowerError {
+  ignore(self)
+  let lanes = @simd.const_arity(shape)
+  guard args.length() == lanes else { raise Unresolved("vector lanes", loc) }
+  let width = 16 / lanes
+  let out : Array[Byte] = Array::make(16, b'\x00')
+  for k in 0..<lanes {
+    let text = literal_text(args[k], loc)
+    let bits = match shape {
+      F32x4 =>
+        Float::from_double(parse_float_bits(text, false, loc))
+        .reinterpret_as_int()
+        .to_int64() &
+        0xFFFFFFFFL
+      F64x2 => parse_float_bits(text, true, loc).reinterpret_as_int64()
+      _ => parse_i64(text, loc)
+    }
+    for b in 0..<width {
+      out[k * width + b] = ((bits.reinterpret_as_uint64() >> (b * 8)).to_int() &
+      0xFF).to_byte()
+    }
+  }
+  Bytes::from_array(out)
+}
+
+///|
+/// The literal text of a lane argument. A negative lane arrives as a negation
+/// applied to its magnitude, and the parsers below want the sign back.
+fn literal_text(
+  a : @ast.Instr[@typing_env.InferredAnnotation],
+  loc : @basic.Location,
+) -> String raise LowerError {
+  match a.desc {
+    Int(s) | Float(s) => s
+    UnOpI(op, b) if op.desc is Neg => "-" + literal_text(b, loc)
+    _ => raise Unresolved("lane literal", loc)
+  }
+}
+
+///|
+/// The atomic operation a family becomes, once the operand type is known.
+///
+/// The family says the WIDTH; what it cannot say is whether the access is an
+/// i32 or an i64 one, because the same `atomic_store32` serves both -- storing
+/// the low half of an i64 is a different opcode from storing an i32. The
+/// answer is the type of the VALUE operand, and in unreachable code, where
+/// there is no type to read, the i32 form is the default.
+fn atomic_op(
+  family : @atomics.Family,
+  operands : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+) -> @atomics.Op {
+  fn value_type() {
+    if operands.length() >= 2 && node_valtype(operands[1]) is Some(I64) {
+      @atomics.NumTy::I64
+    } else {
+      @atomics.NumTy::I32
+    }
+  }
+
+  fn narrow(w : @atomics.Width, t : @atomics.NumTy) {
+    match w {
+      W8 => (t, Some(@atomics.Narrow::N8))
+      W16 => (t, Some(@atomics.Narrow::N16))
+      W32 =>
+        match t {
+          I64 => (@atomics.NumTy::I64, Some(@atomics.Narrow::N32))
+          I32 => (@atomics.NumTy::I32, None)
+        }
+      W64 => (@atomics.NumTy::I64, None)
+    }
+  }
+
+  match family {
+    Notify => Notify
+    Wait(t) => Wait(t)
+    Load(W32) => Load(I32, None)
+    Load(W64) => Load(I64, None)
+    Load(W8) => Load(I32, Some(N8))
+    Load(W16) => Load(I32, Some(N16))
+    Store(w) => {
+      let (t, n) = narrow(w, value_type())
+      Store(t, n)
+    }
+    Rmw(op, w) => {
+      let (t, n) = narrow(w, value_type())
+      Rmw(op, t, n)
+    }
+  }
 }
 
 ///|
