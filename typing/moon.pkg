@@ -7,6 +7,7 @@ import {
   "waxmb/wax/feature",
   "waxmb/wax/diagnostic",
   "waxmb/wax/message",
+  "waxmb/wax/infer",
 }
 
 import {

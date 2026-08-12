@@ -6,6 +6,7 @@ import {
   "waxmb/wax/basic",
   "waxmb/wax/diagnostic",
   "waxmb/wax/feature",
+  "waxmb/wax/infer",
   "waxmb/wax/type_store",
   "waxmb/wax/typing_env",
   "waxmb/wax/wasm_types",
@@ -14,15 +15,21 @@ import {
 // Values
 pub fn comptype(TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
 
+pub fn diff_ref_type(@wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@ast.Ident]
+
 pub fn duplicated_field(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
 pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
 pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
 
+pub fn field_subtype(@type_store.SubtypingInfo, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]], @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) -> Bool
+
 pub fn get_type_definition(TypeContext, @ast.Ident) -> @ast.SubType?
 
 pub fn heaptype(TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
+
+pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 
 pub fn n_fieldtype(TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
 
@@ -40,9 +47,15 @@ pub fn reftype(TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]
 
 pub fn require_feature(TypeContext, @diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
 
+pub fn resolve_declared(@infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
+
 pub fn resolve_type_name(TypeContext, @ast.Ident) -> @type_store.Id?
 
 pub fn resolve_type_ref(TypeContext, @ast.Ident) -> @type_store.RefIndex?
+
+pub fn storage_subtype(@type_store.SubtypingInfo, @wasm_types.StorageType[@type_store.Id], @wasm_types.StorageType[@type_store.Id]) -> Bool
+
+pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], location? : @basic.Location?, pin? : Bool) -> Bool
 
 pub fn valtype(TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.Id]?
 

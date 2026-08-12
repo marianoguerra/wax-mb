@@ -229,3 +229,173 @@ test "a bad component fails the whole type" {
   }
   inspect(@typing.n_functype(ctx, d, bad) is Some(_), content="false")
 }
+
+///|
+/// `subtype` is not a predicate. When the two sides are compatible it UNIFIES
+/// their cells, and that is the whole mechanism by which a literal acquires a
+/// width -- so the interesting assertion is always what the cell holds
+/// afterwards, not what the call returned.
+test "checking a literal against a type pins it" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  fn pin(from : @infer.InferredType, to : @infer.InferredValType) -> String {
+    let cell = @infer.Cell::make(from)
+    let expected = @infer.valtype_cell(to)
+    let ok = @typing.subtype(info, cell, expected)
+    if !ok {
+      "rejected"
+    } else {
+      @infer.to_string(cell)
+    }
+  }
+
+  // A bare number takes whichever of the four it is checked against.
+  inspect(pin(Number, @infer.i32_valtype), content="i32")
+  inspect(pin(Number, @infer.i64_valtype), content="i64")
+  inspect(pin(Number, @infer.f64_valtype), content="f64")
+  // An integer literal is not a float.
+  inspect(pin(Int, @infer.i64_valtype), content="i64")
+  inspect(pin(Int, @infer.f32_valtype), content="rejected")
+  // A float literal is not an integer.
+  inspect(pin(Float, @infer.f32_valtype), content="f32")
+  inspect(pin(Float, @infer.i32_valtype), content="rejected")
+  // A literal too big for i32 is never i32, and takes i64, f32 or f64.
+  inspect(pin(LargeInt, @infer.i64_valtype), content="i64")
+  inspect(pin(LargeInt, @infer.f64_valtype), content="f64")
+  inspect(pin(LargeInt, @infer.i32_valtype), content="rejected")
+}
+
+///|
+/// The three "no concrete type" cases are not interchangeable, and this is the
+/// difference.
+test "unknown, error and the bottom reference" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  fn check_pinning(
+    from : @infer.InferredType,
+    to : @infer.InferredValType,
+    pin : Bool,
+  ) -> String {
+    let cell = @infer.Cell::make(from)
+    let ok = @typing.subtype(info, cell, @infer.valtype_cell(to), pin~)
+    if !ok {
+      "rejected"
+    } else {
+      @infer.to_string(cell)
+    }
+  }
+
+  fn check(from : @infer.InferredType, to : @infer.InferredValType) -> String {
+    check_pinning(from, to, true)
+  }
+
+  let anyref : @infer.InferredValType = {
+    typ: Ref({ nullable: true, typ: Any }),
+    internal: Ref({ nullable: true, typ: Any }),
+    anon_comptype: None,
+  }
+  // A genuinely polymorphic value takes whatever consumes it -- and IS pinned,
+  // because the lowering can only emit `unreachable` for a value with no type.
+  inspect(check(Unknown, @infer.i32_valtype), content="i32")
+  inspect(check(Unknown, anyref), content="&?any")
+  // Under `pin: false` it stays polymorphic. That is what a br_table needs: its
+  // one value is checked against several targets of different types, and
+  // pinning it to the first would reject the rest.
+  inspect(check_pinning(Unknown, @infer.i32_valtype, false), content="any")
+  // An error has already been reported, so it is accepted silently and is NOT
+  // pinned -- it keeps the unresolved state rather than acquiring a type it
+  // never had. It renders as `any`, like Unknown, which is deliberate: a
+  // cascade should not shout.
+  let err = @infer.Cell::make(@infer.InferredType::Error)
+  inspect(
+    @typing.subtype(info, err, @infer.valtype_cell(@infer.i32_valtype)),
+    content="true",
+  )
+  inspect(@infer.is_unknown_or_error(err), content="true")
+  // Whereas Unknown, being pinned, is resolved afterwards.
+  let unk = @infer.Cell::make(@infer.InferredType::Unknown)
+  let _ = @typing.subtype(info, unk, @infer.valtype_cell(@infer.i32_valtype))
+  inspect(@infer.is_unknown_or_error(unk), content="false")
+  // The bottom reference is a subtype of every reference and of nothing else.
+  inspect(check(UnknownRef, anyref), content="&?any")
+  inspect(check(UnknownRef, @infer.i32_valtype), content="rejected")
+}
+
+///|
+/// Null is a subtype of a NULLABLE reference and of nothing else -- which is
+/// the whole point of tracking nullability in the type rather than at runtime.
+test "null" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  fn nullable(n : Bool) -> @infer.InferredValType {
+    {
+      typ: Ref({ nullable: n, typ: Any }),
+      internal: Ref({ nullable: n, typ: Any }),
+      anon_comptype: None,
+    }
+  }
+
+  fn check(to : @infer.InferredValType) -> Bool {
+    @typing.subtype(info, @infer.Cell::make(Null), @infer.valtype_cell(to))
+  }
+
+  inspect(check(nullable(true)), content="true")
+  inspect(check(nullable(false)), content="false")
+  inspect(check(@infer.i32_valtype), content="false")
+}
+
+///|
+/// A mutable field is invariant, because it is both read and written. Getting
+/// this backwards is how a type system lets a caller store the wrong thing
+/// through a widened reference.
+test "field subtyping is invariant when mutable" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  fn field(
+    mut_ : Bool,
+    t : @wasm_types.ValType[@type_store.Id],
+  ) -> @wasm_types.FieldType[@type_store.Id] {
+    { mut_, typ: Value(t) }
+  }
+
+  let any : @wasm_types.ValType[@type_store.Id] = Ref({
+    nullable: true,
+    typ: Any,
+  })
+  let eq : @wasm_types.ValType[@type_store.Id] = Ref({ nullable: true, typ: Eq })
+  // Immutable: covariant, so a narrower field is a subtype of a wider one.
+  inspect(
+    @typing.field_subtype(info, field(false, eq), field(false, any)),
+    content="true",
+  )
+  inspect(
+    @typing.field_subtype(info, field(false, any), field(false, eq)),
+    content="false",
+  )
+  // Mutable: invariant, so neither direction holds unless they are equal.
+  inspect(
+    @typing.field_subtype(info, field(true, eq), field(true, any)),
+    content="false",
+  )
+  inspect(
+    @typing.field_subtype(info, field(true, eq), field(true, eq)),
+    content="true",
+  )
+  // Mutability itself has to match.
+  inspect(
+    @typing.field_subtype(info, field(true, eq), field(false, eq)),
+    content="false",
+  )
+}
+
+///|
+/// A packed type is a subtype of itself alone: the two widths are different,
+/// and neither is a value type.
+test "packed storage types" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  let i8 : @wasm_types.StorageType[@type_store.Id] = Packed(I8)
+  let i16 : @wasm_types.StorageType[@type_store.Id] = Packed(I16)
+  let i32 : @wasm_types.StorageType[@type_store.Id] = Value(I32)
+  inspect(@typing.storage_subtype(info, i8, i8), content="true")
+  inspect(@typing.storage_subtype(info, i8, i16), content="false")
+  inspect(@typing.storage_subtype(info, i16, i8), content="false")
+  inspect(@typing.storage_subtype(info, i8, i32), content="false")
+  inspect(@typing.storage_subtype(info, i32, i8), content="false")
+  inspect(@typing.storage_subtype(info, i32, i32), content="true")
+}

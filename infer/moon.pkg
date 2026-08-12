@@ -2,6 +2,7 @@ import {
   "waxmb/wax/basic",
   "waxmb/wax/ast",
   "waxmb/wax/wasm_types",
+  "waxmb/wax/type_store",
   "waxmb/wax/output",
   "waxmb/wax/trivia",
 }

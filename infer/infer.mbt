@@ -25,7 +25,7 @@ pub(all) struct InferredValType {
   /// The wasm-side type, indexing them. The `wasm_types` package is generic
   /// over the index precisely so both instances exist without duplicating the
   /// spine -- the other Phase 2 commitment this file cashes in.
-  internal : @wasm_types.ValType[TypeIdx]
+  internal : @wasm_types.ValType[@type_store.Id]
   /// For a synthesized reference type with no source name -- a string's byte
   /// array, an inline function-type cast target -- the composite type it refers
   /// to. `typ` keeps the synthetic name so name-based lookups still resolve,
@@ -33,15 +33,6 @@ pub(all) struct InferredValType {
   /// name that means nothing to the reader.
   anon_comptype : @ast.CompType?
 } derive(Eq)
-
-///|
-/// An index into the module's type section.
-///
-/// The reference's `Wax_wasm.Id.t`. A distinct type rather than a bare `Int`,
-/// so an index cannot be confused with a count or a width.
-pub(all) struct TypeIdx {
-  index : Int
-} derive(Eq, Compare, Hash, Debug)
 
 ///|
 /// What inference knows about a value.

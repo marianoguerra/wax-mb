@@ -2,10 +2,10 @@
 package "waxmb/wax/infer"
 
 import {
-  "moonbitlang/core/debug",
   "waxmb/wax/ast",
   "waxmb/wax/basic",
   "waxmb/wax/output",
+  "waxmb/wax/type_store",
   "waxmb/wax/wasm_types",
 }
 
@@ -69,7 +69,7 @@ pub(all) enum InferredType {
 
 pub(all) struct InferredValType {
   typ : @wasm_types.ValType[@ast.Ident]
-  internal : @wasm_types.ValType[TypeIdx]
+  internal : @wasm_types.ValType[@type_store.Id]
   anon_comptype : @ast.CompType?
 } derive(Eq)
 
@@ -77,10 +77,6 @@ pub(all) enum State[A] {
   Link(Cell[A])
   Root(A)
 }
-
-pub(all) struct TypeIdx {
-  index : Int
-} derive(Compare, Eq, Hash, @debug.Debug)
 
 // Type aliases
 
