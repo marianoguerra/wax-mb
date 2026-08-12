@@ -129,6 +129,8 @@ pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Locatio
 
 pub fn enter_function_scope(@typing_env.ModuleContext, @ast.Ident, @ast.FuncType?, Array[@ast.Attribute], label_decls? : Array[@ast.Ident], assigned_locals? : Map[String, Unit]) -> Array[@infer.Cell[@infer.InferredType]]
 
+pub fn exact_named_type(@infer.Cell[@infer.InferredType]) -> @ast.Ident?
+
 pub fn exact_reparse_internal(@infer.Cell[@infer.InferredType]) -> @wasm_types.ValType[@type_store.Id]?
 
 pub fn exact_reparse_matches(@wasm_types.ValType[@type_store.Id], @infer.Cell[@infer.InferredType]) -> Bool
@@ -186,6 +188,8 @@ pub fn functype_matches(@type_store.SubtypingInfo, @type_store.FuncType[@type_st
 pub fn get_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
 pub fn get_type_definition(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident) -> @ast.SubType?
+
+pub fn has_expectation(@infer.Cell[@infer.InferredType]) -> Bool
 
 pub fn heap_lub(@typing_env.TypeContext, @wasm_types.HeapType[@ast.Ident], @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@ast.Ident]?
 
@@ -483,6 +487,8 @@ pub struct Checker {
   ops : Operands
   unpeeled : Map[String, Int]
 }
+pub fn Checker::check(Self, @infer.Cell[@infer.InferredType], @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
+pub fn Checker::check_against(Self, Array[@infer.Cell[@infer.InferredType]], @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::expression(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::gaps(Self) -> Array[(String, Int)]
 pub fn Checker::new(@typing_env.ModuleContext, Operands) -> Self

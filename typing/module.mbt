@@ -56,15 +56,11 @@ pub fn check_fields(
       Some(t) => internalize_valtype(ctx.type_context, ctx.diagnostics, t)
       None => None
     }
-    let def_ = checker.statement(def)
-    if declared is Some(v) {
-      check_subtype(
-        ctx.type_context.subtyping_info(),
-        ctx.diagnostics,
-        def.info,
-        expression_type(ctx, def_.info),
-        @infer.valtype_cell(v),
-      )
+    // An annotated global checks its initializer against the annotation, so a
+    // construction there can take the global's type as its own.
+    let def_ = match declared {
+      Some(v) => checker.check(@infer.valtype_cell(v), def)
+      None => checker.expression(def)
     }
     // An unannotated global takes its initializer's type, resolved to a width
     // -- there is no later context to pin it, so it has to commit here.
@@ -147,14 +143,13 @@ fn check_field(
     }
     Table(name~, address_type~, reftype~, limits~, init~, attributes~) => {
       let init_ = match init {
-        Some(e) => {
-          let c = checker.statement(e)
-          if internalize(ctx.type_context, ctx.diagnostics, Ref(reftype))
-            is Some(elt) {
-            want(e, c, elt, field.info)
-          }
-          Some(c)
-        }
+        Some(e) =>
+          Some(
+            match internalize(ctx.type_context, ctx.diagnostics, Ref(reftype)) {
+              Some(elt) => checker.check(elt, e)
+              None => checker.expression(e)
+            },
+          )
         None => None
       }
       ignore(name)
@@ -165,11 +160,10 @@ fn check_field(
     Elem(name~, reftype~, mode~, init~, attributes~) => {
       let elt = internalize(ctx.type_context, ctx.diagnostics, Ref(reftype))
       let checked = init.map(e => {
-        let c = checker.statement(e)
-        if elt is Some(t) {
-          want(e, c, t, field.info)
+        match elt {
+          Some(t) => checker.check(t, e)
+          None => checker.expression(e)
         }
-        c
       })
       // An ACTIVE segment names a table and an offset into it; a passive one is
       // only a list of values until something uses it.

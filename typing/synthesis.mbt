@@ -430,11 +430,15 @@ pub fn is_null_initializer(i : @ast.Instr[@basic.Location]) -> Bool {
 /// runs its own inference rather than being typed as a void statement and losing
 /// what it produced.
 ///
+/// When the result is CONCRETE the trailing instruction is checked against it
+/// instead, so a construction there can take the block's declared result as its
+/// type. What then goes on the stack is the RESULT, not the value's own type:
+/// `check` has already compared the two and reported any mismatch, and pushing
+/// the value's type would have the block's own output check report it a second
+/// time.
+///
 /// When the stack already carries something, an earlier instruction produced the
-/// value and the trailing one is an ordinary statement. When the result is
-/// concrete rather than inferred, the trailing instruction should be CHECKED
-/// against it, which is a position the checker does not have yet; it stays on
-/// the statement path, exactly as before.
+/// value and the trailing one is an ordinary statement.
 fn Checker::block_contents(
   self : Checker,
   results : Array[@infer.Cell[@infer.InferredType]],
@@ -446,15 +450,24 @@ fn Checker::block_contents(
     let s = instrs[k]
     let routed = k == n - 1 &&
       results.length() == 1 &&
-      is_inferring(results[0]) &&
       self.ops.stack is Empty &&
       (match classify_trailing(self.ctx, s.desc) {
         (false, false) => false
         _ => true
       })
-    let c = if routed { self.expression(s) } else { self.statement(s) }
-    self.ops.push_results(s.info, c.info.0)
-    out.push(c)
+    if routed && is_inferring(results[0]) {
+      let c = self.expression(s)
+      self.ops.push_results(s.info, c.info.0)
+      out.push(c)
+    } else if routed {
+      let c = self.check(results[0], s)
+      self.ops.push_results(s.info, results)
+      out.push(c)
+    } else {
+      let c = self.statement(s)
+      self.ops.push_results(s.info, c.info.0)
+      out.push(c)
+    }
   }
   out
 }

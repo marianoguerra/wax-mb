@@ -222,19 +222,14 @@ pub fn Checker::statement(
       // derived errors here rather than at the unbound name.
       let bound = label_in_scope(ctx, label)
       let checked = match operand {
-        Some(e) => {
-          let c = self.expression(e)
-          if bound {
-            check_subtypes(
-              ctx.type_context.subtyping_info(),
-              ctx.diagnostics,
-              e.info,
-              c.info.0,
-              params,
-            )
-          }
-          Some(c)
-        }
+        Some(e) =>
+          Some(
+            if bound {
+              self.check_against(params, e)
+            } else {
+              self.expression(e)
+            },
+          )
         None => {
           if bound && !params.is_empty() {
             value_count_mismatch(
@@ -349,17 +344,7 @@ pub fn Checker::statement(
     // --- Leaving the function ---
     Return(operand) => {
       let checked = match operand {
-        Some(e) => {
-          let c = self.expression(e)
-          check_subtypes(
-            ctx.type_context.subtyping_info(),
-            ctx.diagnostics,
-            e.info,
-            c.info.0,
-            ctx.return_types,
-          )
-          Some(c)
-        }
+        Some(e) => Some(self.check_against(ctx.return_types, e))
         None => {
           if !ctx.return_types.is_empty() {
             value_count_mismatch(
@@ -625,7 +610,19 @@ pub fn Checker::statement(
 
     // --- Local binding ---
     Let(bindings, Some(init)) => {
-      let checked = self.expression(init)
+      // A single ANNOTATED name checks its initializer against the annotation,
+      // which is what lets a construction there be written without naming its
+      // type. Several names, or an unannotated one, have nothing to check
+      // against and synthesize instead.
+      let expectation = if bindings.length() == 1 && bindings[0].1 is Some(t) {
+        internalize(ctx.type_context, ctx.diagnostics, t)
+      } else {
+        None
+      }
+      let checked = match expectation {
+        Some(e) => self.check(e, init)
+        None => self.expression(init)
+      }
       if bindings.length() == 1 {
         // One name takes the whole initializer, which must therefore be a
         // one-value expression -- `expression_type` says so if it is not.
@@ -871,15 +868,9 @@ pub fn Checker::statement(
       // literal there can be inferred and drop its own name. The value is still
       // typed first and the count second, which is the emission order.
       let elt = self.element_of(loc, name)
-      let init_ = self.expression(init)
-      if elt is Some(cell) {
-        check_subtype(
-          ctx.type_context.subtyping_info(),
-          ctx.diagnostics,
-          init.info,
-          expression_type(ctx, init_.info),
-          cell,
-        )
+      let init_ = match elt {
+        Some(cell) => self.check(cell, init)
+        None => self.expression(init)
       }
       let size_ = self.expression(size)
       check_subtype(
@@ -926,17 +917,12 @@ pub fn Checker::statement(
       let elt = self.element_of(loc, name)
       let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
       for e in elems {
-        let c = self.expression(e)
-        if elt is Some(cell) {
-          check_subtype(
-            ctx.type_context.subtyping_info(),
-            ctx.diagnostics,
-            e.info,
-            expression_type(ctx, c.info),
-            cell,
-          )
-        }
-        checked.push(c)
+        checked.push(
+          match elt {
+            Some(cell) => self.check(cell, e)
+            None => self.expression(e)
+          },
+        )
       }
       let ty = self.allocated(loc, name)
       {
@@ -2670,20 +2656,15 @@ fn Checker::struct_fields(
     match found {
       None => missing_field(ctx.diagnostics, location, want.name)
       Some((fname, written)) => {
-        let checked = self.field_value(fname, written)
-        // Checked against the field's declared type at the width a WRITE takes,
-        // which is what lets a nested literal drop its own name.
-        if checked is Some(c) &&
-          internalize(ctx.type_context, ctx.diagnostics, unpack_type(d.desc.1))
-          is Some(cell) {
-          check_subtype(
-            ctx.type_context.subtyping_info(),
-            ctx.diagnostics,
-            c.info.1,
-            expression_type(ctx, c.info),
-            cell,
-          )
-        }
+        // The field's declared type, at the width a WRITE takes, is resolved
+        // BEFORE the value is typed -- that is what lets a nested literal there
+        // take it as its own type rather than having to name one.
+        let cell = internalize(
+          ctx.type_context,
+          ctx.diagnostics,
+          unpack_type(d.desc.1),
+        )
+        let checked = self.field_value(fname, written, expect=cell)
         // Punning preserved: a field with no written value stays without one.
         out.push((fname, if written is Some(_) { checked } else { None }))
       }
@@ -2701,20 +2682,24 @@ fn Checker::field_value(
   self : Checker,
   name : @ast.Ident,
   written : @ast.Instr[@basic.Location]?,
+  expect? : @infer.Cell[@infer.InferredType]? = None,
 ) -> @ast.Instr[@typing_env.InferredAnnotation]? {
-  match written {
-    Some(e) => Some(self.expression(e))
+  let e = match written {
+    Some(e) => e
     None => {
       @typing_env.record_pun(self.ctx.pun_spans, name.loc)
-      Some(
-        self.expression({
+      (
+        {
           desc: Get(name),
           info: name.loc,
           hints: { branch: None, freq: None, targets: None },
           expected: None,
-        }),
-      )
+        } : @ast.Instr[@basic.Location])
     }
+  }
+  match expect {
+    Some(cell) => Some(self.check(cell, e))
+    None => Some(self.expression(e))
   }
 }
 
@@ -3109,9 +3094,13 @@ fn Checker::call(
   // The arguments are typed in EMISSION order, whatever order their types were
   // worked out in.
   let args_ : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  // Checked against the parameter when there is one, so a literal argument can
+  // take the parameter's type as its own; synthesized when the arity does not
+  // line up, since then no argument is reliably paired with any parameter.
+  let paired = have_params && params.length() == args.length()
   for k, a in args {
-    let c = self.expression(a)
-    if have_params && k < params.length() {
+    let c = if paired { self.check(params[k], a) } else { self.expression(a) }
+    if have_params && !paired && k < params.length() {
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,

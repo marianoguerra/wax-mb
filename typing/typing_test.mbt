@@ -8293,3 +8293,76 @@ test "a block used as a value infers what its exit delivers" {
   // hands it out, instead of leaving its 5 behind.
   inspect(run(block([five], 5), true), content="i32 | ")
 }
+
+///|
+/// A construction can leave its type unnamed when the context names it -- and
+/// only check position carries the context down to it.
+///
+/// The same literal in expression position has nothing to take a type from, and
+/// says so. The name is BORROWED, not adopted: the typed node keeps the source's
+/// omitted spelling, because what was written is what the printer must print.
+test "a construction takes its type from what the context expects" {
+  let ctx = module_ctx()
+  let tc = ctx.type_context
+  let _ = @typing.add_type(tc, ctx.diagnostics, [
+    {
+      desc: (
+        id("a"),
+        {
+          typ: Array({ mut_: false, typ: Value(I32) }),
+          supertype: None,
+          final_: true,
+          descriptor: None,
+          describes: None,
+        },
+      ),
+      info: loc_at(0, 1),
+    },
+  ])
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // An array of two elements, written with no type name.
+  let literal = instr(
+    ArrayFixed(None, [instr(Int("1"), 20), instr(Int("2"), 22)]),
+    10,
+  )
+  let want = @typing.internalize(
+    tc,
+    ctx.diagnostics,
+    Ref({ nullable: false, typ: Type(id("a")) }),
+  ).unwrap()
+  fn run(checked : Bool) -> String {
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let before = ctx.diagnostics.collected().length()
+    let c = if checked {
+      checker.check(want, literal)
+    } else {
+      checker.expression(literal)
+    }
+    let named = c.desc is ArrayFixed(Some(_), _)
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " named=\{named} | " +
+    ctx.diagnostics.collected()[before:]
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // Checked against `&a`, the literal takes `a` as its type -- and gives the
+  // name straight back, so the output still reads as the source wrote it.
+  inspect(run(true), content="&a named=false | ")
+  // Synthesized, there is nothing to take.
+  inspect(
+    run(false),
+    content="any named=false | Cannot infer the array type here; add an explicit type, as in '[T| ..]'.",
+  )
+}
