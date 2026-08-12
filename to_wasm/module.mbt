@@ -39,6 +39,9 @@ pub fn lower_module(
     label_names: Map([]),
     label_counter: 0,
     pending_handlers: [],
+    func_refs_in_body: [],
+    func_refs_outside: [],
+    in_body: false,
     labels: [],
     source_types: source_type_index(ctx),
     functypes: functype_index(store),
@@ -72,6 +75,7 @@ pub fn lower_module(
   for field in typed {
     low.field(m, field)
   }
+  low.declare_func_refs(m, source)
   // The name section last: it is a view over every index space, so it wants
   // them all assigned.
   low.type_names(m)
@@ -254,6 +258,7 @@ fn Lowering::function_body(
   self.label_names = Map([])
   self.label_counter = 0
   self.labels = []
+  self.in_body = true
   let sub = self.store.subtyping_info().get_subtype(type_id)
   guard sub.typ is Func(ft) else { raise Unresolved("function type", loc) }
   // The parameter TYPES come from the store, already in index form and already
@@ -281,6 +286,7 @@ fn Lowering::function_body(
   // at any `local.get`.
   self.collect_locals(instrs, ft.params.length())
   let body = self.lower_body(label, instrs)
+  self.in_body = false
   { locals: self.local_types, body, priority: None }
 }
 
@@ -640,5 +646,45 @@ fn field_name(f : @ast.ModuleField[@typing_env.InferredAnnotation]) -> String {
     Import(..) | ImportGroup(..) => "import"
     ModuleAnnotation(_) => "module annotation"
     Conditional(..) => "conditional"
+  }
+}
+
+///|
+/// The declarative element segment that makes the module's funcrefs valid.
+///
+/// `ref.func` is only accepted on a function the module has DECLARED. A
+/// reference in a global initializer or an element segment already declares
+/// it; one inside a body declares nothing, so those are gathered into a single
+/// segment emitted once at module level.
+///
+/// A module with `#[if]` fields gets none. A referenced function may itself be
+/// conditionally defined, so the segment would name an index that is absent
+/// under some configuration -- and a segment that is wrong under one
+/// configuration is worse than none, since the conditional output is wax-only
+/// text anyway and `-D` resolves it before this ever matters.
+fn Lowering::declare_func_refs(
+  self : Lowering,
+  m : @wasm_bin.Module,
+  source : @ast.Module[@basic.Location],
+) -> Unit {
+  for field in source {
+    if field.desc is Conditional(..) {
+      return
+    }
+  }
+  let init : Array[Array[@wasm_bin.Instruction]] = []
+  for name in self.func_refs_in_body {
+    if self.func_refs_outside.contains(name) {
+      continue
+    }
+    guard self.indices.funcs.get(name) is Some(f) else { continue }
+    init.push([RefFunc(f)])
+  }
+  if !init.is_empty() {
+    m.elems.push({
+      mode: Declarative,
+      type_: { nullable: false, typ: Func },
+      init,
+    })
   }
 }

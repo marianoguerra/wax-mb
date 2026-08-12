@@ -75,6 +75,18 @@ pub struct Lowering {
   /// The handlers an enclosing `on` clause wrote, waiting for the resume they
   /// belong to. Empty everywhere else.
   mut pending_handlers : Array[@ast.OnClause]
+  /// Functions a `ref.func` named from INSIDE a function body, in first-use
+  /// order, and those named from outside one.
+  ///
+  /// A `ref.func` is only valid on a function the module has DECLARED. A
+  /// reference in a global initializer or an element segment declares it
+  /// already; one inside a body declares nothing, so those need a declarative
+  /// element segment minted for them. The two lists are kept apart because a
+  /// function in both needs no segment entry.
+  func_refs_in_body : Array[String]
+  func_refs_outside : Array[String]
+  /// Whether a function body is currently being lowered.
+  mut in_body : Bool
   /// The labels in scope, innermost last. A `br` names one; the binary counts
   /// outward from the innermost, so the depth is the distance from the end.
   mut labels : Array[String?]

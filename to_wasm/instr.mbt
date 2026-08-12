@@ -224,10 +224,12 @@ fn Lowering::hinted(
       self.instr(out, operand)
       out.push(BrIf(self.depth(label, loc)))
     }
-    Let(bindings, init) => {
-      if init is Some(e) {
-        self.instr(out, e)
-      }
+    // A declaration with NO initializer emits nothing at all: it reserves the
+    // slot, and the slot is already reserved by the local collection pass.
+    // Storing into it would take a value nobody pushed.
+    Let(_, None) => ()
+    Let(bindings, Some(init)) => {
+      self.instr(out, init)
       // Bound right to left: the values are on the stack with the LAST on top,
       // and each `local.set` takes the top one.
       for k = bindings.length() - 1; k >= 0; k = k - 1 {
@@ -1056,7 +1058,19 @@ fn Lowering::read(
         Some(g) => GlobalGet(g)
         None =>
           match self.indices.funcs.get(name.name) {
-            Some(f) => RefFunc(f)
+            Some(f) => {
+              // Record which side of the declaration question this reference
+              // falls on: one inside a body declares nothing.
+              let into = if self.in_body {
+                self.func_refs_in_body
+              } else {
+                self.func_refs_outside
+              }
+              if !into.contains(name.name) {
+                into.push(name.name)
+              }
+              RefFunc(f)
+            }
             None => raise Unresolved("name", loc)
           }
       }

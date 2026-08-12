@@ -115,6 +115,9 @@ pub struct Lowering {
   mut label_names : Map[Int, Bytes]
   mut label_counter : Int
   mut pending_handlers : Array[@ast.OnClause]
+  func_refs_in_body : Array[String]
+  func_refs_outside : Array[String]
+  mut in_body : Bool
   mut labels : Array[String?]
   source_types : Map[Int, @ast.SubType]
   functypes : Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
