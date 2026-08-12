@@ -1056,3 +1056,37 @@ pub fn invalid_string_element_type(
     @message.text("A string literal can only build an [i8] or [i16] array."),
   )
 }
+
+///|
+/// A segment whose elements do not fit the array being built from it.
+pub fn incompatible_element_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  provided : @infer.Cell[@infer.InferredType],
+  expected : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The element type")
+    .sep(@message.type_(@infer.to_string(provided)))
+    .sep(@message.text("is not compatible with the expected element type"))
+    .sep(@message.type_(@infer.to_string(expected)))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// A descriptor instruction on a type that declares no descriptor.
+pub fn type_without_descriptor(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "This descriptor instruction requires a type that has a descriptor.",
+    ),
+  )
+}

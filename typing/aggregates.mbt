@@ -242,3 +242,32 @@ pub fn is_valid_utf8(b : Bytes) -> Bool {
   }
   true
 }
+
+///|
+/// Whether an element segment's type fits the array being built from it.
+///
+/// The segment supplies the values, so its element type must be a SUBTYPE of
+/// what the array holds -- the usual direction for anything being stored.
+pub fn check_elem_subtype(
+  ctx : @typing_env.ModuleContext,
+  location : @basic.Location,
+  src : @wasm_types.RefType[@ast.Ident],
+  dst : @wasm_types.RefType[@ast.Ident],
+) -> Unit {
+  let s = internalize_valtype(ctx.type_context, ctx.diagnostics, Ref(src))
+  let d = internalize_valtype(ctx.type_context, ctx.diagnostics, Ref(dst))
+  if s is Some(s) && d is Some(d) {
+    if !@type_store.val_subtype(
+        ctx.type_context.subtyping_info(),
+        s.internal,
+        d.internal,
+      ) {
+      incompatible_element_type(
+        ctx.diagnostics,
+        location,
+        @infer.valtype_cell(s),
+        @infer.valtype_cell(d),
+      )
+    }
+  }
+}

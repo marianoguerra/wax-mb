@@ -43,6 +43,8 @@ pub fn cannot_infer_struct_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn cast_always_fails(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
 
+pub fn check_elem_subtype(@typing_env.ModuleContext, @basic.Location, @wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> Unit
+
 pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
 pub fn check_inline_type(@typing_env.TypeContext, @diagnostic.Context, @basic.Location, @ast.FuncType, @ast.FuncType?) -> Unit
@@ -168,6 +170,8 @@ pub fn heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapTy
 pub fn if_without_else(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn immutable(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn incompatible_element_type(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn index_structs_by_fields(@typing_env.ModuleContext) -> Unit
 
@@ -376,6 +380,8 @@ pub fn type_mismatch(@diagnostic.Context, @basic.Location, Int, @infer.Cell[@inf
 pub fn[A] type_trailing_operand(@typing_env.ModuleContext, () -> A) -> (A, () -> Unit)
 
 pub fn type_unop(@diagnostic.Context, @basic.Annotated[@ast.UnOp, @basic.Location], @basic.Location, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
+
+pub fn type_without_descriptor(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn typed_branch_label(@basic.Location, @infer.Cell[@infer.InferredType]) -> @diagnostic.Label
 

@@ -5324,3 +5324,154 @@ test "a string's element type decides what it may hold" {
     content="A string literal can only build an [i8] or [i16] array.",
   )
 }
+
+///|
+/// An array built from a segment names a segment -- and WHICH segment space it
+/// names is decided by the array's element type. A reference element makes it
+/// an element segment, anything else a data segment. The same written name
+/// means different things in the two.
+test "a segment array picks its segment space by element type" {
+  fn build(elem : @wasm_types.StorageType[@ast.Ident]) -> String {
+    let ctx = module_ctx()
+    let module_ : @ast.Module[@basic.Location] = [
+      {
+        desc: Type([
+          {
+            desc: (
+              id("arr"),
+              {
+                typ: Array({ mut_: true, typ: elem }),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(0, 5),
+          },
+        ]),
+        info: loc_at(0, 5),
+      },
+    ]
+    @typing.declare_fields(ctx, module_)
+    // Only a DATA segment named `s` exists.
+    ctx.datas.add(ctx.diagnostics, "s", loc_at(0, 1), ())
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    fn instr(
+      d : @ast.InstrDesc[@basic.Location],
+      at : Int,
+    ) -> @ast.Instr[@basic.Location] {
+      {
+        desc: d,
+        info: loc_at(at, at + 1),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      }
+    }
+
+    let _ = checker.statement(
+      instr(
+        ArraySegment(
+          Some(id("arr")),
+          id("s"),
+          instr(Int("0"), 10),
+          instr(Int("4"), 14),
+        ),
+        0,
+      ),
+    )
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // A numeric element looks in the data segments, and finds it.
+  inspect(build(Packed(I8)), content="")
+  inspect(build(Value(I32)), content="")
+  // A reference element looks in the ELEMENT segments, where there is none.
+  inspect(
+    build(Value(Ref({ nullable: true, typ: Func }))),
+    content="The element segment 's' is not bound.",
+  )
+}
+
+///|
+/// A descriptor lookup follows the type's `descriptor` clause, and exactness
+/// carries through: the descriptor of an EXACT reference is itself exact, since
+/// the type is known and so is its descriptor.
+test "a descriptor lookup follows the clause and keeps exactness" {
+  fn ctx_with_pair() -> @typing_env.ModuleContext {
+    let ctx = @typing_env.ModuleContext::new(
+      @diagnostic.collector(),
+      @type_store.TypeStore::new(),
+      @feature.configure([(CustomDescriptors, true)]),
+    )
+    let _ = @typing.add_type(ctx.type_context, ctx.diagnostics, [
+      {
+        desc: (
+          id("obj"),
+          {
+            typ: Struct([]),
+            supertype: None,
+            final_: true,
+            descriptor: Some(id("desc")),
+            describes: None,
+          },
+        ),
+        info: loc_at(0, 3),
+      },
+      {
+        desc: (
+          id("desc"),
+          {
+            typ: Struct([]),
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: Some(id("obj")),
+          },
+        ),
+        info: loc_at(4, 8),
+      },
+    ])
+    ctx
+  }
+
+  fn described(exact : Bool) -> String {
+    let ctx = ctx_with_pair()
+    @typing.bind_local(
+      ctx,
+      id("o"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({
+          nullable: false,
+          typ: if exact {
+            Exact(id("obj"))
+          } else {
+            Type(id("obj"))
+          },
+        }),
+      ),
+    )
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement({
+      desc: GetDescriptor({
+        desc: Get(id("o")),
+        info: loc_at(10, 11),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      }),
+      info: loc_at(0, 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    })
+    c.info.0.map(t => @infer.to_string(t)).join(",")
+  }
+
+  inspect(described(false), content="&desc")
+  // Exact in, exact out.
+  inspect(described(true), content="&!desc")
+}

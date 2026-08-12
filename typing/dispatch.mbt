@@ -1089,6 +1089,110 @@ pub fn Checker::statement(
       }
     }
 
+    // --- An array built from a segment ---
+    ArraySegment(name, seg, off, len) => {
+      let off_ = self.statement(off)
+      let len_ = self.statement(len)
+      let i32c = () => @infer.valtype_cell(@infer.i32_valtype)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        off.info,
+        expression_type(ctx, off_.info),
+        i32c(),
+      )
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        len.info,
+        expression_type(ctx, len_.info),
+        i32c(),
+      )
+      match name {
+        None => cannot_infer_array_type(ctx.diagnostics, loc)
+        Some(n) =>
+          if lookup_array_type(ctx.type_context, ctx.diagnostics, n)
+            is Some(field) {
+            // WHICH segment space this names is decided by the element type: a
+            // reference element makes it `array.new_elem` and an element
+            // segment, anything else `array.new_data` and a data segment. The
+            // same written name means different things in the two.
+            match field.typ {
+              Value(Ref(dst)) =>
+                if find(ctx.elems, ctx.diagnostics, seg) is Some(src) {
+                  check_elem_subtype(ctx, loc, src, dst)
+                }
+              _ => {
+                let _ = find(ctx.datas, ctx.diagnostics, seg)
+              }
+            }
+          }
+      }
+      let ty = self.allocated(loc, name)
+      self.ops.push(Some(loc), ty)
+      {
+        desc: ArraySegment(name, seg, off_, len_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- The descriptor of a value ---
+    GetDescriptor(recv) => {
+      let recv_ = self.statement(recv)
+      let ty = match expression_type(ctx, recv_.info).get() {
+        Valtype({ typ: Ref({ typ: Type(n) | Exact(n) as ht, .. }), .. }) => {
+          // Exactness carries through: the descriptor of an EXACT reference is
+          // itself exact, since the type is known and so is its descriptor.
+          let exact = ht is Exact(_)
+          match ctx.types.find_no_mark(n.name) {
+            Some((_, def)) =>
+              match def.descriptor {
+                None => {
+                  type_without_descriptor(ctx.diagnostics, recv.info)
+                  @infer.Cell::make(@infer.InferredType::Error)
+                }
+                Some(d) =>
+                  match
+                    internalize(
+                      ctx.type_context,
+                      ctx.diagnostics,
+                      Ref({
+                        nullable: false,
+                        typ: if exact {
+                          Exact(d)
+                        } else {
+                          Type(d)
+                        },
+                      }),
+                    ) {
+                    Some(c) => c
+                    None => @infer.Cell::make(@infer.InferredType::Error)
+                  }
+              }
+            None => @infer.Cell::make(@infer.InferredType::Error)
+          }
+        }
+        Error => @infer.Cell::make(@infer.InferredType::Error)
+        Unknown | UnknownRef => {
+          unknown_operand_type(ctx.diagnostics, recv.info)
+          @infer.Cell::make(@infer.InferredType::Error)
+        }
+        _ => {
+          expected_struct(ctx.diagnostics, recv.info)
+          @infer.Cell::make(@infer.InferredType::Error)
+        }
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: GetDescriptor(recv_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
