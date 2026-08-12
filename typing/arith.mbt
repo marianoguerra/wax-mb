@@ -331,3 +331,81 @@ pub fn type_binop(
     }
   }
 }
+
+///|
+/// Type a unary operator from its operand's type.
+///
+/// The `Neg`/`Pos` result IS the operand's cell, not a fresh one, and that is
+/// the whole subtlety here. Negation preserves width, so a later pin on the
+/// result -- an `as f64` promote consuming it, say -- has to pin the operand
+/// too. A disconnected result cell would let the operand stay `Unknown` and
+/// lower at the i32 default while the result was pinned to another width: an
+/// `i32.sub` annotated as an f64 negation.
+pub fn type_unop(
+  diagnostics : @diagnostic.Context,
+  op : @basic.Annotated[@ast.UnOp, @basic.Location],
+  location : @basic.Location,
+  typ : @infer.Cell[@infer.InferredType],
+) -> @infer.Cell[@infer.InferredType] {
+  let i32_cell = @infer.valtype_cell(@infer.i32_valtype)
+  match typ.get() {
+    // An already-reported failure: recover without pinning the operand, which
+    // has nothing to be pinned to.
+    Error =>
+      match op.desc {
+        Not => i32_cell
+        Neg | Pos => @infer.Cell::make(Number)
+      }
+    Unknown =>
+      match op.desc {
+        Not => i32_cell
+        Neg | Pos => {
+          typ.set(Number)
+          typ
+        }
+      }
+    _ =>
+      match op.desc {
+        Not => {
+          match typ.get() {
+            // `!` is `i32.eqz` on an integer and `ref.is_null` on a reference.
+            // The bottom reference is a reference, so it takes the second
+            // reading like any other.
+            Valtype({ internal: I32 | I64 | Ref(_), .. })
+            | Null
+            | Int
+            | UnknownRef => ()
+            Number => typ.set(Int)
+            // `!` on a large literal is `i64.eqz`, so pin it there: there is no
+            // float `eqz` for it to stay float-capable for.
+            LargeInt => typ.set(Valtype(@infer.i64_valtype))
+            _ =>
+              expression_type_mismatch(
+                diagnostics,
+                location,
+                typ,
+                @infer.Cell::make(Int),
+              )
+          }
+          i32_cell
+        }
+        Neg | Pos => {
+          match typ.get() {
+            Valtype({ internal: I32 | I64 | F32 | F64, .. })
+            | Int
+            | LargeInt
+            | Float
+            | Number => ()
+            _ =>
+              expression_type_mismatch(
+                diagnostics,
+                location,
+                typ,
+                @infer.Cell::make(Number),
+              )
+          }
+          typ
+        }
+      }
+  }
+}

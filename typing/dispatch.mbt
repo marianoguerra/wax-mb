@@ -522,6 +522,24 @@ pub fn Checker::statement(
         expected: i.expected,
       }
     }
+    UnOpI(op, e) => {
+      let e_ = self.statement(e)
+      let typ = expression_type(ctx, e_.info)
+      let poisoned = typ.get() is Error
+      let ty = type_unop(ctx.diagnostics, op, e.info, typ)
+      let ty = if poisoned {
+        @infer.Cell::make(@infer.InferredType::Error)
+      } else {
+        ty
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: UnOpI(op, e_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
 
     // --- Everything else: not written yet ---
     _ => {

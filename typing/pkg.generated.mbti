@@ -333,6 +333,8 @@ pub fn type_mismatch(@diagnostic.Context, @basic.Location, Int, @infer.Cell[@inf
 
 pub fn[A] type_trailing_operand(@typing_env.ModuleContext, () -> A) -> (A, () -> Unit)
 
+pub fn type_unop(@diagnostic.Context, @basic.Annotated[@ast.UnOp, @basic.Location], @basic.Location, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
+
 pub fn typed_branch_label(@basic.Location, @infer.Cell[@infer.InferredType]) -> @diagnostic.Label
 
 pub fn unbound_name(@diagnostic.Context, @basic.Location, String, String, suggestions? : Array[String]) -> Unit

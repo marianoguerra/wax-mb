@@ -4080,3 +4080,87 @@ test "a binary operator blames itself, not its operands" {
   inspect(ctx.diagnostics.collected()[0].loc.start.cnum, content="2")
   inspect(checker.gaps().length(), content="0")
 }
+
+///|
+/// A unary `-` preserves width, so its result IS the operand's cell rather than
+/// a fresh one. A disconnected cell would let the operand stay unconstrained
+/// and lower at the i32 default while the result was pinned to another width --
+/// an `i32.sub` annotated as an f64 negation.
+test "a negation shares its operand's cell" {
+  let ctx = module_ctx()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let operand = instr(Int("1"), 4)
+  let checked = checker.statement(
+    instr(UnOpI({ desc: Neg, info: loc_at(0, 1) }, operand), 0),
+  )
+  guard! checked.desc is UnOpI(_, inner)
+  let result = checked.info.0[0]
+  let inner_ty = inner.info.0[0]
+  inspect(@infer.to_string(result), content="number")
+  // Pinning the result pins the operand, because they are one cell.
+  result.set(Valtype(@infer.f64_valtype))
+  inspect(@infer.to_string(inner_ty), content="f64")
+  inspect(checker.gaps().length(), content="0")
+}
+
+///|
+/// `!` is `i32.eqz` on an integer and `ref.is_null` on a reference, so it takes
+/// both -- and yields i32 either way.
+test "a not takes an integer or a reference" {
+  fn unop(op : @ast.UnOp, operand : @ast.InstrDesc[@basic.Location]) -> String {
+    let ctx = module_ctx()
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    fn instr(
+      d : @ast.InstrDesc[@basic.Location],
+      at : Int,
+    ) -> @ast.Instr[@basic.Location] {
+      {
+        desc: d,
+        info: loc_at(at, at + 1),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      }
+    }
+
+    let inner = instr(operand, 4)
+    let checked = checker.statement(
+      instr(UnOpI({ desc: op, info: loc_at(0, 1) }, inner), 0),
+    )
+    guard! checked.desc is UnOpI(_, c)
+    // Result, operand, and anything reported -- one line, so the three move
+    // together when they are meant to.
+    checked.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // An integer: `i32.eqz`, and the flexible literal commits to an integer.
+  inspect(unop(Not, Int("1")), content="i32 | int | ")
+  // A reference: `ref.is_null`, and nothing to commit.
+  inspect(unop(Not, Null), content="i32 | null | ")
+  // A large literal is `i64.eqz`, pinned there because there is no float eqz
+  // for it to stay float-capable for.
+  inspect(unop(Not, Int("4294967296")), content="i32 | i64 | ")
+  // A float has no `eqz` at all.
+  inspect(
+    unop(Not, Float("1.5")),
+    content="i32 | float | This expression has type 'float' but is expected to have type 'int'.",
+  )
+}
