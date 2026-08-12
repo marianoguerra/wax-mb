@@ -45,7 +45,7 @@ pub(all) enum HeapType[Idx] {
   None_
   Type(Idx)
   Exact(Idx)
-} derive(Eq, Debug)
+} derive(Eq, Hash, Debug)
 
 ///|
 /// The keyword naming a heap type, or None for the two that carry an index.
@@ -78,7 +78,7 @@ pub fn[Idx] HeapType::keyword(self : HeapType[Idx]) -> String? {
 pub(all) struct RefType[Idx] {
   nullable : Bool
   typ : HeapType[Idx]
-} derive(Eq, Debug)
+} derive(Eq, Hash, Debug)
 
 ///|
 /// A value type -- what a local, parameter or stack slot holds.
@@ -89,7 +89,7 @@ pub(all) enum ValType[Idx] {
   F64
   V128
   Ref(RefType[Idx])
-} derive(Eq, Debug)
+} derive(Eq, Hash, Debug)
 
 ///|
 /// A packed storage type. These exist only in struct fields and arrays: there
@@ -97,14 +97,14 @@ pub(all) enum ValType[Idx] {
 pub(all) enum PackedType {
   I8
   I16
-} derive(Eq, Debug)
+} derive(Eq, Hash, Debug)
 
 ///|
 /// What a struct field or array element stores.
 pub(all) enum StorageType[Idx] {
   Value(ValType[Idx])
   Packed(PackedType)
-} derive(Eq, Debug)
+} derive(Eq, Hash, Debug)
 
 ///|
 /// A type paired with its mutability. Used for both globals and struct fields,
@@ -112,7 +112,7 @@ pub(all) enum StorageType[Idx] {
 pub(all) struct MutType[T] {
   mut_ : Bool
   typ : T
-} derive(Eq, Debug)
+} derive(Eq, Hash, Debug)
 
 ///|
 /// A struct field or array element type.

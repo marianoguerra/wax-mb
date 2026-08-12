@@ -52,7 +52,7 @@ pub(all) enum HeapType[Idx] {
   None_
   Type(Idx)
   Exact(Idx)
-} derive(Eq, @debug.Debug)
+} derive(Eq, Hash, @debug.Debug)
 pub fn[Idx] HeapType::keyword(Self[Idx]) -> String?
 
 pub(all) struct Limits {
@@ -66,17 +66,17 @@ pub(all) struct Limits {
 pub(all) struct MutType[T] {
   mut_ : Bool
   typ : T
-} derive(Eq, @debug.Debug)
+} derive(Eq, Hash, @debug.Debug)
 
 pub(all) enum PackedType {
   I8
   I16
-} derive(Eq, @debug.Debug)
+} derive(Eq, Hash, @debug.Debug)
 
 pub(all) struct RefType[Idx] {
   nullable : Bool
   typ : HeapType[Idx]
-} derive(Eq, @debug.Debug)
+} derive(Eq, Hash, @debug.Debug)
 
 pub(all) enum Signage {
   Signed
@@ -86,7 +86,7 @@ pub(all) enum Signage {
 pub(all) enum StorageType[Idx] {
   Value(ValType[Idx])
   Packed(PackedType)
-} derive(Eq, @debug.Debug)
+} derive(Eq, Hash, @debug.Debug)
 
 pub(all) struct V128 {
   shape : V128Shape
@@ -110,7 +110,7 @@ pub(all) enum ValType[Idx] {
   F64
   V128
   Ref(RefType[Idx])
-} derive(Eq, @debug.Debug)
+} derive(Eq, Hash, @debug.Debug)
 
 // Type aliases
 pub type FieldType[Idx] = MutType[StorageType[Idx]]
