@@ -10,6 +10,7 @@ import {
   "waxmb/wax/diagnostic",
   "waxmb/wax/feature",
   "waxmb/wax/infer",
+  "waxmb/wax/message",
   "waxmb/wax/simd",
   "waxmb/wax/type_store",
   "waxmb/wax/typing_env",
@@ -48,6 +49,8 @@ pub fn cannot_infer_array_type(@diagnostic.Context, @basic.Location) -> Unit
 pub fn cannot_infer_struct_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn cast_always_fails(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
+
+pub fn cast_is_total(@ast.CastType) -> Bool
 
 pub fn catch_target_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
@@ -98,6 +101,8 @@ pub fn collected_natural(Array[(@basic.Location?, @infer.Cell[@infer.InferredTyp
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
 
 pub fn conditional_cast_types(@typing_env.ModuleContext, @basic.Location, @infer.Cell[@infer.InferredType], @wasm_types.RefType[@ast.Ident]) -> (@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType])?
+
+pub fn constant_condition(@diagnostic.Context, @basic.Location, Bool) -> Unit
 
 pub fn construction_result(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.InferredType]?
 
@@ -233,6 +238,8 @@ pub fn int_literal_lattice(String) -> @infer.InferredType
 
 pub fn int_literal_u64(@ast.InstrDesc[@basic.Location]) -> UInt64?
 
+pub fn int_operand_value(@ast.Instr[@basic.Location]) -> Int64?
+
 pub fn integer_literal_required(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn internal_of_inferred(@infer.Cell[@infer.InferredType]) -> @wasm_types.ValType[@type_store.Id]?
@@ -263,6 +270,8 @@ pub fn is_cont_heaptype(@typing_env.TypeContext, @wasm_types.HeapType[@ast.Ident
 
 pub fn is_defaultable(@wasm_types.ValType[@ast.Ident]) -> Bool
 
+pub fn is_effectless(@ast.Instr[@basic.Location]) -> Bool
+
 pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 
 pub fn is_mem_method(String) -> Bool
@@ -270,6 +279,10 @@ pub fn is_mem_method(String) -> Bool
 pub fn is_mgmt_method(String) -> Bool
 
 pub fn is_null_initializer(@ast.Instr[@basic.Location]) -> Bool
+
+pub fn is_pure_binary_method(String) -> Bool
+
+pub fn is_pure_unary_method(String) -> Bool
 
 pub fn is_unary_method(String) -> Bool
 
@@ -294,6 +307,8 @@ pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.L
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
 
 pub fn lint_ref_cast(@typing_env.ModuleContext, @basic.Location, is_test~ : Bool, @infer.InferredType, @infer.InferredType, operand_location? : @basic.Location?) -> Unit
+
+pub fn lint_source(@typing_env.ModuleContext, @ast.Instr[@basic.Location]) -> Unit
 
 pub fn literal_type(@ast.InstrDesc[@basic.Location]) -> @infer.InferredType?
 
@@ -394,6 +409,8 @@ pub fn receiver_is_array_ref(@typing_env.ModuleContext, @ast.Instr[@basic.Locati
 pub fn receiver_is_ref(@typing_env.ModuleContext, @ast.Instr[@basic.Location]) -> Bool
 
 pub fn redundant_cast(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
+
+pub fn redundant_operation(@diagnostic.Context, @basic.Location, @message.Message) -> Unit
 
 pub fn reftype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
 
@@ -504,6 +521,8 @@ pub fn unused_import(@diagnostic.Context, @basic.Location, String, String) -> Un
 pub fn unused_label(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn unused_local(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn unused_result(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn val_lub(@typing_env.TypeContext, @wasm_types.ValType[@ast.Ident], @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@ast.Ident]?
 

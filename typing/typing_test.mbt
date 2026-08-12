@@ -8973,3 +8973,62 @@ test "a dead cycle of functions is still dead" {
   // reaches `b`.
   inspect(run(true), content="")
 }
+
+///|
+/// `is_effectless` decides whether computing a value and throwing it away is
+/// pointless, and it is conservative in the one direction that matters: anything
+/// it does not recognise is assumed to have an effect, so the lint never calls a
+/// computation useless when it might trap, write, or call.
+test "an expression is effectless only when nothing it does can be observed" {
+  fn instr(d : @ast.InstrDesc[@basic.Location]) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(0, 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn pure(d : @ast.InstrDesc[@basic.Location]) -> Bool {
+    @typing.is_effectless(instr(d))
+  }
+
+  let one = instr(Int("1"))
+  let two = instr(Int("2"))
+  let op = (b : @ast.BinOp) => {
+    (
+      { desc: b, info: loc_at(0, 1) } :
+      @basic.Annotated[@ast.BinOp, @basic.Location])
+  }
+  // A literal, a read, and arithmetic over them.
+  inspect(pure(Int("1")), content="true")
+  inspect(pure(Get(id("x"))), content="true")
+  inspect(pure(BinOpI(op(Add), one, two)), content="true")
+  // Division and remainder trap on a zero divisor, so they are not.
+  inspect(pure(BinOpI(op(Div(Some(Signed))), one, two)), content="false")
+  inspect(pure(BinOpI(op(Rem(Signed)), one, two)), content="false")
+  // A numeric cast is total; a SATURATING float-to-int is too, but the strict
+  // form lowers to `trunc` and traps out of range.
+  inspect(pure(Cast(one, Value(I64))), content="true")
+  inspect(
+    pure(Cast(one, Signed(typ=I32, signage=Signed, strict=false))),
+    content="true",
+  )
+  inspect(
+    pure(Cast(one, Signed(typ=I32, signage=Signed, strict=true))),
+    content="false",
+  )
+  // A reference cast may trap.
+  inspect(
+    pure(Cast(one, Value(Ref({ nullable: false, typ: Any })))),
+    content="false",
+  )
+  // Except a typed NULL, which is `ref.null` -- a constant.
+  inspect(
+    pure(Cast(instr(Null), Value(Ref({ nullable: true, typ: Any })))),
+    content="true",
+  )
+  // A pure instruction method is; a call is not.
+  inspect(pure(Call(instr(StructGet(one, id("sqrt"))), [])), content="true")
+  inspect(pure(Call(instr(Get(id("f"))), [])), content="false")
+}

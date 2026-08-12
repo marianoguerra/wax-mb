@@ -107,16 +107,31 @@ fn check(
     palette=@colors.wax_theme,
     is_tty=@io.stderr_is_tty(),
   )
+  // The collector buffers everything RAW: the policy belongs to whoever
+  // finally re-reports it, which is here. A named warning is hidden, kept, or
+  // promoted to an error according to it -- so a lint that is off by default
+  // costs nothing to have implemented.
+  let policy = @warning.default_policy
   let mut rejected = false
   for d in collected {
+    let severity = match (d.severity, d.warning) {
+      (Warning, Some(w)) | (Suggestion, Some(w)) =>
+        match policy.resolve(w) {
+          Hidden => None
+          Displayed => Some(d.severity)
+          ErrorLevel => Some(@diagnostic.Severity::Error)
+        }
+      _ => Some(d.severity)
+    }
+    guard severity is Some(severity) else { continue }
     @diagnostic.output_error(
       stderr_sink(),
       theme,
       opts.error_format,
       Some(src),
-      d,
+      { ..d, severity, },
     )
-    if d.severity is Error {
+    if severity is Error {
       rejected = true
     }
   }

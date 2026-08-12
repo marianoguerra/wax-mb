@@ -15,6 +15,7 @@ import {
   "waxmb/wax/simd",
   "waxmb/wax/unicode",
   "moonbitlang/core/ref",
+  "moonbitlang/core/string",
 }
 
 import {

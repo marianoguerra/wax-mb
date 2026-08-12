@@ -139,6 +139,14 @@ fn check_field(
       // Before leaving the scope, while the locals and labels this function
       // declared are still the current ones -- and here rather than at the end
       // of the module, so the diagnostics stay in source order among the rest.
+      // The source-shape lints read what was WRITTEN, so they run over the
+      // original body rather than the typed one -- and here, so their
+      // diagnostics land in source order among this function's others.
+      if ctx.warn_unused {
+        for s in instrs {
+          lint_source(ctx, s)
+        }
+      }
       warn_unused_in_function(ctx)
       leave_function_scope(ctx)
       Some(Func(name~, typ~, sign~, body=(label, checked), attributes~))

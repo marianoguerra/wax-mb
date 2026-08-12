@@ -1644,3 +1644,54 @@ pub fn unnecessary_mut(
     hint=Some(@message.text("Declare it with 'const' instead of 'let'.")),
   )
 }
+
+///|
+/// A side-effect-free expression whose result is computed and then dropped.
+pub fn unused_result(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text(
+      "The result of this expression is discarded, and computing it has no effect.",
+    ),
+    warning=Some(UnusedResult),
+    universal=true,
+  )
+}
+
+///|
+/// A condition whose value is decided before it is ever evaluated.
+pub fn constant_condition(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  value : Bool,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("This condition is always")
+    .sep(@message.bool_(value))
+    .seq(@message.text(".")),
+    warning=Some(ConstantCondition),
+    universal=true,
+  )
+}
+
+///|
+/// An operation that does nothing -- a variable written back to itself.
+pub fn redundant_operation(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  message : @message.Message,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    message,
+    warning=Some(RedundantOperation),
+    universal=true,
+  )
+}
