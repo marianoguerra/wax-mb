@@ -37,6 +37,7 @@ pub fn lower_module(
     local_types: [],
     labels: [],
     source_types: source_type_index(ctx),
+    functypes: functype_index(store),
   }
   // Imports come from the SOURCE, because the checker resolves them into its
   // tables and drops them from the typed output -- and they are exactly what
@@ -156,6 +157,30 @@ fn Lowering::field(
       raise NotLowered("tag", loc)
       ignore(attributes)
     }
+    Elem(name~, reftype~, mode~, init~, ..) => {
+      let mode_ = match mode {
+        EPassive => @wasm_bin.ElemMode::Passive
+        EActive(tab, offset) => {
+          let out : Array[@wasm_bin.Instruction] = []
+          self.instr(out, offset)
+          Active(self.table_index(tab, loc), out)
+        }
+      }
+      // Each element is its own constant expression, which is what lets a
+      // segment mix `ref.func` and `ref.null`.
+      let inits : Array[Array[@wasm_bin.Instruction]] = []
+      for e in init {
+        let out : Array[@wasm_bin.Instruction] = []
+        self.instr(out, e)
+        inits.push(out)
+      }
+      ignore(name)
+      m.elems.push({
+        mode: mode_,
+        type_: self.reftype_index(reftype, loc),
+        init: inits,
+      })
+    }
     Data(mode~, init~, ..) => {
       let mode_ = match mode {
         Passive => @wasm_bin.DataMode::Passive
@@ -236,18 +261,24 @@ fn Lowering::collect_locals(
     if i.desc is Let(bindings, init) {
       for k, b in bindings {
         guard b.0 is Some(name) else { continue }
-        // The slot's type: what the initializer produced at that position. A
-        // written annotation says the same thing, since the checker has already
-        // made the initializer agree with it.
-        let ty = match init {
-          Some(e) =>
-            if e.info.0.length() > k &&
-              @typing_env.standalone_valtype(e.info.0[k]) is Some(v) {
-              Some(lower_valtype(v.internal))
-            } else {
-              None
+        // The slot's type: the WRITTEN annotation when there is one -- a bare
+        // `let p: &point;` declares a local with no initializer at all, and
+        // then the annotation is the only thing that says what it holds.
+        // Otherwise what the initializer produced at that position, which the
+        // checker has already made agree with any annotation.
+        let ty = match b.1 {
+          Some(written) => Some(self.valtype_index(written, i.info.1))
+          None =>
+            match init {
+              Some(e) =>
+                if e.info.0.length() > k &&
+                  @typing_env.standalone_valtype(e.info.0[k]) is Some(v) {
+                  Some(lower_valtype(v.internal))
+                } else {
+                  None
+                }
+              None => None
             }
-          None => None
         }
         guard ty is Some(ty) else { raise Unresolved("local type", i.info.1) }
         self.locals[name.name] = next

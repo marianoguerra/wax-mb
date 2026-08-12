@@ -22,14 +22,20 @@ pub fn Lowering::instr(
       match node_valtype(i) {
         Some(I32) => out.push(I32Const(parse_i32(s, loc)))
         Some(I64) => out.push(I64Const(parse_i64(s, loc)))
-        Some(F32) => out.push(F32Const(Float::from_double(parse_f64(s, loc))))
-        Some(F64) => out.push(F64Const(parse_f64(s, loc)))
+        Some(F32) =>
+          out.push(
+            F32Const(Float::from_double(parse_float_bits(s, false, loc))),
+          )
+        Some(F64) => out.push(F64Const(parse_float_bits(s, true, loc)))
         _ => raise Unresolved("integer literal type", loc)
       }
     Float(s) =>
       match node_valtype(i) {
-        Some(F32) => out.push(F32Const(Float::from_double(parse_f64(s, loc))))
-        Some(F64) => out.push(F64Const(parse_f64(s, loc)))
+        Some(F32) =>
+          out.push(
+            F32Const(Float::from_double(parse_float_bits(s, false, loc))),
+          )
+        Some(F64) => out.push(F64Const(parse_float_bits(s, true, loc)))
         _ => raise Unresolved("float literal type", loc)
       }
     // A character literal is an i32 code point.
@@ -174,6 +180,18 @@ pub fn Lowering::instr(
         None => []
       }
       out.push(If(self.block_type(typ, loc), then_, else_))
+    }
+    TailCall(callee, args) => {
+      for a in args {
+        self.instr(out, a)
+      }
+      guard callee.desc is Get(name) else {
+        raise NotLowered("indirect tail call", loc)
+      }
+      guard self.indices.funcs.get(name.name) is Some(f) else {
+        raise Unresolved("tail-call target", loc)
+      }
+      out.push(ReturnCall(f))
     }
     Call(callee, args) => {
       // The special forms come FIRST and emit their own operands, because they
@@ -424,10 +442,12 @@ fn Lowering::block_type(
           // names just have to become indices first.
           Ref(rt) => Value(Ref(self.reftype_index(rt, loc)))
         }
-      _ => raise NotLowered("multi-value block", loc)
+      // Anything else needs a type INDEX: the inline forms only reach one
+      // result and no parameters.
+      _ => TypeIndex(self.block_functype_index(typ, loc))
     }
   } else {
-    raise NotLowered("parameterized block", loc)
+    TypeIndex(self.block_functype_index(typ, loc))
   }
 }
 
@@ -644,4 +664,31 @@ fn hierarchy_conversion_of(
 ) -> @wasm_bin.Instruction? {
   guard from is Ref(r) else { return None }
   hierarchy_conversion(r.typ, to)
+}
+
+///|
+/// The type index a block signature needs when no inline form fits.
+///
+/// A block with parameters, or with several results, cannot be written inline:
+/// the format spells those as a reference into the type section. The signature
+/// has to be there already -- the checker interned every block type it saw --
+/// so this is a lookup, and its failure means the two disagree about what was
+/// declared rather than that something is missing.
+fn Lowering::block_functype_index(
+  self : Lowering,
+  typ : @ast.FuncType,
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  let params : Array[@wasm_types.ValType[Int]] = []
+  for p in typ.params {
+    params.push(self.valtype_index(p.desc.1, loc))
+  }
+  let results : Array[@wasm_types.ValType[Int]] = []
+  for r in typ.results {
+    results.push(self.valtype_index(r, loc))
+  }
+  guard self.functypes.get((params, results)) is Some(i) else {
+    raise Unresolved("block type", loc)
+  }
+  i
 }

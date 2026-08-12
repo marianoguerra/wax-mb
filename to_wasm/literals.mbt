@@ -94,3 +94,160 @@ pub fn construct_name(
     _ => "instruction"
   }
 }
+
+///|
+/// A wax float literal as the exact bits it names.
+///
+/// Three spellings, and only the first is ordinary. A HEX float
+/// (`0x1.ce45573fd156bp-252`) names a mantissa and a binary exponent directly,
+/// which is how a decompiler writes a double without losing a bit. A `nan:0x..`
+/// names a NaN PAYLOAD, which no decimal spelling can carry -- two NaNs with
+/// different payloads are different values to a program that inspects them, and
+/// re-deriving one through a parsed double would silently pick the canonical
+/// payload instead.
+///
+/// So the bits are assembled here rather than parsed: for these two forms there
+/// is nothing to parse them INTO that would keep them.
+pub fn parse_float_bits(
+  s : String,
+  wide : Bool,
+  loc : @basic.Location,
+) -> Double raise LowerError {
+  let cleaned = s.split("_").join("")
+  let (negative, body) = if cleaned.has_prefix("-") {
+    (true, cleaned[1:].to_owned())
+  } else if cleaned.has_prefix("+") {
+    (false, cleaned[1:].to_owned())
+  } else {
+    (false, cleaned)
+  }
+  if body.has_prefix("nan") {
+    return nan_of(body, negative, wide, loc)
+  }
+  if body.has_prefix("0x") || body.has_prefix("0X") {
+    return hex_float(body, negative, loc)
+  }
+  let v = @string.parse_double(body) catch {
+    _ =>
+      @string.parse_int64(body).to_double() catch {
+        _ => raise NotLowered("float literal spelling", loc)
+      }
+  }
+  if negative {
+    -v
+  } else {
+    v
+  }
+}
+
+///|
+/// A NaN, with the payload the source named.
+///
+/// `nan` alone is the canonical one; `nan:0x..` names the mantissa bits. The
+/// width matters: an f32 payload occupies 23 bits and an f64's 52, and a value
+/// destined for an f32 is built at that width so the demotion does not discard
+/// what the source went to the trouble of writing.
+fn nan_of(
+  body : String,
+  negative : Bool,
+  wide : Bool,
+  loc : @basic.Location,
+) -> Double raise LowerError {
+  let payload = if body == "nan" {
+    // The canonical quiet NaN: the top mantissa bit and nothing else.
+    if wide {
+      0x8000000000000UL
+    } else {
+      0x400000UL
+    }
+  } else if body.has_prefix("nan:0x") {
+    let hex = body[6:].to_owned()
+    @string.parse_uint64("0x" + hex) catch {
+      _ => raise NotLowered("nan payload", loc)
+    }
+  } else {
+    raise NotLowered("float literal spelling", loc)
+  }
+  if wide {
+    let bits = (if negative {
+        0xFFF0000000000000UL
+      } else {
+        0x7FF0000000000000UL
+      }) |
+      payload
+    bits.reinterpret_as_int64().reinterpret_as_double()
+  } else {
+    let bits32 = (if negative { 0xFF800000U } else { 0x7F800000U }) |
+      payload.to_uint()
+    Float::reinterpret_from_int(bits32.reinterpret_as_int()).to_double()
+  }
+}
+
+///|
+/// A hex float: `0x<hex>.<hex>p<±dec>`.
+///
+/// Assembled by scaling rather than parsed, because there is no decimal
+/// spelling of these bits to go through. Each hex digit after the point is
+/// worth a sixteenth of the one before it, and `p` is a power of TWO.
+fn hex_float(
+  body : String,
+  negative : Bool,
+  loc : @basic.Location,
+) -> Double raise LowerError {
+  let rest = body[2:].to_owned()
+  let (mantissa_part, exponent) = match rest.split("p").collect() {
+    [m] => (m.to_owned(), 0)
+    [m, e] =>
+      (
+        m.to_owned(),
+        @string.parse_int(e.to_owned()) catch {
+          _ => raise NotLowered("hex float exponent", loc)
+        },
+      )
+    _ => raise NotLowered("hex float spelling", loc)
+  }
+  let (whole, frac) = match mantissa_part.split(".").collect() {
+    [w] => (w.to_owned(), "")
+    [w, f] => (w.to_owned(), f.to_owned())
+    _ => raise NotLowered("hex float spelling", loc)
+  }
+  let mut v = 0.0
+  for k in 0..<whole.length() {
+    v = v * 16.0 + hex_digit(whole[k], loc).to_double()
+  }
+  let mut scale = 1.0 / 16.0
+  for k in 0..<frac.length() {
+    v = v + hex_digit(frac[k], loc).to_double() * scale
+    scale = scale / 16.0
+  }
+  // `p` is a binary exponent, applied by repeated doubling or halving so the
+  // result is exact wherever the value is.
+  let mut e = exponent
+  while e > 0 {
+    v = v * 2.0
+    e = e - 1
+  }
+  while e < 0 {
+    v = v / 2.0
+    e = e + 1
+  }
+  if negative {
+    -v
+  } else {
+    v
+  }
+}
+
+///|
+fn hex_digit(c : UInt16, loc : @basic.Location) -> Int raise LowerError {
+  let n = c.to_int()
+  if n >= 48 && n <= 57 {
+    n - 48
+  } else if n >= 97 && n <= 102 {
+    n - 87
+  } else if n >= 65 && n <= 70 {
+    n - 55
+  } else {
+    raise NotLowered("hex float digit", loc)
+  }
+}

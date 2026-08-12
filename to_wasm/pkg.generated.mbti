@@ -18,6 +18,8 @@ pub fn binop_instruction(@ast.BinOp, @wasm_types.ValType[Int]) -> @wasm_bin.Inst
 
 pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> String
 
+pub fn functype_index(@type_store.TypeStore) -> Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
+
 pub fn hierarchy_conversion(@wasm_types.HeapType[Int], @wasm_types.HeapType[Int]) -> @wasm_bin.Instruction?
 
 pub fn is_any_hierarchy(@wasm_types.HeapType[Int]) -> Bool
@@ -43,6 +45,8 @@ pub fn node_valtype(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.
 pub fn numeric_cast(@wasm_types.ValType[Int], @wasm_types.ValType[Int]) -> Array[@wasm_bin.Instruction]?
 
 pub fn parse_f64(String, @basic.Location) -> Double raise LowerError
+
+pub fn parse_float_bits(String, Bool, @basic.Location) -> Double raise LowerError
 
 pub fn parse_i32(String, @basic.Location) -> Int raise LowerError
 
@@ -88,6 +92,7 @@ pub struct Lowering {
   mut local_types : Array[@wasm_types.ValType[Int]]
   mut labels : Array[String?]
   source_types : Map[Int, @ast.SubType]
+  functypes : Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
 }
 pub fn Lowering::array_element_of(Self, @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location) -> (Int, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) raise LowerError
 pub fn Lowering::depth_of(Self, String) -> Int?

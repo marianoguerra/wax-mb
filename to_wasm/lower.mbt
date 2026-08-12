@@ -59,6 +59,47 @@ pub struct Lowering {
   /// the declaration the author wrote to know which slot `x` is. This is the
   /// only place the two views of a type are joined, and it is built once.
   source_types : Map[Int, @ast.SubType]
+  /// Function signature back to the type index that interned it.
+  ///
+  /// A block with parameters or several results is spelled as a reference into
+  /// the type section, so its signature has to be findable BY SHAPE -- the
+  /// block wrote no name, and the store interned it structurally.
+  functypes : Map[
+    (Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]),
+    Int,
+  ]
+}
+
+///|
+/// Index every function type in the store by its shape.
+pub fn functype_index(
+  store : @type_store.TypeStore,
+) -> Map[
+  (Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]),
+  Int,
+] {
+  let out : Map[
+    (Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]),
+    Int,
+  ] = Map([])
+  let mut i = 0
+  for group in store.get_all_rectypes() {
+    for sub in group {
+      if sub.typ is Func(ft) {
+        let key = (
+          ft.params.map(v => lower_valtype(v)),
+          ft.results.map(v => lower_valtype(v)),
+        )
+        // The FIRST index wins: interning means one shape has one index, and a
+        // later duplicate would be the same type anyway.
+        if !out.contains(key) {
+          out[key] = i
+        }
+      }
+      i = i + 1
+    }
+  }
+  out
 }
 
 ///|
