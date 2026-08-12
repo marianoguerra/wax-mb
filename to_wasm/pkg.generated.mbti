@@ -28,6 +28,8 @@ pub fn is_extern_hierarchy(@wasm_types.HeapType[Int]) -> Bool
 
 pub fn is_packed(@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) -> Bool
 
+pub fn is_synthetic(String) -> Bool
+
 pub fn load_instruction(String, Int, Int, Int64, (@ast.NumType, @wasm_types.Signage)?) -> @wasm_bin.Instruction?
 
 pub fn lower_module(@typing_env.ModuleContext, @type_store.TypeStore, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]]) -> @wasm_bin.Module raise LowerError
@@ -41,6 +43,8 @@ pub fn natural_align(String) -> Int
 pub fn node_type_index(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Int?
 
 pub fn node_valtype(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> @wasm_types.ValType[Int]?
+
+pub fn note_name(Map[Int, Bytes], Int, String) -> Unit
 
 pub fn numeric_cast(@wasm_types.ValType[Int], @wasm_types.ValType[Int]) -> Array[@wasm_bin.Instruction]?
 
@@ -90,6 +94,7 @@ pub struct Lowering {
   indices : Indices
   mut locals : Map[String, Int]
   mut local_types : Array[@wasm_types.ValType[Int]]
+  mut local_names : Map[Int, Bytes]
   mut labels : Array[String?]
   source_types : Map[Int, @ast.SubType]
   functypes : Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
@@ -98,7 +103,9 @@ pub fn Lowering::array_element_of(Self, @ast.Instr[(Array[@infer.Cell[@infer.Inf
 pub fn Lowering::depth_of(Self, String) -> Int?
 pub fn Lowering::instr(Self, Array[@wasm_bin.Instruction], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Unit raise LowerError
 pub fn Lowering::memarg(Self, @ast.Ident, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @basic.Location) -> (Int, Int64) raise LowerError
+pub fn Lowering::module_name(Self, @wasm_bin.Module, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
 pub fn Lowering::struct_fields_of(Self, @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location) -> (Int, Array[@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]]) raise LowerError
+pub fn Lowering::type_names(Self, @wasm_bin.Module) -> Unit
 
 pub struct Space {
   by_name : Map[String, Int]

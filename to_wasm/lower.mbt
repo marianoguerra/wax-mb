@@ -50,6 +50,8 @@ pub struct Lowering {
   /// order, so the map is built by walking the same way.
   mut locals : Map[String, Int]
   mut local_types : Array[@wasm_types.ValType[Int]]
+  /// Local slot to the name the source gave it, for the name section.
+  mut local_names : Map[Int, Bytes]
   /// The labels in scope, innermost last. A `br` names one; the binary counts
   /// outward from the innermost, so the depth is the distance from the end.
   mut labels : Array[String?]

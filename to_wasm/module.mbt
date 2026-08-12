@@ -35,6 +35,7 @@ pub fn lower_module(
     indices,
     locals: Map([]),
     local_types: [],
+    local_names: Map([]),
     labels: [],
     source_types: source_type_index(ctx),
     functypes: functype_index(store),
@@ -68,6 +69,10 @@ pub fn lower_module(
   for field in typed {
     low.field(m, field)
   }
+  // The name section last: it is a view over every index space, so it wants
+  // them all assigned.
+  low.type_names(m)
+  low.module_name(m, source)
   m
 }
 
@@ -91,8 +96,14 @@ fn Lowering::field(
         raise Unresolved("function signature", loc)
       }
       m.funcs.push(entry.0.to_int_for_tests_only())
+      let fi = self.func_index(name, loc)
+      note_name(m.names.functions, fi, name.name)
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
       m.codes.push(code)
+      // The local names belong to the function that just closed over them.
+      if !self.local_names.is_empty() {
+        m.names.locals[fi] = self.local_names
+      }
       self.export_of(m, attributes, Func(self.func_index(name, loc)), name)
     }
     Global(name~, mut_~, def~, attributes~, ..) => {
@@ -101,6 +112,7 @@ fn Lowering::field(
       }
       let init : Array[@wasm_bin.Instruction] = []
       self.instr(init, def)
+      note_name(m.names.globals, self.global_index(name, loc), name.name)
       m.globals.push({ type_: { mut_, typ: ty }, init })
       self.export_of(m, attributes, Global(self.global_index(name, loc)), name)
     }
@@ -118,6 +130,7 @@ fn Lowering::field(
         limits: { mi, ma, address_type, page_size_log2, shared },
       })
       let mem = self.memory_index(name, loc)
+      note_name(m.names.memories, mem, name.name)
       // An inline data segment is an ACTIVE segment of this memory, written
       // where the memory is rather than beside it.
       for d in data {
@@ -141,6 +154,7 @@ fn Lowering::field(
         }
         None => None
       }
+      note_name(m.names.tables, self.table_index(name, loc), name.name)
       m.tables.push({
         type_: {
           elem_type,
@@ -151,6 +165,7 @@ fn Lowering::field(
       self.export_of(m, attributes, Table(self.table_index(name, loc)), name)
     }
     Tag(name~, attributes~, ..) => {
+      note_name(m.names.tags, self.tag_index(name, loc), name.name)
       m.tags.push({ type_idx: self.tag_type_index(name, loc) })
       self.export_of(m, attributes, Tag(self.tag_index(name, loc)), name)
     }
@@ -171,7 +186,7 @@ fn Lowering::field(
         self.instr(out, e)
         inits.push(out)
       }
-      ignore(name)
+      note_name(m.names.elem, m.elems.length(), name.name)
       m.elems.push({
         mode: mode_,
         type_: self.reftype_index(reftype, loc),
@@ -214,6 +229,7 @@ fn Lowering::function_body(
 ) -> @wasm_bin.FunctionCode raise LowerError {
   self.locals = Map([])
   self.local_types = []
+  self.local_names = Map([])
   self.labels = []
   let sub = self.store.subtyping_info().get_subtype(type_id)
   guard sub.typ is Func(ft) else { raise Unresolved("function type", loc) }
@@ -234,6 +250,7 @@ fn Lowering::function_body(
   for k, p in sign.params {
     if p.desc.0 is Some(name) {
       self.locals[name.name] = k
+      note_name(self.local_names, k, name.name)
     }
   }
   // Then the declared locals, numbered after the parameters in the order they
@@ -279,6 +296,7 @@ fn Lowering::collect_locals(
         }
         guard ty is Some(ty) else { raise Unresolved("local type", i.info.1) }
         self.locals[name.name] = next
+        note_name(self.local_names, next, name.name)
         self.local_types.push(ty)
         next = next + 1
       }
@@ -408,6 +426,18 @@ fn Lowering::import_(
     Tag(..) => Tag(self.tag_type_index(decl.id, loc))
   }
   m.imports.push({ mod_name: module_, name, desc })
+  match decl.kind {
+    Func(..) =>
+      note_name(m.names.functions, self.func_index(decl.id, loc), decl.id.name)
+    Global(..) =>
+      note_name(m.names.globals, self.global_index(decl.id, loc), decl.id.name)
+    Memory(..) =>
+      note_name(m.names.memories, self.memory_index(decl.id, loc), decl.id.name)
+    Table(..) =>
+      note_name(m.names.tables, self.table_index(decl.id, loc), decl.id.name)
+    Tag(..) =>
+      note_name(m.names.tags, self.tag_index(decl.id, loc), decl.id.name)
+  }
   // An import may be re-exported, and then it is exported under the name THIS
   // module gave it rather than the one it was imported as.
   let export_desc : @wasm_bin.ExportDesc = match decl.kind {
