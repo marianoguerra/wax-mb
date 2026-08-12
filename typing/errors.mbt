@@ -503,3 +503,27 @@ pub fn descriptor_not_struct(
     .sep(@message.text("type must be a struct type.")),
   )
 }
+
+///|
+/// A declaration naming a type that is not a function type.
+pub fn expected_func_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(location, Error, @message.text("Expected function type."))
+}
+
+///|
+/// A declaration giving both a type name and an inline signature that disagree.
+pub fn inline_function_type_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "The inline function type does not match the type definition.",
+    ),
+  )
+}

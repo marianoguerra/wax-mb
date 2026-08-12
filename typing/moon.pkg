@@ -10,6 +10,7 @@ import {
   "waxmb/wax/infer",
   "waxmb/wax/number",
   "waxmb/wax/spell",
+  "waxmb/wax/cond",
   "moonbitlang/core/ref",
 }
 

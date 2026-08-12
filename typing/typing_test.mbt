@@ -2241,3 +2241,144 @@ test "descriptor clauses must be reciprocal, and in order" {
     content="A described type must be declared before its descriptor.",
   )
 }
+
+///|
+/// The declaration pass, end to end. What it has to get right is ORDER: types
+/// before functions, so a function's declared type resolves whether it was
+/// written above or below; and every name before any body, so a call to a
+/// function defined later resolves at all.
+test "every name is declared before any body is checked" {
+  let ctx = module_ctx()
+  let sig_ : @ast.FuncType = { params: [], results: [] }
+  let fields : @ast.Module[@basic.Location] = [
+    // `later` is defined below the type it names, and `t` below the function.
+    {
+      desc: Func(
+        name=id("later"),
+        typ=Some(id("t")),
+        sign=None,
+        body=(None, []),
+        attributes=[],
+      ),
+      info: loc_at(0, 1),
+    },
+    {
+      desc: Type([
+        {
+          desc: (
+            id("t"),
+            {
+              typ: Func(sig_),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(2, 3),
+        },
+      ]),
+      info: loc_at(2, 3),
+    },
+    {
+      desc: Tag(name=id("oops"), typ=None, sign=Some(sig_), attributes=[]),
+      info: loc_at(4, 5),
+    },
+    {
+      desc: Elem(
+        name=id("e"),
+        reftype={ nullable: true, typ: Func },
+        mode=EPassive,
+        init=[],
+        attributes=[],
+      ),
+      info: loc_at(6, 7),
+    },
+  ]
+  @typing.declare_fields(ctx, fields)
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // The function resolved against a type written after it.
+  inspect(
+    match ctx.functions.resolve("later", loc_at(20, 21)) {
+      Some(Some((_, n, _))) => n
+      Some(None) => "poisoned"
+      None => "unbound"
+    },
+    content="t",
+  )
+  inspect(ctx.tags.resolve("oops", loc_at(22, 23)) is Some(_), content="true")
+  inspect(ctx.elems.resolve("e", loc_at(24, 25)) is Some(_), content="true")
+}
+
+///|
+/// Memories are numbered across imported and defined ones alike, in the order
+/// they appear -- the index space is one space, not two.
+///
+/// And a name declared in one `#[if]` branch does not clash with the same name
+/// in the other, because no configuration has both.
+test "the declaration pass counts memories and honours branches" {
+  let ctx = module_ctx()
+  fn mem(
+    n : String,
+    at : Int,
+  ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+    {
+      desc: Memory(
+        name=id(n),
+        address_type=I32,
+        limits=None,
+        page_size_log2=None,
+        shared=false,
+        data=[],
+        attributes=[],
+      ),
+      info: loc_at(at, at + 1),
+    }
+  }
+
+  let imported : @basic.Annotated[
+    @ast.ModuleField[@basic.Location],
+    @basic.Location,
+  ] = {
+    desc: Import(module_={ desc: b"env", info: loc_at(0, 1) }, decl={
+      desc: {
+        id: id("first"),
+        kind: Memory(
+          address_type=I32,
+          limits=None,
+          page_size_log2=None,
+          shared=false,
+        ),
+        attributes: [],
+      },
+      info: loc_at(0, 1),
+    }),
+    info: loc_at(0, 1),
+  }
+  // Two memories of the same name, one per branch of a `#[if]`.
+  let branched : @basic.Annotated[
+    @ast.ModuleField[@basic.Location],
+    @basic.Location,
+  ] = {
+    desc: Conditional(
+      cond=Var({ desc: "debug", info: loc_at(8, 9) }),
+      then_fields={ desc: [mem("m", 10)], info: loc_at(10, 11) },
+      else_fields=Some({ desc: [mem("m", 12)], info: loc_at(12, 13) }),
+    ),
+    info: loc_at(8, 9),
+  }
+  @typing.declare_fields(ctx, [imported, mem("second", 4), branched])
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  fn index_of(n : String) -> Int {
+    match ctx.memories.resolve(n, loc_at(30, 31)) {
+      Some((i, _)) => i
+      None => -1
+    }
+  }
+
+  // The import is 0 and the defined one 1: one index space, in source order.
+  inspect(index_of("first"), content="0")
+  inspect(index_of("second"), content="1")
+  // Both branches declared `m`, and neither is a duplicate of the other.
+  inspect(ctx.memories.visible("m").length(), content="2")
+}

@@ -301,7 +301,7 @@ pub fn n_functype(
 
 ///|
 /// Report any parameter name used twice, at its second occurrence.
-fn check_unique_param_names(
+pub fn check_unique_param_names(
   diagnostics : @diagnostic.Context,
   params : Array[
     @basic.Annotated[
