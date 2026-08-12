@@ -726,6 +726,36 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Reading a table slot ---
+    ArrayGet(recv, index) if self.is_table_receiver(recv) => {
+      // `tab[i]` on a TABLE name is `table.get`, the mirror of the `table.set`
+      // that `a[i] = v` becomes. The table is a static immediate, so the
+      // receiver is never typed as a value.
+      guard recv.desc is Get(tabname) else { return self.poisoned(i) }
+      let (at, rt) = match ctx.tables.find_no_mark(tabname.name) {
+        Some(t) => t
+        None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
+      }
+      let index_ = self.statement(index)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        index.info,
+        expression_type(ctx, index_.info),
+        address_cell(at),
+      )
+      let ty = match internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) {
+        Some(c) => c
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      {
+        desc: ArrayGet(recv.map_info(_ => annotate([], recv.info)), index_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Reading an array element ---
     ArrayGet(recv, index) => {
       // Emission order: the array, then the index.

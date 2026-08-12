@@ -8098,3 +8098,51 @@ test "an instruction method pins the receiver it is called on" {
     content="any from number | This operation cannot be applied to a value of type 'number'.",
   )
 }
+
+///|
+/// `tab[i]` on a TABLE name is `table.get`, the mirror of the `table.set` that
+/// `tab[i] = v` becomes. The table is a static immediate, so its receiver is
+/// never typed as a value -- and a local of the same name shadows it, making
+/// the identical spelling an ordinary array read.
+test "an indexed read picks table or array by its receiver" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn read(shadowed : Bool) -> String {
+    let ctx = module_ctx()
+    ctx.tables.add(
+      ctx.diagnostics,
+      "t",
+      loc_at(0, 1),
+      (I32, { nullable: true, typ: Func }),
+    )
+    if shadowed {
+      @typing.bind_local(ctx, id("t"), Some(@infer.i32_valtype))
+    }
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(
+      instr(ArrayGet(instr(Get(id("t")), 20), instr(Int("0"), 30)), 10),
+    )
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // The read produces the table's ELEMENT type, and the table name resolves as
+  // a table rather than as an unbound variable.
+  inspect(read(false), content="&?func | ")
+  // Shadowed, the same spelling indexes a value -- which an i32 is not.
+  inspect(read(true), content="any | Expected array.")
+}
