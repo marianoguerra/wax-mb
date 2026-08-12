@@ -398,6 +398,65 @@ fn Lowering::hinted(
       }
       out.push(BrTable(targets, self.depth(labels[labels.length() - 1], loc)))
     }
+    ContNew(ct, f) => {
+      self.instr(out, f)
+      out.push(ContNew(self.type_index_of(ct, loc)))
+    }
+    ContBind(src, dst, args) => {
+      for a in args {
+        self.instr(out, a)
+      }
+      out.push(
+        ContBind(self.type_index_of(src, loc), self.type_index_of(dst, loc)),
+      )
+    }
+    Suspend(tag, args) => {
+      for a in args {
+        self.instr(out, a)
+      }
+      out.push(Suspend(self.tag_of(tag, loc)))
+    }
+    Resume(ct, handlers, args) => {
+      for a in args {
+        self.instr(out, a)
+      }
+      out.push(
+        Resume(self.type_index_of(ct, loc), self.on_clauses(handlers, loc)),
+      )
+    }
+    ResumeThrow(ct, tag, handlers, args) => {
+      for a in args {
+        self.instr(out, a)
+      }
+      out.push(
+        ResumeThrow(
+          self.type_index_of(ct, loc),
+          self.tag_of(tag, loc),
+          self.on_clauses(handlers, loc),
+        ),
+      )
+    }
+    ResumeThrowRef(ct, handlers, args) => {
+      for a in args {
+        self.instr(out, a)
+      }
+      out.push(
+        ResumeThrowRef(
+          self.type_index_of(ct, loc),
+          self.on_clauses(handlers, loc),
+        ),
+      )
+    }
+    Switch(ct, tag, args) => {
+      for a in args {
+        self.instr(out, a)
+      }
+      out.push(Switch(self.type_index_of(ct, loc), self.tag_of(tag, loc)))
+    }
+    // An `on` clause is the surface spelling that writes a resume's handlers
+    // outside the call; the handlers belong to the resume, which reads them
+    // from here.
+    On(inner, _) => self.instr(out, inner)
     Throw(tag, args) => {
       for a in args {
         self.instr(out, a)
@@ -417,6 +476,13 @@ fn Lowering::hinted(
       // no separate sign-extension to emit afterwards.
       if target is Signed(typ~, signage~, ..) &&
         self.fused_load(out, operand, typ, signage, loc) {
+        return
+      }
+      // A PACKED field or element reads the same way: the width is written on
+      // the declaration and the sign on the cast, and the binary has one
+      // instruction for the pair.
+      if target is Signed(signage~, ..) &&
+        self.fused_packed_read(out, operand, signage, loc) {
         return
       }
       self.instr(out, operand)
@@ -954,6 +1020,100 @@ fn utf16_units(b : Bytes, loc : @basic.Location) -> Array[Int] raise LowerError 
   let out : Array[Int] = []
   for k in 0..<text.length() {
     out.push(text[k].to_int())
+  }
+  out
+}
+
+///|
+/// Emit a packed field or element read fused with the sign cast that follows.
+///
+/// `true` when it applied. A packed slot stores fewer bits than it reads back
+/// as, so the read has to say how to fill the rest -- and wax writes that on the
+/// CAST rather than the access, exactly as it does for a narrow memory load.
+fn Lowering::fused_packed_read(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  operand : @ast.Instr[@typing_env.InferredAnnotation],
+  signage : @wasm_types.Signage,
+  loc : @basic.Location,
+) -> Bool raise LowerError {
+  match operand.desc {
+    ArrayGet(recv, index) => {
+      guard self.table_of(recv) is None else { return false }
+      let (t, f) = self.array_element_of(recv, loc)
+      guard is_packed(f) else { return false }
+      self.instr(out, recv)
+      self.instr(out, index)
+      out.push(if signage is Signed { ArrayGetS(t) } else { ArrayGetU(t) })
+      true
+    }
+    StructGet(recv, field) => {
+      let (t, declared) = self.struct_fields_of(recv, loc)
+      guard self.field_index(t, declared, field.name) is Some((k, f)) else {
+        return false
+      }
+      guard is_packed(f) else { return false }
+      self.instr(out, recv)
+      out.push(
+        if signage is Signed {
+          StructGetS(t, k)
+        } else {
+          StructGetU(t, k)
+        },
+      )
+      true
+    }
+    _ => false
+  }
+}
+
+///|
+/// A named type's index.
+fn Lowering::type_index_of(
+  self : Lowering,
+  name : @ast.Ident,
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  guard self.ctx.type_context.types.find_no_mark(name.name) is Some((idx, _)) else {
+    raise Unresolved("type name", loc)
+  }
+  match idx {
+    Def(id) => id.to_int_for_tests_only()
+    Rec(_) => raise Unresolved("rec-group type reference", loc)
+  }
+}
+
+///|
+/// A tag's index.
+fn Lowering::tag_of(
+  self : Lowering,
+  tag : @ast.Ident,
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  match self.indices.tags.get(tag.name) {
+    Some(i) => i
+    None => raise Unresolved("tag", loc)
+  }
+}
+
+///|
+/// A resume's handler clauses.
+///
+/// `on t -> 'l` sends a suspension to a label; `on t switch` lets the
+/// suspending side switch directly instead. They are two ways of answering the
+/// same question, so they share the clause list.
+fn Lowering::on_clauses(
+  self : Lowering,
+  handlers : Array[@ast.OnClause],
+  loc : @basic.Location,
+) -> Array[@wasm_bin.OnClause] raise LowerError {
+  let out : Array[@wasm_bin.OnClause] = []
+  for h in handlers {
+    match h {
+      OnLabel(tag, label) =>
+        out.push(OnLabel(self.tag_of(tag, loc), self.depth(label, loc)))
+      OnSwitch(tag) => out.push(OnSwitch(self.tag_of(tag, loc)))
+    }
   }
   out
 }
