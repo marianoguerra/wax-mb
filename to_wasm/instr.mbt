@@ -165,12 +165,76 @@ pub fn Lowering::instr(
         self.instr(out, a)
       }
       guard callee.desc is Get(name) else {
-        raise NotLowered("indirect or method call", loc)
+        // Named precisely, because these are three different jobs wearing one
+        // syntax and the burn-down needs to tell them apart.
+        raise NotLowered(
+          match callee.desc {
+            StructGet(_, meth) => "method '" + meth.name + "'"
+            Path(ns, meth) => "intrinsic '" + ns.name + "::" + meth.name + "'"
+            _ => "indirect call"
+          },
+          loc,
+        )
       }
       guard self.indices.funcs.get(name.name) is Some(f) else {
         raise Unresolved("call target", loc)
       }
       out.push(Call(f))
+    }
+    Cast(operand, target) => {
+      self.instr(out, operand)
+      guard node_valtype(operand) is Some(from) else {
+        raise Unresolved("cast operand type", loc)
+      }
+      match target {
+        Value(_) => {
+          guard node_valtype(i) is Some(to) else {
+            raise Unresolved("cast target type", loc)
+          }
+          match to {
+            // A reference target is a run-time check, not a conversion.
+            Ref(r) => out.push(RefCast(r))
+            _ => {
+              guard numeric_cast(from, to) is Some(instrs) else {
+                raise NotLowered("cast between these types", loc)
+              }
+              for x in instrs {
+                out.push(x)
+              }
+            }
+          }
+        }
+        Signed(typ~, signage~, strict~) => {
+          guard signed_cast(from, typ, signage, strict) is Some(instrs) else {
+            raise NotLowered("signed cast between these types", loc)
+          }
+          for x in instrs {
+            out.push(x)
+          }
+        }
+        Func(..) => raise NotLowered("function-type cast", loc)
+      }
+    }
+    Null =>
+      match node_valtype(i) {
+        Some(Ref(r)) => out.push(RefNull(r.typ))
+        // A bare `null` with no type is the bottom reference; the checker gives
+        // it one whenever the context pins one, so reaching here means it did
+        // not.
+        _ => raise Unresolved("null type", loc)
+      }
+    Select(cond, a, b) => {
+      self.instr(out, a)
+      self.instr(out, b)
+      self.instr(out, cond)
+      // A `select` over a REFERENCE needs its type written out: the untyped
+      // form only works where the value type is unambiguous, which a reference
+      // never is.
+      match node_valtype(i) {
+        Some(Ref(_) as ty) => out.push(SelectTyped([ty]))
+        Some(_) => out.push(Select)
+        None => raise Unresolved("select type", loc)
+      }
     }
     _ => raise NotLowered(construct_name(i.desc), loc)
   }
