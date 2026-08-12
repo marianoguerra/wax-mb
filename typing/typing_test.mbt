@@ -7459,3 +7459,176 @@ test "a resume handler receives a continuation of the rest" {
     content="Type mismatch in this stack switching instruction: this handler must take the tag's parameters followed by a continuation of the remaining result type. | 0",
   )
 }
+
+///|
+/// A `switch` hands control to another continuation without going through a
+/// handler. The switched-to continuation's LAST parameter must itself be a
+/// continuation -- that is the slot the current one is passed in, so the other
+/// side can switch back -- and what the instruction produces is that inner
+/// continuation's parameters.
+test "a switch passes the current continuation in the last slot" {
+  fn functype(
+    n : String,
+    ps : Array[@wasm_types.ValType[@ast.Ident]],
+    rs : Array[@wasm_types.ValType[@ast.Ident]],
+    at : Int,
+  ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+    {
+      desc: Type([
+        {
+          desc: (
+            id(n),
+            {
+              typ: Func({
+                params: ps.map(p => {
+                  (
+                    { desc: (None, p), info: loc_at(at, at + 1) } :
+                    @basic.Annotated[
+                      (@ast.Ident?, @wasm_types.ValType[@ast.Ident]),
+                      @basic.Location,
+                    ])
+                }),
+                results: rs,
+              }),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(at, at + 1),
+        },
+      ]),
+      info: loc_at(at, at + 1),
+    }
+  }
+
+  fn conttype(
+    n : String,
+    inner : String,
+    at : Int,
+  ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+    {
+      desc: Type([
+        {
+          desc: (
+            id(n),
+            {
+              typ: Cont(id(inner)),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(at, at + 1),
+        },
+      ]),
+      info: loc_at(at, at + 1),
+    }
+  }
+
+  // `back` is a continuation taking an i32; `fwd` takes one of those, so a
+  // switch to it hands over the current continuation and comes back with i32.
+  fn run(
+    last_is_cont : Bool,
+    tag_results : Array[@wasm_types.ValType[@ast.Ident]],
+  ) -> String {
+    let ctx = module_ctx()
+    let last : @wasm_types.ValType[@ast.Ident] = if last_is_cont {
+      Ref({ nullable: true, typ: Type(id("back")) })
+    } else {
+      I32
+    }
+    let module_ : @ast.Module[@basic.Location] = [
+      functype("bf", [I32], [], 0),
+      conttype("back", "bf", 2),
+      functype("ff", [last], [], 4),
+      conttype("fwd", "ff", 6),
+    ]
+    @typing.declare_fields(ctx, module_)
+    ctx.tags.add(ctx.diagnostics, "sw", loc_at(8, 10), {
+      params: [],
+      results: tag_results,
+    })
+    @typing.bind_local(
+      ctx,
+      id("k"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: true, typ: Type(id("fwd")) }),
+      ),
+    )
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement({
+      desc: Switch(id("fwd"), id("sw"), [
+        {
+          desc: Get(id("k")),
+          info: loc_at(30, 31),
+          hints: { branch: None, freq: None, targets: None },
+          expected: None,
+        },
+      ]),
+      info: loc_at(10, 11),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    })
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  // The switch produces what the inner continuation takes: an i32.
+  inspect(run(true, []), content="i32 |  | 0")
+  // A last parameter that is not a continuation has no slot to switch through.
+  inspect(
+    run(false, []),
+    content=" | Type mismatch in this stack switching instruction: the continuation's last parameter must itself be a continuation type. | 0",
+  )
+  // A switch tag carries no VALUES -- it names the switch -- and its results
+  // must agree with both continuations. Here they agree with neither.
+  inspect(
+    run(true, [F64]),
+    content="i32 | Type mismatch in this stack switching instruction: the 'switch' tag must take no parameters and its results must match the two continuation types. | 0",
+  )
+}
+
+///|
+/// An `on` clause is the surface spelling that writes a resume's handlers
+/// outside the call. It belongs to a resume and nothing else.
+test "an on clause belongs to a resume" {
+  fn run(inner : @ast.InstrDesc[@basic.Location]) -> String {
+    let ctx = module_ctx()
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement({
+      desc: On(
+        {
+          desc: inner,
+          info: loc_at(20, 21),
+          hints: { branch: None, freq: None, targets: None },
+          expected: None,
+        },
+        [],
+      ),
+      info: loc_at(10, 11),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    })
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // Attached to something that is not a resume at all.
+  inspect(
+    run(Nop),
+    content="An 'on' handler clause is only allowed on a 'resume', 'resume_throw' or 'resume_throw_ref' call.",
+  )
+}

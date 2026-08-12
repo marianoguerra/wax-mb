@@ -339,6 +339,8 @@ pub fn not_assignable(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn not_defaultable(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn on_clause_context(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn operand_count_mismatch(@diagnostic.Context, @basic.Location, expected~ : Int, provided~ : Int) -> Unit
 
 pub fn parameterized_block_expression(@diagnostic.Context, @basic.Location) -> Unit

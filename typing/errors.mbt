@@ -1276,3 +1276,23 @@ pub fn stack_switching_type_mismatch(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// An `on` clause attached to something other than a resume.
+pub fn on_clause_context(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("An")
+    .sep(@message.code("on"))
+    .sep(@message.text("handler clause is only allowed on a"))
+    .sep(@message.code("resume").seq(@message.text(",")))
+    .sep(@message.code("resume_throw"))
+    .sep(@message.text("or"))
+    .sep(@message.code("resume_throw_ref"))
+    .sep(@message.text("call.")),
+  )
+}

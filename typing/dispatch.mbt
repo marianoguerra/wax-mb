@@ -1918,6 +1918,40 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Switching directly to another continuation ---
+    Switch(ct, tag, args) => {
+      let checked = args.map(a => self.statement(a))
+      let results = self.type_switch(loc, ct, tag, checked)
+      {
+        desc: Switch(ct, tag, checked),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Handlers attached to a resume ---
+    On(inner, handlers) => {
+      // The surface spelling `c.resume(x) on (...)`, where the handlers are
+      // written outside the call. They belong to the resume, so the only thing
+      // to check here is that there IS one.
+      if !(inner.desc is Resume(_, _, _)) &&
+        !(inner.desc is ResumeThrow(_, _, _, _)) &&
+        !(inner.desc is ResumeThrowRef(_, _, _)) &&
+        !self.is_resume_call(inner) {
+        on_clause_context(ctx.diagnostics, loc)
+      }
+      // Recover by typing the wrapped expression and carrying its result: the
+      // handlers being misplaced says nothing about what it computes.
+      let inner_ = self.statement(inner)
+      {
+        desc: On(inner_, handlers),
+        info: annotate(inner_.info.0, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -3895,4 +3929,139 @@ fn Checker::type_resume(
     }
   }
   out
+}
+
+///|
+/// Type a `switch`: hand control to another continuation without going through
+/// a handler.
+///
+/// The switched-to continuation's LAST parameter must itself be a continuation
+/// -- that is the slot the current one is passed in, so the other side can
+/// switch back. What this instruction produces is that inner continuation's
+/// parameters: the values that will arrive when it does.
+fn Checker::type_switch(
+  self : Checker,
+  location : @basic.Location,
+  ct : @ast.Ident,
+  tag : @ast.Ident,
+  checked : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+) -> Array[@infer.Cell[@infer.InferredType]] {
+  let ctx = self.ctx
+  guard lookup_cont_inner(ctx.type_context, ctx.diagnostics, ct) is Some(inner) else {
+    return []
+  }
+  guard lookup_func_type(ctx.type_context, ctx.diagnostics, inner) is Some(sg) else {
+    return []
+  }
+  let tag_sig = find(ctx.tags, ctx.diagnostics, tag)
+  let np = sg.params.length()
+  if np >= 1 {
+    // Everything but that last slot goes on the stack, then the continuation.
+    let want : Array[@infer.Cell[@infer.InferredType]] = []
+    for k in 0..<(np - 1) {
+      if internalize(ctx.type_context, ctx.diagnostics, sg.params[k].desc.1)
+        is Some(c) {
+        want.push(c)
+      }
+    }
+    if internalize(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: true, typ: Type(ct) }),
+      )
+      is Some(c) {
+      want.push(c)
+    }
+    check_operands(
+      ctx.type_context.subtyping_info(),
+      ctx.diagnostics,
+      location,
+      checked.map(c => (c.info.0, c.info.1)),
+      want,
+    )
+  }
+  // The last parameter must itself be a continuation type.
+  let inner_sg = if np == 0 {
+    None
+  } else {
+    match sg.params[np - 1].desc.1 {
+      Ref({ typ: Type(ct2) | Exact(ct2), .. }) =>
+        match lookup_cont_inner(ctx.type_context, ctx.diagnostics, ct2) {
+          Some(i2) => lookup_func_type(ctx.type_context, ctx.diagnostics, i2)
+          None => None
+        }
+      _ => None
+    }
+  }
+  fn results_match(
+    a : Array[@wasm_types.ValType[@ast.Ident]],
+    b : Array[@wasm_types.ValType[@ast.Ident]],
+  ) -> Bool {
+    guard a.length() == b.length() else { return false }
+    let info = ctx.type_context.subtyping_info()
+    for k in 0..<a.length() {
+      let x = internalize_valtype(ctx.type_context, ctx.diagnostics, a[k])
+      let y = internalize_valtype(ctx.type_context, ctx.diagnostics, b[k])
+      // Either failing to resolve was reported; do not add a second complaint
+      // about a comparison that cannot be made.
+      if x is Some(x) && y is Some(y) {
+        if !@type_store.val_subtype(info, x.internal, y.internal) {
+          return false
+        }
+      }
+    }
+    true
+  }
+
+  match inner_sg {
+    None =>
+      stack_switching_type_mismatch(
+        ctx.diagnostics,
+        location,
+        "the continuation's last parameter must itself be a continuation type",
+      )
+    Some(inner2) =>
+      // A `switch` tag carries no values -- it names the switch, it does not
+      // pass anything -- and its results have to agree with BOTH continuations,
+      // since they are what flows across the exchange.
+      if tag_sig is Some(ts) {
+        if !ts.params.is_empty() ||
+          !results_match(sg.results, ts.results) ||
+          !results_match(ts.results, inner2.results) {
+          stack_switching_type_mismatch(
+            ctx.diagnostics,
+            location,
+            "the 'switch' tag must take no parameters and its results must match the two continuation types",
+          )
+        }
+      }
+  }
+  let out : Array[@infer.Cell[@infer.InferredType]] = []
+  if inner_sg is Some(s2) {
+    for p in s2.params {
+      if internalize(ctx.type_context, ctx.diagnostics, p.desc.1) is Some(c) {
+        out.push(c)
+      }
+    }
+  }
+  out
+}
+
+///|
+/// Whether an instruction is a resume written in method form.
+///
+/// The surface spells the handlers outside the call -- `c.resume(x) on (..)` --
+/// so this is what an `on` clause is allowed to wrap, alongside the dedicated
+/// nodes a decompiled module carries.
+fn Checker::is_resume_call(
+  self : Checker,
+  inner : @ast.Instr[@basic.Location],
+) -> Bool {
+  ignore(self)
+  guard inner.desc is Call(callee, _) else { return false }
+  guard callee.desc is StructGet(_, meth) else { return false }
+  match meth.name {
+    "resume" | "resume_throw" | "resume_throw_ref" => true
+    _ => false
+  }
 }
