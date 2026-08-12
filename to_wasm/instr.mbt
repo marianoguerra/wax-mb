@@ -133,16 +133,26 @@ fn Lowering::hinted(
         // `-x` is `0 - x` for an integer and a real instruction for a float.
         Neg =>
           match node_valtype(i) {
-            Some(I32) => {
-              out.push(I32Const(0))
-              self.instr(out, a)
-              out.push(I32Sub)
-            }
-            Some(I64) => {
-              out.push(I64Const(0))
-              self.instr(out, a)
-              out.push(I64Sub)
-            }
+            // A negated LITERAL folds into the constant, exactly as the code
+            // generator folds it -- `-40` is one instruction, not a subtraction
+            // from zero. Only a bare literal folds; `--x` is a real
+            // subtraction, and the checker has already told them apart.
+            Some(I32) =>
+              if a.desc is Int(s) {
+                out.push(I32Const(-parse_i64(s, loc).to_int()))
+              } else {
+                out.push(I32Const(0))
+                self.instr(out, a)
+                out.push(I32Sub)
+              }
+            Some(I64) =>
+              if a.desc is Int(s) {
+                out.push(I64Const(-parse_i64(s, loc)))
+              } else {
+                out.push(I64Const(0))
+                self.instr(out, a)
+                out.push(I64Sub)
+              }
             Some(F32) => {
               self.instr(out, a)
               out.push(F32Neg)

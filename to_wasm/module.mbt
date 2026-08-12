@@ -110,7 +110,14 @@ fn Lowering::field(
       if !self.label_names.is_empty() {
         m.names.labels[fi] = self.label_names
       }
-      self.export_of(m, attributes, Func(self.func_index(name, loc)), name)
+      self.export_of(m, attributes, Func(fi), name)
+      // `#[start]` names the function that runs at instantiation. A module has
+      // at most one, which the attribute pass has already checked.
+      for a in attributes {
+        if a.attr_name == "start" {
+          m.start = Some(fi)
+        }
+      }
     }
     Global(name~, mut_~, def~, attributes~, ..) => {
       guard node_valtype(def) is Some(ty) else {
@@ -281,7 +288,13 @@ fn Lowering::collect_locals(
     i : @ast.Instr[@typing_env.InferredAnnotation],
   ) -> Unit raise LowerError {
     if i.desc is Let(bindings, init) {
-      for k, b in bindings {
+      // Numbered in the order the `local.set`s HAPPEN, which is right to left:
+      // the values are on the stack with the last on top, so the last binding
+      // is written first and takes the lower slot. Numbering them as written
+      // would name the same locals in the other order.
+      for j in 0..<bindings.length() {
+        let k = bindings.length() - 1 - j
+        let b = bindings[k]
         guard b.0 is Some(name) else { continue }
         // The slot's type: the WRITTEN annotation when there is one -- a bare
         // `let p: &point;` declares a local with no initializer at all, and
