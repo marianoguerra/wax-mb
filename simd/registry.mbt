@@ -354,10 +354,10 @@ fn build_table() -> Map[String, Intrinsic] {
   add("trunc_sat_f32x4_u_i32x4", [TV128], Some(TV128), NoImm, false, _ => {
     I32x4TruncSatF32x4U
   })
-  add("trunc_sat_f64x2_s_zero_i32x4", [TV128], Some(TV128), NoImm, false, _ => {
+  add("trunc_sat_f64x2_s_i32x4", [TV128], Some(TV128), NoImm, false, _ => {
     I32x4TruncSatF64x2SZero
   })
-  add("trunc_sat_f64x2_u_zero_i32x4", [TV128], Some(TV128), NoImm, false, _ => {
+  add("trunc_sat_f64x2_u_i32x4", [TV128], Some(TV128), NoImm, false, _ => {
     I32x4TruncSatF64x2UZero
   })
   add("abs_i64x2", [TV128], Some(TV128), NoImm, false, _ => I64x2Abs)

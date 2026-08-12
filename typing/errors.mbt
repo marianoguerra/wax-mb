@@ -1489,3 +1489,21 @@ pub fn module_name_in_conditional(
     ),
   )
 }
+
+///|
+/// A `become` on something that is not a call.
+///
+/// A stack-switching operation hands control away by its own means; a tail call
+/// is a different mechanism and cannot wrap one.
+pub fn become_on_stack_switching(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.code("become").sep(
+      @message.text("cannot apply to a stack-switching operation."),
+    ),
+  )
+}

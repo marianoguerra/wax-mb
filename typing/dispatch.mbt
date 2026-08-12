@@ -1699,7 +1699,7 @@ pub fn Checker::statement(
     }
 
     // --- An array bulk method: `a.fill(..)`, `a.copy(..)`, `a.init(..)` ---
-    Call(callee, args) if self.array_bulk_method(callee) is Some(_) => {
+    Call(callee, args) if self.array_bulk_method(callee, args) is Some(_) => {
       guard callee.desc is StructGet(recv, meth) else {
         return self.poisoned(i)
       }
@@ -1733,16 +1733,25 @@ pub fn Checker::statement(
       }
     }
     TailCall(callee, args) => {
-      // Typed exactly as the call it is, then re-tagged -- so `become f(x)` is
-      // accepted wherever `f(x)` is, with one extra demand: the callee's
-      // results must satisfy THIS function's, since its return is what the
-      // caller will see.
-      let (callee_, args_, results) = self.call(loc, callee, args)
+      // Typed exactly as the call it is -- through the WHOLE call dispatch, so
+      // `become mem.grow(n)` and `become x.min(y)` are accepted wherever the
+      // plain forms are -- and then re-tagged, with one extra demand: the
+      // callee's results must satisfy THIS function's, since its return is what
+      // the caller will see.
+      let typed = self.statement({ ..i, desc: Call(callee, args) })
+      guard typed.desc is Call(callee_, args_) else {
+        // It type-checked but is not a call: a stack-switching operation, which
+        // hands control away by its own means and cannot be tail-called.
+        // Reported rather than silently dropping the `become` -- which would
+        // also skip the return-type check -- and recovered with the operation.
+        become_on_stack_switching(ctx.diagnostics, loc)
+        return typed
+      }
       check_subtypes(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
         loc,
-        results,
+        typed.info.0,
         ctx.return_types,
       )
       // A tail call does not return here, so nothing follows it.

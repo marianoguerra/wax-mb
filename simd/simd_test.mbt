@@ -216,6 +216,16 @@ test "signatures follow the family" {
     content="(v128 i64) -> v128 lane<i64x2>",
   )
   inspect(shape_of("shuffle_i8x16"), content="(v128 v128) -> v128 shuffle")
+  // `_zero` belongs to the WAT spelling of the f64x2 saturating truncate, not
+  // to its wax method name -- the RELAXED one carries it in both, and the two
+  // are easy to write alike and wrong.
+  inspect(shape_of("trunc_sat_f64x2_s_i32x4"), content="(v128) -> v128")
+  inspect(shape_of("trunc_sat_f64x2_s_zero_i32x4"), content="none")
+  inspect(
+    shape_of("relaxed_trunc_f64x2_s_zero_i32x4"),
+    content="(v128) -> v128",
+  )
+  inspect(shape_of("relaxed_trunc_f64x2_s_i32x4"), content="none")
 }
 
 ///|

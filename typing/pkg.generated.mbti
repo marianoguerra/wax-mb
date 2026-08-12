@@ -27,6 +27,8 @@ pub fn atomic_alignment(@diagnostic.Context, @basic.Location, Int) -> Unit
 
 pub fn bad_memory_align(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn become_on_stack_switching(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn bind_local(@typing_env.ModuleContext, @ast.Ident, @infer.InferredValType?) -> Unit
 
 pub fn binop_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit

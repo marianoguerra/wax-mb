@@ -292,15 +292,28 @@ fn cont_receiver_type(
 ///|
 /// The array bulk methods, which take the array as their receiver.
 ///
-/// Gated on an ARRAY receiver, so a struct with a field of one of these names
-/// stays an indirect call -- the same disambiguation the scalar intrinsics make,
-/// by the same means.
+/// At its exact arity the method is recognised whatever the receiver looks like:
+/// the receiver is an EXPRESSION -- `(a as &float_array).fill(..)`,
+/// `stack.v2.copy(..)`, a `br_on_cast_fail` -- and its type is not known until
+/// it has been typed, which is after this guard runs. The arity is what
+/// identifies the call, and the receiver's type is then checked properly by
+/// `element_written`.
+///
+/// At the WRONG arity there is nothing to identify it by, so that case is gated
+/// on a receiver whose type is visibly an array. It exists for the empty
+/// `a.fill()` an auto-closed call leaves; a struct with a field of the same name
+/// stays an indirect call.
 fn Checker::array_bulk_method(
   self : Checker,
   callee : @ast.Instr[@basic.Location],
+  args : Array[@ast.Instr[@basic.Location]],
 ) -> String? {
   guard callee.desc is StructGet(recv, meth) else { return None }
   guard meth.name is ("fill" | "copy" | "init") else { return None }
+  let arity = if meth.name == "fill" { 3 } else { 4 }
+  if args.length() == arity {
+    return Some(meth.name)
+  }
   guard receiver_is_array_ref(self.ctx, recv) else { return None }
   Some(meth.name)
 }
