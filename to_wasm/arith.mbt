@@ -125,3 +125,71 @@ fn f64_binop(op : @ast.BinOp) -> @wasm_bin.Instruction? {
     _ => None
   }
 }
+
+///|
+/// The instruction a no-argument method becomes at its receiver's type.
+///
+/// The METHOD fixes the family and the RECEIVER fixes the width -- `clz` is one
+/// name over `i32.clz` and `i64.clz`, and only the receiver's type says which.
+pub fn unary_instruction(
+  meth : String,
+  recv : @wasm_types.ValType[Int]?,
+) -> @wasm_bin.Instruction? {
+  guard recv is Some(ty) else { return None }
+  match (meth, ty) {
+    ("clz", I32) => Some(I32Clz)
+    ("clz", I64) => Some(I64Clz)
+    ("ctz", I32) => Some(I32Ctz)
+    ("ctz", I64) => Some(I64Ctz)
+    ("popcnt", I32) => Some(I32Popcnt)
+    ("popcnt", I64) => Some(I64Popcnt)
+    ("extend8_s", I32) => Some(I32Extend8S)
+    ("extend8_s", I64) => Some(I64Extend8S)
+    ("extend16_s", I32) => Some(I32Extend16S)
+    ("extend16_s", I64) => Some(I64Extend16S)
+    ("extend32_s", I64) => Some(I64Extend32S)
+    ("abs", F32) => Some(F32Abs)
+    ("abs", F64) => Some(F64Abs)
+    ("neg", F32) => Some(F32Neg)
+    ("neg", F64) => Some(F64Neg)
+    ("ceil", F32) => Some(F32Ceil)
+    ("ceil", F64) => Some(F64Ceil)
+    ("floor", F32) => Some(F32Floor)
+    ("floor", F64) => Some(F64Floor)
+    ("trunc", F32) => Some(F32Trunc)
+    ("trunc", F64) => Some(F64Trunc)
+    ("nearest", F32) => Some(F32Nearest)
+    ("nearest", F64) => Some(F64Nearest)
+    ("sqrt", F32) => Some(F32Sqrt)
+    ("sqrt", F64) => Some(F64Sqrt)
+    // The reinterprets change family without changing bits, so the receiver
+    // decides the direction as well as the width.
+    ("to_bits", F32) => Some(I32ReinterpretF32)
+    ("to_bits", F64) => Some(I64ReinterpretF64)
+    ("from_bits", I32) => Some(F32ReinterpretI32)
+    ("from_bits", I64) => Some(F64ReinterpretI64)
+    _ => None
+  }
+}
+
+///|
+/// The instruction a two-operand scalar method becomes.
+pub fn binary_intrinsic(
+  meth : String,
+  recv : @wasm_types.ValType[Int]?,
+) -> @wasm_bin.Instruction? {
+  guard recv is Some(ty) else { return None }
+  match (meth, ty) {
+    ("rotl", I32) => Some(I32Rotl)
+    ("rotl", I64) => Some(I64Rotl)
+    ("rotr", I32) => Some(I32Rotr)
+    ("rotr", I64) => Some(I64Rotr)
+    ("min", F32) => Some(F32Min)
+    ("min", F64) => Some(F64Min)
+    ("max", F32) => Some(F32Max)
+    ("max", F64) => Some(F64Max)
+    ("copysign", F32) => Some(F32Copysign)
+    ("copysign", F64) => Some(F64Copysign)
+    _ => None
+  }
+}

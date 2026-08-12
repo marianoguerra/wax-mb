@@ -260,6 +260,30 @@ fn Lowering::hinted(
           }
         }
       }
+      // The no-argument instruction methods: `x.clz()`, `arr.length()`. Their
+      // opcode comes from the RECEIVER's type, which is the only thing that
+      // distinguishes `i32.clz` from `i64.clz`.
+      if callee.desc is StructGet(recv, meth) && args.is_empty() {
+        if unary_instruction(meth.name, node_valtype(recv)) is Some(op) {
+          self.instr(out, recv)
+          out.push(op)
+          return
+        }
+        if meth.name == "length" && node_type_index(recv) is Some(_) {
+          self.instr(out, recv)
+          out.push(ArrayLen)
+          return
+        }
+      }
+      // A scalar binary intrinsic: `x.min(y)`, `x.rotl(n)`.
+      if callee.desc is StructGet(recv, meth) && args.length() == 1 {
+        if binary_intrinsic(meth.name, node_valtype(recv)) is Some(op) {
+          self.instr(out, recv)
+          self.instr(out, args[0])
+          out.push(op)
+          return
+        }
+      }
       // Memory and table management: the same five names on both, told apart
       // by which space the receiver is in -- `size` on a memory counts pages
       // and on a table counts elements.
