@@ -7055,3 +7055,88 @@ test "a simd memory access needs its lane immediate" {
     content="v128 | This expression has type 'number' but is expected to have type 'v128'. / The lane index should be less than 2. | 0",
   )
 }
+
+///|
+/// A SIMD operation on a value is identified by its NAME alone -- the names
+/// carry their shape, so `add_i32x4` cannot be confused with anything. The
+/// receiver is the operation's FIRST operand, and the leading immediates are
+/// static: not pushed, never holes.
+test "a simd operation takes its receiver as its first operand" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn op(
+    recv : @ast.InstrDesc[@basic.Location],
+    meth : String,
+    args : Array[@ast.Instr[@basic.Location]],
+  ) -> String {
+    let ctx = module_ctx()
+    @typing.bind_local(
+      ctx,
+      id("v"),
+      Some({ typ: V128, internal: V128, anon_comptype: None }),
+    )
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(
+      instr(
+        Call(
+          instr(
+            StructGet(instr(recv, 20), { name: meth, loc: loc_at(24, 36) }),
+            20,
+          ),
+          args,
+        ),
+        10,
+      ),
+    )
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  let v = @ast.InstrDesc::Get(id("v"))
+  // A lane-wise add takes a second vector and produces one.
+  inspect(op(v, "add_i32x4", [instr(v, 30)]), content="v128 |  | 0")
+  // Extracting a lane produces the SCALAR the shape names, and its lane
+  // immediate is bounded by the shape: `i32x4` has four.
+  inspect(
+    op(v, "extract_lane_i32x4", [instr(Int("3"), 30)]),
+    content="i32 |  | 0",
+  )
+  inspect(
+    op(v, "extract_lane_i32x4", [instr(Int("4"), 30)]),
+    content="i32 | The lane index should be less than 4. | 0",
+  )
+  // A byte shape has sixteen, so the same index is fine there.
+  inspect(
+    op(v, "extract_lane_s_i8x16", [instr(Int("4"), 30)]),
+    content="i32 |  | 0",
+  )
+  // A splat's receiver is the SCALAR, not a vector.
+  inspect(op(Int("1"), "splat_i32x4", []), content="v128 |  | 0")
+  // A receiver of the wrong type poisons the result, so a chained operation
+  // does not report the same mismatch twice at the same span.
+  inspect(
+    op(Float("1.5"), "add_i32x4", [instr(v, 30)]),
+    content="any | This expression has type 'float' but is expected to have type 'v128'. | 0",
+  )
+  // Too few operands is reported against the call.
+  inspect(
+    op(v, "add_i32x4", []),
+    content="v128 | This instruction expects 1 operand(s) but 0 was/were provided. | 0",
+  )
+}

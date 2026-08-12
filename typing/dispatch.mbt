@@ -1645,6 +1645,35 @@ pub fn Checker::statement(
         expected: i.expected,
       }
     }
+    // --- A SIMD operation written on a value: `x.add_i32x4(y)` ---
+    Call(callee, args) if self.simd_vector_op(callee) is Some(_) => {
+      guard callee.desc is StructGet(recv, meth) else {
+        return self.poisoned(i)
+      }
+      guard self.simd_vector_op(callee) is Some(op) else {
+        return self.poisoned(i)
+      }
+      let (recv_, checked_args, results) = self.simd_vector_call(
+        callee.info,
+        recv,
+        op,
+        args,
+      )
+      {
+        desc: Call(
+          {
+            desc: StructGet(recv_, meth),
+            info: annotate([], callee.info),
+            hints: callee.hints,
+            expected: callee.expected,
+          },
+          checked_args,
+        ),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
     Call(callee, args) if self.simd_mem_intrinsic(callee) is Some(_) => {
       guard callee.desc is StructGet(recv, meth) else {
         return self.poisoned(i)
@@ -3421,4 +3450,105 @@ fn Checker::simd_mem_access(
     None => []
   }
   (checked, results)
+}
+
+///|
+/// The SIMD operation a `recv.meth(..)` call names, if any.
+///
+/// Unlike the memory intrinsics this needs no receiver check: the operation is
+/// identified by its NAME alone, since the names carry their shape
+/// (`add_i32x4`) and cannot collide with anything else.
+fn Checker::simd_vector_op(
+  self : Checker,
+  callee : @ast.Instr[@basic.Location],
+) -> @simd.Intrinsic? {
+  ignore(self)
+  guard callee.desc is StructGet(_, meth) else { return None }
+  match @simd.classify(meth.name) {
+    Some(op) if !op.free => Some(op)
+    _ => None
+  }
+}
+
+///|
+/// Type a SIMD operation on a value.
+///
+/// Emission order is the receiver, then the trailing stack operands. The
+/// LEADING immediates are static -- not pushed, never holes -- so they sit
+/// between the two and are typed plainly.
+fn Checker::simd_vector_call(
+  self : Checker,
+  location : @basic.Location,
+  recv : @ast.Instr[@basic.Location],
+  op : @simd.Intrinsic,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> (
+  @ast.Instr[@typing_env.InferredAnnotation],
+  Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  Array[@infer.Cell[@infer.InferredType]],
+) {
+  let ctx = self.ctx
+  let nimm = match op.imm {
+    NoImm => 0
+    Lane(_) => 1
+    Shuffle => 16
+  }
+  let recv_ = self.statement(recv)
+  let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  for a in args {
+    checked.push(self.statement(a))
+  }
+  let nstack_extra = op.operands.length() - 1
+  if args.length() != nimm + nstack_extra {
+    operand_count_mismatch(
+      ctx.diagnostics,
+      location,
+      expected=nimm + nstack_extra,
+      provided=args.length(),
+    )
+  }
+  // The receiver is the operation's FIRST operand.
+  let recv_ty = expression_type(ctx, recv_.info)
+  let recv_expected = simd_cell(op.operands[0])
+  let recv_ok = subtype(
+    ctx.type_context.subtyping_info(),
+    recv_ty,
+    recv_expected,
+  )
+  if !recv_ok {
+    expression_type_mismatch(ctx.diagnostics, recv.info, recv_ty, recv_expected)
+  }
+  // A chained lane operation anchors each receiver mismatch at the shared
+  // leftmost operand, so without poisoning the inner receiver and the outer
+  // one -- the inner call's result -- would report an identical error at one
+  // location.
+  let poisoned = !recv_ok || recv_ty.get() is Error
+  let bound = lane_bound(op.imm)
+  for k, a in args {
+    if k < nimm {
+      if bound is Some(b) {
+        check_lane_immediate(ctx.diagnostics, b, { desc: a.desc, info: a.info })
+      }
+    } else {
+      let operand = 1 + (k - nimm)
+      if operand < op.operands.length() {
+        check_subtype(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          a.info,
+          expression_type(ctx, checked[k].info),
+          simd_cell(op.operands[operand]),
+        )
+      }
+    }
+  }
+  let results = if poisoned {
+    [@infer.Cell::make(@infer.InferredType::Error)]
+  } else {
+    match op.result {
+      Some(t) => [simd_cell(t)]
+      None => []
+    }
+  }
+  (recv_, checked, results)
 }
