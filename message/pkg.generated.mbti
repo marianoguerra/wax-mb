@@ -57,4 +57,3 @@ pub fn Message::seq(Self, Self) -> Self
 // Type aliases
 
 // Traits
-

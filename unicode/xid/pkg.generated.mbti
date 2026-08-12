@@ -13,4 +13,3 @@ pub fn is_xid_start(Int) -> Bool
 // Type aliases
 
 // Traits
-

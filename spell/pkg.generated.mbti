@@ -15,4 +15,3 @@ pub fn suggest(Iter[String], String, max_distance? : (String) -> Int) -> Array[S
 // Type aliases
 
 // Traits
-

@@ -152,4 +152,3 @@ pub(all) enum RawStmt {
 pub type LocatedFields = @basic.Annotated[Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @basic.Location]
 
 // Traits
-

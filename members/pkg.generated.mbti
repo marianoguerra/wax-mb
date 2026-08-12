@@ -54,4 +54,3 @@ pub type FieldType = @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]
 pub type StructFields = Array[@basic.Annotated[(@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]), @basic.Location]]
 
 // Traits
-

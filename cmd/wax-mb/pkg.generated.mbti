@@ -46,4 +46,3 @@ pub fn Status::code(Self) -> Int
 // Type aliases
 
 // Traits
-

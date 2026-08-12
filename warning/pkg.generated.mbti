@@ -61,4 +61,3 @@ pub fn Warning::name(Self) -> String
 // Type aliases
 
 // Traits
-

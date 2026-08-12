@@ -310,4 +310,3 @@ pub type StorageType = @wasm_types.StorageType[Ident]
 pub type ValType = @wasm_types.ValType[Ident]
 
 // Traits
-

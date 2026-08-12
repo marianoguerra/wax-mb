@@ -11,4 +11,3 @@ pub fn get_width(Int) -> Int
 // Type aliases
 
 // Traits
-

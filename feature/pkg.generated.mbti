@@ -44,4 +44,3 @@ pub fn Set::used_features(Self) -> Array[Feature]
 // Type aliases
 
 // Traits
-

@@ -85,4 +85,3 @@ pub fn Severity::to_str(Self) -> String
 // Type aliases
 
 // Traits
-

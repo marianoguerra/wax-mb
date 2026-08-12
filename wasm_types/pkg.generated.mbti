@@ -118,4 +118,3 @@ pub type FieldType[Idx] = MutType[StorageType[Idx]]
 pub type GlobalType[Idx] = MutType[ValType[Idx]]
 
 // Traits
-

@@ -80,4 +80,3 @@ pub fn Theme::escape_sequence(Self, Style) -> String
 // Type aliases
 
 // Traits
-
