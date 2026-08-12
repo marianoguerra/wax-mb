@@ -72,3 +72,55 @@ pub fn Lowering::module_name(
     }
   }
 }
+
+///|
+/// The `target_features` custom section: one `+name` entry per declared
+/// feature.
+///
+/// A `#![feature = "..."]` is a fact about the module that the binary format
+/// has no other place for, so it survives as tool-conventions metadata. `+`
+/// means "used"; the reference emits nothing else, and a repeated declaration
+/// is idempotent rather than duplicated.
+pub fn Lowering::target_features(
+  self : Lowering,
+  m : @wasm_bin.Module,
+  fields : @ast.Module[@basic.Location],
+) -> Unit {
+  ignore(self)
+  for field in fields {
+    guard field.desc is ModuleAnnotation(attrs) else { continue }
+    for a in attrs {
+      guard a.attr_name == "feature" else { continue }
+      guard a.attr_value is Some(v) else { continue }
+      guard v.desc is Str(_, name) else { continue }
+      let entry = (43, name)
+      if !m.target_features.contains(entry) {
+        m.target_features.push(entry)
+      }
+    }
+  }
+}
+
+///|
+/// A function's compilation priority, if it declared one.
+///
+/// `#[priority]` orders compilation and `#[optimization]` sets the effort; the
+/// second is meaningless without the first, which is why they are one record
+/// rather than two.
+pub fn function_priority(
+  attributes : Array[@ast.Attribute],
+) -> @wasm_bin.Priority? {
+  let mut compilation : Int? = None
+  let mut optimization : Int? = None
+  for a in attributes {
+    guard a.attr_value is Some(v) else { continue }
+    guard v.desc is Int(s) else { continue }
+    let n = @string.parse_int(s.split("_").join("")) catch { _ => continue }
+    match a.attr_name {
+      "priority" => compilation = Some(n)
+      "optimization" => optimization = Some(n)
+      _ => ()
+    }
+  }
+  compilation.map(c => ({ compilation: c, optimization } : @wasm_bin.Priority))
+}

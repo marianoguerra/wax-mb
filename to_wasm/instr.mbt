@@ -14,6 +14,44 @@ pub fn Lowering::instr(
   out : Array[@wasm_bin.Instruction],
   i : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> Unit raise LowerError {
+  // A branch hint attaches to the instruction it annotates, and the format
+  // records it by BYTE OFFSET in a custom section -- so it has to be carried
+  // on the instruction until the encoder knows where that instruction landed.
+  // The wrapper is how it rides along.
+  guard i.hints.is_empty() else {
+    let inner : Array[@wasm_bin.Instruction] = []
+    self.hinted(inner, i)
+    guard inner.length() >= 1 else { return }
+    // The hint belongs to the LAST instruction emitted, which is the one the
+    // node is: everything before it computed the operands.
+    for k in 0..<(inner.length() - 1) {
+      out.push(inner[k])
+    }
+    out.push(Hinted(lower_hints(i.hints), inner[inner.length() - 1]))
+    return
+  }
+  self.hinted(out, i)
+}
+
+///|
+/// The hints an instruction carries, in the form the encoder writes.
+fn lower_hints(h : @ast.Hints) -> @wasm_bin.InstrHints {
+  {
+    branch: h.branch.map(x => x.value),
+    freq: h.freq.map(x => x.value),
+    // A call-target hint names functions, which this lowering has no index for
+    // at the point the hint is read; it is dropped rather than guessed.
+    targets: None,
+  }
+}
+
+///|
+/// Lower one instruction, appending to `out`.
+fn Lowering::hinted(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  i : @ast.Instr[@typing_env.InferredAnnotation],
+) -> Unit raise LowerError {
   let loc = i.info.1
   match i.desc {
     // A hole emits NOTHING. `_` means "the value already on the stack", put

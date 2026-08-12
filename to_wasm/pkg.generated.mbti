@@ -18,6 +18,8 @@ pub fn binop_instruction(@ast.BinOp, @wasm_types.ValType[Int]) -> @wasm_bin.Inst
 
 pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> String
 
+pub fn function_priority(Array[@ast.Attribute]) -> @wasm_bin.Priority?
+
 pub fn functype_index(@type_store.TypeStore) -> Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
 
 pub fn hierarchy_conversion(@wasm_types.HeapType[Int], @wasm_types.HeapType[Int]) -> @wasm_bin.Instruction?
@@ -105,6 +107,7 @@ pub fn Lowering::instr(Self, Array[@wasm_bin.Instruction], @ast.Instr[(Array[@in
 pub fn Lowering::memarg(Self, @ast.Ident, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @basic.Location) -> (Int, Int64) raise LowerError
 pub fn Lowering::module_name(Self, @wasm_bin.Module, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
 pub fn Lowering::struct_fields_of(Self, @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location) -> (Int, Array[@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]]) raise LowerError
+pub fn Lowering::target_features(Self, @wasm_bin.Module, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
 pub fn Lowering::type_names(Self, @wasm_bin.Module) -> Unit
 
 pub struct Space {

@@ -73,6 +73,7 @@ pub fn lower_module(
   // them all assigned.
   low.type_names(m)
   low.module_name(m, source)
+  low.target_features(m, source)
   m
 }
 
@@ -99,7 +100,7 @@ fn Lowering::field(
       let fi = self.func_index(name, loc)
       note_name(m.names.functions, fi, name.name)
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
-      m.codes.push(code)
+      m.codes.push({ ..code, priority: function_priority(attributes) })
       // The local names belong to the function that just closed over them.
       if !self.local_names.is_empty() {
         m.names.locals[fi] = self.local_names
