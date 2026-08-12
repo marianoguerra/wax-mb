@@ -356,9 +356,11 @@ fn encode_datacount_section(mod : Module) -> Bytes raise EncodeError {
 ///|
 /// Encode a module.
 ///
-/// Section order is the format's own, which is not the order of the section
-/// ids: tags (13) go between memories (5) and globals (6), and the data count
-/// (12) before the code (10).
+/// Section order is the reference's, which is the format's and not the order of
+/// the section ids: tags (13) go between memories (5) and globals (6), the data
+/// count (12) before the code (10), and the custom sections last -- except the
+/// `metadata.code.*` ones, which the branch-hinting proposal requires between
+/// the function and code sections, and which are not emitted yet.
 pub fn encode(mod : Module) -> Bytes raise EncodeError {
   let w = BinaryWriter::new()
   w.write_bytes(b"\x00\x61\x73\x6D") // "\0asm"
@@ -376,5 +378,7 @@ pub fn encode(mod : Module) -> Bytes raise EncodeError {
   write_section(w, 12, encode_datacount_section(mod))
   write_section(w, 10, encode_code_section(mod))
   write_section(w, 11, encode_data_section(mod))
+  encode_target_features_section(w, mod.target_features)
+  encode_name_section(w, mod.names)
   w.to_bytes()
 }

@@ -625,8 +625,26 @@ pub(all) struct Module {
   codes : Array[FunctionCode]
   datas : Array[Data]
   tags : Array[TagType]
+  names : Names
+  target_features : Array[(Int, Bytes)]
 } derive(@debug.Debug)
 pub fn Module::empty() -> Self
+
+pub(all) struct Names {
+  mut module_ : Bytes?
+  functions : Map[Int, Bytes]
+  locals : Map[Int, Map[Int, Bytes]]
+  labels : Map[Int, Map[Int, Bytes]]
+  types : Map[Int, Bytes]
+  tables : Map[Int, Bytes]
+  memories : Map[Int, Bytes]
+  globals : Map[Int, Bytes]
+  elem : Map[Int, Bytes]
+  data : Map[Int, Bytes]
+  fields : Map[Int, Map[Int, Bytes]]
+  tags : Map[Int, Bytes]
+} derive(@debug.Debug)
+pub fn Names::empty() -> Self
 
 pub(all) struct RecGroup {
   start : Int

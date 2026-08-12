@@ -318,3 +318,126 @@ test "an unencodable instruction is an error, not an unreachable" {
     _ => fail("expected an error")
   }
 }
+
+///|
+/// The `name` section. Upstream emitted no custom section at all, and carried a
+/// single `func_names` map it then never read -- so every name was dropped.
+/// There are twelve name spaces, not one.
+test "the name section carries every name space, in ascending id order" {
+  let m = @wasm_bin.Module::empty()
+  m.types.push(@wasm_bin.SubType::func([I32], []))
+  m.rec_groups.push({ start: 0, len: 1, explicit: false })
+  m.funcs.push(0)
+  m.codes.push({ locals: [I64], body: [] })
+  m.names.module_ = Some(b"m")
+  m.names.functions[0] = b"f"
+  m.names.types[0] = b"t"
+  m.names.locals[0] = { 0: b"p", 1: b"l" }
+  let h = hex(@wasm_bin.encode(m))
+  // `wasm-tools print` on these bytes gives back
+  //   (module $m (type $t (func (param i32)))
+  //     (func $f (type $t) (param $p i32) (local $l i64)))
+  // which is the whole point: upstream dropped all five names.
+  inspect(
+    h.has_suffix(
+      // custom section 0, 32 bytes, named "name"
+      "00" +
+      "20" +
+      "04" +
+      "6e616d65" +
+      // 0x00 module: "m"
+      "00" +
+      "02" +
+      "01" +
+      "6d" +
+      // 0x01 functions: one entry, 0 -> "f"
+      "01" +
+      "04" +
+      "01" +
+      "00" +
+      "01" +
+      "66" +
+      // 0x02 locals: function 0, two entries, 0 -> "p" and 1 -> "l"
+      "02" +
+      "09" +
+      "01" +
+      "00" +
+      "02" +
+      "00" +
+      "01" +
+      "70" +
+      "01" +
+      "01" +
+      "6c" +
+      // 0x04 types: one entry, 0 -> "t"
+      "04" +
+      "04" +
+      "01" +
+      "00" +
+      "01" +
+      "74",
+    ),
+    content="true",
+  )
+}
+
+///|
+/// Absent is not the same as present-and-empty: a `name` section with no
+/// subsections is a different module from no `name` section, and it is bytes.
+test "no names means no name section" {
+  let m = one_func([])
+  inspect(hex(@wasm_bin.encode(m)).contains("6e616d65"), content="false")
+}
+
+///|
+test "target_features passes its entries through verbatim" {
+  let m = @wasm_bin.Module::empty()
+  m.target_features.push((0x2B, b"simd128"))
+  // custom section, name "target_features", 1 entry, prefix 2b, "simd128"
+  inspect(
+    hex(@wasm_bin.encode(m)),
+    content=header +
+      "00" +
+      "1a" +
+      "0f" +
+      "7461726765745f6665617475726573" +
+      "01" +
+      "2b" +
+      "07" +
+      "73696d64313238",
+  )
+}
+
+///|
+/// Each vector in the name section has to be in ascending index order. The
+/// reference gets that free from `IntMap.bindings`; here the map is unordered,
+/// so the encoder sorts -- making it the encoder's job rather than the
+/// caller's, which is one fewer way to differ by a byte.
+test "name entries are sorted by index, however they were inserted" {
+  let m = @wasm_bin.Module::empty()
+  m.types.push(@wasm_bin.SubType::func([], []))
+  m.rec_groups.push({ start: 0, len: 1, explicit: false })
+  for i in [2, 0, 1] {
+    m.funcs.push(0)
+    m.codes.push({ locals: [], body: [] })
+    m.names.functions[i] = [b"a", b"b", b"c"][i]
+  }
+  // inserted 2, 0, 1; emitted 0, 1, 2
+  inspect(
+    hex(@wasm_bin.encode(m)).has_suffix(
+      "01" +
+      "0a" +
+      "03" +
+      "00" +
+      "01" +
+      "61" +
+      "01" +
+      "01" +
+      "62" +
+      "02" +
+      "01" +
+      "63",
+    ),
+    content="true",
+  )
+}

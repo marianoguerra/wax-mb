@@ -863,6 +863,52 @@ pub(all) struct Data {
 } derive(Eq, Debug)
 
 ///|
+/// The `name` custom section: what everything in the module is called.
+///
+/// Upstream had a single `func_names : Map[Int, String]` on the module, which
+/// the encoder never read -- so every name was dropped. There are twelve name
+/// spaces, not one, and `wasm_output.ml` emits all of them.
+///
+/// Maps rather than arrays, mirroring the reference's `IntMap`: the format
+/// wants each vector in ascending index order, and making that the encoder's
+/// job rather than the caller's is one fewer way to differ by a byte.
+pub(all) struct Names {
+  mut module_ : Bytes?
+  functions : Map[Int, Bytes]
+  /// Locals, labels and fields are indexed twice: by the function or type they
+  /// belong to, then within it.
+  locals : Map[Int, Map[Int, Bytes]]
+  labels : Map[Int, Map[Int, Bytes]]
+  types : Map[Int, Bytes]
+  tables : Map[Int, Bytes]
+  memories : Map[Int, Bytes]
+  globals : Map[Int, Bytes]
+  elem : Map[Int, Bytes]
+  data : Map[Int, Bytes]
+  fields : Map[Int, Map[Int, Bytes]]
+  tags : Map[Int, Bytes]
+} derive(Debug)
+
+///|
+/// No names at all, which is also what makes the section disappear.
+pub fn Names::empty() -> Names {
+  {
+    module_: None,
+    functions: {},
+    locals: {},
+    labels: {},
+    types: {},
+    tables: {},
+    memories: {},
+    globals: {},
+    elem: {},
+    data: {},
+    fields: {},
+    tags: {},
+  }
+}
+
+///|
 /// A whole module, in the form the encoder writes out.
 pub(all) struct Module {
   /// Every defined type, flat, because that is the space indices refer to.
@@ -883,6 +929,12 @@ pub(all) struct Module {
   codes : Array[FunctionCode]
   datas : Array[Data]
   tags : Array[TagType]
+  /// The `name` custom section.
+  names : Names
+  /// The `target_features` custom section: (prefix byte, feature name) pairs,
+  /// emitted verbatim and in order, because entries from other producers pass
+  /// through untouched.
+  target_features : Array[(Int, Bytes)]
 } derive(Debug)
 
 ///|
@@ -902,5 +954,7 @@ pub fn Module::empty() -> Module {
     codes: [],
     datas: [],
     tags: [],
+    names: Names::empty(),
+    target_features: [],
   }
 }
