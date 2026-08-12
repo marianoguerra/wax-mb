@@ -730,6 +730,7 @@ pub fn Checker::statement(
       // that `a[i] = v` becomes. The table is a static immediate, so the
       // receiver is never typed as a value.
       guard recv.desc is Get(tabname) else { return self.poisoned(i) }
+      note_use(ctx, ctx.tables, tabname)
       let (at, rt) = match ctx.tables.find_no_mark(tabname.name) {
         Some(t) => t
         None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
@@ -2085,6 +2086,7 @@ pub fn Checker::statement(
       guard recv.desc is Get(tabname) else { return self.poisoned(i) }
       // `tab[i] = v` on a TABLE name is `table.set`: the table is a static
       // immediate, not a value, so the receiver is never typed as one.
+      note_use(ctx, ctx.tables, tabname)
       let (at, rt) = match ctx.tables.find_no_mark(tabname.name) {
         Some(t) => t
         None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
@@ -3113,6 +3115,7 @@ fn Checker::mem_access(
   Array[@infer.Cell[@infer.InferredType]],
 ) {
   let ctx = self.ctx
+  note_use(ctx, ctx.memories, memname)
   let address_type = match ctx.memories.find_no_mark(memname.name) {
     Some((_, at)) => at
     None => @wasm_types.AddressType::I32
@@ -3298,6 +3301,7 @@ fn Checker::mem_mgmt(
   Array[@infer.Cell[@infer.InferredType]],
 ) {
   let ctx = self.ctx
+  note_use(ctx, ctx.memories, name)
   let at = match ctx.memories.find_no_mark(name.name) {
     Some((_, a)) => a
     None => @wasm_types.AddressType::I32
@@ -3354,6 +3358,7 @@ fn Checker::mem_mgmt(
       (checked, [])
     }
     ("copy", Some(src), 3) => {
+      note_use(ctx, ctx.memories, src)
       let src_at = match ctx.memories.find_no_mark(src.name) {
         Some((_, a)) => a
         None => at
@@ -3393,6 +3398,7 @@ fn Checker::table_mgmt(
   Array[@infer.Cell[@infer.InferredType]],
 ) {
   let ctx = self.ctx
+  note_use(ctx, ctx.tables, name)
   let (at, rt) = match ctx.tables.find_no_mark(name.name) {
     Some(t) => t
     None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
@@ -3462,6 +3468,7 @@ fn Checker::table_mgmt(
       (checked, [])
     }
     ("copy", Some(src), 3) => {
+      note_use(ctx, ctx.tables, src)
       let src_at = match ctx.tables.find_no_mark(src.name) {
         Some((a, _)) => a
         None => at
@@ -3519,6 +3526,7 @@ fn Checker::atomic_access(
   Array[@infer.Cell[@infer.InferredType]],
 ) {
   let ctx = self.ctx
+  note_use(ctx, ctx.memories, memname)
   let address_type = match ctx.memories.find_no_mark(memname.name) {
     Some((_, at)) => at
     None => @wasm_types.AddressType::I32
@@ -3721,6 +3729,7 @@ fn Checker::simd_mem_access(
   Array[@infer.Cell[@infer.InferredType]],
 ) {
   let ctx = self.ctx
+  note_use(ctx, ctx.memories, memname)
   let address_type = match ctx.memories.find_no_mark(memname.name) {
     Some((_, at)) => at
     None => @wasm_types.AddressType::I32

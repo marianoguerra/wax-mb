@@ -136,6 +136,10 @@ fn check_field(
         returns,
         instrs,
       )
+      // Before leaving the scope, while the locals and labels this function
+      // declared are still the current ones -- and here rather than at the end
+      // of the module, so the diagnostics stay in source order among the rest.
+      warn_unused_in_function(ctx)
       leave_function_scope(ctx)
       Some(Func(name~, typ~, sign~, body=(label, checked), attributes~))
     }
@@ -168,6 +172,8 @@ fn check_field(
       let mode_ = match mode {
         EPassive => @ast.ElemMode::EPassive
         EActive(tab, offset) => {
+          // An active segment NAMES its table, and that is a use of it.
+          note_use(ctx, ctx.tables, tab)
           let o = checker.statement(offset)
           let at = match ctx.tables.find_no_mark(tab.name) {
             Some((a, _)) => address_cell(a)
@@ -183,6 +189,7 @@ fn check_field(
       let mode_ = match mode {
         Passive => @ast.DataMode::Passive
         Active(mem, offset) => {
+          note_use(ctx, ctx.memories, mem)
           let o = checker.statement(offset)
           let at = match ctx.memories.find_no_mark(mem.name) {
             Some((_, a)) => address_cell(a)
@@ -271,6 +278,9 @@ pub fn check_module(
   apply_declared_features(diagnostics, features, fields)
   declare_fields(ctx, fields)
   let typed = check_fields(ctx, Operands::new(), fields)
+  // Last: what counts as a USE of a module field is what reached it while every
+  // body was checked, so this cannot be answered until they all have been.
+  warn_unused_fields(ctx, fields)
   (ctx, typed)
 }
 

@@ -8892,3 +8892,84 @@ test "a resume's operands take their types from the continuation" {
     content="i64 | ",
   )
 }
+
+///|
+/// The unused-declaration lint asks about REACHABILITY, not the presence of a
+/// reference. Two functions that only call each other reference one another, so
+/// a presence check finds both used -- yet neither can ever run.
+test "a dead cycle of functions is still dead" {
+  fn run(exported : Bool) -> String {
+    let ctx = @typing_env.ModuleContext::new(
+      @diagnostic.collector(),
+      @type_store.TypeStore::new(),
+      @feature.default(),
+      warn_unused=true,
+    )
+    fn func(
+      n : String,
+      calls : String,
+      at : Int,
+      export_ : Bool,
+    ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+      let body : @ast.Instr[@basic.Location] = {
+        desc: Call(
+          {
+            desc: Get(id(calls, at=at + 10)),
+            info: loc_at(at + 10, at + 11),
+            hints: { branch: None, freq: None, targets: None },
+            expected: None,
+          },
+          [],
+        ),
+        info: loc_at(at + 10, at + 11),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      }
+      {
+        desc: Func(
+          name=id(n, at~),
+          typ=None,
+          sign=Some({ params: [], results: [] }),
+          body=(None, [body]),
+          attributes=if export_ {
+            [
+              {
+                attr_name: "export",
+                attr_value: None,
+                attr_guard: None,
+                attr_span: loc_at(at, at + 1),
+              },
+            ]
+          } else {
+            []
+          },
+        ),
+        info: loc_at(at, at + 1),
+      }
+    }
+
+    // `a` calls `b`, `b` calls `a`, and nothing else calls either.
+    let fields = [func("a", "b", 0, exported), func("b", "a", 40, false)]
+    let _ = @typing.check_module(
+      ctx.diagnostics,
+      @type_store.TypeStore::new(),
+      @feature.default(),
+      fields,
+      warn_unused=true,
+    )
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // Neither can run, so both are reported -- a presence check would find both
+  // used and say nothing.
+  inspect(
+    run(false),
+    content="The function 'a' is never used. / The function 'b' is never used.",
+  )
+  // Export one and the cycle comes alive: the export reaches `a`, and `a`
+  // reaches `b`.
+  inspect(run(true), content="")
+}

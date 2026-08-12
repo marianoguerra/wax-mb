@@ -371,6 +371,8 @@ pub fn not_assignable(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn not_defaultable(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn[A] note_use(@typing_env.ModuleContext, @typing_env.Tbl[A], @ast.Ident) -> Unit
+
 pub fn number_literal_required(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn on_clause_context(@diagnostic.Context, @basic.Location) -> Unit
@@ -491,7 +493,17 @@ pub fn unknown_intrinsic(@diagnostic.Context, @basic.Location, String, String) -
 
 pub fn unknown_operand_type(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn unnecessary_mut(@diagnostic.Context, @basic.Location, String) -> Unit
+
 pub fn unpack_type(@wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.ValType[@ast.Ident]
+
+pub fn unused_field(@diagnostic.Context, @basic.Location, String, String) -> Unit
+
+pub fn unused_import(@diagnostic.Context, @basic.Location, String, String) -> Unit
+
+pub fn unused_label(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn unused_local(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn val_lub(@typing_env.TypeContext, @wasm_types.ValType[@ast.Ident], @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@ast.Ident]?
 
@@ -500,6 +512,10 @@ pub fn valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType
 pub fn value_count_mismatch(@diagnostic.Context, @basic.Location, expected~ : Int, provided~ : Int) -> Unit
 
 pub fn[Info] walk_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]], (@basic.Annotated[@ast.ModuleField[Info], @basic.Location]) -> Unit) -> Unit
+
+pub fn warn_unused_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
+
+pub fn warn_unused_in_function(@typing_env.ModuleContext) -> Unit
 
 pub fn[A] with_cond(@typing_env.ModuleContext, @basic.Location, @wasm_types.Cond, Bool, () -> A) -> A
 

@@ -97,6 +97,7 @@ fn check(
     @type_store.TypeStore::new(),
     @feature.default(),
     m,
+    warn_unused=true,
   )
   ignore(path)
   let collected = diagnostics.collected()

@@ -517,3 +517,19 @@ pub fn receiver_is_array_ref(
     None => false
   }
 }
+
+///|
+/// Record that an instruction NAMED this memory, table or segment.
+///
+/// These are resolved with `find_no_mark`, because the lookup is a shape
+/// question the guard already answered and reporting it again would say the same
+/// thing twice. But naming a memory in `m.load(..)` really is using it, and the
+/// unused-declaration lint has no other way to know -- so the use is recorded
+/// here, separately from the resolution.
+pub fn[A] note_use(
+  ctx : @typing_env.ModuleContext,
+  tbl : @typing_env.Tbl[A],
+  name : @ast.Ident,
+) -> Unit {
+  tbl.mark_reference(name.name, ctx.origin.val)
+}

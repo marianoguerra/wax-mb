@@ -1507,3 +1507,140 @@ pub fn become_on_stack_switching(
     ),
   )
 }
+
+///|
+/// A local declared by a `let` but never read.
+///
+/// The quick fix is a zero-width edit inserting `_` at the name's start: a
+/// leading underscore is how the language says "deliberately unused", so the fix
+/// and the exemption are the same convention seen from two sides.
+pub fn unused_local(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("The local variable")
+    .sep(@message.ident(name))
+    .sep(@message.text("is never used.")),
+    warning=Some(UnusedLocal),
+    universal=true,
+    edit=Some({ loc: { ..location, end: location.start }, new_text: "_" }),
+  )
+}
+
+///|
+/// A label nothing branches to.
+///
+/// The quick fix DELETES the label rather than underscoring it, because a label
+/// is written as a prefix -- `'l: do { .. }` -- and the whole prefix, colon and
+/// following space included, is what has to go. That span can only be found by
+/// reading the source, so the fix is offered only when the context carries it.
+pub fn unused_label(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  let edit = match ctx.source {
+    None => None
+    Some(src) => {
+      let n = src.length()
+      // Compared as code units: a space, a tab and a colon are all ASCII, so
+      // the unit and the character are the same thing here.
+      fn is_ws(c : UInt16) -> Bool {
+        c == 32 || c == 9
+      }
+
+      let mut i = location.end.cnum
+      while i < n && is_ws(src[i]) {
+        i = i + 1
+      }
+      if i < n && src[i] == 58 {
+        i = i + 1
+        while i < n && is_ws(src[i]) {
+          i = i + 1
+        }
+        Some(
+          (
+            {
+              loc: { ..location, end: { ..location.end, cnum: i } },
+              new_text: "",
+            } : @diagnostic.Edit),
+        )
+      } else {
+        None
+      }
+    }
+  }
+  ctx.report(
+    location,
+    Warning,
+    @message.text("The label")
+    .sep(@message.ident(name))
+    .sep(@message.text("is never used.")),
+    warning=Some(UnusedLabel),
+    universal=true,
+    edit~,
+  )
+}
+
+///|
+/// A module field defined but never referenced, exported, or started.
+pub fn unused_field(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  kind : String,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("The")
+    .sep(@message.text(kind))
+    .sep(@message.ident(name))
+    .sep(@message.text("is never used.")),
+    warning=Some(UnusedField),
+    universal=true,
+  )
+}
+
+///|
+/// An imported field never referenced, exported, or started.
+pub fn unused_import(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  kind : String,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("The imported")
+    .sep(@message.text(kind))
+    .sep(@message.ident(name))
+    .sep(@message.text("is never used.")),
+    warning=Some(UnusedImport),
+    universal=true,
+  )
+}
+
+///|
+/// A mutable global nothing ever assigns.
+pub fn unnecessary_mut(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("The global")
+    .sep(@message.ident(name))
+    .sep(@message.text("is mutable but is never assigned.")),
+    warning=Some(UnnecessaryMut),
+    universal=true,
+    hint=Some(@message.text("Declare it with 'const' instead of 'let'.")),
+  )
+}
