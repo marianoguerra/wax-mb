@@ -165,6 +165,11 @@ pub fn warn_unused_fields(
   let live_fns = live_functions(ctx, fields)
   let live_ts = live_types(ctx, live_fns)
   walk_fields(ctx, fields, field => {
+    // A declaration inside a conditional is never reported. Whether it is
+    // PRESENT depends on a condition nobody has resolved, and so, usually, does
+    // whether anything uses it -- both are guarded by the same flag. There is no
+    // answer to give, so the lint gives none.
+    guard @cond.equal(ctx.cond.val, @cond.true_) else { return }
     match field.desc {
       Func(name~, attributes~, ..) =>
         report_unused(

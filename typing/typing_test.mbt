@@ -9056,3 +9056,66 @@ test "a memory's size limit follows its address type and page size" {
     content="0xffffffff",
   )
 }
+
+///|
+/// A declaration inside a conditional is never reported as unused. Whether it is
+/// PRESENT depends on a condition nobody has resolved, and so, usually, does
+/// whether anything uses it -- both are guarded by the same flag.
+test "a conditional declaration is not reported as unused" {
+  fn run(conditional : Bool) -> String {
+    let ctx = @typing_env.ModuleContext::new(
+      @diagnostic.collector(),
+      @type_store.TypeStore::new(),
+      @feature.default(),
+      warn_unused=true,
+    )
+    let global : @basic.Annotated[
+      @ast.ModuleField[@basic.Location],
+      @basic.Location,
+    ] = {
+      desc: Global(
+        name=id("x", at=10),
+        mut_=false,
+        typ=Some(I32),
+        def={
+          desc: Int("1"),
+          info: loc_at(20, 21),
+          hints: { branch: None, freq: None, targets: None },
+          expected: None,
+        },
+        attributes=[],
+      ),
+      info: loc_at(10, 11),
+    }
+    let fields : @ast.Module[@basic.Location] = if conditional {
+      [
+        {
+          desc: Conditional(
+            cond=Var({ desc: "debug", info: loc_at(0, 5) }),
+            then_fields={ desc: [global], info: loc_at(0, 30) },
+            else_fields=None,
+          ),
+          info: loc_at(0, 30),
+        },
+      ]
+    } else {
+      [global]
+    }
+    let _ = @typing.check_module(
+      ctx.diagnostics,
+      @type_store.TypeStore::new(),
+      @feature.default(),
+      fields,
+      warn_unused=true,
+    )
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // At the top level there is an answer, and it is given.
+  inspect(run(false), content="The global 'x' is never used.")
+  // Under a condition there is not.
+  inspect(run(true), content="")
+}
