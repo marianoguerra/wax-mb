@@ -65,7 +65,7 @@ fn Lowering::field(
       m.funcs.push(entry.0.to_int_for_tests_only())
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
       m.codes.push(code)
-      self.export_of(m, attributes, Func(self.func_index(name, loc)))
+      self.export_of(m, attributes, Func(self.func_index(name, loc)), name)
     }
     Global(name~, mut_~, def~, attributes~, ..) => {
       guard node_valtype(def) is Some(ty) else {
@@ -74,7 +74,71 @@ fn Lowering::field(
       let init : Array[@wasm_bin.Instruction] = []
       self.instr(init, def)
       m.globals.push({ type_: { mut_, typ: ty }, init })
-      self.export_of(m, attributes, Global(self.global_index(name, loc)))
+      self.export_of(m, attributes, Global(self.global_index(name, loc)), name)
+    }
+    Memory(
+      name~,
+      address_type~,
+      limits~,
+      page_size_log2~,
+      shared~,
+      data~,
+      attributes~
+    ) => {
+      let (mi, ma) = limits.unwrap_or((0UL, None))
+      m.memories.push({
+        limits: { mi, ma, address_type, page_size_log2, shared },
+      })
+      let mem = self.memory_index(name, loc)
+      // An inline data segment is an ACTIVE segment of this memory, written
+      // where the memory is rather than beside it.
+      for d in data {
+        let offset : Array[@wasm_bin.Instruction] = []
+        self.instr(offset, d.offset)
+        m.datas.push({
+          mode: Active(mem, offset),
+          init: data_bytes(d.init, loc),
+        })
+      }
+      self.export_of(m, attributes, Memory(mem), name)
+    }
+    Table(name~, address_type~, reftype~, limits~, init~, attributes~) => {
+      let (mi, ma) = limits.unwrap_or((0UL, None))
+      let elem_type = self.reftype_index(reftype, loc)
+      let init_ = match init {
+        Some(e) => {
+          let out : Array[@wasm_bin.Instruction] = []
+          self.instr(out, e)
+          Some(out)
+        }
+        None => None
+      }
+      m.tables.push({
+        type_: {
+          elem_type,
+          limits: { mi, ma, address_type, page_size_log2: None, shared: false },
+        },
+        init: init_,
+      })
+      self.export_of(m, attributes, Table(self.table_index(name, loc)), name)
+    }
+    Tag(name~, attributes~, ..) => {
+      guard self.ctx.tags.find_no_mark(name.name) is Some(_) else {
+        raise Unresolved("tag signature", loc)
+      }
+      raise NotLowered("tag", loc)
+      ignore(attributes)
+    }
+    Data(mode~, init~, ..) => {
+      let mode_ = match mode {
+        Passive => @wasm_bin.DataMode::Passive
+        Active(mem, offset) => {
+          let out : Array[@wasm_bin.Instruction] = []
+          self.instr(out, offset)
+          Active(self.memory_index(mem, loc), out)
+        }
+      }
+      m.datas.push({ mode: mode_, init: data_bytes(init, loc) })
     }
     // Nothing to emit: the type section comes from the STORE, which interned
     // every declaration as it was made, so a `type` field has already had its
@@ -196,6 +260,7 @@ fn Lowering::export_of(
   m : @wasm_bin.Module,
   attributes : Array[@ast.Attribute],
   desc : @wasm_bin.ExportDesc,
+  own : @ast.Ident,
 ) -> Unit raise LowerError {
   ignore(self)
   for a in attributes {
@@ -206,13 +271,18 @@ fn Lowering::export_of(
           Str(_, b) => b
           _ => raise NotLowered("computed export name", v.info)
         }
-      // A bare `#[export]` exports under the entity's own name, which the
-      // caller has already resolved into `desc`; the name is recovered from the
-      // index space rather than re-derived here.
-      None => raise NotLowered("bare export", a.attr_span)
+      // A bare `#[export]` exports under the entity's OWN name, which is the
+      // whole point of writing it bare.
+      None => utf8_of(own.name)
     }
     m.exports.push({ name, desc })
   }
+}
+
+///|
+/// A name as the UTF-8 bytes the format stores.
+fn utf8_of(s : String) -> Bytes {
+  Bytes::from_array(@unicode.utf8_bytes(s).map(b => b.to_byte()))
 }
 
 ///|
@@ -237,6 +307,91 @@ fn Lowering::global_index(
     Some(i) => i
     None => raise Unresolved("global index", loc)
   }
+}
+
+///|
+fn Lowering::memory_index(
+  self : Lowering,
+  name : @ast.Ident,
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  match self.indices.memories.get(name.name) {
+    Some(i) => i
+    None => raise Unresolved("memory index", loc)
+  }
+}
+
+///|
+fn Lowering::table_index(
+  self : Lowering,
+  name : @ast.Ident,
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  match self.indices.tables.get(name.name) {
+    Some(i) => i
+    None => raise Unresolved("table index", loc)
+  }
+}
+
+///|
+/// A source reference type with its type names resolved to indices.
+fn Lowering::reftype_index(
+  self : Lowering,
+  r : @wasm_types.RefType[@ast.Ident],
+  loc : @basic.Location,
+) -> @wasm_types.RefType[Int] raise LowerError {
+  let typ = match r.typ {
+    Type(n) | Exact(n) => {
+      guard self.ctx.type_context.types.find_no_mark(n.name) is Some((idx, _)) else {
+        raise Unresolved("type name", loc)
+      }
+      let i = match idx {
+        Def(id) => id.to_int_for_tests_only()
+        Rec(_) => raise Unresolved("rec-group type reference", loc)
+      }
+      if r.typ is Exact(_) {
+        @wasm_types.HeapType::Exact(i)
+      } else {
+        Type(i)
+      }
+    }
+    Func => Func
+    NoFunc => NoFunc
+    Exn => Exn
+    NoExn => NoExn
+    Cont => Cont
+    NoCont => NoCont
+    Extern => Extern
+    NoExtern => NoExtern
+    Any => Any
+    Eq => Eq
+    I31 => I31
+    Struct => Struct
+    Array => Array
+    None_ => None_
+  }
+  { nullable: r.nullable, typ }
+}
+
+///|
+/// A data segment's contents as the bytes the format stores.
+fn data_bytes(
+  init : Array[@ast.DataElem],
+  loc : @basic.Location,
+) -> Bytes raise LowerError {
+  let out : Array[Byte] = []
+  for e in init {
+    match e {
+      Str(b) =>
+        for k in 0..<b.length() {
+          out.push(b[k])
+        }
+      // A numeric run and a vector run both need the width and endianness the
+      // element type fixes; neither is lowered yet.
+      Run(_, _) | V128Run(_) => raise NotLowered("data run", loc)
+    }
+  }
+  Bytes::from_array(out)
 }
 
 ///|

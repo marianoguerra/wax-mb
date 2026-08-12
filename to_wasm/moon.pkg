@@ -8,6 +8,7 @@ import {
   "waxmb/wax/wasm_bin",
   "moonbitlang/core/string",
   "moonbitlang/core/debug",
+  "waxmb/wax/unicode",
 }
 
 import {
