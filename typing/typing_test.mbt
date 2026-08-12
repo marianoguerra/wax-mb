@@ -3448,24 +3448,36 @@ test "an unwritten arm annotates its children and says so" {
     }
   }
 
-  // `Suspend` has no arm yet -- it is stack switching, which lands late -- but
-  // its arguments are literals that do. When the dispatcher is complete this
-  // test becomes "there are no gaps at all".
+  // `IfAnnotation` has no arm yet -- conditional compilation inside a body,
+  // which lands last -- but the instructions in its branches are literals that
+  // do. When the dispatcher is complete this test becomes "there are no gaps".
   let checked = checker.statement(
-    instr(Suspend(id("tag"), [instr(Int("1"), 0), instr(Int("2"), 2)]), 6),
+    instr(
+      IfAnnotation(
+        cond=Var({ desc: "debug", info: loc_at(0, 5) }),
+        then_body={
+          desc: [instr(Int("1"), 0), instr(Int("2"), 2)],
+          info: loc_at(0, 3),
+        },
+        else_body=None,
+      ),
+      6,
+    ),
   )
   // The node itself carries no values -- which is the truth, not a guess.
   inspect(checked.info.0.length(), content="0")
   // Its children do.
-  guard! checked.desc is Suspend(_, elems)
+  guard! checked.desc is IfAnnotation(then_body~, ..)
   inspect(
-    elems.map(x => x.info.0.map(t => @infer.to_string(t)).join(",")).join(" | "),
+    then_body.desc
+    .map(x => x.info.0.map(t => @infer.to_string(t)).join(","))
+    .join(" | "),
     content="number | number",
   )
   // And the gap is named.
   inspect(
     checker.gaps().map(g => g.0 + ":" + g.1.to_string()).join(","),
-    content="Suspend:1",
+    content="IfAnnotation:1",
   )
 }
 
@@ -7139,4 +7151,162 @@ test "a simd operation takes its receiver as its first operand" {
     op(v, "add_i32x4", []),
     content="v128 | This instruction expects 1 operand(s) but 0 was/were provided. | 0",
   )
+}
+
+///|
+/// `cont.bind` binds a continuation's LEADING parameters away, so the
+/// destination takes fewer -- and what remains, the unbound tail and the
+/// results, must match exactly.
+test "cont.bind must leave the tail and results unchanged" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn bind(
+    src_params : Array[@wasm_types.ValType[@ast.Ident]],
+    dst_params : Array[@wasm_types.ValType[@ast.Ident]],
+    args : Array[@ast.Instr[@basic.Location]],
+  ) -> String {
+    let ctx = module_ctx()
+    fn functype(
+      n : String,
+      ps : Array[@wasm_types.ValType[@ast.Ident]],
+      at : Int,
+    ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+      {
+        desc: Type([
+          {
+            desc: (
+              id(n),
+              {
+                typ: Func({
+                  params: ps.map(p => {
+                    (
+                      { desc: (None, p), info: loc_at(at, at + 1) } :
+                      @basic.Annotated[
+                        (@ast.Ident?, @wasm_types.ValType[@ast.Ident]),
+                        @basic.Location,
+                      ])
+                  }),
+                  results: [I32],
+                }),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(at, at + 1),
+          },
+        ]),
+        info: loc_at(at, at + 1),
+      }
+    }
+
+    fn conttype(
+      n : String,
+      inner : String,
+      at : Int,
+    ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+      {
+        desc: Type([
+          {
+            desc: (
+              id(n),
+              {
+                typ: Cont(id(inner)),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(at, at + 1),
+          },
+        ]),
+        info: loc_at(at, at + 1),
+      }
+    }
+
+    let module_ : @ast.Module[@basic.Location] = [
+      functype("sf", src_params, 0),
+      functype("df", dst_params, 2),
+      conttype("sc", "sf", 4),
+      conttype("dc", "df", 6),
+    ]
+    @typing.declare_fields(ctx, module_)
+    @typing.bind_local(
+      ctx,
+      id("k"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: true, typ: Type(id("sc")) }),
+      ),
+    )
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(instr(ContBind(id("sc"), id("dc"), args), 10))
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  let k = instr(Get(id("k")), 30)
+  // Binding the leading i32 away: the destination takes the f64 that remains.
+  inspect(
+    bind([I32, F64], [F64], [instr(Int("1"), 34), k]),
+    content="&dc |  | 0",
+  )
+  // A destination taking MORE parameters than the source is backwards.
+  inspect(
+    bind([F64], [I32, F64], [k]),
+    content="&dc | Type mismatch in this stack switching instruction: the resulting continuation takes more parameters than the original one. | 0",
+  )
+  // The right count, but the wrong tail.
+  inspect(
+    bind([I32, F64], [I32], [instr(Int("1"), 34), k]),
+    content="&dc | Type mismatch in this stack switching instruction: the bound parameters and results do not match between the two continuation types. | 0",
+  )
+}
+
+///|
+/// A `suspend` hands the tag's parameters out and takes its RESULTS back when
+/// resumed -- unlike a `throw`, where a tag with results is a mistake, because
+/// a throw never comes back.
+test "a suspend takes back what its tag returns" {
+  let ctx = module_ctx()
+  ctx.tags.add(ctx.diagnostics, "ask", loc_at(0, 3), {
+    params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+    results: [F64],
+  })
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement({
+    desc: Suspend(id("ask"), [
+      {
+        desc: Int("1"),
+        info: loc_at(30, 31),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      },
+    ]),
+    info: loc_at(10, 11),
+    hints: { branch: None, freq: None, targets: None },
+    expected: None,
+  })
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(checked.info.0.map(t => @infer.to_string(t)).join(","), content="f64")
+  inspect(checker.gaps().length(), content="0")
 }

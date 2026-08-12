@@ -1260,3 +1260,19 @@ pub fn atomic_alignment(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// A stack-switching instruction whose continuation types do not line up.
+pub fn stack_switching_type_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  descr : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Type mismatch in this stack switching instruction:")
+    .sep(@message.text(descr))
+    .seq(@message.text(".")),
+  )
+}

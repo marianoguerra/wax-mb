@@ -1766,6 +1766,103 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Creating a continuation ---
+    ContNew(ct, f) => {
+      let f_ = self.statement(f)
+      if lookup_cont_inner(ctx.type_context, ctx.diagnostics, ct) is Some(ft) {
+        // The function a continuation is made of, as a nullable reference: a
+        // null one traps when resumed rather than being rejected here.
+        if internalize(
+            ctx.type_context,
+            ctx.diagnostics,
+            Ref({ nullable: true, typ: Type(ft) }),
+          )
+          is Some(want) {
+          check_subtype(
+            ctx.type_context.subtyping_info(),
+            ctx.diagnostics,
+            f.info,
+            expression_type(ctx, f_.info),
+            want,
+          )
+        }
+      }
+      let ty = self.fresh_continuation(ct)
+      {
+        desc: ContNew(ct, f_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Binding a continuation's leading parameters ---
+    ContBind(src, dst, args) => {
+      let checked = args.map(a => self.statement(a))
+      self.check_cont_bind(loc, src, dst, args, checked)
+      let ty = self.fresh_continuation(dst)
+      {
+        desc: ContBind(src, dst, checked),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Suspending to a tag ---
+    Suspend(tag, args) => {
+      let checked = args.map(a => self.statement(a))
+      let results = match find(ctx.tags, ctx.diagnostics, tag) {
+        None => []
+        Some(ft) => {
+          // A suspend hands the tag's parameters out and takes its RESULTS back
+          // when resumed -- unlike a throw, where a tag with results is a
+          // mistake, because a throw never comes back.
+          let want : Array[@infer.Cell[@infer.InferredType]] = []
+          for p in ft.params {
+            if internalize(ctx.type_context, ctx.diagnostics, p.desc.1)
+              is Some(c) {
+              want.push(c)
+            }
+          }
+          let provided = flatten_operands(
+            checked.map(c => (c.info.0, c.info.1)),
+          )
+          if provided.length() != want.length() {
+            operand_count_mismatch(
+              ctx.diagnostics,
+              tag.loc,
+              expected=want.length(),
+              provided=provided.length(),
+            )
+          } else {
+            for k, v in provided {
+              check_subtype(
+                ctx.type_context.subtyping_info(),
+                ctx.diagnostics,
+                v.1,
+                v.0,
+                want[k],
+              )
+            }
+          }
+          let out : Array[@infer.Cell[@infer.InferredType]] = []
+          for r in ft.results {
+            if internalize(ctx.type_context, ctx.diagnostics, r) is Some(c) {
+              out.push(c)
+            }
+          }
+          out
+        }
+      }
+      {
+        desc: Suspend(tag, checked),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -3551,4 +3648,119 @@ fn Checker::simd_vector_call(
     }
   }
   (recv_, checked, results)
+}
+
+///|
+/// The reference a freshly allocated continuation has.
+///
+/// EXACT only under custom-descriptors, as for `struct.new` and `array.new`:
+/// the allocation really does produce exactly that type, but exact reference
+/// types are part of that proposal, so without it the plain form is what can be
+/// written down.
+fn Checker::fresh_continuation(
+  self : Checker,
+  ct : @ast.Ident,
+) -> @infer.Cell[@infer.InferredType] {
+  let ctx = self.ctx
+  let exact = ctx.type_context.features.is_enabled(CustomDescriptors)
+  match
+    internalize(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: false, typ: if exact { Exact(ct) } else { Type(ct) } }),
+    ) {
+    Some(c) => c
+    None => @infer.Cell::make(@infer.InferredType::Error)
+  }
+}
+
+///|
+/// Check a `cont.bind`: the destination must be the source with its LEADING
+/// parameters bound away.
+///
+/// So the destination takes fewer parameters, and what remains -- the unbound
+/// tail and the results -- must match. The arguments supplied are exactly the
+/// bound prefix, followed by the source continuation itself.
+fn Checker::check_cont_bind(
+  self : Checker,
+  location : @basic.Location,
+  src : @ast.Ident,
+  dst : @ast.Ident,
+  args : Array[@ast.Instr[@basic.Location]],
+  checked : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+) -> Unit {
+  let ctx = self.ctx
+  guard lookup_cont_inner(ctx.type_context, ctx.diagnostics, src)
+    is Some(src_inner) else {
+    return
+  }
+  guard lookup_func_type(ctx.type_context, ctx.diagnostics, src_inner)
+    is Some(src_sig) else {
+    return
+  }
+  guard lookup_cont_inner(ctx.type_context, ctx.diagnostics, dst)
+    is Some(dst_inner) else {
+    return
+  }
+  guard lookup_func_type(ctx.type_context, ctx.diagnostics, dst_inner)
+    is Some(dst_sig) else {
+    return
+  }
+  let np = src_sig.params.length() - dst_sig.params.length()
+  if np < 0 {
+    stack_switching_type_mismatch(
+      ctx.diagnostics,
+      location,
+      "the resulting continuation takes more parameters than the original one",
+    )
+  } else if internal_functype(ctx.type_context, ctx.diagnostics, src_sig)
+    is Some(src_ft) &&
+    internal_functype(ctx.type_context, ctx.diagnostics, dst_sig)
+    is Some(dst_ft) {
+    // What is left of the source once the prefix is bound has to BE the
+    // destination: same remaining parameters, same results.
+    let tail = src_ft.params[np:np + dst_ft.params.length()].to_owned()
+    if !functype_matches(
+        ctx.type_context.subtyping_info(),
+        { params: tail, results: src_ft.results },
+        dst_ft,
+      ) {
+      stack_switching_type_mismatch(
+        ctx.diagnostics,
+        location,
+        "the bound parameters and results do not match between the two continuation types",
+      )
+    }
+  }
+  // The operands are the bound prefix, then the source continuation itself.
+  let want : Array[@infer.Cell[@infer.InferredType]] = []
+  let n = if np > 0 { np } else { 0 }
+  for k in 0..<n {
+    if k < src_sig.params.length() {
+      if internalize(
+          ctx.type_context,
+          ctx.diagnostics,
+          src_sig.params[k].desc.1,
+        )
+        is Some(c) {
+        want.push(c)
+      }
+    }
+  }
+  if internalize(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: true, typ: Type(src) }),
+    )
+    is Some(c) {
+    want.push(c)
+  }
+  ignore(args)
+  check_operands(
+    ctx.type_context.subtyping_info(),
+    ctx.diagnostics,
+    location,
+    checked.map(c => (c.info.0, c.info.1)),
+    want,
+  )
 }

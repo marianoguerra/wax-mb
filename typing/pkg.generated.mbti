@@ -271,6 +271,8 @@ pub fn local_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
 pub fn lookup_array_type(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]?
 
+pub fn lookup_cont_inner(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @ast.Ident?
+
 pub fn lookup_func_type(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @ast.FuncType?
 
 pub fn lookup_struct_type(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> Array[@basic.Annotated[(@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]), @basic.Location]]?
@@ -394,6 +396,8 @@ pub fn splice_non_struct(@diagnostic.Context, @basic.Location, String) -> Unit
 pub fn splice_without_supertype(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn split_labelled_args(Array[@ast.Instr[@basic.Location]]) -> MemArgs
+
+pub fn stack_switching_type_mismatch(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn start_function_signature(@diagnostic.Context, @basic.Location) -> Unit
 

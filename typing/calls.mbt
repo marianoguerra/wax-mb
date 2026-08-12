@@ -181,3 +181,26 @@ pub fn is_unary_method(m : String) -> Bool {
     _ => false
   }
 }
+
+///|
+/// The function type a continuation type wraps, by name.
+///
+/// One hop rather than the two `cont_functype` makes: this starts from the
+/// SOURCE name, where that one starts from a resolved heap type.
+pub fn lookup_cont_inner(
+  ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
+  name : @ast.Ident,
+  location? : @basic.Location? = None,
+) -> @ast.Ident? {
+  guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
+    return None
+  }
+  match def.typ {
+    Cont(ft) => Some(ft)
+    _ => {
+      expected_func_type(diagnostics, location.unwrap_or(name.loc))
+      None
+    }
+  }
+}
