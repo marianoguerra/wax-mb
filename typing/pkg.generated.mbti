@@ -5,6 +5,7 @@ import {
   "moonbitlang/core/debug",
   "moonbitlang/core/ref",
   "waxmb/wax/ast",
+  "waxmb/wax/atomics",
   "waxmb/wax/basic",
   "waxmb/wax/diagnostic",
   "waxmb/wax/feature",
@@ -51,6 +52,8 @@ pub fn check_unique_param_names(@diagnostic.Context, Array[@basic.Annotated[(@as
 
 pub fn checked_block(@typing_env.ModuleContext, Operands, @basic.Location, @ast.Ident?, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], () -> Unit) -> Unit
 
+pub fn classify_method_call(@typing_env.ModuleContext, @ast.Ident, String) -> MethodCall
+
 pub fn collect_exit(Operands, @infer.Collecting, @diagnostic.Context, @basic.Location) -> Unit
 
 pub fn collect_into(@typing_env.ModuleContext, Operands, @basic.Location, @ast.Ident?, @infer.Collecting, @infer.Cell[@infer.InferredType], () -> Unit) -> Unit
@@ -58,6 +61,8 @@ pub fn collect_into(@typing_env.ModuleContext, Operands, @basic.Location, @ast.I
 pub fn collected_natural(Array[(@basic.Location?, @infer.Cell[@infer.InferredType])]) -> Array[@infer.InferredType]
 
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
+
+pub fn cont_functype(@type_store.SubtypingInfo, @wasm_types.HeapType[@type_store.Id]) -> @type_store.FuncType[@type_store.Id]?
 
 pub fn[Info] declare_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Unit
 
@@ -125,6 +130,8 @@ pub fn forward_use_of_described(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn fresh_collecting(@infer.Cell[@infer.InferredType]?, needed? : Bool) -> (@infer.Collecting, @infer.Cell[@infer.InferredType])
 
+pub fn functype_matches(@type_store.SubtypingInfo, @type_store.FuncType[@type_store.Id], @type_store.FuncType[@type_store.Id]) -> Bool
+
 pub fn get_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
 pub fn get_type_definition(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident) -> @ast.SubType?
@@ -157,6 +164,10 @@ pub fn is_defaultable(@wasm_types.ValType[@ast.Ident]) -> Bool
 
 pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 
+pub fn is_mem_method(String) -> Bool
+
+pub fn is_mgmt_method(String) -> Bool
+
 pub fn join_collected(@diagnostic.Context, @basic.Location, Array[(@basic.Location?, @infer.Cell[@infer.InferredType])], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
@@ -184,6 +195,10 @@ pub fn lookup_func_type(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident
 pub fn lookup_struct_type(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> Array[@basic.Annotated[(@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]), @basic.Location]]?
 
 pub fn mark_initialized(@typing_env.ModuleContext, String) -> Unit
+
+pub fn mem_load_result(String) -> @infer.InferredType?
+
+pub fn mem_store_method(String) -> Bool
 
 pub fn memory_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
@@ -296,6 +311,16 @@ pub fn[A] with_empty_stack(Operands, @diagnostic.Context, @basic.Location, () ->
 // Errors
 
 // Types and methods
+pub(all) enum MethodCall {
+  Atomic(@atomics.Family)
+  MemAccess
+  SimdMemAccess
+  MemManage
+  TableManage
+  SegmentDrop
+  Ordinary
+} derive(Eq)
+
 pub(all) struct MissingBatch {
   mut hole_reported : Bool
   hole_actual : Int

@@ -11,6 +11,8 @@ import {
   "waxmb/wax/number",
   "waxmb/wax/spell",
   "waxmb/wax/cond",
+  "waxmb/wax/atomics",
+  "waxmb/wax/simd",
   "moonbitlang/core/ref",
 }
 

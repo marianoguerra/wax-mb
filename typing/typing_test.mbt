@@ -3120,3 +3120,144 @@ test "a field set names a struct only when it names one uniquely" {
   inspect(named(["r", "g", "b"]), content="ambiguous or unknown")
   inspect(named(["nothing"]), content="ambiguous or unknown")
 }
+
+///|
+/// Wax writes memory and table operations as method calls, so a call has to be
+/// classified before it can be typed. The classification is by method name and
+/// RECEIVER together, never either alone: `size` on a memory counts pages,
+/// `size` on a table counts elements, and a local named `mem` shadows the
+/// memory entirely.
+test "a method call is classified by its receiver as much as its name" {
+  let ctx = module_ctx()
+  ctx.memories.add(ctx.diagnostics, "mem", loc_at(0, 3), (0, I32))
+  ctx.tables.add(
+    ctx.diagnostics,
+    "tab",
+    loc_at(4, 7),
+    (I32, { nullable: true, typ: Func }),
+  )
+  ctx.datas.add(ctx.diagnostics, "seg", loc_at(8, 11), ())
+  fn kind(recv : String, meth : String) -> String {
+    match @typing.classify_method_call(ctx, id(recv), meth) {
+      Atomic(_) => "atomic"
+      MemAccess => "mem access"
+      SimdMemAccess => "simd access"
+      MemManage => "mem manage"
+      TableManage => "table manage"
+      SegmentDrop => "segment drop"
+      Ordinary => "ordinary"
+    }
+  }
+
+  inspect(kind("mem", "load32"), content="mem access")
+  inspect(kind("mem", "storef64"), content="mem access")
+  inspect(kind("mem", "loadv128"), content="simd access")
+  // The same name, two different operations, told apart by the receiver.
+  inspect(kind("mem", "size"), content="mem manage")
+  inspect(kind("tab", "size"), content="table manage")
+  inspect(kind("seg", "drop"), content="segment drop")
+  // A name no family claims.
+  inspect(kind("mem", "frobnicate"), content="ordinary")
+  // A receiver that is not a memory at all.
+  inspect(kind("tab", "load32"), content="ordinary")
+  // And a local shadows the memory, so the intrinsic is out of reach.
+  @typing.bind_local(ctx, id("mem"), Some(@infer.i32_valtype))
+  inspect(kind("mem", "load32"), content="ordinary")
+}
+
+///|
+/// A continuation type wraps a function type, so answering what `resume` acts
+/// on is two hops through the store: the reference names a continuation, the
+/// continuation names a function.
+test "a continuation names the function type it continues" {
+  let ctx = module_ctx()
+  let tc = ctx.type_context
+  let info = () => tc.subtyping_info()
+  fn declare_type(n : String, t : @ast.CompType, at : Int) -> Unit {
+    let _ = @typing.add_type(tc, ctx.diagnostics, [
+      {
+        desc: (
+          id(n),
+          {
+            typ: t,
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: None,
+          },
+        ),
+        info: loc_at(at, at + 1),
+      },
+    ])
+  }
+
+  declare_type("ft", Func({ params: [], results: [] }), 0)
+  declare_type("k", Cont(id("ft")), 2)
+  declare_type("s", Struct([]), 4)
+  fn wrapped(n : String) -> String {
+    guard @typing.resolve_type_name(tc, ctx.diagnostics, id(n)) is Some(t) else {
+      return "unbound"
+    }
+    match @typing.cont_functype(info(), Type(t)) {
+      Some(_) => "a function type"
+      None => "not a continuation"
+    }
+  }
+
+  inspect(wrapped("k"), content="a function type")
+  // A struct is not a continuation, and neither is a bare function type.
+  inspect(wrapped("s"), content="not a continuation")
+  inspect(wrapped("ft"), content="not a continuation")
+}
+
+///|
+/// Function-type matching is contravariant in the parameters and covariant in
+/// the results -- what is expected must accept everything the caller may pass,
+/// and produce something the caller can use. It is the one rule that is easy to
+/// write backwards, so both directions are pinned.
+test "function types match contravariantly in their parameters" {
+  let ctx = module_ctx()
+  let info = ctx.type_context.subtyping_info()
+  let anyref : @wasm_types.ValType[@type_store.Id] = Ref({
+    nullable: true,
+    typ: Any,
+  })
+  let eqref : @wasm_types.ValType[@type_store.Id] = Ref({
+    nullable: true,
+    typ: Eq,
+  })
+  fn ft(
+    params : Array[@wasm_types.ValType[@type_store.Id]],
+    results : Array[@wasm_types.ValType[@type_store.Id]],
+  ) -> @type_store.FuncType[@type_store.Id] {
+    { params, results }
+  }
+
+  // `eq` is a subtype of `any`.
+  inspect(@type_store.val_subtype(info, eqref, anyref), content="true")
+  // A function taking `any` can be used where one taking `eq` is expected: it
+  // accepts more than it has to.
+  inspect(
+    @typing.functype_matches(info, ft([anyref], []), ft([eqref], [])),
+    content="true",
+  )
+  // Not the other way round: one taking `eq` cannot accept every `any`.
+  inspect(
+    @typing.functype_matches(info, ft([eqref], []), ft([anyref], [])),
+    content="false",
+  )
+  // Results go the other way: producing `eq` satisfies a promise of `any`.
+  inspect(
+    @typing.functype_matches(info, ft([], [eqref]), ft([], [anyref])),
+    content="true",
+  )
+  inspect(
+    @typing.functype_matches(info, ft([], [anyref]), ft([], [eqref])),
+    content="false",
+  )
+  // Arities have to agree exactly.
+  inspect(
+    @typing.functype_matches(info, ft([anyref], []), ft([], [])),
+    content="false",
+  )
+}
