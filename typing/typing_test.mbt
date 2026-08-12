@@ -3724,3 +3724,149 @@ test "a block with an unresolvable shape still annotates its body" {
     content="number",
   )
 }
+
+///|
+/// The branch family, through the dispatcher. A `br` ends the block, so
+/// everything after it is dead; a `br_if` does not, so the values it did not
+/// deliver stay on the stack.
+test "a br ends control and a br_if does not" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // Inside a block labelled `out` producing an i32.
+  fn in_block(
+    body : Array[@ast.Instr[@basic.Location]],
+  ) -> (@typing_env.ModuleContext, @typing.Operands, @typing.Checker) {
+    let ctx = module_ctx()
+    let ops = @typing.Operands::new()
+    let checker = @typing.Checker::new(ctx, ops)
+    let _ = checker.statement(
+      instr(
+        Block(label=Some(id("out")), typ={ params: [], results: [I32] }, block={
+          desc: body,
+          info: loc_at(90, 91),
+        }),
+        10,
+      ),
+    )
+    (ctx, ops, checker)
+  }
+
+  // `br $out 1` -- delivers an i32, and control never returns.
+  let (ctx, _, checker) = in_block([
+    instr(Br(id("out"), Some(instr(Int("1"), 20))), 20),
+  ])
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(checker.gaps().length(), content="0")
+
+  // `br $out` with nothing, where the target wants a value.
+  let (ctx2, _, _) = in_block([instr(Br(id("out"), None), 20)])
+  inspect(
+    @message.to_plain_string(ctx2.diagnostics.collected()[0].message),
+    content="This instruction provides 0 value(s) but 1 was/were expected.",
+  )
+}
+
+///|
+/// A `br_if` takes its condition LAST, because that is the order the values are
+/// pushed in and the condition is the one on top. Everything below it is what
+/// the branch delivers -- and, since the branch may not be taken, what stays on
+/// the stack.
+test "a br_if takes its condition last and passes the rest through" {
+  let ctx = module_ctx()
+  let ops = @typing.Operands::new()
+  let checker = @typing.Checker::new(ctx, ops)
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // Inside a block producing an f64: `br_if $out (1.5, 1)`.
+  let checked = checker.statement(
+    instr(
+      Block(label=Some(id("out")), typ={ params: [], results: [F64] }, block={
+        desc: [
+          instr(
+            BrIf(
+              id("out"),
+              instr(
+                Sequence([instr(Float("1.5"), 20), instr(Int("1"), 24)]),
+                20,
+              ),
+            ),
+            20,
+          ),
+        ],
+        info: loc_at(90, 91),
+      }),
+      10,
+    ),
+  )
+  inspect(checker.gaps().length(), content="0")
+  inspect(checked.info.0.map(t => @infer.to_string(t)).join(","), content="f64")
+}
+
+///|
+/// A `br_table`'s value count is ONE fact about the instruction, so it is
+/// reported once against the first bound target rather than once per target.
+/// And an unbound target is reported at its own span without imposing a shape.
+test "a br_table reports its arity once, whatever the targets" {
+  let ctx = module_ctx()
+  let ops = @typing.Operands::new()
+  let checker = @typing.Checker::new(ctx, ops)
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // Two targets wanting one value each; the table provides only the index.
+  let _ = checker.statement(
+    instr(
+      Block(label=Some(id("a")), typ={ params: [], results: [I32] }, block={
+        desc: [
+          instr(
+            Block(label=Some(id("b")), typ={ params: [], results: [I32] }, block={
+              desc: [
+                instr(BrTable([id("a"), id("b")], instr(Int("0"), 40)), 40),
+              ],
+              info: loc_at(80, 81),
+            }),
+            30,
+          ),
+        ],
+        info: loc_at(90, 91),
+      }),
+      10,
+    ),
+  )
+  let counts = ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .filter(m => m.has_prefix("This instruction provides"))
+  // One arity complaint, not one per target.
+  inspect(counts.length(), content="1")
+  inspect(checker.gaps().length(), content="0")
+}

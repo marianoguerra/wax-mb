@@ -214,6 +214,138 @@ pub fn Checker::statement(
       }
     }
 
+    // --- The branch family ---
+    Br(label, operand) => {
+      let params = branch_target(ctx, label)
+      // An unbound label was already reported by `branch_target`, and its empty
+      // parameter list is not a real arity -- checking against it would anchor
+      // derived errors here rather than at the unbound name.
+      let bound = label_in_scope(ctx, label)
+      let checked = match operand {
+        Some(e) => {
+          let c = self.statement(e)
+          if bound {
+            check_subtypes(
+              ctx.type_context.subtyping_info(),
+              ctx.diagnostics,
+              e.info,
+              c.info.0,
+              params,
+            )
+          }
+          Some(c)
+        }
+        None => {
+          if bound && !params.is_empty() {
+            value_count_mismatch(
+              ctx.diagnostics,
+              loc,
+              expected=params.length(),
+              provided=0,
+            )
+          }
+          None
+        }
+      }
+      // Control never falls out of a `br`, so everything after it is dead.
+      self.ops.set_unreachable()
+      {
+        desc: Br(label, checked),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    BrIf(label, operand) => {
+      let c = self.statement(operand)
+      let (cond_ty, delivered) = self.split_on_last(operand.info, c.info.0)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        operand.info,
+        cond_ty,
+        @infer.valtype_cell(@infer.i32_valtype),
+      )
+      // A `br_if` does not end the block: it delivers when taken and falls
+      // through when not, so the values it leaves are what the fall-through
+      // sees. `deliver_to_branch_target` is what records them as pass-through
+      // exits, which have to match the target EXACTLY.
+      let result = if label_in_scope(ctx, label) {
+        deliver_to_branch_target(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          operand.info,
+          delivered,
+          branch_target(ctx, label),
+        )
+      } else {
+        delivered
+      }
+      {
+        desc: BrIf(label, c),
+        info: annotate(result, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    BrTable(labels, operand) => {
+      let c = self.statement(operand)
+      let (index_ty, delivered) = self.split_on_last(operand.info, c.info.0)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        operand.info,
+        index_ty,
+        @infer.valtype_cell(@infer.i32_valtype),
+      )
+      // Every target is resolved, so an unbound one reports at its own span and
+      // each occurrence marks its label used. Only the BOUND ones impose a
+      // shape.
+      let bound : Array[Array[@infer.Cell[@infer.InferredType]]] = []
+      for label in labels {
+        let params = branch_target(ctx, label)
+        if label_in_scope(ctx, label) {
+          bound.push(params)
+        }
+      }
+      if !bound.is_empty() {
+        // How many values the `br_table` provides is ONE fact about the
+        // instruction, so it is checked once against the first bound target's
+        // arity. Checking it per target would repeat an identical report for
+        // every one of them.
+        if delivered.length() != bound[0].length() {
+          value_count_mismatch(
+            ctx.diagnostics,
+            loc,
+            expected=bound[0].length(),
+            provided=delivered.length(),
+          )
+        }
+        // Checked without PINNING: one set of values is checked against every
+        // target, so resolving a polymorphic value against the first target's
+        // type would wrongly reject a later, differently typed one.
+        for params in bound {
+          if params.length() == delivered.length() {
+            check_subtypes(
+              ctx.type_context.subtyping_info(),
+              ctx.diagnostics,
+              operand.info,
+              delivered,
+              params,
+              pin=false,
+            )
+          }
+        }
+      }
+      self.ops.set_unreachable()
+      {
+        desc: BrTable(labels, c),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -476,4 +608,27 @@ fn Checker::poisoned(
   let node = self.placeholder(i)
   self.ops.push(Some(i.info), ty)
   { ..node, info: annotate([ty], i.info) }
+}
+
+///|
+/// Split an annotation into its last value and the rest.
+///
+/// The branch forms that take a condition take it LAST -- `br_if $l (v, cond)`
+/// -- because that is the order the values are pushed in, and the condition is
+/// the one on top. Everything below it is what the branch delivers.
+fn Checker::split_on_last(
+  self : Checker,
+  location : @basic.Location,
+  types : Array[@infer.Cell[@infer.InferredType]],
+) -> (@infer.Cell[@infer.InferredType], Array[@infer.Cell[@infer.InferredType]]) {
+  if types.is_empty() {
+    operand_count_mismatch(
+      self.ctx.diagnostics,
+      location,
+      expected=1,
+      provided=0,
+    )
+    return (@infer.Cell::make(@infer.InferredType::Error), [])
+  }
+  (types[types.length() - 1], types[0:types.length() - 1].to_owned())
 }
