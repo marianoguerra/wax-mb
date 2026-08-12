@@ -36,8 +36,23 @@ pub fn Lowering::instr(
     Char(c) => out.push(I32Const(c.to_int()))
     Get(name) => out.push(self.read(name, loc))
     Set(name, op, value) => {
-      guard op is None else { raise NotLowered("compound assignment", loc) }
-      self.instr(out, value)
+      // `x op= e` is `x = x op e`: the read comes first, then the operand, then
+      // the operator, then the write. The compound form is kept in the typed
+      // AST so it round-trips; here it is spelled out.
+      match op {
+        None => self.instr(out, value)
+        Some(binop) => {
+          out.push(self.read(name, loc))
+          self.instr(out, value)
+          guard node_valtype(value) is Some(ty) else {
+            raise Unresolved("compound operand type", loc)
+          }
+          guard binop_instruction(binop.desc, ty) is Some(instruction) else {
+            raise NotLowered("compound operator at this type", loc)
+          }
+          out.push(instruction)
+        }
+      }
       out.push(self.write(name, loc))
     }
     Tee(name, value) => {
@@ -189,6 +204,14 @@ pub fn Lowering::instr(
           }
         }
       }
+      // Memory and table management: the same five names on both, told apart
+      // by which space the receiver is in -- `size` on a memory counts pages
+      // and on a table counts elements.
+      if callee.desc is StructGet(recv, meth) && recv.desc is Get(rname) {
+        if self.mgmt_call(out, rname, meth, args, loc) {
+          return
+        }
+      }
       guard callee.desc is Get(name) else {
         // Named precisely, because these are three different jobs wearing one
         // syntax and the burn-down needs to tell them apart.
@@ -324,6 +347,17 @@ pub fn Lowering::instr(
       let (t, _) = self.array_element_of(i, loc)
       out.push(ArrayNewFixed(t, elems.length()))
     }
+    ArrayGet(recv, index) if self.table_of(recv) is Some(_) => {
+      guard self.table_of(recv) is Some(t) else { return }
+      self.instr(out, index)
+      out.push(TableGet(t))
+    }
+    ArraySet(recv, index, value) if self.table_of(recv) is Some(_) => {
+      guard self.table_of(recv) is Some(t) else { return }
+      self.instr(out, index)
+      self.instr(out, value)
+      out.push(TableSet(t))
+    }
     ArrayGet(recv, index) => {
       self.instr(out, recv)
       self.instr(out, index)
@@ -364,7 +398,6 @@ fn Lowering::block_type(
   typ : @ast.FuncType,
   loc : @basic.Location,
 ) -> @wasm_bin.BlockType raise LowerError {
-  ignore(self)
   if typ.params.is_empty() {
     match typ.results {
       [] => Empty
@@ -375,7 +408,9 @@ fn Lowering::block_type(
           F32 => Value(F32)
           F64 => Value(F64)
           V128 => Value(V128)
-          Ref(_) => raise NotLowered("reference block result", loc)
+          // A block type IS a value type, and a reference is one -- its type
+          // names just have to become indices first.
+          Ref(rt) => Value(Ref(self.reftype_index(rt, loc)))
         }
       _ => raise NotLowered("multi-value block", loc)
     }
@@ -479,4 +514,112 @@ fn Lowering::field_index(
     }
   }
   None
+}
+
+///|
+/// The table a receiver names, if it names one.
+///
+/// `tab[i]` and `arr[i]` are one syntax; the receiver decides, exactly as it
+/// does for the management methods.
+fn Lowering::table_of(
+  self : Lowering,
+  recv : @ast.Instr[@typing_env.InferredAnnotation],
+) -> Int? {
+  guard recv.desc is Get(name) else { return None }
+  // A LOCAL of the same name shadows the table, which is the order the checker
+  // resolved it in too.
+  guard !self.locals.contains(name.name) else { return None }
+  self.indices.tables.get(name.name)
+}
+
+///|
+/// Lower a management call, returning whether it applied.
+///
+/// The five names -- `size`, `grow`, `fill`, `copy`, `init` -- serve memories
+/// and tables alike, so the receiver's SPACE picks the instruction. `init` and
+/// `copy` name a second thing (a segment, or the other memory or table), and
+/// that name is an immediate rather than a value: it is not emitted, it is
+/// encoded.
+fn Lowering::mgmt_call(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  recv : @ast.Ident,
+  meth : @ast.Ident,
+  args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  loc : @basic.Location,
+) -> Bool raise LowerError {
+  guard !self.locals.contains(recv.name) else { return false }
+  let on_memory = self.indices.memories.get(recv.name)
+  let on_table = self.indices.tables.get(recv.name)
+  guard on_memory is Some(_) || on_table is Some(_) else { return false }
+  // The leading segment or source name of `init`/`copy` is an immediate.
+  let (immediate, values) = match meth.name {
+    "init" =>
+      if args.length() >= 1 && args[0].desc is Get(n) {
+        (Some(n), args[1:].to_owned())
+      } else {
+        (None, args)
+      }
+    "copy" =>
+      if args.length() == 4 && args[1].desc is Get(n) {
+        // `dst.copy(i, src, j, n)`: the source is the second argument.
+        (Some(n), [args[0], args[2], args[3]])
+      } else {
+        (None, args)
+      }
+    _ => (None, args)
+  }
+  for a in values {
+    self.instr(out, a)
+  }
+  match (meth.name, on_memory, on_table) {
+    ("size", Some(m), _) => out.push(MemorySize(m))
+    ("grow", Some(m), _) => out.push(MemoryGrow(m))
+    ("fill", Some(m), _) => out.push(MemoryFill(m))
+    ("copy", Some(m), _) => {
+      let src = match immediate {
+        Some(n) =>
+          match self.indices.memories.get(n.name) {
+            Some(k) => k
+            None => raise Unresolved("source memory", loc)
+          }
+        None => m
+      }
+      out.push(MemoryCopy(m, src))
+    }
+    ("init", Some(m), _) => {
+      guard immediate is Some(n) else {
+        raise Unresolved("data segment name", loc)
+      }
+      guard self.indices.datas.get(n.name) is Some(d) else {
+        raise Unresolved("data segment", loc)
+      }
+      out.push(MemoryInit(d, m))
+    }
+    ("size", _, Some(t)) => out.push(TableSize(t))
+    ("grow", _, Some(t)) => out.push(TableGrow(t))
+    ("fill", _, Some(t)) => out.push(TableFill(t))
+    ("copy", _, Some(t)) => {
+      let src = match immediate {
+        Some(n) =>
+          match self.indices.tables.get(n.name) {
+            Some(k) => k
+            None => raise Unresolved("source table", loc)
+          }
+        None => t
+      }
+      out.push(TableCopy(t, src))
+    }
+    ("init", _, Some(t)) => {
+      guard immediate is Some(n) else {
+        raise Unresolved("element segment name", loc)
+      }
+      guard self.indices.elems.get(n.name) is Some(e) else {
+        raise Unresolved("element segment", loc)
+      }
+      out.push(TableInit(e, t))
+    }
+    _ => return false
+  }
+  true
 }
