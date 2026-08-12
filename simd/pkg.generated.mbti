@@ -11,6 +11,8 @@ pub let all_shapes : Array[Shape]
 
 pub let bitselect_name : String
 
+pub fn classify(String) -> Intrinsic?
+
 pub fn const_arity(Shape) -> Int
 
 pub fn const_name(Shape) -> String
@@ -43,6 +45,10 @@ pub fn mem_method(String) -> MemIntrinsic?
 
 pub let mem_method_names : Array[String]
 
+pub fn method_names(Ty) -> Array[String]
+
+pub fn size() -> Int
+
 pub fn store_lane_name(LaneWidth) -> String
 
 pub let store_name : String
@@ -52,6 +58,20 @@ pub let vec_loads : Array[VecLoad]
 // Errors
 
 // Types and methods
+pub(all) enum Imm {
+  NoImm
+  Lane(Shape)
+  Shuffle
+} derive(Eq, @debug.Debug)
+
+pub struct Intrinsic {
+  operands : Array[Ty]
+  result : Ty?
+  imm : Imm
+  free : Bool
+  build : (Array[Int]) -> @wasm_bin.Instruction
+}
+
 pub(all) enum LaneWidth {
   L8
   L16
