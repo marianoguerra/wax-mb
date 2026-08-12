@@ -3570,3 +3570,157 @@ test "a misplaced name or label is reported and recovered from" {
     content="number",
   )
 }
+
+///|
+/// The block constructs, through the dispatcher. A block's parameters come off
+/// the enclosing stack and go onto its own; its results come back to the
+/// enclosing one.
+test "a block takes its parameters and leaves its results" {
+  let ctx = module_ctx()
+  let ops = @typing.Operands::new()
+  let checker = @typing.Checker::new(ctx, ops)
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // `block (i32) -> f64 { 1.5 }`, given an i32.
+  let checked = checker.statement(
+    instr(
+      Block(
+        label=Some(id("out")),
+        typ={
+          params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+          results: [F64],
+        },
+        block={ desc: [instr(Float("1.5"), 20)], info: loc_at(20, 21) },
+      ),
+      10,
+    ),
+  )
+  // The parameter was never supplied, so the input check says so -- and that is
+  // the enclosing stack being read, which is the point.
+  inspect(ctx.diagnostics.collected().length() > 0, content="true")
+  inspect(checked.info.0.map(t => @infer.to_string(t)).join(","), content="f64")
+  // The body's own instruction is annotated, and the literal was pinned to the
+  // block's declared result by the output check.
+  guard! checked.desc is Block(block~, ..)
+  inspect(
+    block.desc[0].info.0.map(t => @infer.to_string(t)).join(","),
+    content="f64",
+  )
+  inspect(checker.gaps().length(), content="0")
+}
+
+///|
+/// An `if` consumes its condition from the ENCLOSING stack, before the block is
+/// entered -- the condition is not one of the block's parameters.
+///
+/// And with no `else` the false path falls straight through, which is sound
+/// only when the parameters already are the results.
+test "an if consumes its condition and needs an else to produce a value" {
+  fn run(
+    results : Array[@wasm_types.ValType[@ast.Ident]],
+    with_else : Bool,
+  ) -> String {
+    let ctx = module_ctx()
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    fn instr(
+      d : @ast.InstrDesc[@basic.Location],
+      at : Int,
+    ) -> @ast.Instr[@basic.Location] {
+      {
+        desc: d,
+        info: loc_at(at, at + 1),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      }
+    }
+
+    let body = if results.is_empty() { [] } else { [instr(Int("1"), 30)] }
+    let _ = checker.statement(
+      instr(
+        If(
+          label=None,
+          typ={ params: [], results },
+          cond=instr(Int("1"), 20),
+          if_block={ desc: body, info: loc_at(30, 31) },
+          else_block=if with_else {
+            Some({ desc: body, info: loc_at(40, 41) })
+          } else {
+            None
+          },
+        ),
+        10,
+      ),
+    )
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // Void, no else: nothing promised, nothing to deliver.
+  inspect(run([], false), content="")
+  // Produces a value, with an else: both paths deliver.
+  inspect(run([I32], true), content="")
+  // Produces a value, no else: the false path never produces it.
+  inspect(
+    run([I32], false),
+    content="This 'if' must produce a value and so requires an 'else' branch.",
+  )
+}
+
+///|
+/// A block whose declared shape does not resolve still has its body walked --
+/// the instructions inside are annotated -- but is not checked against a shape
+/// nobody has. The failure was reported by the resolver, and the poison keeps
+/// the enclosing scope quiet.
+test "a block with an unresolvable shape still annotates its body" {
+  let ctx = module_ctx()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let checked = checker.statement(
+    instr(
+      Block(
+        label=None,
+        typ={
+          params: [],
+          results: [Ref({ nullable: true, typ: Type(id("nope")) })],
+        },
+        block={ desc: [instr(Int("1"), 20)], info: loc_at(20, 21) },
+      ),
+      10,
+    ),
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="The type 'nope' is not bound.",
+  )
+  // One report, not a cascade.
+  inspect(ctx.diagnostics.collected().length(), content="1")
+  inspect(checked.info.0[0].get() is Error, content="true")
+  guard! checked.desc is Block(block~, ..)
+  inspect(
+    block.desc[0].info.0.map(t => @infer.to_string(t)).join(","),
+    content="number",
+  )
+}

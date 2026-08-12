@@ -145,6 +145,75 @@ pub fn Checker::statement(
       }
     }
 
+    // --- The block constructs ---
+    Block(label~, typ~, block~) =>
+      self.block_construct(i, label, typ, block, loop_=false)
+    Loop(label~, typ~, block~) =>
+      self.block_construct(i, label, typ, block, loop_=true)
+    If(label~, typ~, cond~, if_block~, else_block~) => {
+      // The condition is checked FIRST, on the enclosing stack, because it is
+      // consumed before the block is entered -- it is not part of the block's
+      // parameters.
+      let cond_ = self.statement(cond)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        cond.info,
+        expression_type(ctx, cond_.info),
+        @infer.valtype_cell(@infer.i32_valtype),
+      )
+      guard self.signature_of(typ) is Some((params, results)) else {
+        return self.poisoned(i)
+      }
+      self.ops.pop_args(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        Input,
+        loc,
+        params,
+      )
+      let then_ = self.body(loc, label, params, results, results, if_block.desc)
+      let else_ = match else_block {
+        Some(b) => {
+          let checked = self.body(loc, label, params, results, results, b.desc)
+          Some(
+            (
+              { desc: checked, info: b.info } :
+              @basic.Annotated[
+                Array[@ast.Instr[@typing_env.InferredAnnotation]],
+                @basic.Location,
+              ]),
+          )
+        }
+        None => {
+          // With no `else` the false path falls straight through, delivering
+          // what it was given. Sound only when the parameters already are the
+          // results.
+          if !missing_else_ok(
+              ctx.type_context.subtyping_info(),
+              params,
+              results,
+            ) {
+            if_without_else(ctx.diagnostics, loc)
+          }
+          None
+        }
+      }
+      self.ops.push_results(loc, results)
+      {
+        desc: If(
+          label~,
+          typ~,
+          cond=cond_,
+          if_block={ desc: then_, info: if_block.info },
+          else_block=else_,
+        ),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -288,4 +357,123 @@ pub fn constructor_name(d : @ast.InstrDesc[@basic.Location]) -> String {
     Select(_, _, _) => "Select"
     IfAnnotation(..) => "IfAnnotation"
   }
+}
+
+///|
+/// A block's declared shape, or `None` when it did not resolve.
+fn Checker::signature_of(
+  self : Checker,
+  typ : @ast.FuncType,
+) -> (
+  Array[@infer.Cell[@infer.InferredType]],
+  Array[@infer.Cell[@infer.InferredType]],
+)? {
+  block_signature(self.ctx.type_context, self.ctx.diagnostics, typ)
+}
+
+///|
+/// Check a block's body and hand back the typed instructions.
+///
+/// The body is collected through a captured array rather than returned, because
+/// `checked_block` takes a `() -> Unit`: what it wraps the body IN -- the fresh
+/// stack, the control frame, the output check -- is the same whatever the body
+/// produces, so threading a result through it would only obscure that.
+fn Checker::body(
+  self : Checker,
+  location : @basic.Location,
+  label : @ast.Ident?,
+  params : Array[@infer.Cell[@infer.InferredType]],
+  results : Array[@infer.Cell[@infer.InferredType]],
+  branch_target : Array[@infer.Cell[@infer.InferredType]],
+  instrs : Array[@ast.Instr[@basic.Location]],
+) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
+  let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  checked_block(
+    self.ctx,
+    self.ops,
+    location,
+    label,
+    params,
+    results,
+    branch_target,
+    () => {
+      for s in instrs {
+        checked.push(self.statement(s))
+      }
+    },
+  )
+  checked
+}
+
+///|
+/// A `block` or a `loop`, which differ in exactly one thing.
+///
+/// A `br` to a BLOCK's label jumps to its end and delivers its results; a `br`
+/// to a LOOP's label jumps to its top and delivers its parameters. That is the
+/// only difference between them here, and it is the `branch_target` argument.
+fn Checker::block_construct(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+  label : @ast.Ident?,
+  typ : @ast.FuncType,
+  block : @basic.Annotated[Array[@ast.Instr[@basic.Location]], @basic.Location],
+  loop_~ : Bool,
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let ctx = self.ctx
+  let loc = i.info
+  guard self.signature_of(typ) is Some((params, results)) else {
+    return self.poisoned(i)
+  }
+  // The parameters come off the ENCLOSING stack here; `checked_block` puts them
+  // back on the block's own.
+  self.ops.pop_args(
+    ctx.type_context.subtyping_info(),
+    ctx.diagnostics,
+    Input,
+    loc,
+    params,
+  )
+  let branch_target = if loop_ { params } else { results }
+  let checked = self.body(
+    loc,
+    label,
+    params,
+    results,
+    branch_target,
+    block.desc,
+  )
+  self.ops.push_results(loc, results)
+  let body = (
+    { desc: checked, info: block.info } :
+    @basic.Annotated[
+      Array[@ast.Instr[@typing_env.InferredAnnotation]],
+      @basic.Location,
+    ])
+  {
+    desc: if loop_ {
+      Loop(label~, typ~, block=body)
+    } else {
+      Block(label~, typ~, block=body)
+    },
+    info: annotate(results, loc),
+    hints: i.hints,
+    expected: i.expected,
+  }
+}
+
+///|
+/// Recover from a block whose declared shape did not resolve.
+///
+/// The body is still walked, so its instructions are annotated, but the failure
+/// was already reported by the resolver and checking the body against a shape
+/// we do not have would only invent complaints. Pushing `Error` poisons the
+/// stack, which is what keeps the enclosing scope quiet too.
+fn Checker::poisoned(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let ty = @infer.Cell::make(@infer.InferredType::Error)
+  let node = self.placeholder(i)
+  self.ops.push(Some(i.info), ty)
+  { ..node, info: annotate([ty], i.info) }
 }
