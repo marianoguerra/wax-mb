@@ -81,7 +81,6 @@ pub fn Checker::statement(
     // --- Values that need nothing but their own token ---
     Int(_) | Float(_) | Char(_) | Null => {
       let ty = @infer.Cell::make(literal_type(i.desc).unwrap())
-      self.ops.push(Some(loc), ty)
       self.rebuild(i, [ty])
     }
 
@@ -97,7 +96,6 @@ pub fn Checker::statement(
     // --- Reading a variable ---
     Get(idx) => {
       let ty = type_get(ctx, idx)
-      self.ops.push(Some(loc), ty)
       self.rebuild(i, [ty])
     }
 
@@ -106,7 +104,6 @@ pub fn Checker::statement(
       let batch : Ref[MissingBatch?] = @ref.new(None)
       let ty = self.ops.pop_any(batch, 0, 1)
       report_missing_hole(self.ops, ctx.diagnostics, loc, ty)
-      self.ops.push(Some(loc), ty)
       self.rebuild(i, [ty])
     }
 
@@ -114,7 +111,6 @@ pub fn Checker::statement(
     Path(ns, name) => {
       intrinsic_not_called(ctx.diagnostics, loc, ns.name, name.name)
       let ty = @infer.Cell::make(@infer.InferredType::Error)
-      self.ops.push(Some(loc), ty)
       self.rebuild(i, [ty])
     }
 
@@ -199,7 +195,6 @@ pub fn Checker::statement(
           None
         }
       }
-      self.ops.push_results(loc, results)
       {
         desc: If(
           label~,
@@ -480,7 +475,6 @@ pub fn Checker::statement(
           @infer.Cell::make(@infer.InferredType::Error)
         }
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: Select(cond_, a_, b_),
         info: annotate([ty], loc),
@@ -514,7 +508,6 @@ pub fn Checker::statement(
       } else {
         ty
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: BinOpI(op, a_, b_),
         info: annotate([ty], loc),
@@ -532,7 +525,6 @@ pub fn Checker::statement(
       } else {
         ty
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: UnOpI(op, e_),
         info: annotate([ty], loc),
@@ -618,7 +610,6 @@ pub fn Checker::statement(
           ty,
         )
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: Tee(idx, checked),
         info: annotate([ty], loc),
@@ -687,7 +678,6 @@ pub fn Checker::statement(
         expression_type(ctx, recv_.info),
         field,
       )
-      self.ops.push(Some(loc), ty)
       {
         desc: StructGet(recv_, field),
         info: annotate([ty], loc),
@@ -752,7 +742,6 @@ pub fn Checker::statement(
           }
         None => @infer.Cell::make(@infer.InferredType::Error)
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: ArrayGet(recv_, index_),
         info: annotate([ty], loc),
@@ -796,7 +785,6 @@ pub fn Checker::statement(
           }
         _ => @infer.Cell::make(@infer.InferredType::Error)
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: Struct(name, checked),
         info: annotate([ty], loc),
@@ -834,7 +822,6 @@ pub fn Checker::statement(
           @infer.Cell::make(@infer.InferredType::Error)
         }
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: StructDefault(name),
         info: annotate([ty], loc),
@@ -868,7 +855,6 @@ pub fn Checker::statement(
         @infer.valtype_cell(@infer.i32_valtype),
       )
       let ty = self.allocated(loc, name)
-      self.ops.push(Some(loc), ty)
       {
         desc: Array(name, init_, size_),
         info: annotate([ty], loc),
@@ -894,7 +880,6 @@ pub fn Checker::statement(
         }
       }
       let ty = self.allocated(loc, name)
-      self.ops.push(Some(loc), ty)
       {
         desc: ArrayDefault(name, size_),
         info: annotate([ty], loc),
@@ -919,7 +904,6 @@ pub fn Checker::statement(
         checked.push(c)
       }
       let ty = self.allocated(loc, name)
-      self.ops.push(Some(loc), ty)
       {
         desc: ArrayFixed(name, checked),
         info: annotate([ty], loc),
@@ -981,7 +965,6 @@ pub fn Checker::statement(
             },
           )
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: Cast(operand_, target),
         info: annotate([ty], loc),
@@ -1004,7 +987,6 @@ pub fn Checker::statement(
       }
       // A test answers a question, so it produces an i32 whatever it asked.
       let ty = @infer.valtype_cell(@infer.i32_valtype)
-      self.ops.push(Some(loc), ty)
       {
         desc: Test(operand_, target),
         info: annotate([ty], loc),
@@ -1035,7 +1017,6 @@ pub fn Checker::statement(
           @infer.Cell::make(@infer.InferredType::Error)
         }
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: NonNull(operand_),
         info: annotate([ty], loc),
@@ -1080,7 +1061,6 @@ pub fn Checker::statement(
         Some(c) => c
         None => @infer.Cell::make(@infer.InferredType::Error)
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: Str(name, bytes),
         info: annotate([ty], loc),
@@ -1129,7 +1109,6 @@ pub fn Checker::statement(
           }
       }
       let ty = self.allocated(loc, name)
-      self.ops.push(Some(loc), ty)
       {
         desc: ArraySegment(name, seg, off_, len_),
         info: annotate([ty], loc),
@@ -1184,7 +1163,6 @@ pub fn Checker::statement(
           @infer.Cell::make(@infer.InferredType::Error)
         }
       }
-      self.ops.push(Some(loc), ty)
       {
         desc: GetDescriptor(recv_),
         info: annotate([ty], loc),
@@ -1210,7 +1188,6 @@ pub fn Checker::statement(
       // label in the ENCLOSING scope, not to the try's own. Checking after the
       // body has closed its frame is what makes that true.
       check_trytable_catches(ctx, catches)
-      self.ops.push_results(loc, results)
       {
         desc: TryTable(label~, typ~, catches~, block={
           desc: body,
@@ -1284,7 +1261,6 @@ pub fn Checker::statement(
         }
         None => None
       }
-      self.ops.push_results(loc, results)
       {
         desc: Try(
           label~,
@@ -1343,7 +1319,6 @@ pub fn Checker::statement(
           arm_body: { desc: arm_body, info: arm.arm_body.info },
         })
       }
-      self.ops.push_results(loc, results)
       {
         desc: TryCatch(
           label~,
@@ -1354,6 +1329,49 @@ pub fn Checker::statement(
         info: annotate(results, loc),
         hints: i.hints,
         expected: i.expected,
+      }
+    }
+
+    // --- A while loop, checked as what it lowers to ---
+    While(label~, cond~, step~, block~) => {
+      // Checked against its LOWERING rather than by its own rules, so the loop
+      // and the branch it becomes are validated exactly as if they had been
+      // written out -- and there is no second set of rules to drift from the
+      // first. The high-level form is then rebuilt for the formatter and for
+      // the identical re-lowering in the code generator.
+      let fresh : @ast.Ident = {
+        name: "<while:" + loc.start.cnum.to_string() + ">",
+        loc,
+      }
+      let lowered = @ast.lower_while(
+        loc,
+        fresh_loop=fresh,
+        label~,
+        cond~,
+        step~,
+        block=block.desc,
+      )
+      let typed = self.body(loc, None, [], [], [], lowered)
+      // The peel is deterministic: the shape is the one `lower_while` just
+      // produced. If it is not -- which recovery can cause -- the original
+      // children are kept unannotated rather than crashing on a shape nobody
+      // promised.
+      match
+        peel_while(typed, stepped=step is Some(_), labelled=label is Some(_)) {
+        Some((cond_, step_, body_)) =>
+          {
+            desc: While(label~, cond=cond_, step=step_, block={
+              desc: body_,
+              info: block.info,
+            }),
+            info: annotate([], loc),
+            hints: i.hints,
+            expected: i.expected,
+          }
+        None => {
+          self.tally("While")
+          self.placeholder(i)
+        }
       }
     }
 
@@ -1540,8 +1558,8 @@ fn Checker::body(
     results,
     branch_target,
     () => {
-      for s in instrs {
-        checked.push(self.statement(s))
+      for c in self.statements(instrs) {
+        checked.push(c)
       }
     },
   )
@@ -1585,7 +1603,6 @@ fn Checker::block_construct(
     branch_target,
     block.desc,
   )
-  self.ops.push_results(loc, results)
   let body = (
     { desc: checked, info: block.info } :
     @basic.Annotated[
@@ -1617,7 +1634,6 @@ fn Checker::poisoned(
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   let ty = @infer.Cell::make(@infer.InferredType::Error)
   let node = self.placeholder(i)
-  self.ops.push(Some(i.info), ty)
   { ..node, info: annotate([ty], i.info) }
 }
 
@@ -2038,4 +2054,74 @@ fn Checker::arm_entry(
   let all = payload.copy()
   all.push(e)
   Some(all)
+}
+
+///|
+/// Peel a checked `while` lowering back to its condition, step and body.
+///
+/// Deterministic: the shape is the one `lower_while` produced a moment ago.
+/// `None` only when recovery from an error inside it produced something else,
+/// in which case the caller keeps the original rather than crashing on a shape
+/// nobody promised.
+pub fn peel_while(
+  typed : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  stepped~ : Bool,
+  labelled~ : Bool,
+) -> (
+  @ast.Instr[@typing_env.InferredAnnotation],
+  @ast.Instr[@typing_env.InferredAnnotation]?,
+  Array[@ast.Instr[@typing_env.InferredAnnotation]],
+)? {
+  guard typed.length() == 1 else { return None }
+  guard typed[0].desc is Loop(block=outer, ..) else { return None }
+  guard outer.desc.length() == 1 else { return None }
+  guard outer.desc[0].desc is If(cond~, if_block~, ..) else { return None }
+  let body = if_block.desc
+  if stepped && labelled {
+    // The labelled form wraps the body in a block of its own, so the label has
+    // something to name: `block { body } ; step ; br`.
+    guard body.length() == 3 else { return None }
+    guard body[0].desc is Block(block=inner, ..) else { return None }
+    guard body[2].desc is Br(_, _) else { return None }
+    return Some((cond, Some(body[1]), inner.desc))
+  }
+  // Otherwise the body is inline, ending in the back edge -- preceded by the
+  // step when there is one.
+  guard body.length() >= 1 else { return None }
+  guard body[body.length() - 1].desc is Br(_, _) else { return None }
+  if stepped {
+    guard body.length() >= 2 else { return None }
+    Some(
+      (
+        cond,
+        Some(body[body.length() - 2]),
+        body[0:body.length() - 2].to_owned(),
+      ),
+    )
+  } else {
+    Some((cond, None, body[0:body.length() - 1].to_owned()))
+  }
+}
+
+///|
+/// Check a run of instructions as STATEMENTS, pushing what each leaves.
+///
+/// This is the only place values reach the operand stack, and that distinction
+/// is the one the checker turns on. An instruction checked as a STATEMENT
+/// leaves its results for the next one; an instruction checked as an OPERAND
+/// hands its type back through its annotation and touches no stack. Pushing
+/// inside `statement` itself -- which is what this used to do -- left every
+/// consumed operand behind, and a `while`'s condition showed up as a value
+/// remaining on the stack.
+pub fn Checker::statements(
+  self : Checker,
+  instrs : Array[@ast.Instr[@basic.Location]],
+) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
+  let out : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  for s in instrs {
+    let c = self.statement(s)
+    self.ops.push_results(s.info, c.info.0)
+    out.push(c)
+  }
+  out
 }

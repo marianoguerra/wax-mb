@@ -5684,3 +5684,85 @@ test "a try-catch arm completes into the next arm's entry" {
     content="A block, loop or if used as an expression cannot take parameters.",
   )
 }
+
+///|
+/// A `while` is checked against its LOWERING rather than by rules of its own,
+/// so the loop and the back edge it becomes are validated exactly as if they
+/// had been written out -- and there is no second set of rules to drift from
+/// the first. The high-level form is then rebuilt, so the formatter and the
+/// code generator still see a `while`.
+test "a while is checked as the loop it becomes" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn run(
+    label : @ast.Ident?,
+    step : @ast.InstrDesc[@basic.Location]?,
+    cond : @ast.InstrDesc[@basic.Location],
+  ) -> String {
+    let ctx = module_ctx()
+    @typing.bind_local(ctx, id("n"), Some(@infer.i32_valtype))
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let checked = checker.statement(
+      instr(
+        While(
+          label~,
+          cond=instr(cond, 20),
+          step=step.map(sd => instr(sd, 30)),
+          block={ desc: [instr(Nop, 40)], info: loc_at(40, 41) },
+        ),
+        10,
+      ),
+    )
+    let shape = match checked.desc {
+      While(cond~, step~, block~, ..) =>
+        "cond=" +
+        cond.info.0.map(t => @infer.to_string(t)).join(",") +
+        " step=" +
+        (if step is Some(_) { "yes" } else { "no" }) +
+        " body=" +
+        block.desc.length().to_string()
+      _ => "not a while"
+    }
+    shape +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  // The plain form: condition, body, back edge.
+  inspect(
+    run(None, None, Get(id("n"))),
+    content="cond=i32 step=no body=1 |  | 0",
+  )
+  // With a step, which sits between the body and the back edge.
+  inspect(
+    run(None, Some(Nop), Get(id("n"))),
+    content="cond=i32 step=yes body=1 |  | 0",
+  )
+  // Labelled AND stepped: the body gets a block of its own, so the label has
+  // something to name.
+  inspect(
+    run(Some(id("outer")), Some(Nop), Get(id("n"))),
+    content="cond=i32 step=yes body=1 |  | 0",
+  )
+  // A non-i32 condition is caught by the lowered `if`, not by a rule of the
+  // while's own -- which is the point of checking the lowering.
+  inspect(
+    run(None, None, Float("1.5")),
+    content="cond=float step=no body=1 | This expression has type 'float' but is expected to have type 'i32'. | 0",
+  )
+}

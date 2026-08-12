@@ -311,6 +311,8 @@ pub fn operand_count_mismatch(@diagnostic.Context, @basic.Location, expected~ : 
 
 pub fn parameterized_block_expression(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn peel_while(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], stepped~ : Bool, labelled~ : Bool) -> (@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]?, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]])?
+
 pub fn redundant_cast(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
 
 pub fn reftype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
@@ -418,6 +420,7 @@ pub struct Checker {
 pub fn Checker::gaps(Self) -> Array[(String, Int)]
 pub fn Checker::new(@typing_env.ModuleContext, Operands) -> Self
 pub fn Checker::statement(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
+pub fn Checker::statements(Self, Array[@ast.Instr[@basic.Location]]) -> Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]]
 
 pub(all) enum MethodCall {
   Atomic(@atomics.Family)
