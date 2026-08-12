@@ -21,6 +21,8 @@ pub fn bind_local(@typing_env.ModuleContext, @ast.Ident, @infer.InferredValType?
 
 pub fn binop_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
+pub fn block_exit_type_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
+
 pub fn branch_target(@typing_env.ModuleContext, @ast.Ident) -> Array[@infer.Cell[@infer.InferredType]]
 
 pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
@@ -74,6 +76,8 @@ pub fn internalize_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_t
 pub fn is_defaultable(@wasm_types.ValType[@ast.Ident]) -> Bool
 
 pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
+
+pub fn join_collected(@diagnostic.Context, @basic.Location, Array[(@basic.Location?, @infer.Cell[@infer.InferredType])], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
@@ -146,6 +150,8 @@ pub fn type_get(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.Inf
 pub fn type_mismatch(@diagnostic.Context, @basic.Location, Int, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn[A] type_trailing_operand(@typing_env.ModuleContext, () -> A) -> (A, () -> Unit)
+
+pub fn typed_branch_label(@basic.Location, @infer.Cell[@infer.InferredType]) -> @diagnostic.Label
 
 pub fn unbound_name(@diagnostic.Context, @basic.Location, String, String, suggestions? : Array[String]) -> Unit
 

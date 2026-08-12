@@ -1813,3 +1813,158 @@ test "an unlabelled frame is not a branch target" {
   })
   inspect(in_scope, content="false")
 }
+
+///|
+/// The whole `Collecting` machinery exists for this: `subtype` records each
+/// delivery reaching a block's exit -- the fall-through, each `br`, each caught
+/// value -- and this folds them into one type.
+test "joining what reaches a block's exit" {
+  fn exits(values : Array[(Int, @infer.InferredType)]) -> String {
+    let ctx = module_ctx()
+    let collected = values.map(v => {
+      ((Some(loc_at(v.0, v.0 + 1)) : @basic.Location?), @infer.Cell::make(v.1))
+    })
+    let r = @typing.join_collected(
+      ctx.diagnostics,
+      loc_at(0, 50),
+      collected,
+      no_lub,
+    )
+    let ty = match r {
+      None => "none"
+      Some(c) => @infer.to_string(c)
+    }
+    let msgs = ctx.diagnostics.collected()
+    "\{ty}\{if msgs.is_empty() { "" } else { "  -- " + msgs.length().to_string() + " error(s)" }}"
+  }
+
+  let i32 : @infer.InferredType = Valtype(@infer.i32_valtype)
+  let i64 : @infer.InferredType = Valtype(@infer.i64_valtype)
+  // No exits at all: nothing to infer.
+  inspect(exits([]), content="none")
+  // One exit is its own answer.
+  inspect(exits([(5, i32)]), content="i32")
+  // Agreeing exits fold to the agreed type.
+  inspect(exits([(5, i32), (9, i32)]), content="i32")
+  // A flexible literal reaching the exit is pinned by a concrete sibling --
+  // which is what stops the lowering emitting the wrong width for it.
+  inspect(exits([(5, i32), (9, Number)]), content="i32")
+  inspect(exits([(5, Number), (9, i64)]), content="i64")
+  // Two flexible ones stay flexible.
+  inspect(exits([(5, Number), (9, Number)]), content="number")
+}
+
+///|
+/// A disagreement is reported once and the fold keeps going with the FIRST
+/// value -- so one odd delivery does not disagree with every subsequent one and
+/// produce a complaint per exit.
+test "one odd exit produces one complaint" {
+  let ctx = module_ctx()
+  let i32 = () => {
+    @infer.Cell::make(@infer.InferredType::Valtype(@infer.i32_valtype))
+  }
+  let f64 = @infer.Cell::make(@infer.InferredType::Valtype(@infer.f64_valtype))
+  let r = @typing.join_collected(
+    ctx.diagnostics,
+    loc_at(0, 50),
+    [
+      (Some(loc_at(5, 6)), i32()),
+      (Some(loc_at(9, 10)), f64),
+      (Some(loc_at(15, 16)), i32()),
+      (Some(loc_at(20, 21)), i32()),
+    ],
+    no_lub,
+  )
+  // One error, not three.
+  inspect(ctx.diagnostics.collected().length(), content="1")
+  // And the result is the first value's type, so the block is still checkable.
+  guard! r is Some(c)
+  inspect(@infer.to_string(c), content="i32")
+}
+
+///|
+/// A mismatch names both values at their own spans, because which one is wrong
+/// depends on what the author meant -- and the first span is the accumulator's,
+/// which is where the fold started.
+test "a block-exit mismatch names both values" {
+  let ctx = module_ctx()
+  let _ = @typing.join_collected(
+    ctx.diagnostics,
+    loc_at(0, 50),
+    [
+      (Some(loc_at(5, 6)), @infer.valtype_cell(@infer.i32_valtype)),
+      (Some(loc_at(9, 10)), @infer.valtype_cell(@infer.f64_valtype)),
+    ],
+    no_lub,
+  )
+  let e = ctx.diagnostics.collected()[0]
+  inspect(
+    @message.to_plain_string(e.message),
+    content="The values reaching this block's exit have no common supertype, so its result type cannot be inferred.",
+  )
+  inspect(
+    e.related
+    .map(r => "\{r.loc.start.cnum}:\{@message.to_plain_string(r.message)}")
+    .join(" "),
+    content="5:'i32' 9:'f64'",
+  )
+}
+
+///|
+/// A delivery with no span of its own -- a synthesized one -- falls back to the
+/// block, which is at least somewhere the reader can look.
+test "a spanless delivery reports against the block" {
+  let ctx = module_ctx()
+  let _ = @typing.join_collected(
+    ctx.diagnostics,
+    loc_at(0, 50),
+    [
+      (None, @infer.valtype_cell(@infer.i32_valtype)),
+      (None, @infer.valtype_cell(@infer.f64_valtype)),
+    ],
+    no_lub,
+  )
+  inspect(
+    ctx.diagnostics.collected()[0].related
+    .map(r => r.loc.start.cnum.to_string())
+    .join(","),
+    content="0,0",
+  )
+}
+
+///|
+/// End to end: `subtype` records the deliveries onto a Collecting cell, and
+/// `join_collected` folds exactly those. This is the seam the two halves meet
+/// at, and nothing else drives it.
+test "subtype records and join_collected folds" {
+  let ctx = module_ctx()
+  let info = ctx.type_context.subtyping_info()
+  let collecting : @infer.Collecting = {
+    collected: [],
+    exacts: [],
+    declared: None,
+    needed: false,
+  }
+  let result = @infer.Cell::make(@infer.InferredType::Collecting(collecting))
+  // Two deliveries, checked against the block's result cell.
+  let fall_through = @infer.valtype_cell(@infer.i32_valtype)
+  let branched = @infer.Cell::make(@typing.int_literal_lattice("7"))
+  let _ = @typing.subtype(
+    info,
+    fall_through,
+    result,
+    location=Some(loc_at(5, 6)),
+  )
+  let _ = @typing.subtype(info, branched, result, location=Some(loc_at(9, 10)))
+  inspect(collecting.collected.length(), content="2")
+  // Folding them gives the block's result, and pins the literal to it.
+  guard! @typing.join_collected(
+      ctx.diagnostics,
+      loc_at(0, 50),
+      collecting.collected,
+      no_lub,
+    )
+    is Some(r)
+  inspect(@infer.to_string(r), content="i32")
+  inspect(@infer.to_string(branched), content="i32")
+}

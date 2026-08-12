@@ -205,3 +205,51 @@ pub fn report_missing_hole(
     )
   }
 }
+
+///|
+/// Reduce everything that reached a block's exit to one type.
+///
+/// This is what the whole `Collecting` machinery exists for. `subtype` records
+/// each delivery -- the fall-through, each `br`, each caught value -- and this
+/// folds them together.
+///
+/// Folded in SOURCE order, which matters twice over: a mismatch names the
+/// values in the order the reader wrote them, and recovery keeps the FIRST,
+/// which is the one they most likely meant. Continuing with the first also
+/// stops a single odd delivery from disagreeing with every subsequent one and
+/// producing a complaint per exit.
+pub fn join_collected(
+  diagnostics : @diagnostic.Context,
+  location : @basic.Location,
+  collected : Array[(@basic.Location?, @infer.Cell[@infer.InferredType])],
+  lub : ValLub,
+) -> @infer.Cell[@infer.InferredType]? {
+  if collected.is_empty() {
+    return None
+  }
+  let (first_loc, first) = collected[0]
+  // The first value's span is the one a mismatch is measured against, and it
+  // does not move as the fold proceeds: every later value is compared with what
+  // the fold has accumulated, which started there.
+  let acc_loc = first_loc
+  let mut acc = first
+  for i in 1..<collected.length() {
+    let (loc, ty) = collected[i]
+    match join_value_types(acc, ty, lub) {
+      Some(r) => acc = r
+      None => {
+        block_exit_type_mismatch(
+          diagnostics,
+          location,
+          acc_loc.unwrap_or(location),
+          loc.unwrap_or(location),
+          acc,
+          ty,
+        )
+        // Keep the accumulator rather than adopting the odd value: see above.
+        ()
+      }
+    }
+  }
+  Some(acc)
+}

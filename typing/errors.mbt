@@ -350,3 +350,36 @@ pub fn value_count_mismatch(
     .sep(@message.text("was/were expected.")),
   )
 }
+
+///|
+/// A related label naming a value's type at its own span.
+///
+/// Used where two values disagree and the reader needs to see both -- the
+/// message says what went wrong, and each label says what that particular value
+/// was.
+pub fn typed_branch_label(
+  location : @basic.Location,
+  ty : @infer.Cell[@infer.InferredType],
+) -> @diagnostic.Label {
+  { loc: location, message: @message.type_(@infer.to_string(ty)) }
+}
+
+///|
+/// Values reaching one block exit that have no common type.
+pub fn block_exit_type_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  loc1 : @basic.Location,
+  loc2 : @basic.Location,
+  ty1 : @infer.Cell[@infer.InferredType],
+  ty2 : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "The values reaching this block's exit have no common supertype, so its result type cannot be inferred.",
+    ),
+    related=[typed_branch_label(loc1, ty1), typed_branch_label(loc2, ty2)],
+  )
+}
