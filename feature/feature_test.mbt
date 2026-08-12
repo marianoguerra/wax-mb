@@ -86,12 +86,12 @@ test "spec parsing takes the three spellings of each answer" {
 
 ///|
 test "an unknown feature lists the known ones" {
-  guard @feature.parse_spec("relaxed-simd") is Err(msg)
+  guard! @feature.parse_spec("relaxed-simd") is Err(msg)
   inspect(
     msg,
     content="Unknown feature 'relaxed-simd'. Known features: custom-descriptors, compact-import-section.",
   )
-  guard @feature.parse_spec("custom-descriptors=maybe") is Err(msg2)
+  guard! @feature.parse_spec("custom-descriptors=maybe") is Err(msg2)
   inspect(
     msg2,
     content="Malformed feature spec 'custom-descriptors=maybe'; expected NAME, NAME=on, or NAME=off.",

@@ -16,9 +16,11 @@ pub fn Location::is_dummy(self : Location) -> Bool {
 }
 
 ///|
-/// The smallest span covering both operands. Both must come from the same file.
+/// The smallest span covering both operands. Both must come from the same file:
+/// a merge across files has no meaning, so it is a caller bug rather than a
+/// case to handle, and `guard!` says so.
 pub fn Location::merge(self : Location, other : Location) -> Location {
-  guard self.start.fname == other.start.fname
+  guard! self.start.fname == other.start.fname
   let start = if self.start < other.start { self.start } else { other.start }
   let end = if self.end > other.end { self.end } else { other.end }
   { start, end }

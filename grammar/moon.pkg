@@ -32,7 +32,13 @@ import {
 // `priv suberror E { E(T) }`. 93 of them, all in the generated file. See
 // test/UPSTREAM-FINDINGS.md finding 10.
 
-warnings = "-6-27-text_segment_excceed"
+// -87 (guard_inexhaustive) likewise: the table engine emits a bare
+// `guard <cond>` per reduction, 761 of them, where the panic IS the intended
+// behaviour -- an impossible state in a generated LR automaton. The compiler
+// grew the warning in moon 0.1.20260807; the fix belongs upstream in moonyacc,
+// as `guard!`, not in a file this repository does not write.
+
+warnings = "-6-27-87-text_segment_excceed"
 
 formatter(ignore: [ "parser.mbt" ])
 

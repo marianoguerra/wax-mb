@@ -102,7 +102,7 @@ fn fresh(name : String) -> @ast.Ident {
 ///|
 test "while lowers to a loop around a leading test" {
   let stmt = surface_stmt("fn f() { while c { nop; } }")
-  guard stmt.desc is While(label~, cond~, step~, block~)
+  guard! stmt.desc is While(label~, cond~, step~, block~)
   inspect(
     sketch_all(
       @ast.lower_while(
@@ -123,7 +123,7 @@ test "a labelled while keeps its own label on the loop" {
   // No step, so no wrapper block is needed and the user's label IS the
   // back-edge target: `continue` re-tests the condition directly.
   let stmt = surface_stmt("fn f() { 'l: while c { nop; } }")
-  guard stmt.desc is While(label~, cond~, step~, block~)
+  guard! stmt.desc is While(label~, cond~, step~, block~)
   inspect(
     sketch_all(
       @ast.lower_while(
@@ -147,7 +147,7 @@ test "a stepped labelled while runs the step on the continue path" {
   let stmt = surface_stmt(
     "fn f() { let i = 0; 'l: while i <u 4 : (i += 1) { nop; } }",
   )
-  guard stmt.desc is While(label~, cond~, step~, block~)
+  guard! stmt.desc is While(label~, cond~, step~, block~)
   inspect(
     sketch_all(
       @ast.lower_while(
@@ -171,7 +171,7 @@ test "dispatch lowers to a br_table in nested case blocks" {
   let stmt = surface_stmt(
     "fn f(x: i32) { dispatch x [ 'a, 'b, else 'd ] { 'a: { nop; } 'b: { nop; } 'd: {} } }",
   )
-  guard stmt.desc is Dispatch(index~, cases~, default~, arms~)
+  guard! stmt.desc is Dispatch(index~, cases~, default~, arms~)
   inspect(
     sketch_all(@ast.lower_dispatch(stmt.info, index~, cases~, default~, arms~)),
     content="block d[block b[block a[br_table[a,b,d](x)] nop] nop]",
@@ -186,7 +186,7 @@ test "match lowers to a threaded br_on_cast ladder" {
   let stmt = surface_stmt(
     "fn f(r: &any) { match r { &array => { nop; } null => { nop; } _ => {} } }",
   )
-  guard stmt.desc is Match(scrutinee~, arms~, default~)
+  guard! stmt.desc is Match(scrutinee~, arms~, default~)
   let labels = []
   for i in 0..<(arms.length() + 1) {
     labels.push(fresh("#m\{i}"))
@@ -209,10 +209,10 @@ test "try/catch lowers to try_table inside a block ladder" {
   let r = @grammar.parse_string(
     "fn f() { 'j: try { nop; } catch { e => { nop; } _ => {} } }",
   )
-  guard r.module_ is Some(fields)
-  guard fields[0].desc is Func(body~, ..)
+  guard! r.module_ is Some(fields)
+  guard! fields[0].desc is Func(body~, ..)
   let (_, stmts) = body
-  guard stmts[0].desc is TryCatch(label~, typ~, block~, arms~)
+  guard! stmts[0].desc is TryCatch(label~, typ~, block~, arms~)
   let arm_labels = []
   for i in 0..<arms.length() {
     arm_labels.push(fresh("#c\{i}"))
@@ -241,8 +241,8 @@ test "map_info rebuilds the tree without disturbing it" {
   let r = @grammar.parse_string(
     "fn f(x: i32) -> i32 { if x { nop; } else { nop; } x + 1; }",
   )
-  guard r.module_ is Some(fields)
-  guard fields[0].desc is Func(body~, ..)
+  guard! r.module_ is Some(fields)
+  guard! fields[0].desc is Func(body~, ..)
   let (_, stmts) = body
   let before = stmts.map(count).fold(init=0, (a, b) => a + b)
   let after = stmts
