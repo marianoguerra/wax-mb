@@ -296,13 +296,13 @@ pub fn leftovers(st : Stack) -> (Array[@basic.Location], Bool) {
 
 ///|
 /// An empty span at the first character of `loc`.
-fn loc_first_char(loc : @basic.Location) -> @basic.Location {
+pub fn loc_first_char(loc : @basic.Location) -> @basic.Location {
   { start: loc.start, end: loc.start }
 }
 
 ///|
 /// An empty span at the last character of `loc`.
-fn loc_last_char(loc : @basic.Location) -> @basic.Location {
+pub fn loc_last_char(loc : @basic.Location) -> @basic.Location {
   { start: loc.end, end: loc.end }
 }
 

@@ -2500,3 +2500,79 @@ fn origin_name(o : @typing_env.Origin) -> String {
     Ignored => "ignored"
   }
 }
+
+///|
+/// The whole seam, driven by the block machinery rather than by hand: a body
+/// pushes a value, `collect_into` takes it off the exit, and the join folds it
+/// with what a branch delivered.
+///
+/// Three things reach a block's exit and all three land in one place. This is
+/// the one nothing checks against anything -- the fall-through -- which is why
+/// it has to be taken off the stack deliberately.
+test "the fall-through reaches the exit alongside the branches" {
+  let ctx = module_ctx()
+  let ops = @typing.Operands::new()
+  let info = ctx.type_context.subtyping_info()
+  let (cs, r) = @typing.fresh_collecting(None)
+  // A branch delivers a flexible literal, recorded by `subtype` as any `br`
+  // would record it.
+  let branched = @infer.Cell::make(@typing.int_literal_lattice("7"))
+  let _ = @typing.subtype(info, branched, r, location=Some(loc_at(9, 10)))
+  // The body leaves an i32 on the stack: the fall-through.
+  @typing.collect_into(ctx, ops, loc_at(0, 50), Some(id("out")), cs, r, () => {
+    ops.push(Some(loc_at(5, 6)), @infer.valtype_cell(@infer.i32_valtype))
+  })
+  inspect(cs.collected.length(), content="2")
+  // Nothing was left over to complain about, and the enclosing stack is back.
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  guard! @typing.infer_result(ctx, loc_at(0, 50), cs, no_lub) is Some(result)
+  inspect(@infer.to_string(result), content="i32")
+  // And the literal that a branch delivered is pinned to the block's result.
+  inspect(@infer.to_string(branched), content="i32")
+}
+
+///|
+/// A dead fall-through still reaches the exit -- a value pushed after control
+/// was lost is recorded, and the base stays unreachable.
+///
+/// A REACHABLE exit delivering nothing while a branch delivered a value is a
+/// different matter: the block would yield a result its own exit never
+/// produces, so it is reported.
+test "an exit that delivers nothing is reported, unless it is dead" {
+  let ctx = module_ctx()
+  let ops = @typing.Operands::new()
+  let info = ctx.type_context.subtyping_info()
+
+  // Dead: the body diverges, then pushes. Nothing to complain about.
+  let (dead, r1) = @typing.fresh_collecting(None)
+  let _ = @typing.subtype(
+    info,
+    @infer.valtype_cell(@infer.i32_valtype),
+    r1,
+    location=Some(loc_at(9, 10)),
+  )
+  @typing.collect_into(ctx, ops, loc_at(0, 50), None, dead, r1, () => {
+    ops.set_unreachable()
+    ops.push(Some(loc_at(5, 6)), @infer.valtype_cell(@infer.i32_valtype))
+  })
+  inspect(dead.collected.length(), content="2")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+
+  // Reachable, and delivers nothing, while a branch delivered a value.
+  let (short_, r2) = @typing.fresh_collecting(None)
+  let _ = @typing.subtype(
+    info,
+    @infer.valtype_cell(@infer.i32_valtype),
+    r2,
+    location=Some(loc_at(9, 10)),
+  )
+  @typing.collect_into(ctx, ops, loc_at(0, 50), None, short_, r2, () => ())
+  inspect(short_.collected.length(), content="1")
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="Expecting 1 returned value(s) from the stack, but there are 0.",
+  )
+  // The caret sits at the block's closing token, as every other output
+  // underflow does.
+  inspect(ctx.diagnostics.collected()[0].loc.start.cnum, content="50")
+}

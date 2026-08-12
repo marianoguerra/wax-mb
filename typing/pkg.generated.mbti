@@ -45,6 +45,10 @@ pub fn check_subtypes(@type_store.SubtypingInfo, @diagnostic.Context, @basic.Loc
 
 pub fn check_unique_param_names(@diagnostic.Context, Array[@basic.Annotated[(@ast.Ident?, @wasm_types.ValType[@ast.Ident]), @basic.Location]]) -> Unit
 
+pub fn collect_exit(Operands, @infer.Collecting, @diagnostic.Context, @basic.Location) -> Unit
+
+pub fn collect_into(@typing_env.ModuleContext, Operands, @basic.Location, @ast.Ident?, @infer.Collecting, @infer.Cell[@infer.InferredType], () -> Unit) -> Unit
+
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
 
 pub fn[Info] declare_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Unit
@@ -52,6 +56,8 @@ pub fn[Info] declare_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@a
 pub fn declare_local(@typing_env.ModuleContext, @ast.Ident, @wasm_types.ValType[@ast.Ident]) -> Unit
 
 pub fn declared_functype(@typing_env.ModuleContext, @ast.Ident) -> @ast.FuncType?
+
+pub fn declared_result(@typing_env.TypeContext, @diagnostic.Context, @ast.FuncType) -> @infer.Cell[@infer.InferredType]?
 
 pub fn descriptor_not_reciprocal(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
 
@@ -87,6 +93,8 @@ pub fn float_literal_lattice(String) -> @infer.InferredType
 
 pub fn forward_use_of_described(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn fresh_collecting(@infer.Cell[@infer.InferredType]?, needed? : Bool) -> (@infer.Collecting, @infer.Cell[@infer.InferredType])
+
 pub fn get_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
 pub fn get_type_definition(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident) -> @ast.SubType?
@@ -96,6 +104,10 @@ pub fn heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapTy
 pub fn immutable(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn index_structs_by_fields(@typing_env.ModuleContext) -> Unit
+
+pub fn infer_block_applies(@typing_env.ModuleContext, @ast.FuncType) -> Bool
+
+pub fn infer_result(@typing_env.ModuleContext, @basic.Location, @infer.Collecting, (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn inline_comptype(@typing_env.ModuleContext, @ast.Ident) -> @ast.CompType?
 
@@ -122,6 +134,10 @@ pub fn leave_function_scope(@typing_env.ModuleContext) -> Unit
 pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.Label]) -> Unit
 
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
+
+pub fn loc_first_char(@basic.Location) -> @basic.Location
+
+pub fn loc_last_char(@basic.Location) -> @basic.Location
 
 pub fn local_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
