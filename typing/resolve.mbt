@@ -325,3 +325,36 @@ fn check_unique_field_names(
     }
   }
 }
+
+///|
+/// A source value type together with its resolved form.
+///
+/// The pair is what the checker works in: `typ` keeps the name, so a diagnostic
+/// can print what the author wrote, and `internal` carries the store index, so
+/// subtyping can be decided. Resolution can fail, and then there is no pair.
+pub fn internalize_valtype(
+  ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
+  typ : @wasm_types.ValType[@ast.Ident],
+) -> @infer.InferredValType? {
+  valtype(ctx, diagnostics, typ).map(internal => {
+    ({ typ, internal, anon_comptype: None } : @infer.InferredValType)
+  })
+}
+
+///|
+/// As `internalize_valtype`, but as a cell ready to go on the stack.
+///
+/// `inline` carries the composite type of a synthesized reference -- a string's
+/// byte array, an inline function type -- so a diagnostic renders the structure
+/// rather than a generated name that means nothing to the reader.
+pub fn internalize(
+  ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
+  typ : @wasm_types.ValType[@ast.Ident],
+  inline? : @ast.CompType? = None,
+) -> @infer.Cell[@infer.InferredType]? {
+  valtype(ctx, diagnostics, typ).map(internal => {
+    @infer.valtype_cell({ typ, internal, anon_comptype: inline })
+  })
+}

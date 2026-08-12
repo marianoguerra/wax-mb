@@ -17,7 +17,11 @@ import {
 // Values
 pub fn assign_target(@typing_env.ModuleContext, @ast.Ident, ResolvedVar, compound? : Bool) -> Unit
 
+pub fn bind_local(@typing_env.ModuleContext, @ast.Ident, @infer.InferredValType?) -> Unit
+
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
+
+pub fn declare_local(@typing_env.ModuleContext, @ast.Ident, @wasm_types.ValType[@ast.Ident]) -> Unit
 
 pub fn diff_ref_type(@wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@ast.Ident]
 
@@ -44,6 +48,10 @@ pub fn immutable(@diagnostic.Context, @basic.Location, String) -> Unit
 pub fn inline_comptype(@typing_env.ModuleContext, @ast.Ident) -> @ast.CompType?
 
 pub fn int_literal_lattice(String) -> @infer.InferredType
+
+pub fn internalize(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident], inline? : @ast.CompType?) -> @infer.Cell[@infer.InferredType]?
+
+pub fn internalize_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @infer.InferredValType?
 
 pub fn is_defaultable(@wasm_types.ValType[@ast.Ident]) -> Bool
 

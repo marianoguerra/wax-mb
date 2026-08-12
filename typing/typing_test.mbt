@@ -1340,3 +1340,105 @@ test "a tee initializes its target" {
   let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(30, 31) })
   inspect(ctx.diagnostics.collected().length(), content="0")
 }
+
+///|
+/// Whether a declared local starts holding a value is decided by its type, and
+/// this is the only place that decision is made.
+test "a declared local starts initialized only if its type has a zero" {
+  fn read_after_declaring(typ : @wasm_types.ValType[@ast.Ident]) -> String {
+    let ctx = module_ctx()
+    @typing.declare_local(ctx, { name: "x", loc: loc_at(2, 3) }, typ)
+    // Reading it immediately is the question the initialization state answers.
+    let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(20, 21) })
+    let msgs = ctx.diagnostics.collected()
+    msgs.map(e => @message.to_plain_string(e.message)).join(" | ")
+  }
+
+  // A numeric local has a zero value, so it is readable at once.
+  inspect(read_after_declaring(I32), content="")
+  inspect(read_after_declaring(F64), content="")
+  inspect(read_after_declaring(V128), content="")
+  // A NULLABLE reference has null as its zero value.
+  inspect(read_after_declaring(Ref({ nullable: true, typ: Any })), content="")
+  // A non-nullable one has nothing to start at, so reading it before assigning
+  // is an error -- which is the whole reason initialization is tracked.
+  inspect(
+    read_after_declaring(Ref({ nullable: false, typ: Any })),
+    content="The local variable 'x' has not been initialized.",
+  )
+}
+
+///|
+/// Assigning a non-defaultable local makes it readable, which is the other half
+/// of the same rule.
+test "assigning a declared local makes it readable" {
+  let ctx = module_ctx()
+  let x : @ast.Ident = { name: "x", loc: loc_at(2, 3) }
+  @typing.declare_local(ctx, x, Ref({ nullable: false, typ: Any }))
+  let target : @ast.Ident = { name: "x", loc: loc_at(10, 11) }
+  @typing.assign_target(ctx, target, @typing.resolve_variable(ctx, target))
+  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(20, 21) })
+  inspect(ctx.diagnostics.collected().length(), content="0")
+}
+
+///|
+/// A binding with an initializer holds a value by construction.
+test "a bound local is initialized" {
+  let ctx = module_ctx()
+  @typing.bind_local(
+    ctx,
+    { name: "x", loc: loc_at(2, 3) },
+    Some(@infer.i32_valtype),
+  )
+  inspect(
+    @infer.to_string(@typing.type_get(ctx, { name: "x", loc: loc_at(20, 21) })),
+    content="i32",
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // And it is recorded as a declaration, so an unread one can be reported.
+  inspect(ctx.local_decls.map(d => d.name).join(","), content="x")
+}
+
+///|
+/// A type that does not resolve declares nothing -- there is no type to give
+/// the local, and the failure was reported where the name could not be found.
+test "an unresolvable type declares no local" {
+  let ctx = module_ctx()
+  @typing.declare_local(
+    ctx,
+    { name: "x", loc: loc_at(2, 3) },
+    Ref({ nullable: true, typ: Type({ name: "missing", loc: loc_at(4, 11) }) }),
+  )
+  inspect(ctx.locals.contains("x"), content="false")
+  inspect(ctx.local_decls.length(), content="0")
+}
+
+///|
+/// A resolved value type keeps BOTH forms: the name the author wrote, so a
+/// diagnostic can print it, and the store index, so subtyping can be decided.
+test "internalize keeps the name and the index" {
+  let ctx = module_ctx()
+  let store_id = ctx.type_context.store.add_rectype([
+    { final_: true, supertype: None, typ: Func({ params: [], results: [] }) },
+  ])
+  let empty : @ast.SubType = {
+    typ: Func({ params: [], results: [] }),
+    supertype: None,
+    final_: true,
+    descriptor: None,
+    describes: None,
+  }
+  ctx.types.add("node", loc_at(0, 4), (Def(store_id), empty))
+  let named : @wasm_types.ValType[@ast.Ident] = Ref({
+    nullable: true,
+    typ: Type({ name: "node", loc: loc_at(10, 14) }),
+  })
+  guard! @typing.internalize_valtype(ctx.type_context, ctx.diagnostics, named)
+    is Some(v)
+  // The source side still names it.
+  guard! v.typ is Ref({ typ: Type(name), .. })
+  inspect(name.name, content="node")
+  // The internal side numbers it.
+  guard! v.internal is Ref({ typ: Type(id), .. })
+  inspect(id.to_int_for_tests_only(), content="0")
+}

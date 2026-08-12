@@ -391,3 +391,43 @@ pub fn tee_target(
     }
   }
 }
+
+///|
+/// Introduce a local with a known type.
+///
+/// Used for a binding that has an initializer: the value has just been checked
+/// against the type, so the local holds one.
+pub fn bind_local(
+  ctx : @typing_env.ModuleContext,
+  name : @ast.Ident,
+  ty : @infer.InferredValType?,
+) -> Unit {
+  ctx.locals[name.name] = (ty, name.loc)
+  ctx.local_decls.push(name)
+  mark_initialized(ctx, name.name)
+}
+
+///|
+/// Introduce a local declared without an initializer -- `let x: t;`.
+///
+/// Whether it starts holding a value is decided by the type, and this is the
+/// only place that decision is made: a defaultable type has a zero value to
+/// start at, and a non-nullable reference does not, so it stays uninitialized
+/// until something assigns it. That is what makes a later read of it an error
+/// rather than a read of nothing.
+///
+/// An unannotated name has no type to take and declares nothing at all.
+pub fn declare_local(
+  ctx : @typing_env.ModuleContext,
+  name : @ast.Ident,
+  typ : @wasm_types.ValType[@ast.Ident],
+) -> Unit {
+  guard internalize_valtype(ctx.type_context, ctx.diagnostics, typ) is Some(ity) else {
+    return
+  }
+  ctx.locals[name.name] = (Some(ity), name.loc)
+  ctx.local_decls.push(name)
+  if is_defaultable(typ) {
+    mark_initialized(ctx, name.name)
+  }
+}
