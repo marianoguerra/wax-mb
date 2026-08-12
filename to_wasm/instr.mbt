@@ -555,6 +555,52 @@ fn Lowering::hinted(
       let bt = self.block_type(typ, loc)
       out.push(TryTable(bt, handlers, self.body(label, block.desc)))
     }
+    // The DEPRECATED legacy handler. Unlike `try_table`, whose handlers are
+    // immediates naming labels to branch to, these handlers are inline bodies
+    // that run in place -- so each is lowered inside the try's own label frame,
+    // which is the one frame the whole construct occupies.
+    Try(label~, typ~, block~, catches~, catch_all~) => {
+      let bt = self.block_type(typ, loc)
+      let body = self.body(label, block.desc)
+      let handlers : Array[(Int, Array[@wasm_bin.Instruction])] = []
+      for c in catches {
+        guard self.indices.tags.get(c.0.name) is Some(t) else {
+          raise Unresolved("tag", loc)
+        }
+        handlers.push((t, self.body(label, c.1.desc)))
+      }
+      let all = match catch_all {
+        Some(b) => Some(self.body(label, b.desc))
+        None => None
+      }
+      out.push(LegacyTry(bt, body, handlers, all))
+    }
+    // The structured form, which the checker validated against a lowering to
+    // `try_table` plus a block ladder -- so it is emitted from that same
+    // lowering. `join` is the try's OWN label when it has one, because a `br`
+    // to the try has to leave the join block carrying the value; only when
+    // there is no such label does the lowering invent one.
+    TryCatch(label~, typ~, block~, arms~) => {
+      let arm_labels : Array[@ast.Ident] = []
+      for k in 0..<arms.length() {
+        arm_labels.push({
+          name: "<catch:" +
+          loc.start.cnum.to_string() +
+          ":" +
+          k.to_string() +
+          ">",
+          loc,
+        })
+      }
+      let join = match label {
+        Some(l) => l
+        None => { name: "<join:" + loc.start.cnum.to_string() + ">", loc }
+      }
+      self.instr(
+        out,
+        @ast.lower_trycatch(i.info, join~, arm_labels~, typ~, block~, arms~),
+      )
+    }
     BrTable(labels, operand) => {
       self.instr(out, operand)
       // The written list is the cases and the DEFAULT last, which is how the

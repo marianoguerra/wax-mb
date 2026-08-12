@@ -86,6 +86,21 @@ fn encode_instruction(
       w.write_u32(tag_idx)
     }
     ThrowRef => w.write_byte(0x0A)
+    LegacyTry(bt, body, catches, catch_all) => {
+      w.write_byte(0x06)
+      encode_block_type(w, bt)
+      encode_instructions(w, body)
+      for entry in catches {
+        w.write_byte(0x07)
+        w.write_u32(entry.0)
+        encode_instructions(w, entry.1)
+      }
+      if catch_all is Some(body) {
+        w.write_byte(0x19)
+        encode_instructions(w, body)
+      }
+      w.write_byte(0x0B) // end
+    }
     TryTable(bt, handlers, body) => {
       w.write_byte(0x1F)
       encode_block_type(w, bt)

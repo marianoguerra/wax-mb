@@ -163,6 +163,15 @@ pub(all) enum Instruction {
   Throw(Int) // tag index - throw exception with tag
   ThrowRef // throw exception from exnref on stack
   TryTable(BlockType, Array[CatchHandler], Array[Instruction]) // block type, handlers, body
+  /// The DEPRECATED legacy handler: block type, body, per-tag catches, and an
+  /// optional catch-all. Unlike `try_table`, whose handlers are immediates that
+  /// branch out, these handlers are inline bodies that run in place.
+  LegacyTry(
+    BlockType,
+    Array[Instruction],
+    Array[(Int, Array[Instruction])],
+    Array[Instruction]?
+  )
 
   // Parametric instructions
   Drop

@@ -134,6 +134,7 @@ pub(all) enum Instruction {
   Throw(Int)
   ThrowRef
   TryTable(BlockType, Array[CatchHandler], Array[Instruction])
+  LegacyTry(BlockType, Array[Instruction], Array[(Int, Array[Instruction])], Array[Instruction]?)
   Drop
   Select
   SelectTyped(Array[@wasm_types.ValType[Int]])
