@@ -111,6 +111,8 @@ pub fn diff_ref_type(@wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.I
 
 pub fn dispatch_duplicate_arm(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
+pub fn duplicate_argument_label(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
+
 pub fn duplicated_field(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
 pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
@@ -275,6 +277,8 @@ pub let max_align : UInt64
 
 pub let max_offset_i32_exclusive : UInt64
 
+pub fn mem_immediates(@diagnostic.Context, @basic.Location, String, Int, has_lane~ : Bool, Map[String, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]], Array[@ast.Instr[@basic.Location]]) -> (@basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?)
+
 pub fn mem_lane_bound(Int) -> Int
 
 pub fn mem_load_result(String) -> @infer.InferredType?
@@ -335,6 +339,8 @@ pub fn peel_match(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @ba
 
 pub fn peel_while(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], stepped~ : Bool, labelled~ : Bool) -> (@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]?, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]])?
 
+pub fn positional_memory_immediate(@diagnostic.Context, @basic.Location, String) -> Unit
+
 pub fn redundant_cast(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
 
 pub fn reftype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
@@ -383,6 +389,8 @@ pub fn splice_non_struct(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn splice_without_supertype(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn split_labelled_args(Array[@ast.Instr[@basic.Location]]) -> MemArgs
+
 pub fn start_function_signature(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn storage_subtype(@type_store.SubtypingInfo, @wasm_types.StorageType[@type_store.Id], @wasm_types.StorageType[@type_store.Id]) -> Bool
@@ -396,6 +404,8 @@ pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @inf
 pub fn table_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
 pub fn tag_with_results(@diagnostic.Context, @basic.Location) -> Unit
+
+pub fn take_labels(@diagnostic.Context, Array[String], Array[(@ast.Ident, @ast.Instr[@basic.Location])]) -> Map[String, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]]
 
 pub fn tee_target(@typing_env.ModuleContext, @ast.Ident, ResolvedVar, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
@@ -416,6 +426,8 @@ pub fn typed_branch_label(@basic.Location, @infer.Cell[@infer.InferredType]) -> 
 pub fn unbound_name(@diagnostic.Context, @basic.Location, String, String, suggestions? : Array[String]) -> Unit
 
 pub fn uninitialized_local(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn unknown_argument_label(@diagnostic.Context, @basic.Location, String, suggestions? : Array[String]) -> Unit
 
 pub fn unknown_operand_type(@diagnostic.Context, @basic.Location) -> Unit
 
@@ -445,6 +457,11 @@ pub fn Checker::gaps(Self) -> Array[(String, Int)]
 pub fn Checker::new(@typing_env.ModuleContext, Operands) -> Self
 pub fn Checker::statement(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::statements(Self, Array[@ast.Instr[@basic.Location]]) -> Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]]
+
+pub struct MemArgs {
+  positional : Array[@ast.Instr[@basic.Location]]
+  labelled : Array[(@ast.Ident, @ast.Instr[@basic.Location])]
+}
 
 pub(all) enum MethodCall {
   Atomic(@atomics.Family)

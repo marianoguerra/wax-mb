@@ -140,3 +140,146 @@ pub fn check_lane_immediate(
 pub fn mem_lane_bound(natural_align : Int) -> Int {
   16 / natural_align
 }
+
+///|
+/// A memory access's arguments split into stack operands and labelled
+/// immediates.
+pub struct MemArgs {
+  positional : Array[@ast.Instr[@basic.Location]]
+  labelled : Array[(@ast.Ident, @ast.Instr[@basic.Location])]
+}
+
+///|
+/// Split a call's arguments into the positional operands and the labelled
+/// immediates.
+///
+/// A positional argument AFTER a labelled one is reported and kept positional:
+/// the author meant it as an operand, and dropping it would cascade into an
+/// arity complaint about something they did write.
+pub fn split_labelled_args(
+  args : Array[@ast.Instr[@basic.Location]],
+) -> MemArgs {
+  let positional : Array[@ast.Instr[@basic.Location]] = []
+  let labelled : Array[(@ast.Ident, @ast.Instr[@basic.Location])] = []
+  for a in args {
+    match a.desc {
+      Labelled(l, e) => labelled.push((l, e))
+      _ => positional.push(a)
+    }
+  }
+  { positional, labelled }
+}
+
+///|
+/// Resolve the labelled immediates, reporting a label that is unknown, given
+/// twice, or not a literal.
+///
+/// A non-literal value is reported HERE and the pair dropped, so `check_memarg`
+/// -- which would also fail to read it -- does not say the same thing again.
+pub fn take_labels(
+  diagnostics : @diagnostic.Context,
+  allowed : Array[String],
+  labelled : Array[(@ast.Ident, @ast.Instr[@basic.Location])],
+) -> Map[
+  String,
+  @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location],
+] {
+  let out : Map[
+    String,
+    @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location],
+  ] = Map([])
+  let seen : Map[String, @basic.Location] = Map([])
+  for pair in labelled {
+    let (l, e) = pair
+    if !allowed.contains(l.name) {
+      unknown_argument_label(
+        diagnostics,
+        l.loc,
+        l.name,
+        suggestions=@spell.suggest(allowed.iter(), l.name),
+      )
+      continue
+    }
+    if seen.get(l.name) is Some(prev) {
+      duplicate_argument_label(diagnostics, l.loc, prev, l.name)
+      continue
+    }
+    seen[l.name] = l.loc
+    match e.desc {
+      Int(_) => out[l.name] = { desc: e.desc, info: e.info }
+      _ => integer_literal_required(diagnostics, e.info)
+    }
+  }
+  out
+}
+
+///|
+/// Pick out a memory access's immediates, accepting the pre-label positional
+/// spelling with a migration complaint.
+///
+/// Extra positional arguments are read as immediates ONLY when they are all
+/// integer literals and no more than the immediate count. Otherwise they are an
+/// ordinary arity mistake, and reading a local as an alignment would cascade
+/// into a bogus memarg complaint on top of it.
+pub fn mem_immediates(
+  diagnostics : @diagnostic.Context,
+  location : @basic.Location,
+  example : String,
+  nstack : Int,
+  has_lane~ : Bool,
+  found : Map[
+    String,
+    @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location],
+  ],
+  positional : Array[@ast.Instr[@basic.Location]],
+) -> (
+  @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?,
+  @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?,
+  @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?,
+) {
+  let nargs = positional.length()
+  let extra = if nargs > nstack { positional[nstack:].to_owned() } else { [] }
+  let nimms = if has_lane { 3 } else { 2 }
+  let migration = !extra.is_empty() &&
+    extra.length() <= nimms &&
+    extra.iter().all(a => a.desc is Int(_))
+  if nargs < nstack {
+    operand_count_mismatch(
+      diagnostics,
+      location,
+      expected=nstack,
+      provided=nargs,
+    )
+  } else if !extra.is_empty() {
+    if migration {
+      positional_memory_immediate(diagnostics, extra[0].info, example)
+    } else {
+      operand_count_mismatch(
+        diagnostics,
+        location,
+        expected=nstack,
+        provided=nargs,
+      )
+    }
+  }
+  fn pick(
+    name : String,
+    k : Int,
+  ) -> @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]? {
+    match found.get(name) {
+      Some(e) => Some(e)
+      None =>
+        if migration && k < extra.length() {
+          Some({ desc: extra[k].desc, info: extra[k].info })
+        } else {
+          None
+        }
+    }
+  }
+
+  if has_lane {
+    (pick("lane", 0), pick("align", 1), pick("offset", 2))
+  } else {
+    (None, pick("align", 0), pick("offset", 1))
+  }
+}

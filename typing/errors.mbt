@@ -1168,3 +1168,58 @@ pub fn expected_func(
 ) -> Unit {
   ctx.report(location, Error, @message.text("Expected function."))
 }
+
+///|
+/// An argument label the callee does not take.
+pub fn unknown_argument_label(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+  suggestions? : Array[String] = [],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Unknown argument label")
+    .sep(@message.ident(name))
+    .seq(@message.text(".")),
+    hint=did_you_mean(suggestions),
+  )
+}
+
+///|
+/// One argument label given twice.
+pub fn duplicate_argument_label(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  prev_loc : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The argument label")
+    .sep(@message.ident(name))
+    .sep(@message.text("is given several times.")),
+    related=[{ loc: prev_loc, message: @message.text("previously given here") }],
+  )
+}
+
+///|
+/// A memory immediate written positionally, in the syntax that predates the
+/// labels.
+pub fn positional_memory_immediate(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  example : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "The static immediates of a memory access must be labelled, e.g.",
+    )
+    .sep(@message.code(example))
+    .seq(@message.text(".")),
+  )
+}

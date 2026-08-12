@@ -1623,6 +1623,24 @@ pub fn Checker::statement(
       }
     }
 
+    // --- A memory access written as a method call ---
+    Call(callee, args) if self.is_mem_access(callee) => {
+      guard callee.desc is StructGet(recv, meth) else {
+        return self.poisoned(i)
+      }
+      guard recv.desc is Get(memname) else { return self.poisoned(i) }
+      let (checked_args, results) = self.mem_access(loc, memname, meth, args)
+      {
+        desc: Call(
+          callee.map_info(_ => annotate([], callee.info)),
+          checked_args,
+        ),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- An ordinary call through a function reference ---
     Call(callee, args) => {
       let (callee_, args_, results) = self.call(loc, callee, args)
@@ -2644,4 +2662,145 @@ fn Checker::call(
   }
   ignore(location)
   (callee_, args_, results)
+}
+
+///|
+/// Type a memory load or store written as `mem.load32(addr, offset: 16)`.
+///
+/// The stack operands come first -- an address, and a value for a store -- and
+/// the alignment and offset are LABELLED immediates rather than operands, since
+/// they are constants in the instruction rather than values on the stack.
+fn Checker::mem_access(
+  self : Checker,
+  location : @basic.Location,
+  memname : @ast.Ident,
+  meth : @ast.Ident,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> (
+  Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  Array[@infer.Cell[@infer.InferredType]],
+) {
+  let ctx = self.ctx
+  let address_type = match ctx.memories.find_no_mark(memname.name) {
+    Some((_, at)) => at
+    None => @wasm_types.AddressType::I32
+  }
+  let addr_cell = @infer.valtype_cell(
+    match address_type {
+      I32 => @infer.i32_valtype
+      I64 => @infer.i64_valtype
+    },
+  )
+  let is_store = mem_store_method(meth.name)
+  let nstack = if is_store { 2 } else { 1 }
+  let split = split_labelled_args(args)
+  let found = take_labels(ctx.diagnostics, ["offset", "align"], split.labelled)
+  let example = memname.name + "." + meth.name + "(..., offset: 16, align: 1)"
+  let (_, align, offset) = mem_immediates(
+    ctx.diagnostics,
+    location,
+    example,
+    nstack,
+    has_lane=false,
+    found,
+    split.positional,
+  )
+  let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  for k, a in split.positional {
+    let c = self.statement(a)
+    let ty = expression_type(ctx, c.info)
+    if k == 0 {
+      // The address is checked against the MEMORY's address type, which is what
+      // makes a 64-bit memory take an i64 index.
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        a.info,
+        ty,
+        addr_cell,
+      )
+    } else if k == 1 && is_store {
+      self.check_stored_value(a.info, meth, ty)
+    }
+    checked.push(c)
+  }
+  check_memarg(
+    ctx.diagnostics,
+    address_type,
+    mem_natural_align(meth.name),
+    align,
+    offset,
+  )
+  let results = if is_store {
+    []
+  } else {
+    match mem_load_result(meth.name) {
+      Some(t) => [@infer.Cell::make(t)]
+      None => []
+    }
+  }
+  (checked, results)
+}
+
+///|
+/// Check the value a store writes.
+///
+/// The wide stores demand their exact width. The NARROWING ones -- `store8`,
+/// `store16`, `store32` -- wrap, so they take an i64-wide value too, including
+/// a literal too large for an i32: writing the low bytes of a big number is
+/// what they are for.
+fn Checker::check_stored_value(
+  self : Checker,
+  location : @basic.Location,
+  meth : @ast.Ident,
+  ty : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  let ctx = self.ctx
+  let want = match meth.name {
+    "store64" => Some(@infer.i64_valtype)
+    "storef32" => Some(@infer.f32_valtype)
+    "storef64" => Some(@infer.f64_valtype)
+    _ => None
+  }
+  match want {
+    Some(v) =>
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        location,
+        ty,
+        @infer.valtype_cell(v),
+      )
+    None =>
+      match ty.get() {
+        Valtype({ internal: I32 | I64, .. })
+        | Int
+        | Number
+        | LargeInt
+        | Unknown
+        | Error => ()
+        _ =>
+          expression_type_mismatch(
+            ctx.diagnostics,
+            location,
+            ty,
+            @infer.Cell::make(Int),
+          )
+      }
+  }
+}
+
+///|
+/// Whether a call is a plain memory load or store.
+///
+/// Both halves have to hold: the method name has to be one of the accesses, and
+/// the receiver has to actually be a memory -- a local named `mem` shadows it
+/// and makes this an ordinary call.
+fn Checker::is_mem_access(
+  self : Checker,
+  callee : @ast.Instr[@basic.Location],
+) -> Bool {
+  guard callee.desc is StructGet(recv, meth) else { return false }
+  guard recv.desc is Get(memname) else { return false }
+  classify_method_call(self.ctx, memname, meth.name) is MemAccess
 }

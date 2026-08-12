@@ -6538,3 +6538,148 @@ test "a tail call must return what its caller promised" {
     content="diverges | This expression has type 'i64' but is expected to have type 'f64'.",
   )
 }
+
+///|
+/// A memory access is written as a method call, and its alignment and offset
+/// are LABELLED immediates rather than operands -- constants in the
+/// instruction, not values on the stack.
+test "a memory access takes operands and labelled immediates" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn access(
+    at : @wasm_types.AddressType,
+    meth : String,
+    args : Array[@ast.Instr[@basic.Location]],
+  ) -> String {
+    let ctx = module_ctx()
+    ctx.memories.add(ctx.diagnostics, "mem", loc_at(0, 3), (0, at))
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(
+      instr(
+        Call(
+          instr(
+            StructGet(instr(Get(id("mem")), 20), {
+              name: meth,
+              loc: loc_at(24, 30),
+            }),
+            20,
+          ),
+          args,
+        ),
+        10,
+      ),
+    )
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  fn labelled(name : String, v : String) -> @ast.Instr[@basic.Location] {
+    instr(Labelled({ name, loc: loc_at(40, 46) }, instr(Int(v), 48)), 40)
+  }
+
+  // A load produces the width it names, remembering how narrow it was.
+  inspect(access(I32, "load32", [instr(Int("0"), 30)]), content="i32 |  | 0")
+  inspect(access(I32, "load8", [instr(Int("0"), 30)]), content="i8 |  | 0")
+  inspect(access(I32, "loadf64", [instr(Int("0"), 30)]), content="f64 |  | 0")
+  // A store produces nothing.
+  inspect(
+    access(I32, "store32", [instr(Int("0"), 30), instr(Int("1"), 34)]),
+    content=" |  | 0",
+  )
+  // The immediates are labelled, and an alignment within the natural one is
+  // fine.
+  inspect(
+    access(I32, "load32", [
+      instr(Int("0"), 30),
+      labelled("align", "2"),
+      labelled("offset", "16"),
+    ]),
+    content="i32 |  | 0",
+  )
+  // Over the natural alignment is not.
+  inspect(
+    access(I32, "load32", [instr(Int("0"), 30), labelled("align", "8")]),
+    content="i32 | The memory alignment is larger than the natural alignment 4. | 0",
+  )
+  // A 64-bit memory takes an i64 address, so an i32 one does not fit.
+  inspect(access(I64, "load32", [instr(Int("0"), 30)]), content="i32 |  | 0")
+  // An unknown label is caught, with a suggestion.
+  inspect(
+    access(I32, "load32", [instr(Int("0"), 30), labelled("offst", "16")]),
+    content="i32 | Unknown argument label 'offst'. | 0",
+  )
+}
+
+///|
+/// The narrowing stores WRAP, so they take an i64-wide value too -- writing the
+/// low bytes of a big number is what they are for. The wide ones demand their
+/// exact width.
+test "a narrowing store accepts a value wider than it writes" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn store(meth : String, value : @ast.InstrDesc[@basic.Location]) -> String {
+    let ctx = module_ctx()
+    ctx.memories.add(ctx.diagnostics, "mem", loc_at(0, 3), (0, I32))
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement(
+      instr(
+        Call(
+          instr(
+            StructGet(instr(Get(id("mem")), 20), {
+              name: meth,
+              loc: loc_at(24, 30),
+            }),
+            20,
+          ),
+          [instr(Int("0"), 30), instr(value, 34)],
+        ),
+        10,
+      ),
+    )
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // A literal too big for i32 still fits a narrowing store.
+  inspect(store("store8", Int("4294967296")), content="")
+  inspect(store("store32", Int("4294967296")), content="")
+  // A float does not: there is nothing to wrap.
+  inspect(
+    store("store8", Float("1.5")),
+    content="This expression has type 'float' but is expected to have type 'int'.",
+  )
+  // The wide stores demand their own width.
+  inspect(store("storef64", Float("1.5")), content="")
+  inspect(
+    store("storef32", Float("1e300")),
+    content="This expression has type 'f64' but is expected to have type 'f32'.",
+  )
+}
