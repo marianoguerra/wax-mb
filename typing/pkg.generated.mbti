@@ -15,6 +15,8 @@ import {
 }
 
 // Values
+pub fn add_type(@typing_env.TypeContext, @diagnostic.Context, Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> @type_store.Id?
+
 pub fn assign_target(@typing_env.ModuleContext, @ast.Ident, ResolvedVar, compound? : Bool) -> Unit
 
 pub fn bind_local(@typing_env.ModuleContext, @ast.Ident, @infer.InferredValType?) -> Unit
@@ -41,11 +43,19 @@ pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> 
 
 pub fn declare_local(@typing_env.ModuleContext, @ast.Ident, @wasm_types.ValType[@ast.Ident]) -> Unit
 
+pub fn descriptor_not_reciprocal(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
+
+pub fn descriptor_not_struct(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
+
+pub fn descriptor_outside_rec_group(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
+
 pub fn diff_ref_type(@wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@ast.Ident]
 
 pub fn duplicated_field(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
 
 pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
+
+pub fn expand_splices(@typing_env.TypeContext, @diagnostic.Context, Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]
 
 pub fn expression_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], expected_at? : @basic.Location?) -> Unit
 
@@ -53,13 +63,17 @@ pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) 
 
 pub fn field_subtype(@type_store.SubtypingInfo, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]], @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) -> Bool
 
+pub fn[A] find(@typing_env.Tbl[A], @diagnostic.Context, @ast.Ident) -> A?
+
 pub fn flatten_operands(Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Array[(@infer.Cell[@infer.InferredType], @basic.Location)]
 
 pub fn float_literal_lattice(String) -> @infer.InferredType
 
+pub fn forward_use_of_described(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn get_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
-pub fn get_type_definition(@typing_env.TypeContext, @ast.Ident) -> @ast.SubType?
+pub fn get_type_definition(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident) -> @ast.SubType?
 
 pub fn heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
 
@@ -99,9 +113,13 @@ pub fn n_functype(@typing_env.TypeContext, @diagnostic.Context, @ast.FuncType) -
 
 pub fn n_heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.RefIndex]?
 
+pub fn n_rectype(@typing_env.TypeContext, @diagnostic.Context, Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Array[@type_store.SubType[@type_store.RefIndex]]?
+
 pub fn n_reftype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.RefIndex]?
 
 pub fn n_storagetype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.StorageType[@ast.Ident]) -> @wasm_types.StorageType[@type_store.RefIndex]?
+
+pub fn n_subtype(@typing_env.TypeContext, @diagnostic.Context, Int, @ast.SubType) -> @type_store.SubType[@type_store.RefIndex]?
 
 pub fn n_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.RefIndex]?
 
@@ -123,11 +141,15 @@ pub fn report_uninitialized(@typing_env.ModuleContext, @ast.Ident) -> Unit
 
 pub fn require_feature(@typing_env.TypeContext, @diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
 
+pub fn reserved_type_name(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub let reserved_type_names : Array[String]
+
 pub fn resolve_declared(@infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
-pub fn resolve_type_name(@typing_env.TypeContext, @ast.Ident) -> @type_store.Id?
+pub fn resolve_type_name(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident) -> @type_store.Id?
 
-pub fn resolve_type_ref(@typing_env.TypeContext, @ast.Ident) -> @type_store.RefIndex?
+pub fn resolve_type_ref(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident) -> @type_store.RefIndex?
 
 pub fn resolve_variable(@typing_env.ModuleContext, @ast.Ident) -> ResolvedVar
 
@@ -136,6 +158,10 @@ pub fn segment_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 pub fn set_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
 pub fn short_stack(@diagnostic.Context, StackKind, @basic.Location, Int, Int) -> Unit
+
+pub fn splice_non_struct(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn splice_without_supertype(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn storage_subtype(@type_store.SubtypingInfo, @wasm_types.StorageType[@type_store.Id], @wasm_types.StorageType[@type_store.Id]) -> Bool
 

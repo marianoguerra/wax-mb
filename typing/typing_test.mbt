@@ -2017,3 +2017,227 @@ test "subtype records and join_collected folds" {
   inspect(@infer.to_string(r), content="i32")
   inspect(@infer.to_string(branched), content="i32")
 }
+
+///|
+/// A rec group's members are registered before anything is resolved, which is
+/// the only reason a member written first can name one written last.
+test "a rec group's members can name each other in either direction" {
+  let ctx = module_ctx()
+  let tc = ctx.type_context
+  fn ref_to(n : String) -> @ast.SubType {
+    {
+      typ: Struct([
+        {
+          desc: (
+            id("next"),
+            {
+              mut_: false,
+              typ: Value(Ref({ nullable: true, typ: Type(id(n)) })),
+            },
+          ),
+          info: loc_at(0, 1),
+        },
+      ]),
+      supertype: None,
+      final_: true,
+      descriptor: None,
+      describes: None,
+    }
+  }
+
+  // $a points at $b, which is written after it.
+  let group = [
+    (
+      { desc: (id("a"), ref_to("b")), info: loc_at(0, 1) } :
+      @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]),
+    { desc: (id("b"), ref_to("a")), info: loc_at(2, 3) },
+  ]
+  let base = @typing.add_type(tc, ctx.diagnostics, group)
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(base is Some(_), content="true")
+  // And both names now resolve to real store indices, one apart -- the
+  // placeholders have been replaced.
+  fn index_of(n : String) -> Int {
+    match @typing.resolve_type_name(tc, ctx.diagnostics, id(n)) {
+      Some(i) => i.to_int_for_tests_only()
+      None => -1
+    }
+  }
+
+  inspect(index_of("b") - index_of("a"), content="1")
+}
+
+///|
+/// A supertype must be declared before. A forward or self reference inside the
+/// group is reported as unbound and DROPPED, so the subtype chain stays acyclic
+/// -- keeping it would turn a reported error into a hang.
+test "a forward supertype is unbound, and is dropped" {
+  let ctx = module_ctx()
+  let tc = ctx.type_context
+  fn empty_struct(sup : String?) -> @ast.SubType {
+    {
+      typ: Struct([]),
+      supertype: sup.map(s => id(s)),
+      final_: false,
+      descriptor: None,
+      describes: None,
+    }
+  }
+
+  let group : Array[
+    @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location],
+  ] = [
+    { desc: (id("a"), empty_struct(Some("b"))), info: loc_at(0, 1) },
+    { desc: (id("b"), empty_struct(None)), info: loc_at(2, 3) },
+  ]
+  let _ = @typing.add_type(tc, ctx.diagnostics, group)
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="The type 'b' is not bound.",
+  )
+  // The stored source type has lost the supertype it could not keep.
+  inspect(
+    @typing.get_type_definition(tc, ctx.diagnostics, id("a")).unwrap().supertype
+    is None,
+    content="true",
+  )
+}
+
+///|
+/// `..` inherits the supertype's fields, and expansion runs in source order so
+/// a member can splice from one earlier in its own group.
+test "a splice inherits its supertype's fields" {
+  let ctx = module_ctx()
+  let tc = ctx.type_context
+  fn field(
+    n : String,
+  ) -> @basic.Annotated[
+    (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+    @basic.Location,
+  ] {
+    { desc: (id(n), { mut_: false, typ: Value(I32) }), info: loc_at(0, 1) }
+  }
+
+  let group : Array[
+    @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location],
+  ] = [
+    {
+      desc: (
+        id("base"),
+        {
+          typ: Struct([field("x")]),
+          supertype: None,
+          final_: false,
+          descriptor: None,
+          describes: None,
+        },
+      ),
+      info: loc_at(0, 1),
+    },
+    {
+      desc: (
+        id("derived"),
+        {
+          typ: Struct([@ast.splice_field(loc_at(4, 6)), field("y")]),
+          supertype: Some(id("base")),
+          final_: true,
+          descriptor: None,
+          describes: None,
+        },
+      ),
+      info: loc_at(2, 3),
+    },
+  ]
+  let _ = @typing.add_type(tc, ctx.diagnostics, group)
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // The stored definition has the parent's field ahead of its own; the AST it
+  // was built from still holds the sentinel, for the formatter to write back.
+  let stored = @typing.get_type_definition(tc, ctx.diagnostics, id("derived")).unwrap()
+  let names = match stored.typ {
+    Struct(fs) => fs.map(f => f.desc.0.name).join(",")
+    _ => "not a struct"
+  }
+  inspect(names, content="x,y")
+  inspect(@ast.is_splice_field(group[1].desc.1.typ_fields()[0]), content="true")
+}
+
+///|
+/// The fields of a struct type, for a test that wants to look at them.
+fn @ast.SubType::typ_fields(
+  self : @ast.SubType,
+) -> Array[
+  @basic.Annotated[
+    (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+    @basic.Location,
+  ],
+] {
+  match self.typ {
+    Struct(fs) => fs
+    _ => []
+  }
+}
+
+///|
+/// A descriptor pair must name each other, and must do so inside one recursion
+/// group: `$obj` says `$desc` is its descriptor, `$desc` says it describes
+/// `$obj`. Half a pair is an error, and so is a descriptor declared before what
+/// it describes.
+test "descriptor clauses must be reciprocal, and in order" {
+  fn ctx_() -> @typing_env.ModuleContext {
+    @typing_env.ModuleContext::new(
+      @diagnostic.collector(),
+      @type_store.TypeStore::new(),
+      @feature.configure([(CustomDescriptors, true)]),
+    )
+  }
+
+  fn entry(
+    n : String,
+    descriptor : String?,
+    describes : String?,
+    at : Int,
+  ) -> @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location] {
+    {
+      desc: (
+        id(n),
+        {
+          typ: Struct([]),
+          supertype: None,
+          final_: true,
+          descriptor: descriptor.map(s => id(s)),
+          describes: describes.map(s => id(s)),
+        },
+      ),
+      info: loc_at(at, at + 1),
+    }
+  }
+
+  // A well-formed pair: the subject first, its descriptor second.
+  let good = ctx_()
+  let _ = @typing.add_type(good.type_context, good.diagnostics, [
+    entry("obj", Some("desc"), None, 0),
+    entry("desc", None, Some("obj"), 2),
+  ])
+  inspect(good.diagnostics.collected().length(), content="0")
+  // Half a pair: `$obj` names a descriptor that does not describe it back.
+  let lone = ctx_()
+  let _ = @typing.add_type(lone.type_context, lone.diagnostics, [
+    entry("obj", Some("desc"), None, 0),
+    entry("desc", None, None, 2),
+  ])
+  inspect(
+    @message.to_plain_string(lone.diagnostics.collected()[0].message),
+    content="The descriptor of this type does not describe it back.",
+  )
+  // Reciprocal, but the descriptor comes first -- so reading the group in order
+  // meets it before its subject.
+  let backwards = ctx_()
+  let _ = @typing.add_type(backwards.type_context, backwards.diagnostics, [
+    entry("desc", None, Some("obj"), 0),
+    entry("obj", Some("desc"), None, 2),
+  ])
+  inspect(
+    @message.to_plain_string(backwards.diagnostics.collected()[0].message),
+    content="A described type must be declared before its descriptor.",
+  )
+}

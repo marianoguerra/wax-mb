@@ -383,3 +383,123 @@ pub fn block_exit_type_mismatch(
     related=[typed_branch_label(loc1, ty1), typed_branch_label(loc2, ty2)],
   )
 }
+
+///|
+/// A type declaration taking one of the built-in names.
+///
+/// `T::` extends to declared types, so the `::` left-hand side is one namespace
+/// shared by the intrinsics and user types -- and the built-ins have to stay
+/// unambiguous there.
+pub fn reserved_type_name(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.ident(name).sep(@message.text("is a reserved built-in type name.")),
+  )
+}
+
+///|
+/// A `..` splice in a struct that inherits from nothing.
+pub fn splice_without_supertype(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.code("..")
+    .sep(@message.text(" requires a supertype to inherit fields from (write "))
+    .sep(@message.code("type t: super = { .., ... }"))
+    .sep(@message.text(").")),
+  )
+}
+
+///|
+/// A `..` splice whose supertype is not a struct, so there are no fields to
+/// inherit.
+pub fn splice_non_struct(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.code("..")
+    .sep(@message.text(" can only inherit fields from a struct supertype;"))
+    .sep(@message.ident(name))
+    .sep(@message.text("is not a struct.")),
+  )
+}
+
+///|
+/// A `descriptor` or `describes` clause naming a type outside the group.
+///
+/// The two types have to name each other, and a reference out of the group
+/// cannot be reciprocated -- the type it names was already closed.
+pub fn descriptor_outside_rec_group(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  described~ : Bool,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The")
+    .sep(@message.text(if described { "described" } else { "descriptor" }))
+    .sep(@message.text("type must be in the same recursion group.")),
+  )
+}
+
+///|
+/// One half of a descriptor pair without the other.
+pub fn descriptor_not_reciprocal(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  described~ : Bool,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      if described {
+        "This descriptor does not describe the type it is attached to."
+      } else {
+        "The descriptor of this type does not describe it back."
+      },
+    ),
+  )
+}
+
+///|
+/// A descriptor declared before the type it describes.
+pub fn forward_use_of_described(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A described type must be declared before its descriptor."),
+  )
+}
+
+///|
+/// A descriptor clause on something that is not a struct.
+pub fn descriptor_not_struct(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  described~ : Bool,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A")
+    .sep(@message.text(if described { "described" } else { "descriptor" }))
+    .sep(@message.text("type must be a struct type.")),
+  )
+}

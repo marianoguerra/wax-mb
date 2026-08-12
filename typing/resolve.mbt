@@ -14,15 +14,47 @@
 // type ending the run.
 
 ///|
+/// Look a name up in a table, REPORTING it if nothing binds it.
+///
+/// The reporting is the point. Resolving silently let an unbound type name
+/// through, so a construction literal naming a type that does not exist was
+/// accepted here and only noticed by the lowering -- which is the thing
+/// checking exists to happen before.
+///
+/// Suggestions come from every name the table knows, not only those visible
+/// under the current assumption: a name declared in another `#[if]` branch is
+/// still a plausible thing the author meant.
+pub fn[A] find(
+  tbl : @typing_env.Tbl[A],
+  diagnostics : @diagnostic.Context,
+  name : @ast.Ident,
+) -> A? {
+  match tbl.resolve(name.name, name.loc) {
+    Some(v) => Some(v)
+    None => {
+      unbound_name(
+        diagnostics,
+        name.loc,
+        tbl.kind,
+        name.name,
+        suggestions=@spell.suggest(tbl.names().iter(), name.name),
+      )
+      None
+    }
+  }
+}
+
+///|
 /// The definition a name refers to, if it resolves.
 ///
 /// One of the two things the code generator needs from the checker; the other
 /// is the annotation itself.
 pub fn get_type_definition(
   ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
   name : @ast.Ident,
 ) -> @ast.SubType? {
-  ctx.types.resolve(name.name, name.loc).map(r => r.1)
+  find(ctx.types, diagnostics, name).map(r => r.1)
 }
 
 ///|
@@ -30,9 +62,10 @@ pub fn get_type_definition(
 /// for a type already in the store, a `Rec` for one this very group defines.
 pub fn resolve_type_ref(
   ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
   name : @ast.Ident,
 ) -> @type_store.RefIndex? {
-  ctx.types.resolve(name.name, name.loc).map(r => r.0)
+  find(ctx.types, diagnostics, name).map(r => r.0)
 }
 
 ///|
@@ -42,9 +75,10 @@ pub fn resolve_type_ref(
 /// of this -- as opposed to `resolve_type_ref` -- never look up.
 pub fn resolve_type_name(
   ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
   name : @ast.Ident,
 ) -> @type_store.Id? {
-  match resolve_type_ref(ctx, name) {
+  match resolve_type_ref(ctx, diagnostics, name) {
     Some(Def(id)) => Some(id)
     _ => None
   }
@@ -93,12 +127,16 @@ pub fn heaptype(
     Array => Some(Array)
     None_ => Some(None_)
     Type(idx) =>
-      resolve_type_name(ctx, idx).map(t => @wasm_types.HeapType::Type(t))
+      resolve_type_name(ctx, diagnostics, idx).map(t => {
+        @wasm_types.HeapType::Type(t)
+      })
     Exact(idx) => {
       // `exact` is the custom-descriptors proposal, and is gated even when the
       // name resolves.
       require_feature(ctx, diagnostics, idx.loc, CustomDescriptors)
-      resolve_type_name(ctx, idx).map(t => @wasm_types.HeapType::Exact(t))
+      resolve_type_name(ctx, diagnostics, idx).map(t => {
+        @wasm_types.HeapType::Exact(t)
+      })
     }
   }
 }
@@ -159,10 +197,14 @@ pub fn n_heaptype(
     Array => Some(Array)
     None_ => Some(None_)
     Type(idx) =>
-      resolve_type_ref(ctx, idx).map(r => @wasm_types.HeapType::Type(r))
+      resolve_type_ref(ctx, diagnostics, idx).map(r => {
+        @wasm_types.HeapType::Type(r)
+      })
     Exact(idx) => {
       require_feature(ctx, diagnostics, idx.loc, CustomDescriptors)
-      resolve_type_ref(ctx, idx).map(r => @wasm_types.HeapType::Exact(r))
+      resolve_type_ref(ctx, diagnostics, idx).map(r => {
+        @wasm_types.HeapType::Exact(r)
+      })
     }
   }
 }
@@ -301,7 +343,9 @@ pub fn comptype(
         @type_store.CompType::Array(f)
       })
     Cont(idx) =>
-      resolve_type_ref(ctx, idx).map(r => @type_store.CompType::Cont(r))
+      resolve_type_ref(ctx, diagnostics, idx).map(r => {
+        @type_store.CompType::Cont(r)
+      })
   }
 }
 
