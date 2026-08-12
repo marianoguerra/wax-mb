@@ -1130,3 +1130,32 @@ pub fn dispatch_duplicate_arm(
     related=[{ loc: prev_loc, message: @message.text("other arm here") }],
   )
 }
+
+///|
+/// A continuation type used as a cast target.
+pub fn invalid_cast_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Continuation types cannot be used in a cast instruction."),
+  )
+}
+
+///|
+/// A cast between types in different hierarchies, which share no value.
+pub fn invalid_cast(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  ty : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This value of type")
+    .sep(@message.type_(@infer.to_string(ty)))
+    .sep(@message.text("cannot be cast to the target type.")),
+  )
+}

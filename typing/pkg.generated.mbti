@@ -83,6 +83,8 @@ pub fn collected_natural(Array[(@basic.Location?, @infer.Cell[@infer.InferredTyp
 
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
 
+pub fn conditional_cast_types(@typing_env.ModuleContext, @basic.Location, @infer.Cell[@infer.InferredType], @wasm_types.RefType[@ast.Ident]) -> (@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType])?
+
 pub fn construction_result(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.InferredType]?
 
 pub fn constructor_name(@ast.InstrDesc[@basic.Location]) -> String
@@ -209,11 +211,17 @@ pub fn internalize_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_t
 
 pub fn intrinsic_not_called(@diagnostic.Context, @basic.Location, String, String) -> Unit
 
+pub fn invalid_cast(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
+
+pub fn invalid_cast_type(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn invalid_lane_index(@diagnostic.Context, @basic.Location, Int) -> Unit
 
 pub fn invalid_string_element_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn is_bottom_heaptype(@wasm_types.HeapType[@ast.Ident]) -> Bool
+
+pub fn is_cont_heaptype(@typing_env.TypeContext, @wasm_types.HeapType[@ast.Ident]) -> Bool
 
 pub fn is_defaultable(@wasm_types.ValType[@ast.Ident]) -> Bool
 

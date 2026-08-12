@@ -115,3 +115,100 @@ pub fn lint_ref_cast(
     _ => ()
   }
 }
+
+///|
+/// Whether a heap type is a continuation.
+///
+/// Continuations form their own hierarchy with no surface cast syntax, so a
+/// cast naming one is always a mistake.
+pub fn is_cont_heaptype(
+  ctx : @typing_env.TypeContext,
+  t : @wasm_types.HeapType[@ast.Ident],
+) -> Bool {
+  match t {
+    Cont | NoCont => true
+    Type(n) | Exact(n) =>
+      match ctx.types.find_no_mark(n.name) {
+        Some((_, s)) => s.typ is Cont(_)
+        None => false
+      }
+    _ => false
+  }
+}
+
+///|
+/// The two types a conditional cast produces: what the operand is re-typed as,
+/// and the RESIDUAL left when the cast does not apply.
+///
+/// The residual is computed from the SOURCE the code generator will emit --
+/// `lub(target, operand)` -- and not from the operand's own type. Those differ
+/// exactly when the operand and target are unrelated, and then the operand's
+/// own type gives a residual NARROWER than the emitted instruction delivers, so
+/// the block being branched to would infer a type too narrow to accept what
+/// actually arrives. Wasm derives the residual from the instruction's
+/// immediates, so this has to as well.
+pub fn conditional_cast_types(
+  ctx : @typing_env.ModuleContext,
+  location : @basic.Location,
+  operand : @infer.Cell[@infer.InferredType],
+  target : @wasm_types.RefType[@ast.Ident],
+) -> (@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType])? {
+  let tc = ctx.type_context
+  fn internal(
+    v : @wasm_types.ValType[@ast.Ident],
+  ) -> @infer.Cell[@infer.InferredType]? {
+    internalize(tc, ctx.diagnostics, v)
+  }
+
+  match operand.get() {
+    Valtype({ typ: Ref(actual), .. }) => {
+      let source = match val_lub(tc, Ref(target), Ref(actual)) {
+        Some(t) => t
+        None => {
+          // Different hierarchies share no value, so no cast between them can
+          // ever apply.
+          invalid_cast(ctx.diagnostics, location, operand)
+          @wasm_types.ValType::Ref(target)
+        }
+      }
+      let residual = match source {
+        Ref(lub) => @wasm_types.ValType::Ref(diff_ref_type(lub, target))
+        _ => @wasm_types.ValType::Ref(diff_ref_type(actual, target))
+      }
+      guard internal(source) is Some(a) && internal(residual) is Some(b) else {
+        return None
+      }
+      Some((a, b))
+    }
+    // A polymorphic operand: the code generator recovers the source AS the cast
+    // target, so the residual is `target \ target`. Not `Unknown` -- a residual
+    // is always a reference -- and not the bottom either, or a chained cast
+    // would recover a source that disagrees with this one.
+    Unknown | UnknownRef => {
+      guard internal(Ref(diff_ref_type(target, target))) is Some(b) else {
+        return None
+      }
+      Some((operand, b))
+    }
+    Error => Some((operand, @infer.Cell::make(@infer.InferredType::Error)))
+    // A bare `null` carries no type wider than the target, so the generator
+    // emits the source as the target made nullable. The residual has to follow
+    // from THOSE immediates: typing it as the `&none` bottom instead would
+    // accept programs whose emitted wasm the validator rejects.
+    Null => {
+      let source : @wasm_types.RefType[@ast.Ident] = {
+        nullable: true,
+        typ: target.typ,
+      }
+      guard internal(Ref(source)) is Some(a) &&
+        internal(Ref(diff_ref_type(source, target))) is Some(b) else {
+        return None
+      }
+      Some((a, b))
+    }
+    _ => {
+      expected_ref(ctx.diagnostics, location)
+      None
+    }
+  }
+}

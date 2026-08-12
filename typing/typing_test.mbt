@@ -6100,3 +6100,156 @@ test "a lub is nullable if either side was" {
   inspect(lub(false, true), content="&?eq")
   inspect(lub(true, true), content="&?eq")
 }
+
+///|
+/// `br_on_cast` and `br_on_cast_fail` are mirrors. One branches when the cast
+/// SUCCEEDS, carrying the target, and falls through with the residual; the
+/// other branches when it FAILS, carrying the residual, and falls through with
+/// the target.
+test "the cast branches put target and residual on opposite paths" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn run(fail : Bool) -> String {
+    let ctx = module_ctx()
+    @typing.bind_local(
+      ctx,
+      id("v"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: true, typ: Any }),
+      ),
+    )
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let target : @wasm_types.RefType[@ast.Ident] = {
+      nullable: false,
+      typ: Struct,
+    }
+    let inner = instr(Get(id("v")), 30)
+    let br = if fail {
+      instr(BrOnCastFail(id("out"), target, inner), 20)
+    } else {
+      instr(BrOnCast(id("out"), target, inner), 20)
+    }
+    // A block whose label takes what the branch delivers.
+    let checked = checker.statement(
+      instr(
+        Block(
+          label=Some(id("out")),
+          typ={
+            params: [],
+            results: [
+              if fail {
+                Ref({ nullable: true, typ: Any })
+              } else {
+                Ref({ nullable: false, typ: Struct })
+              },
+            ],
+          },
+          // `unreachable` after the branch, so the fall-through value the
+          // branch left is absorbed by dead code rather than checked against
+          // the block's result -- which is what the BRANCH delivers, not what
+          // falls through.
+          block={ desc: [br, instr(Unreachable, 50)], info: loc_at(20, 21) },
+        ),
+        10,
+      ),
+    )
+    guard! checked.desc is Block(block~, ..)
+    block.desc[0].info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // `br_on_cast`: the branch takes `&struct`, so the block's result is that.
+  // The fall-through keeps the residual -- what an `&?any` is once a
+  // non-null struct is taken out of it.
+  inspect(run(false), content="&?any | ")
+  // `br_on_cast_fail`: the branch takes the residual, so the block's result is
+  // `&?any`, and the fall-through keeps the target.
+  inspect(run(true), content="&struct | ")
+}
+
+///|
+/// A continuation type has no surface cast syntax and its own hierarchy, so
+/// naming one as a cast target is always a mistake.
+test "a cast branch may not target a continuation" {
+  let ctx = module_ctx()
+  let module_ : @ast.Module[@basic.Location] = [
+    {
+      desc: Type([
+        {
+          desc: (
+            id("ft"),
+            {
+              typ: Func({ params: [], results: [] }),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(0, 2),
+        },
+      ]),
+      info: loc_at(0, 2),
+    },
+    {
+      desc: Type([
+        {
+          desc: (
+            id("k"),
+            {
+              typ: Cont(id("ft")),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(4, 5),
+        },
+      ]),
+      info: loc_at(4, 5),
+    },
+  ]
+  @typing.declare_fields(ctx, module_)
+  @typing.bind_local(
+    ctx,
+    id("v"),
+    @typing.internalize_valtype(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: true, typ: Any }),
+    ),
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let _ = checker.statement({
+    desc: BrOnCast(id("out"), { nullable: false, typ: Type(id("k")) }, {
+      desc: Get(id("v")),
+      info: loc_at(30, 31),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }),
+    info: loc_at(20, 21),
+    hints: { branch: None, freq: None, targets: None },
+    expected: None,
+  })
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="Continuation types cannot be used in a cast instruction.",
+  )
+}

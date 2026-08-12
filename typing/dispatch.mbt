@@ -1484,6 +1484,91 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Branching on a cast succeeding, or on it failing ---
+    BrOnCast(label, target, operand) => {
+      let operand_ = self.statement(operand)
+      if is_cont_heaptype(ctx.type_context, target.typ) {
+        invalid_cast_type(ctx.diagnostics, loc)
+      }
+      let (ref_ty, below) = self.split_on_last(operand.info, operand_.info.0)
+      let params = branch_target(ctx, label)
+      let bound = label_in_scope(ctx, label)
+      if bound &&
+        internalize(ctx.type_context, ctx.diagnostics, Ref(target))
+        is Some(cast_to) {
+        // The BRANCH carries the cast target, so that is what the label sees.
+        let delivered = below.copy()
+        delivered.push(cast_to)
+        check_subtypes(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          operand.info,
+          delivered,
+          params,
+        )
+      }
+      // The FALL-THROUGH keeps the value at its residual type: what is left of
+      // it once the cast target is taken away.
+      let residual = match
+        conditional_cast_types(ctx, operand.info, ref_ty, target) {
+        Some((_, r)) => r
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      let result = if bound {
+        if params.length() > 0 {
+          params[0:params.length() - 1].to_owned()
+        } else {
+          []
+        }
+      } else {
+        below
+      }
+      result.push(residual)
+      {
+        desc: BrOnCast(label, target, operand_),
+        info: annotate(result, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    BrOnCastFail(label, target, operand) => {
+      let operand_ = self.statement(operand)
+      if is_cont_heaptype(ctx.type_context, target.typ) {
+        invalid_cast_type(ctx.diagnostics, loc)
+      }
+      let (ref_ty, below) = self.split_on_last(operand.info, operand_.info.0)
+      // The mirror: the BRANCH carries the residual (the cast failed), and the
+      // fall-through carries the target (it succeeded).
+      let residual = match
+        conditional_cast_types(ctx, operand.info, ref_ty, target) {
+        Some((_, r)) => r
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      let params = branch_target(ctx, label)
+      if label_in_scope(ctx, label) {
+        let delivered = below.copy()
+        delivered.push(residual)
+        check_subtypes(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          operand.info,
+          delivered,
+          params,
+        )
+      }
+      let result = below.copy()
+      match internalize(ctx.type_context, ctx.diagnostics, Ref(target)) {
+        Some(c) => result.push(c)
+        None => result.push(@infer.Cell::make(@infer.InferredType::Error))
+      }
+      {
+        desc: BrOnCastFail(label, target, operand_),
+        info: annotate(result, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
