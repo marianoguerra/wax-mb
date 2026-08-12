@@ -7310,3 +7310,152 @@ test "a suspend takes back what its tag returns" {
   inspect(checked.info.0.map(t => @infer.to_string(t)).join(","), content="f64")
   inspect(checker.gaps().length(), content="0")
 }
+
+///|
+/// A resume's handler table is its whole point: `on <tag> <label>` promises
+/// that when the continuation suspends to that tag, control arrives at the
+/// label carrying the TAG's parameters followed by a continuation of the
+/// REMAINING computation -- one taking the tag's results and producing what the
+/// resume produces.
+test "a resume handler receives a continuation of the rest" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn functype(
+    n : String,
+    ps : Array[@wasm_types.ValType[@ast.Ident]],
+    rs : Array[@wasm_types.ValType[@ast.Ident]],
+    at : Int,
+  ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+    {
+      desc: Type([
+        {
+          desc: (
+            id(n),
+            {
+              typ: Func({
+                params: ps.map(p => {
+                  (
+                    { desc: (None, p), info: loc_at(at, at + 1) } :
+                    @basic.Annotated[
+                      (@ast.Ident?, @wasm_types.ValType[@ast.Ident]),
+                      @basic.Location,
+                    ])
+                }),
+                results: rs,
+              }),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(at, at + 1),
+        },
+      ]),
+      info: loc_at(at, at + 1),
+    }
+  }
+
+  fn conttype(
+    n : String,
+    inner : String,
+    at : Int,
+  ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+    {
+      desc: Type([
+        {
+          desc: (
+            id(n),
+            {
+              typ: Cont(id(inner)),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(at, at + 1),
+        },
+      ]),
+      info: loc_at(at, at + 1),
+    }
+  }
+
+  // The resumed continuation produces an i32. The tag `ask` takes nothing and
+  // gives back an f64, so its handler receives a `cont (f64) -> i32`.
+  fn run(handler_results : Array[@wasm_types.ValType[@ast.Ident]]) -> String {
+    let ctx = module_ctx()
+    let module_ : @ast.Module[@basic.Location] = [
+      functype("body", [], [I32], 0),
+      conttype("k", "body", 2),
+      functype("rest", [F64], [I32], 4),
+      conttype("kr", "rest", 6),
+    ]
+    @typing.declare_fields(ctx, module_)
+    ctx.tags.add(ctx.diagnostics, "ask", loc_at(8, 11), {
+      params: [],
+      results: [F64],
+    })
+    @typing.bind_local(
+      ctx,
+      id("c"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: true, typ: Type(id("k")) }),
+      ),
+    )
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement(
+      instr(
+        Block(
+          label=Some(id("h")),
+          typ={ params: [], results: handler_results },
+          block={
+            desc: [
+              instr(
+                Resume(id("k"), [OnLabel(id("ask"), id("h"))], [
+                  instr(Get(id("c")), 30),
+                ]),
+                20,
+              ),
+              instr(Unreachable, 40),
+            ],
+            info: loc_at(20, 21),
+          },
+        ),
+        10,
+      ),
+    )
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  // The handler takes exactly the continuation of the rest.
+  inspect(run([Ref({ nullable: true, typ: Type(id("kr")) })]), content=" | 0")
+  // A handler taking something that is not a continuation at all.
+  inspect(
+    run([I32]),
+    content="Type mismatch in this stack switching instruction: this handler must take the tag's parameters followed by a continuation of the remaining result type. | 0",
+  )
+  // A continuation of the WRONG rest -- one that produces an f64 where the
+  // resume produces an i32.
+  inspect(
+    run([Ref({ nullable: true, typ: Type(id("k")) })]),
+    content="Type mismatch in this stack switching instruction: this handler must take the tag's parameters followed by a continuation of the remaining result type. | 0",
+  )
+}

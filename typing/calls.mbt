@@ -204,3 +204,106 @@ pub fn lookup_cont_inner(
     }
   }
 }
+
+///|
+/// Resolve an inferred cell to an internal value type, seeing through a block
+/// result still under inference.
+///
+/// A block being inferred presents its label as a `Collecting` cell. Reading it
+/// to validate a handler's contract is a use the join cannot re-derive, so the
+/// declared annotation under test is what answers -- and the caller marks it
+/// needed, since dropping it would lose the type this check relied on.
+pub fn internal_of_inferred(
+  ty : @infer.Cell[@infer.InferredType],
+) -> @wasm_types.ValType[@type_store.Id]? {
+  match ty.get() {
+    Valtype({ internal, .. }) => Some(internal)
+    Collecting({ declared: Some(d), .. }) => internal_of_inferred(d)
+    _ => None
+  }
+}
+
+///|
+/// Check a resume instruction's handler table.
+///
+/// Each `on <tag> <label>` promises that when the continuation suspends to that
+/// tag, control arrives at that label carrying the TAG's parameters followed by
+/// a continuation of the remaining computation -- one taking the tag's results
+/// and producing what the resume itself produces. That last part is the whole
+/// point of the construct: the handler gets a continuation it can resume to
+/// carry on where the suspend left off.
+pub fn check_resume_handlers(
+  ctx : @typing_env.ModuleContext,
+  result_types : Array[@wasm_types.ValType[@ast.Ident]],
+  handlers : Array[@ast.OnClause],
+) -> Unit {
+  let info = ctx.type_context.subtyping_info()
+  fn internals(
+    arr : Array[@wasm_types.ValType[@ast.Ident]],
+  ) -> Array[@wasm_types.ValType[@type_store.Id]]? {
+    let out : Array[@wasm_types.ValType[@type_store.Id]] = []
+    for t in arr {
+      guard internalize_valtype(ctx.type_context, ctx.diagnostics, t)
+        is Some(iv) else {
+        return None
+      }
+      out.push(iv.internal)
+    }
+    Some(out)
+  }
+
+  for h in handlers {
+    guard h is OnLabel(tag, label) else { continue }
+    guard find(ctx.tags, ctx.diagnostics, tag) is Some(ft) else {
+      // The tag is unbound and reported; resolve the label anyway so it is
+      // marked used and its own unboundness still surfaces.
+      let _ = branch_target(ctx, label)
+      continue
+    }
+    let target = branch_target(ctx, label)
+    // An unbound label was reported by `branch_target`; checking the contract
+    // against its empty pseudo-target would flag the same label twice.
+    guard label_in_scope(ctx, label) else { continue }
+    fn mismatch() -> Unit {
+      stack_switching_type_mismatch(
+        ctx.diagnostics,
+        label.loc,
+        "this handler must take the tag's parameters followed by a continuation of the remaining result type",
+      )
+    }
+
+    let n = target.length()
+    guard n == ft.params.length() + 1 else {
+      mismatch()
+      continue
+    }
+    // Only the LAST slot can be under inference: a block being inferred has a
+    // single result, so a handler with tag parameters is never one.
+    if target[n - 1].get() is Collecting(cs) {
+      cs.needed = true
+    }
+    for k, p in ft.params {
+      if internalize_valtype(ctx.type_context, ctx.diagnostics, p.desc.1)
+        is Some(want) &&
+        internal_of_inferred(target[k]) is Some(got) {
+        if !@type_store.val_subtype(info, want.internal, got) {
+          mismatch()
+        }
+      }
+    }
+    match internal_of_inferred(target[n - 1]) {
+      Some(Ref({ typ: ht, .. })) =>
+        match cont_functype(info, ht) {
+          Some(ft_) =>
+            if internals(ft.results) is Some(params) &&
+              internals(result_types) is Some(results) {
+              if !functype_matches(info, { params, results }, ft_) {
+                mismatch()
+              }
+            }
+          None => mismatch()
+        }
+      _ => mismatch()
+    }
+  }
+}

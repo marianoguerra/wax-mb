@@ -1863,6 +1863,61 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Resuming a continuation ---
+    Resume(ct, handlers, args) => {
+      let checked = args.map(a => self.statement(a))
+      let results = self.type_resume(
+        loc,
+        ct,
+        handlers,
+        checked,
+        None,
+        ref_first=false,
+      )
+      {
+        desc: Resume(ct, handlers, checked),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    ResumeThrow(ct, tag, handlers, args) => {
+      let checked = args.map(a => self.statement(a))
+      // The operands are the TAG's parameters, not the continuation's: the
+      // resume throws into the continuation rather than passing values to it.
+      let results = self.type_resume(
+        loc,
+        ct,
+        handlers,
+        checked,
+        Some(tag),
+        ref_first=false,
+      )
+      {
+        desc: ResumeThrow(ct, tag, handlers, checked),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    ResumeThrowRef(ct, handlers, args) => {
+      let checked = args.map(a => self.statement(a))
+      let results = self.type_resume(
+        loc,
+        ct,
+        handlers,
+        checked,
+        None,
+        ref_first=true,
+      )
+      {
+        desc: ResumeThrowRef(ct, handlers, checked),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -3763,4 +3818,81 @@ fn Checker::check_cont_bind(
     checked.map(c => (c.info.0, c.info.1)),
     want,
   )
+}
+
+///|
+/// Type a resume instruction: operands, handler table, results.
+///
+/// What goes on the stack differs by form -- the continuation's own parameters
+/// for a plain `resume`, a tag's for `resume_throw`, an `exnref` for
+/// `resume_throw_ref` -- but the CONTINUATION reference is always last, and the
+/// results are always the continuation's own. That is what makes one function
+/// of the three.
+fn Checker::type_resume(
+  self : Checker,
+  location : @basic.Location,
+  ct : @ast.Ident,
+  handlers : Array[@ast.OnClause],
+  checked : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  throw_tag : @ast.Ident?,
+  ref_first~ : Bool,
+) -> Array[@infer.Cell[@infer.InferredType]] {
+  let ctx = self.ctx
+  guard lookup_cont_inner(ctx.type_context, ctx.diagnostics, ct) is Some(inner) else {
+    return []
+  }
+  guard lookup_func_type(ctx.type_context, ctx.diagnostics, inner) is Some(sg) else {
+    return []
+  }
+  let want : Array[@infer.Cell[@infer.InferredType]] = []
+  if ref_first {
+    // `resume_throw_ref` throws an exception object that was caught elsewhere.
+    if internalize(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: true, typ: Exn }),
+      )
+      is Some(c) {
+      want.push(c)
+    }
+  } else {
+    let params = match throw_tag {
+      Some(tag) =>
+        match find(ctx.tags, ctx.diagnostics, tag) {
+          Some(ft) => ft.params
+          None => []
+        }
+      None => sg.params
+    }
+    for p in params {
+      if internalize(ctx.type_context, ctx.diagnostics, p.desc.1) is Some(c) {
+        want.push(c)
+      }
+    }
+  }
+  // The continuation itself, always last and always nullable: a null one traps
+  // rather than being rejected here.
+  if internalize(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: true, typ: Type(ct) }),
+    )
+    is Some(c) {
+    want.push(c)
+  }
+  check_operands(
+    ctx.type_context.subtyping_info(),
+    ctx.diagnostics,
+    location,
+    checked.map(c => (c.info.0, c.info.1)),
+    want,
+  )
+  check_resume_handlers(ctx, sg.results, handlers)
+  let out : Array[@infer.Cell[@infer.InferredType]] = []
+  for r in sg.results {
+    if internalize(ctx.type_context, ctx.diagnostics, r) is Some(c) {
+      out.push(c)
+    }
+  }
+  out
 }
