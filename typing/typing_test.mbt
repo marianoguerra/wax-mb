@@ -4610,3 +4610,227 @@ test "an array index reads its element type" {
   )
   inspect(checker2.gaps().length(), content="0")
 }
+
+///|
+/// A struct literal can omit its type name when the field SET names exactly one
+/// struct. Field inference takes precedence over anything else, because the
+/// fields name the exact struct being constructed.
+test "a struct literal finds its type from its fields" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn ctx_with_point() -> @typing_env.ModuleContext {
+    let ctx = module_ctx()
+    let fields : Array[
+      @basic.Annotated[
+        (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+        @basic.Location,
+      ],
+    ] = [
+      { desc: (id("x"), { mut_: false, typ: Value(I32) }), info: loc_at(0, 1) },
+      { desc: (id("y"), { mut_: false, typ: Value(F64) }), info: loc_at(2, 3) },
+    ]
+    let module_ : @ast.Module[@basic.Location] = [
+      {
+        desc: Type([
+          {
+            desc: (
+              id("point"),
+              {
+                typ: Struct(fields),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(0, 5),
+          },
+        ]),
+        info: loc_at(0, 5),
+      },
+    ]
+    @typing.declare_fields(ctx, module_)
+    ctx
+  }
+
+  // No name written: the fields find `point`, and each value is checked against
+  // its declared type -- so the literals pin to i32 and f64.
+  let ctx = ctx_with_point()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement(
+    instr(
+      Struct(None, [
+        (id("x"), Some(instr(Int("1"), 10))),
+        (id("y"), Some(instr(Int("2"), 14))),
+      ]),
+      0,
+    ),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(
+    checked.info.0.map(t => @infer.to_string(t)).join(","),
+    content="&point",
+  )
+  guard! checked.desc is Struct(_, fs)
+  inspect(
+    fs
+    .map(f => f.1.unwrap().info.0.map(t => @infer.to_string(t)).join(","))
+    .join(" | "),
+    content="i32 | f64",
+  )
+  inspect(checker.gaps().length(), content="0")
+
+  // Fields that name no struct at all.
+  let ctx2 = ctx_with_point()
+  let checker2 = @typing.Checker::new(ctx2, @typing.Operands::new())
+  let _ = checker2.statement(
+    instr(Struct(None, [(id("nope"), Some(instr(Int("1"), 10)))]), 0),
+  )
+  inspect(
+    @message.to_plain_string(ctx2.diagnostics.collected()[0].message),
+    content="Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.",
+  )
+
+  // A named literal missing one of the type's fields.
+  let ctx3 = ctx_with_point()
+  let checker3 = @typing.Checker::new(ctx3, @typing.Operands::new())
+  let _ = checker3.statement(
+    instr(Struct(Some(id("point")), [(id("x"), Some(instr(Int("1"), 10)))]), 0),
+  )
+  inspect(
+    @message.to_plain_string(ctx3.diagnostics.collected()[0].message),
+    content="There is no field named 'y'.",
+  )
+}
+
+///|
+/// A punned field -- `{x}` for `{x: x}` -- stands for the like-named variable,
+/// and stays punned in the typed AST so the printer re-emits it that way. The
+/// pun is a spelling, not a different construct.
+test "a punned field is typed as a read and stays punned" {
+  let ctx = module_ctx()
+  let fields : Array[
+    @basic.Annotated[
+      (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+      @basic.Location,
+    ],
+  ] = [
+    { desc: (id("x"), { mut_: false, typ: Value(F64) }), info: loc_at(0, 1) },
+  ]
+  let module_ : @ast.Module[@basic.Location] = [
+    {
+      desc: Type([
+        {
+          desc: (
+            id("box"),
+            {
+              typ: Struct(fields),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(0, 5),
+        },
+      ]),
+      info: loc_at(0, 5),
+    },
+  ]
+  @typing.declare_fields(ctx, module_)
+  @typing.bind_local(ctx, id("x"), Some(@infer.f64_valtype))
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement({
+    desc: Struct(Some(id("box")), [(id("x"), None)]),
+    info: loc_at(0, 1),
+    hints: { branch: None, freq: None, targets: None },
+    expected: None,
+  })
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // The local was read -- so the pun really was checked.
+  inspect(ctx.read_locals.length(), content="1")
+  // And it is still a pun in the output.
+  guard! checked.desc is Struct(_, fs)
+  inspect(fs[0].1 is None, content="true")
+}
+
+///|
+/// A `..default` construction needs every field to have a zero to start at. A
+/// non-nullable reference does not, and the complaint is made once for the
+/// TYPE rather than once per offending field.
+test "a default construction needs every field to have a zero" {
+  fn defaults(ref_nullable : Bool) -> String {
+    let ctx = module_ctx()
+    let fields : Array[
+      @basic.Annotated[
+        (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+        @basic.Location,
+      ],
+    ] = [
+      {
+        desc: (
+          id("a"),
+          { mut_: false, typ: Value(Ref({ nullable: ref_nullable, typ: Any })) },
+        ),
+        info: loc_at(0, 1),
+      },
+      {
+        desc: (
+          id("b"),
+          { mut_: false, typ: Value(Ref({ nullable: ref_nullable, typ: Eq })) },
+        ),
+        info: loc_at(2, 3),
+      },
+    ]
+    let module_ : @ast.Module[@basic.Location] = [
+      {
+        desc: Type([
+          {
+            desc: (
+              id("holder"),
+              {
+                typ: Struct(fields),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(0, 5),
+          },
+        ]),
+        info: loc_at(0, 5),
+      },
+    ]
+    @typing.declare_fields(ctx, module_)
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement({
+      desc: StructDefault(Some(id("holder"))),
+      info: loc_at(0, 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    })
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // Nullable references have a null to default to.
+  inspect(defaults(true), content="")
+  // Non-nullable ones do not -- and it is said once, though both fields fail.
+  inspect(
+    defaults(false),
+    content="This type has no default value for all its fields.",
+  )
+}

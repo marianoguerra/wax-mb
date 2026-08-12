@@ -165,3 +165,24 @@ pub fn find_field(
   }
   None
 }
+
+///|
+/// The type a concrete allocator produces: a non-null reference to what it
+/// allocated.
+///
+/// EXACT only when custom-descriptors is enabled. At the wasm level
+/// `struct.new` really does yield an exact reference -- it allocates that type
+/// and no subtype -- but exact reference types are part of that proposal, so
+/// without it the plain inexact reference is what can be written down.
+pub fn construction_result(
+  ctx : @typing_env.ModuleContext,
+  name : @ast.Ident,
+) -> @infer.Cell[@infer.InferredType]? {
+  let exact = ctx.type_context.features.is_enabled(CustomDescriptors)
+  internalize(
+    ctx.type_context,
+    ctx.diagnostics,
+    Ref({ nullable: false, typ: if exact { Exact(name) } else { Type(name) } }),
+    inline=inline_comptype(ctx, name),
+  )
+}

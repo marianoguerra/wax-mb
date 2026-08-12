@@ -901,3 +901,56 @@ pub fn method_needs_parentheses(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// A struct literal whose type cannot be worked out.
+pub fn cannot_infer_struct_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "Cannot infer the struct type here; add an explicit type, as in",
+    )
+    .sep(@message.code("{T| ..}"))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// A struct literal with the wrong number of fields.
+pub fn field_count_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  expected~ : Int,
+  provided~ : Int,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This structure provides")
+    .sep(@message.int(provided))
+    .sep(@message.text("field(s) but"))
+    .sep(@message.int(expected))
+    .sep(@message.text("was/were expected.")),
+  )
+}
+
+///|
+/// A `..default` construction of a type not every field of which has a zero.
+///
+/// Reported once for the TYPE, not once per field: the construction as a whole
+/// is what cannot be written, and naming every offending field would be a list
+/// where one sentence does.
+pub fn not_defaultable(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This type has no default value for all its fields."),
+  )
+}

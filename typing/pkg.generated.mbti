@@ -37,6 +37,8 @@ pub fn br_if_result_mismatch(@diagnostic.Context, @basic.Location, @basic.Locati
 
 pub fn branch_target(@typing_env.ModuleContext, @ast.Ident) -> Array[@infer.Cell[@infer.InferredType]]
 
+pub fn cannot_infer_struct_type(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
 pub fn check_inline_type(@typing_env.TypeContext, @diagnostic.Context, @basic.Location, @ast.FuncType, @ast.FuncType?) -> Unit
@@ -70,6 +72,8 @@ pub fn collect_into(@typing_env.ModuleContext, Operands, @basic.Location, @ast.I
 pub fn collected_natural(Array[(@basic.Location?, @infer.Cell[@infer.InferredType])]) -> Array[@infer.InferredType]
 
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
+
+pub fn construction_result(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.InferredType]?
 
 pub fn constructor_name(@ast.InstrDesc[@basic.Location]) -> String
 
@@ -120,6 +124,8 @@ pub fn expression_type(@typing_env.ModuleContext, (Array[@infer.Cell[@infer.Infe
 pub fn expression_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], expected_at? : @basic.Location?) -> Unit
 
 pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
+
+pub fn field_count_mismatch(@diagnostic.Context, @basic.Location, expected~ : Int, provided~ : Int) -> Unit
 
 pub fn field_has_default(@wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> Bool
 
@@ -276,6 +282,8 @@ pub fn non_empty_stack(@diagnostic.Context, @basic.Location, String) -> Unit
 pub fn not_an_expression(@diagnostic.Context, @basic.Location, Int) -> Unit
 
 pub fn not_assignable(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn not_defaultable(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn operand_count_mismatch(@diagnostic.Context, @basic.Location, expected~ : Int, provided~ : Int) -> Unit
 

@@ -761,6 +761,88 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Constructing a struct ---
+    Struct(name, fields) => {
+      // Field inference takes PRECEDENCE over anything else: the fields name
+      // the exact struct being constructed, where an expected type could be a
+      // supertype of it.
+      let resolved = match name {
+        Some(n) => Some(n)
+        None =>
+          match infer_struct_by_fields(ctx, fields.map(f => f.0)) {
+            Some(n) => Some(n)
+            None => {
+              cannot_infer_struct_type(ctx.diagnostics, loc)
+              None
+            }
+          }
+      }
+      let declared = match resolved {
+        Some(n) =>
+          lookup_struct_type(
+            ctx.type_context,
+            ctx.diagnostics,
+            n,
+            location=Some(loc),
+          )
+        None => None
+      }
+      let checked = self.struct_fields(loc, declared, fields)
+      let ty = match (resolved, declared) {
+        (Some(n), Some(_)) =>
+          match construction_result(ctx, n) {
+            Some(c) => c
+            None => @infer.Cell::make(@infer.InferredType::Error)
+          }
+        _ => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: Struct(name, checked),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Constructing one at its zero values ---
+    StructDefault(name) => {
+      let ty = match name {
+        Some(n) => {
+          // Every field must have a zero to start at; a non-nullable reference
+          // does not, so it has to be given explicitly.
+          if lookup_struct_type(
+              ctx.type_context,
+              ctx.diagnostics,
+              n,
+              location=Some(loc),
+            )
+            is Some(declared) {
+            // Said once for the type, not once per field: the construction as a
+            // whole is what cannot be written.
+            if declared.iter().any(f => !field_has_default(f.desc.1)) {
+              not_defaultable(ctx.diagnostics, loc)
+            }
+          }
+          match construction_result(ctx, n) {
+            Some(c) => c
+            None => @infer.Cell::make(@infer.InferredType::Error)
+          }
+        }
+        None => {
+          cannot_infer_struct_type(ctx.diagnostics, loc)
+          @infer.Cell::make(@infer.InferredType::Error)
+        }
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: StructDefault(name),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -1205,6 +1287,105 @@ fn Checker::element_slot(
     _ => {
       expected_array(ctx.diagnostics, location)
       None
+    }
+  }
+}
+
+///|
+/// Check a struct literal's field values against the type's declaration.
+///
+/// Walked in DECLARATION order, not source order, because that is the order the
+/// values are pushed and the order the lowering emits them. A source field with
+/// no counterpart in the declaration is left untyped: the construction is being
+/// rejected anyway, and its slot in the pending values is simply dropped.
+///
+/// A punned field -- `{x}` for `{x: x}` -- carries no written value, and stays
+/// that way in the typed AST so the printer re-emits the pun. Its value is the
+/// like-named variable, which is checked like any other.
+fn Checker::struct_fields(
+  self : Checker,
+  location : @basic.Location,
+  declared : Array[
+    @basic.Annotated[
+      (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+      @basic.Location,
+    ],
+  ]?,
+  fields : Array[(@ast.Ident, @ast.Instr[@basic.Location]?)],
+) -> Array[(@ast.Ident, @ast.Instr[@typing_env.InferredAnnotation]?)] {
+  let ctx = self.ctx
+  let out : Array[(@ast.Ident, @ast.Instr[@typing_env.InferredAnnotation]?)] = []
+  guard declared is Some(declared) else {
+    // Unresolved type: still type the values, so they consume their stack slots
+    // and their own mistakes are still reported.
+    for f in fields {
+      out.push((f.0, self.field_value(f.0, f.1).map(c => c)))
+    }
+    return out
+  }
+  if fields.length() > declared.length() {
+    field_count_mismatch(
+      ctx.diagnostics,
+      location,
+      expected=declared.length(),
+      provided=fields.length(),
+    )
+  }
+  for d in declared {
+    let want = d.desc.0
+    let mut found : (@ast.Ident, @ast.Instr[@basic.Location]?)? = None
+    for f in fields {
+      if f.0.name == want.name {
+        found = Some(f)
+      }
+    }
+    match found {
+      None => missing_field(ctx.diagnostics, location, want.name)
+      Some((fname, written)) => {
+        let checked = self.field_value(fname, written)
+        // Checked against the field's declared type at the width a WRITE takes,
+        // which is what lets a nested literal drop its own name.
+        if checked is Some(c) &&
+          internalize(ctx.type_context, ctx.diagnostics, unpack_type(d.desc.1))
+          is Some(cell) {
+          check_subtype(
+            ctx.type_context.subtyping_info(),
+            ctx.diagnostics,
+            c.info.1,
+            expression_type(ctx, c.info),
+            cell,
+          )
+        }
+        // Punning preserved: a field with no written value stays without one.
+        out.push((fname, if written is Some(_) { checked } else { None }))
+      }
+    }
+  }
+  out
+}
+
+///|
+/// Type a struct-literal field's value.
+///
+/// A punned field stands for the like-named variable, so it is typed as an
+/// explicit read of it. The pun is a spelling, not a different construct.
+fn Checker::field_value(
+  self : Checker,
+  name : @ast.Ident,
+  written : @ast.Instr[@basic.Location]?,
+) -> @ast.Instr[@typing_env.InferredAnnotation]? {
+  match written {
+    Some(e) => Some(self.statement(e))
+    None => {
+      @typing_env.record_pun(self.ctx.pun_spans, name.loc)
+      Some(
+        self.statement({
+          desc: Get(name),
+          info: name.loc,
+          hints: { branch: None, freq: None, targets: None },
+          expected: None,
+        }),
+      )
     }
   }
 }
