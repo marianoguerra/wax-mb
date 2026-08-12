@@ -303,6 +303,8 @@ pub fn resolve_variable(@typing_env.ModuleContext, @ast.Ident) -> ResolvedVar
 
 pub fn segment_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
+pub fn select_type_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
+
 pub fn set_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
 pub fn short_stack(@diagnostic.Context, StackKind, @basic.Location, Int, Int) -> Unit
@@ -318,6 +320,8 @@ pub fn storage_subtype(@type_store.SubtypingInfo, @wasm_types.StorageType[@type_
 pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], location? : @basic.Location?, pin? : Bool) -> Bool
 
 pub fn table_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
+
+pub fn tag_with_results(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn tee_target(@typing_env.ModuleContext, @ast.Ident, ResolvedVar, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 

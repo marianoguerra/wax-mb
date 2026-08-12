@@ -346,6 +346,149 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Leaving the function ---
+    Return(operand) => {
+      let checked = match operand {
+        Some(e) => {
+          let c = self.statement(e)
+          check_subtypes(
+            ctx.type_context.subtyping_info(),
+            ctx.diagnostics,
+            e.info,
+            c.info.0,
+            ctx.return_types,
+          )
+          Some(c)
+        }
+        None => {
+          if !ctx.return_types.is_empty() {
+            value_count_mismatch(
+              ctx.diagnostics,
+              loc,
+              expected=ctx.return_types.length(),
+              provided=0,
+            )
+          }
+          None
+        }
+      }
+      self.ops.set_unreachable()
+      {
+        desc: Return(checked),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Raising ---
+    Throw(tag, args) => {
+      let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+      for a in args {
+        checked.push(self.statement(a))
+      }
+      if find(ctx.tags, ctx.diagnostics, tag) is Some(ft) {
+        // A tag describes what is thrown, and a throw does not return, so there
+        // is nothing for a result to be.
+        if !ft.results.is_empty() {
+          tag_with_results(ctx.diagnostics, tag.loc)
+        }
+        let want : Array[@infer.Cell[@infer.InferredType]] = []
+        let mut ok = true
+        for p in ft.params {
+          match internalize(ctx.type_context, ctx.diagnostics, p.desc.1) {
+            Some(c) => want.push(c)
+            None => ok = false
+          }
+        }
+        if ok {
+          // An argument may itself produce several values -- a multi-result
+          // call -- so the FLATTENED values are what is checked, each against
+          // the tag parameter it lines up with and at its own argument's span.
+          let provided = flatten_operands(
+            checked.map(c => (c.info.0, c.info.1)),
+          )
+          if provided.length() != want.length() {
+            operand_count_mismatch(
+              ctx.diagnostics,
+              tag.loc,
+              expected=want.length(),
+              provided=provided.length(),
+            )
+          } else {
+            for k, v in provided {
+              check_subtype(
+                ctx.type_context.subtyping_info(),
+                ctx.diagnostics,
+                v.1,
+                v.0,
+                want[k],
+              )
+            }
+          }
+        }
+      }
+      self.ops.set_unreachable()
+      {
+        desc: Throw(tag, checked),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    ThrowRef(e) => {
+      let c = self.statement(e)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        e.info,
+        expression_type(ctx, c.info),
+        @infer.valtype_cell(@typing_env.ref_none_valtype(nullable=true)),
+      )
+      self.ops.set_unreachable()
+      {
+        desc: ThrowRef(c),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Choosing between two values ---
+    Select(cond, a, b) => {
+      // Typed in EMISSION order: the two branch values, then the condition,
+      // because a `select` pops the condition last.
+      let a_ = self.statement(a)
+      let b_ = self.statement(b)
+      let cond_ = self.statement(cond)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        cond.info,
+        expression_type(ctx, cond_.info),
+        @infer.valtype_cell(@infer.i32_valtype),
+      )
+      let ty1 = expression_type(ctx, a_.info)
+      let ty2 = expression_type(ctx, b_.info)
+      // A select's two branch values join exactly as the values reaching a
+      // block's exit do, so this is the same fold -- including the pinning of a
+      // flexible literal against whatever it is chosen alongside.
+      let ty = match join_value_types(ty1, ty2, (_, _) => None) {
+        Some(r) => r
+        None => {
+          select_type_mismatch(ctx.diagnostics, loc, a.info, b.info, ty1, ty2)
+          @infer.Cell::make(@infer.InferredType::Error)
+        }
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: Select(cond_, a_, b_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))

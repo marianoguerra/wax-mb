@@ -3448,24 +3448,22 @@ test "an unwritten arm annotates its children and says so" {
     }
   }
 
-  // `Select` has no arm yet, but its three operands are literals that do.
+  // `ArrayFixed` has no arm yet, but its elements are literals that do.
   let checked = checker.statement(
-    instr(Select(instr(Int("1"), 0), instr(Int("2"), 2), instr(Int("3"), 4)), 6),
+    instr(ArrayFixed(None, [instr(Int("1"), 0), instr(Int("2"), 2)]), 6),
   )
   // The node itself carries no values -- which is the truth, not a guess.
   inspect(checked.info.0.length(), content="0")
   // Its children do.
-  guard! checked.desc is Select(a, b, c)
+  guard! checked.desc is ArrayFixed(_, elems)
   inspect(
-    [a, b, c]
-    .map(x => x.info.0.map(t => @infer.to_string(t)).join(","))
-    .join(" | "),
-    content="number | number | number",
+    elems.map(x => x.info.0.map(t => @infer.to_string(t)).join(",")).join(" | "),
+    content="number | number",
   )
   // And the gap is named.
   inspect(
     checker.gaps().map(g => g.0 + ":" + g.1.to_string()).join(","),
-    content="Select:1",
+    content="ArrayFixed:1",
   )
 }
 
@@ -3869,4 +3867,105 @@ test "a br_table reports its arity once, whatever the targets" {
   // One arity complaint, not one per target.
   inspect(counts.length(), content="1")
   inspect(checker.gaps().length(), content="0")
+}
+
+///|
+/// A `select`'s two branch values join exactly as the values reaching a block's
+/// exit do -- same fold, so a flexible literal is pinned by whatever it is
+/// chosen alongside. The condition is typed LAST, in emission order, because a
+/// `select` pops it last.
+test "a select joins its two branches" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn select(
+    a : @ast.InstrDesc[@basic.Location],
+    b : @ast.InstrDesc[@basic.Location],
+  ) -> (String, String) {
+    let ctx = module_ctx()
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let checked = checker.statement(
+      instr(Select(instr(Int("1"), 0), instr(a, 4), instr(b, 8)), 20),
+    )
+    (
+      checked.info.0.map(t => @infer.to_string(t)).join(","),
+      ctx.diagnostics
+      .collected()
+      .map(d => @message.to_plain_string(d.message))
+      .join(" / "),
+    )
+  }
+
+  // Two flexible literals stay flexible together.
+  inspect(select(Int("1"), Int("2")).0, content="number")
+  // A literal chosen alongside a float commits to the float side.
+  inspect(select(Int("1"), Float("1.5")).0, content="float")
+  // A null and an integer have nothing in common.
+  let (ty, msg) = select(Int("1"), Null)
+  // Recovered as `Error`, which RENDERS as `any`: an already-reported failure
+  // shows the permissive type rather than inventing a second complaint.
+  inspect(ty, content="any")
+  inspect(
+    msg,
+    content="The two branches of this select have no common supertype, so its result type cannot be inferred.",
+  )
+}
+
+///|
+/// `return`, `throw` and `throw_ref` all leave the function or the frame, so
+/// each ends control -- everything after is dead.
+test "the raising forms end control" {
+  let ctx = module_ctx()
+  let ops = @typing.Operands::new()
+  ctx.enter_function(return_types=[@infer.valtype_cell(@infer.i32_valtype)])
+  ctx.tags.add(ctx.diagnostics, "oops", loc_at(0, 4), {
+    params: [{ desc: (None, F64), info: loc_at(0, 1) }],
+    results: [],
+  })
+  let checker = @typing.Checker::new(ctx, ops)
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // `return 1`, against a function returning i32.
+  let _ = checker.statement(instr(Return(Some(instr(Int("1"), 20))), 10))
+  inspect(ops.stack is Unreachable, content="true")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+
+  // `return` with nothing, where the function promises a value.
+  let ops2 = @typing.Operands::new()
+  let checker2 = @typing.Checker::new(ctx, ops2)
+  let _ = checker2.statement(instr(Return(None), 10))
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="This instruction provides 0 value(s) but 1 was/were expected.",
+  )
+
+  // `throw oops(1.5)` -- the argument is checked against the tag's parameter.
+  let ops3 = @typing.Operands::new()
+  let checker3 = @typing.Checker::new(ctx, ops3)
+  let before = ctx.diagnostics.collected().length()
+  let _ = checker3.statement(
+    instr(Throw(id("oops"), [instr(Float("1.5"), 20)]), 10),
+  )
+  inspect(ctx.diagnostics.collected().length() - before, content="0")
+  inspect(ops3.stack is Unreachable, content="true")
+  inspect(checker3.gaps().length(), content="0")
 }

@@ -792,3 +792,39 @@ pub fn labelled_argument_not_allowed(
     .sep(@message.text("immediates of a memory access.")),
   )
 }
+
+///|
+/// A `select` whose two branches have no type in common.
+pub fn select_type_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  loc1 : @basic.Location,
+  loc2 : @basic.Location,
+  ty1 : @infer.Cell[@infer.InferredType],
+  ty2 : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "The two branches of this select have no common supertype, so its result type cannot be inferred.",
+    ),
+    related=[typed_branch_label(loc1, ty1), typed_branch_label(loc2, ty2)],
+  )
+}
+
+///|
+/// An exception tag declared with results.
+///
+/// A tag describes what is thrown, and a throw does not return, so there is
+/// nothing for a result to be.
+pub fn tag_with_results(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("An exception tag cannot have result values."),
+  )
+}
