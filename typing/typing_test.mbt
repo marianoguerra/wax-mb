@@ -3427,14 +3427,16 @@ test "a lane index must be a literal in range" {
 }
 
 ///|
-/// The dispatcher's match is TOTAL from the start. An arm with no
-/// implementation yet does not fall through silently -- it recurses into its
-/// children so they are still annotated, and tallies itself under its
-/// constructor name. That tally is the burn-down number for the rest of this
-/// stage, and a silent fallback here would be the vendored encoder's
-/// `_ => 0x00` all over again.
-test "an unwritten arm annotates its children and says so" {
+/// Every AST constructor now has an arm, so the dispatcher's match is total
+/// WITHOUT a catch-all -- adding a constructor is a compile error here rather
+/// than a silent gap. What `gaps` reports now is a different thing: a lowering
+/// whose typed form could not be peeled back to the construct it came from,
+/// which only happens when recovery from an error inside it produced a shape
+/// the lowering never emits.
+test "the dispatcher has an arm for every construct" {
   let ctx = module_ctx()
+  ctx.memories.add(ctx.diagnostics, "mem", loc_at(0, 3), (0, I32))
+  @typing.bind_local(ctx, id("x"), Some(@infer.i32_valtype))
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
@@ -3448,37 +3450,28 @@ test "an unwritten arm annotates its children and says so" {
     }
   }
 
-  // `IfAnnotation` has no arm yet -- conditional compilation inside a body,
-  // which lands last -- but the instructions in its branches are literals that
-  // do. When the dispatcher is complete this test becomes "there are no gaps".
-  let checked = checker.statement(
-    instr(
-      IfAnnotation(
-        cond=Var({ desc: "debug", info: loc_at(0, 5) }),
-        then_body={
-          desc: [instr(Int("1"), 0), instr(Int("2"), 2)],
-          info: loc_at(0, 3),
-        },
-        else_body=None,
-      ),
-      6,
+  // A spread of constructs from every family, none of which is a gap.
+  let sample : Array[@ast.InstrDesc[@basic.Location]] = [
+    Int("1"),
+    Nop,
+    Get(id("x")),
+    Select(instr(Int("1"), 0), instr(Int("2"), 2), instr(Int("3"), 4)),
+    ArrayFixed(None, [instr(Int("1"), 0)]),
+    Suspend(id("tag"), []),
+    IfAnnotation(
+      cond=Var({ desc: "debug", info: loc_at(0, 5) }),
+      then_body={ desc: [instr(Nop, 0)], info: loc_at(0, 3) },
+      else_body=None,
     ),
-  )
-  // The node itself carries no values -- which is the truth, not a guess.
-  inspect(checked.info.0.length(), content="0")
-  // Its children do.
-  guard! checked.desc is IfAnnotation(then_body~, ..)
-  inspect(
-    then_body.desc
-    .map(x => x.info.0.map(t => @infer.to_string(t)).join(","))
-    .join(" | "),
-    content="number | number",
-  )
-  // And the gap is named.
-  inspect(
-    checker.gaps().map(g => g.0 + ":" + g.1.to_string()).join(","),
-    content="IfAnnotation:1",
-  )
+    ContNew(id("k"), instr(Null, 0)),
+    Switch(id("k"), id("t"), []),
+    Throw(id("t"), []),
+    Return(None),
+  ]
+  for d in sample {
+    let _ = checker.statement(instr(d, 6))
+  }
+  inspect(checker.gaps().length(), content="0")
 }
 
 ///|
@@ -7752,4 +7745,116 @@ test "a descriptor construction recovers its type from the descriptor" {
   )
   inspect(cast.info.0.map(t => @infer.to_string(t)).join(","), content="&obj")
   inspect(checker3.gaps().length(), content="0")
+}
+
+///|
+/// `tab[i] = v` on a TABLE name is `table.set`: the table is a static
+/// immediate, so the receiver is never typed as a value. A local of the same
+/// name shadows it and makes the same spelling an ordinary array write.
+test "an indexed write picks table or array by its receiver" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn write(shadowed : Bool, value : @ast.InstrDesc[@basic.Location]) -> String {
+    let ctx = module_ctx()
+    ctx.tables.add(
+      ctx.diagnostics,
+      "tab",
+      loc_at(0, 3),
+      (I32, { nullable: true, typ: Func }),
+    )
+    if shadowed {
+      @typing.bind_local(ctx, id("tab"), Some(@infer.i32_valtype))
+    }
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement(
+      instr(
+        ArraySet(
+          instr(Get(id("tab")), 20),
+          instr(Int("0"), 30),
+          instr(value, 34),
+        ),
+        10,
+      ),
+    )
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // A table write takes the table's ELEMENT type.
+  inspect(write(false, Null), content="")
+  inspect(
+    write(false, Int("1")),
+    content="This expression has type 'number' but is expected to have type '&?func'.",
+  )
+  // Shadowed by a local, the same spelling indexes a value -- which an i32 is
+  // not.
+  inspect(write(true, Null), content="Expected array.")
+}
+
+///|
+/// `#[if]` inside a body types each branch under ITS OWN assumption, so names
+/// resolve per branch: one may be declared only in the matching configuration.
+test "conditional compilation types each branch under its own assumption" {
+  let ctx = module_ctx()
+  let cond : @wasm_types.Cond = Var({ desc: "debug", info: loc_at(0, 5) })
+  // A global declared only under `debug`.
+  ctx.cond.val = ctx.cond_env.of_cond(ctx.diagnostics, loc_at(0, 5), cond)
+  ctx.globals.add(
+    ctx.diagnostics,
+    "dbg",
+    loc_at(6, 9),
+    (false, Some(@infer.i32_valtype)),
+  )
+  ctx.cond.val = @cond.true_
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // Reading it inside the matching branch is fine.
+  let checked = checker.statement(
+    instr(
+      IfAnnotation(
+        cond~,
+        then_body={ desc: [instr(Get(id("dbg")), 30)], info: loc_at(20, 21) },
+        else_body=None,
+      ),
+      10,
+    ),
+  )
+  // The read resolved and the branch's leftover is reported at the branch, not
+  // as an unbound name.
+  guard! checked.desc is IfAnnotation(then_body~, ..)
+  inspect(
+    then_body.desc[0].info.0.map(t => @infer.to_string(t)).join(","),
+    content="i32",
+  )
+  inspect(
+    ctx.diagnostics
+    .collected()
+    .filter(d => @message.to_plain_string(d.message).has_prefix("The variable"))
+    .length(),
+    content="0",
+  )
+  inspect(checker.gaps().length(), content="0")
 }

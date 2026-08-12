@@ -7,40 +7,45 @@
 // stack, the name tables, block inference, the branch frames. One arm per AST
 // constructor, and there are seventy-one of them.
 //
-// It is being built incrementally, and the match is TOTAL from the start. An
-// arm that is not written yet does not fall through silently -- it recurses
-// into its children, so they are still annotated, and TALLIES itself under its
-// constructor name. `Checker::unported` is that tally, and it is the burn-down
-// number for the rest of this stage. A silent fallback here would be the same
-// mistake as the vendored encoder's `_ => 0x00`, which hid 256 instructions
-// until it was removed.
+// It was built incrementally, and while arms were missing the match carried a
+// catch-all that TALLIED each one it met rather than falling through silently
+// -- the burn-down number for the stage. Every constructor now has an arm, so
+// that catch-all is gone: the match is total WITHOUT one, and adding a
+// constructor to the AST is a compile error here rather than a silent gap.
+//
+// That is the same discipline as the vendored encoder, which hid 256
+// instructions behind a `_ => 0x00` until removing it made the compiler name
+// them. The tally was the stand-in for a compiler that could not help while the
+// match was incomplete; it is not needed once the compiler can.
 
 ///|
 /// One run of the checker over one function body.
 pub struct Checker {
   ctx : @typing_env.ModuleContext
   ops : Operands
-  /// Constructors reached that have no arm yet, and how often. Empty when the
-  /// dispatcher is complete.
-  unported : Map[String, Int]
+  /// Lowerings whose typed form could not be peeled back to the construct they
+  /// came from, and how often. Empty unless recovery from an error inside one
+  /// produced a shape the lowering never emits.
+  unpeeled : Map[String, Int]
 }
 
 ///|
 pub fn Checker::new(ctx : @typing_env.ModuleContext, ops : Operands) -> Checker {
-  { ctx, ops, unported: Map([]) }
+  { ctx, ops, unpeeled: Map([]) }
 }
 
 ///|
-/// Note that a constructor has no arm yet.
-fn Checker::tally(self : Checker, name : String) -> Unit {
-  self.unported[name] = self.unported.get(name).unwrap_or(0) + 1
+/// Note a lowering that could not be peeled back.
+fn Checker::note_unpeeled(self : Checker, name : String) -> Unit {
+  self.unpeeled[name] = self.unpeeled.get(name).unwrap_or(0) + 1
 }
 
 ///|
-/// The unported constructors, most frequent first, for a report.
+/// The constructs whose lowering could not be peeled back, most frequent
+/// first. Empty on well-formed input.
 pub fn Checker::gaps(self : Checker) -> Array[(String, Int)] {
   let out : Array[(String, Int)] = []
-  for name, count in self.unported {
+  for name, count in self.unpeeled {
     out.push((name, count))
   }
   out.sort_by((a, b) => {
@@ -1369,7 +1374,7 @@ pub fn Checker::statement(
             expected: i.expected,
           }
         None => {
-          self.tally("While")
+          self.note_unpeeled("While")
           self.placeholder(i)
         }
       }
@@ -1412,7 +1417,7 @@ pub fn Checker::statement(
           }
         }
         None => {
-          self.tally("Dispatch")
+          self.note_unpeeled("Dispatch")
           self.placeholder(i)
         }
       }
@@ -1617,7 +1622,7 @@ pub fn Checker::statement(
           }
         }
         None => {
-          self.tally("Match")
+          self.note_unpeeled("Match")
           self.placeholder(i)
         }
       }
@@ -2070,10 +2075,116 @@ pub fn Checker::statement(
     BrOnCastDescEqFail(label, nullable, value, desc) =>
       self.desc_branch(i, label, nullable, value, desc, on_success=false)
 
-    // --- Everything else: not written yet ---
-    _ => {
-      self.tally(constructor_name(i.desc))
-      self.placeholder(i)
+    // --- Writing an array element, or a table slot ---
+    ArraySet(recv, index, value) if self.is_table_receiver(recv) => {
+      guard recv.desc is Get(tabname) else { return self.poisoned(i) }
+      // `tab[i] = v` on a TABLE name is `table.set`: the table is a static
+      // immediate, not a value, so the receiver is never typed as one.
+      let (at, rt) = match ctx.tables.find_no_mark(tabname.name) {
+        Some(t) => t
+        None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
+      }
+      let index_ = self.statement(index)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        index.info,
+        expression_type(ctx, index_.info),
+        address_cell(at),
+      )
+      let value_ = self.statement(value)
+      if internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) is Some(want) {
+        check_subtype(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          value.info,
+          expression_type(ctx, value_.info),
+          want,
+        )
+      }
+      {
+        desc: ArraySet(
+          recv.map_info(_ => annotate([], recv.info)),
+          index_,
+          value_,
+        ),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    ArraySet(recv, index, value) => {
+      // Emission order: the array, the index, then the value.
+      let recv_ = self.statement(recv)
+      let index_ = self.statement(index)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        index.info,
+        expression_type(ctx, index_.info),
+        @infer.valtype_cell(@infer.i32_valtype),
+      )
+      let slot = self.element_slot(recv.info, expression_type(ctx, recv_.info))
+      let value_ = self.statement(value)
+      if slot is Some(ft) {
+        if !ft.mut_ {
+          immutable(ctx.diagnostics, loc, "array")
+        }
+        // Written at the UNPACKED width, as a struct field is: the array
+        // remembers the narrow type, the value being stored does not have to.
+        if internalize(ctx.type_context, ctx.diagnostics, unpack_type(ft))
+          is Some(want) {
+          check_subtype(
+            ctx.type_context.subtyping_info(),
+            ctx.diagnostics,
+            value.info,
+            expression_type(ctx, value_.info),
+            want,
+          )
+        }
+      }
+      {
+        desc: ArraySet(recv_, index_, value_),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Conditional compilation inside a body ---
+    IfAnnotation(cond~, then_body~, else_body~) => {
+      // Each branch is typed as an isolated block UNDER ITS OWN ASSUMPTION, so
+      // names resolve per branch: one may be declared only in the matching
+      // configuration, or declared there with a different type.
+      let then_ = with_cond(ctx, loc, cond, true, () => {
+        self.body(loc, None, [], [], [], then_body.desc)
+      })
+      let else_ = match else_body {
+        Some(b) => {
+          let checked = with_cond(ctx, loc, cond, false, () => {
+            self.body(loc, None, [], [], [], b.desc)
+          })
+          Some(
+            (
+              { desc: checked, info: b.info } :
+              @basic.Annotated[
+                Array[@ast.Instr[@typing_env.InferredAnnotation]],
+                @basic.Location,
+              ]),
+          )
+        }
+        None => None
+      }
+      {
+        desc: IfAnnotation(
+          cond~,
+          then_body={ desc: then_, info: then_body.info },
+          else_body=else_,
+        ),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
     }
   }
 }
@@ -2117,12 +2228,13 @@ fn Checker::rebuild_labelled(
 }
 
 ///|
-/// An arm with no implementation yet: annotate the children, and leave this
-/// node's own values unknown.
+/// Annotate a node's children and leave its own values unknown.
 ///
-/// The children are still walked, so a missing arm costs the annotations of the
-/// node itself and nothing below it. What it does NOT do is guess: an empty
-/// annotation says "this produced nothing we know of", which is what it is.
+/// Reached only when a lowering could not be peeled back, or a block's declared
+/// shape did not resolve. The children are still walked, so the failure costs
+/// the annotation of one node and nothing below it -- and it does NOT guess: an
+/// empty annotation says "this produced nothing we know of", which is the
+/// truth.
 fn Checker::placeholder(
   self : Checker,
   i : @ast.Instr[@basic.Location],
@@ -2134,84 +2246,6 @@ fn Checker::placeholder(
     info: annotate([], i.info),
     hints: i.hints,
     expected: i.expected,
-  }
-}
-
-///|
-/// The constructor's name, for the burn-down tally.
-///
-/// Spelled out rather than derived, because the tally is read by a human
-/// deciding what to write next and the AST's own debug rendering would carry
-/// the whole subtree with it.
-pub fn constructor_name(d : @ast.InstrDesc[@basic.Location]) -> String {
-  match d {
-    Block(..) => "Block"
-    Loop(..) => "Loop"
-    While(..) => "While"
-    If(..) => "If"
-    TryTable(..) => "TryTable"
-    Try(..) => "Try"
-    TryCatch(..) => "TryCatch"
-    Unreachable => "Unreachable"
-    Nop => "Nop"
-    Hole => "Hole"
-    Null => "Null"
-    Get(_) => "Get"
-    Path(_, _) => "Path"
-    Set(_, _, _) => "Set"
-    Tee(_, _) => "Tee"
-    Call(_, _) => "Call"
-    TailCall(_, _) => "TailCall"
-    Labelled(_, _) => "Labelled"
-    Char(_) => "Char"
-    Str(_, _) => "Str"
-    Int(_) => "Int"
-    Float(_) => "Float"
-    Cast(_, _) => "Cast"
-    CastDesc(_, _, _) => "CastDesc"
-    Test(_, _) => "Test"
-    NonNull(_) => "NonNull"
-    Struct(_, _) => "Struct"
-    StructDefault(_) => "StructDefault"
-    StructDesc(_, _) => "StructDesc"
-    StructDefaultDesc(_) => "StructDefaultDesc"
-    StructGet(_, _) => "StructGet"
-    GetDescriptor(_) => "GetDescriptor"
-    StructSet(_, _, _) => "StructSet"
-    Array(_, _, _) => "Array"
-    ArrayDefault(_, _) => "ArrayDefault"
-    ArrayFixed(_, _) => "ArrayFixed"
-    ArraySegment(_, _, _, _) => "ArraySegment"
-    ArrayGet(_, _) => "ArrayGet"
-    ArraySet(_, _, _) => "ArraySet"
-    BinOpI(_, _, _) => "BinOp"
-    UnOpI(_, _) => "UnOp"
-    Let(_, _) => "Let"
-    Br(_, _) => "Br"
-    BrIf(_, _) => "BrIf"
-    BrTable(_, _) => "BrTable"
-    Dispatch(..) => "Dispatch"
-    Match(..) => "Match"
-    BrOnNull(_, _) => "BrOnNull"
-    BrOnNonNull(_, _) => "BrOnNonNull"
-    BrOnCast(_, _, _) => "BrOnCast"
-    BrOnCastFail(_, _, _) => "BrOnCastFail"
-    BrOnCastDescEq(_, _, _, _) => "BrOnCastDescEq"
-    BrOnCastDescEqFail(_, _, _, _) => "BrOnCastDescEqFail"
-    Throw(_, _) => "Throw"
-    ThrowRef(_) => "ThrowRef"
-    ContNew(_, _) => "ContNew"
-    ContBind(_, _, _) => "ContBind"
-    Suspend(_, _) => "Suspend"
-    Resume(_, _, _) => "Resume"
-    ResumeThrow(_, _, _, _) => "ResumeThrow"
-    ResumeThrowRef(_, _, _) => "ResumeThrowRef"
-    Switch(_, _, _) => "Switch"
-    On(_, _) => "On"
-    Return(_) => "Return"
-    Sequence(_) => "Sequence"
-    Select(_, _, _) => "Select"
-    IfAnnotation(..) => "IfAnnotation"
   }
 }
 
@@ -4256,4 +4290,18 @@ fn Checker::desc_branch(
     hints: i.hints,
     expected: i.expected,
   }
+}
+
+///|
+/// Whether an `a[i] = v` receiver names a TABLE rather than an array value.
+///
+/// A table is a static immediate, so `tab[i] = v` is `table.set` and the
+/// receiver is never typed as a value at all. A local named `tab` shadows it
+/// and makes this an ordinary array write.
+fn Checker::is_table_receiver(
+  self : Checker,
+  recv : @ast.Instr[@basic.Location],
+) -> Bool {
+  guard recv.desc is Get(name) else { return false }
+  table_receiver(self.ctx, name)
 }
