@@ -8513,3 +8513,72 @@ test "a tuple produces one value per element" {
     content="number,i64 | ",
   )
 }
+
+///|
+/// A `#![feature = "..."]` states a fact about the WHOLE module, so it is
+/// applied before anything asks whether a feature is enabled -- and a copy of it
+/// inside a conditional is a misplacement rather than a guarded declaration.
+test "a module declares its own features" {
+  fn annotation(
+    name : String,
+    value : String,
+  ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+    {
+      desc: ModuleAnnotation([
+        {
+          attr_name: name,
+          attr_value: Some({
+            desc: Str(
+              None,
+              Bytes::from_array(
+                @unicode.utf8_bytes(value).map(b => b.to_byte()),
+              ),
+            ),
+            info: loc_at(10, 20),
+            hints: { branch: None, freq: None, targets: None },
+            expected: None,
+          }),
+          attr_guard: None,
+          attr_span: loc_at(0, 20),
+        },
+      ]),
+      info: loc_at(0, 20),
+    }
+  }
+
+  fn run(fields : @ast.Module[@basic.Location]) -> String {
+    let d = @diagnostic.collector()
+    let features = @feature.default()
+    @typing.apply_declared_features(d, features, fields)
+    (if features.is_enabled(CustomDescriptors) { "on" } else { "off" }) +
+    " | " +
+    d.collected().map(x => @message.to_plain_string(x.message)).join(" / ")
+  }
+
+  // Declared at the top level: on, and nothing to say about it.
+  inspect(run([annotation("feature", "custom-descriptors")]), content="on | ")
+  // A name that is not a feature is reported with the list of the ones that are.
+  inspect(
+    run([annotation("feature", "nope")]),
+    content="off | Unknown feature 'nope'. Known features: custom-descriptors, compact-import-section.",
+  )
+  // Inside a conditional it is not applied at all: the declaration is resolved
+  // before any branch is specialized, so a guarded one would leave every
+  // construct it gates erroring whichever way the branch went.
+  inspect(
+    run([
+      {
+        desc: Conditional(
+          cond=Var({ desc: "wasi", info: loc_at(0, 4) }),
+          then_fields={
+            desc: [annotation("feature", "custom-descriptors")],
+            info: loc_at(0, 30),
+          },
+          else_fields=None,
+        ),
+        info: loc_at(0, 30),
+      },
+    ]),
+    content="off | A '#![feature = \"…\"]' declaration states a fact about the whole module and must appear at the top level, not inside a conditional.",
+  )
+}

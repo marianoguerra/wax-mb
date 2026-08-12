@@ -268,7 +268,83 @@ pub fn check_module(
     simplify~,
     warn_unused~,
   )
+  // Before anything asks whether a feature is enabled: what the module declares
+  // is part of its configuration, not a fact about one of its fields.
+  apply_declared_features(diagnostics, features, fields)
   declare_fields(ctx, fields)
   let typed = check_fields(ctx, Operands::new(), fields)
   (ctx, typed)
+}
+
+///|
+/// Turn on every feature the module DECLARES, before anything asks whether one
+/// is enabled.
+///
+/// A `#![feature = "..."]` states a fact about the whole module, so only a
+/// top-level annotation counts and one inside a conditional is a misplacement
+/// rather than a guarded declaration -- it is resolved before any branch is
+/// specialized, so a guarded one would leave every construct it gates erroring
+/// whichever way the branch went.
+///
+/// A feature the command line explicitly turned off is a conflict, reported once
+/// here -- and then enabled anyway, because the alternative is to report it
+/// again at every construct that needed it.
+pub fn apply_declared_features(
+  diagnostics : @diagnostic.Context,
+  features : @feature.Set,
+  fields : @ast.Module[@basic.Location],
+) -> Unit {
+  fn reject(
+    fs : Array[
+      @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location],
+    ],
+  ) -> Unit {
+    for f in fs {
+      match f.desc {
+        ModuleAnnotation(attrs) =>
+          for a in attrs {
+            if a.attr_name == "feature" {
+              feature_declaration_in_conditional(diagnostics, a.attr_span)
+            } else if a.attr_name == "module" {
+              module_name_in_conditional(diagnostics, a.attr_span)
+            }
+          }
+        Conditional(then_fields~, else_fields~, ..) => {
+          reject(then_fields.desc)
+          if else_fields is Some(e) {
+            reject(e.desc)
+          }
+        }
+        _ => ()
+      }
+    }
+  }
+
+  for field in fields {
+    match field.desc {
+      ModuleAnnotation(attrs) =>
+        for a in attrs {
+          guard a.attr_name == "feature" else { continue }
+          guard a.attr_value is Some(v) else { continue }
+          guard v.desc is Str(_, bytes) else { continue }
+          guard @unicode.utf8_text(bytes) is Some(name) else { continue }
+          match @feature.of_name(name) {
+            None => unknown_feature(diagnostics, v.info, name)
+            Some(f) => {
+              if features.explicitly_disabled(f) {
+                feature_conflict(diagnostics, v.info, f)
+              }
+              features.declare_feature(f)
+            }
+          }
+        }
+      Conditional(then_fields~, else_fields~, ..) => {
+        reject(then_fields.desc)
+        if else_fields is Some(e) {
+          reject(e.desc)
+        }
+      }
+      _ => ()
+    }
+  }
 }

@@ -76,6 +76,15 @@ pub fn Checker::expression(
           )
       }
     }
+    // A `dispatch` or `match` is checked against its LOWERING, and the position
+    // decides where that lowering runs. As a statement it runs in the enclosing
+    // stack, so a value its trailing arm leaves belongs to the enclosing block;
+    // as an expression the construct is a value on its own, so it runs isolated
+    // and anything left over is its own to answer for.
+    Dispatch(..) | Match(..) =>
+      with_empty_stack(self.ops, self.ctx.diagnostics, i.info, () => {
+        self.statement(i)
+      })
     // Everything else reads the same in both positions.
     _ => self.statement(i)
   }

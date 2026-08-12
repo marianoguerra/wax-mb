@@ -1408,3 +1408,84 @@ pub fn incompatible_array_elements(
     ),
   )
 }
+
+///|
+/// A `#![feature = "..."]` naming something that is not a feature.
+pub fn unknown_feature(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Unknown feature")
+    .sep(@message.code(name))
+    .seq(@message.text(". Known features:"))
+    .sep(@message.text(@feature.all.map(f => f.name()).join(", ")))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// A feature the module declares and the command line turned off.
+pub fn feature_conflict(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  feature : @feature.Feature,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This module requires the")
+    .sep(@message.text(feature.name()))
+    .sep(
+      @message.text(
+        "feature, which is disabled on the command line; drop --feature",
+      ),
+    )
+    .sep(@message.text(feature.name() + "=off"))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// A feature declaration written inside a conditional.
+///
+/// It states a fact about the WHOLE module, resolved before any branch is
+/// specialized, so a guarded one would leave every construct it gates erroring.
+pub fn feature_declaration_in_conditional(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A")
+    .sep(@message.code("#![feature = \"…\"]"))
+    .sep(
+      @message.text(
+        "declaration states a fact about the whole module and must appear at the top level, not inside a conditional.",
+      ),
+    ),
+  )
+}
+
+///|
+/// Likewise for the module name.
+pub fn module_name_in_conditional(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A")
+    .sep(@message.code("#![module = \"…\"]"))
+    .sep(
+      @message.text(
+        "name annotation applies to the whole module and must appear at the top level, not inside a conditional.",
+      ),
+    ),
+  )
+}

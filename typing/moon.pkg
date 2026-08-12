@@ -13,10 +13,12 @@ import {
   "waxmb/wax/cond",
   "waxmb/wax/atomics",
   "waxmb/wax/simd",
+  "waxmb/wax/unicode",
   "moonbitlang/core/ref",
 }
 
 import {
   "moonbitlang/core/test",
   "waxmb/wax/cond",
+  "waxmb/wax/unicode",
 } for "test"

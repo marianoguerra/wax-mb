@@ -1419,7 +1419,12 @@ pub fn Checker::statement(
         }
       }
       let lowered = @ast.lower_dispatch(loc, index~, cases~, default~, arms~)
-      let typed = self.body(loc, None, [], [], [], lowered)
+      // Typed as a SEQUENCE in the current stack rather than as an isolated
+      // block, so a value the trailing arm leaves -- the dispatch's own
+      // fall-through -- reaches the enclosing block, exactly as it would for the
+      // blocks written out. `Checker::expression` isolates it instead, because
+      // there the dispatch is a value on its own.
+      let typed = self.block_contents([], lowered)
       match peel_dispatch(typed, arms.length()) {
         Some((index_, bodies)) => {
           let rebuilt : Array[
@@ -1615,7 +1620,10 @@ pub fn Checker::statement(
         })
       }
       let lowered = @ast.lower_match(loc, labels~, scrutinee~, arms~, default~)
-      let typed = self.body(loc, None, [], [], [], lowered)
+      // In the current stack, as for `Dispatch` above: the escape block's
+      // fall-through -- the no-match path through the default -- is the match's
+      // value and belongs to the enclosing block.
+      let typed = self.block_contents([], lowered)
       match peel_match(typed, arms.length()) {
         Some((bodies, default_body, scrutinee_)) => {
           let rebuilt : Array[
