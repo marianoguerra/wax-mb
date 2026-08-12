@@ -21,6 +21,10 @@ pub suberror LowerError {
   NotLowered(String, @basic.Location)
   /// A name or type the checker accepted but that did not survive to here.
   Unresolved(String, @basic.Location)
+  /// A construct that is not a gap in this port at all: the binary format has
+  /// no way to hold it, and the reference refuses it too. Named separately so
+  /// the burn-down is not padded with work that will never be done.
+  Unemittable(String, @basic.Location)
 }
 
 ///|
@@ -30,13 +34,22 @@ pub suberror LowerError {
 /// diagram: this is a gap in the port, not a fault in the user's module, and
 /// the two should not look alike.
 pub impl Show for LowerError with fn output(self, logger) {
-  let (what, kind, loc) = match self {
-    NotLowered(what, loc) => (what, "not lowered yet", loc)
-    Unresolved(what, loc) => (what, "did not resolve", loc)
+  match self {
+    Unemittable(what, loc) =>
+      logger.write_string(
+        "\{loc.start.fname}:\{loc.start.lnum}:\{loc.start.column1()}: \{what} cannot be emitted to the WebAssembly binary format",
+      )
+    NotLowered(what, loc) | Unresolved(what, loc) => {
+      let kind = if self is NotLowered(_, _) {
+        "not lowered yet"
+      } else {
+        "did not resolve"
+      }
+      logger.write_string(
+        "\{loc.start.fname}:\{loc.start.lnum}:\{loc.start.column1()}: \{what} \{kind}",
+      )
+    }
   }
-  logger.write_string(
-    "\{loc.start.fname}:\{loc.start.lnum}:\{loc.start.column1()}: \{what} \{kind}",
-  )
 }
 
 ///|

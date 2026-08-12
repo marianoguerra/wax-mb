@@ -84,6 +84,7 @@ pub fn unary_instruction(String, @wasm_types.ValType[Int]?) -> @wasm_bin.Instruc
 pub suberror LowerError {
   NotLowered(String, @basic.Location)
   Unresolved(String, @basic.Location)
+  Unemittable(String, @basic.Location)
 }
 pub impl Show for LowerError
 

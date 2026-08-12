@@ -249,11 +249,16 @@ fn Lowering::hinted(
       out.push(Loop(self.block_type(typ, loc), self.body(label, block.desc)))
     If(label~, typ~, cond~, if_block~, else_block~) => {
       self.instr(out, cond)
-      let then_ = self.body(label, if_block.desc)
+      // An `if`/`else` is ONE block in the label space -- a `br` inside either
+      // branch counts it once, and it carries one name -- so the label frame
+      // is opened once around both bodies rather than once per body.
+      self.open_label(label)
+      let then_ = self.instrs(if_block.desc)
       let else_ = match else_block {
-        Some(b) => self.body(label, b.desc)
+        Some(b) => self.instrs(b.desc)
         None => []
       }
+      let _ = self.labels.pop()
       out.push(If(self.block_type(typ, loc), then_, else_))
     }
     TailCall(callee, args) => {
@@ -956,6 +961,10 @@ fn Lowering::hinted(
       let (t, _) = self.array_element_of(recv, loc)
       out.push(ArraySet(t))
     }
+    // An unresolved `#[if(..)]` is not a gap in this port: the binary format
+    // has nowhere to put a conditional, and the reference refuses it too. The
+    // fix is `-D`, or a text output format that can carry it.
+    IfAnnotation(..) => raise Unemittable("conditional annotations", loc)
     _ => raise NotLowered(construct_name(i.desc), loc)
   }
 }
@@ -968,11 +977,21 @@ fn Lowering::body(
   instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
 ) -> Array[@wasm_bin.Instruction] raise LowerError {
   self.open_label(label)
+  let out = self.instrs(instrs)
+  let _ = self.labels.pop()
+  out
+}
+
+///|
+/// Lower a run of instructions into a fresh array, opening no label of its own.
+fn Lowering::instrs(
+  self : Lowering,
+  instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+) -> Array[@wasm_bin.Instruction] raise LowerError {
   let out : Array[@wasm_bin.Instruction] = []
   for s in instrs {
     self.instr(out, s)
   }
-  let _ = self.labels.pop()
   out
 }
 

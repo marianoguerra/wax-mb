@@ -90,7 +90,6 @@ pub fn construct_name(
     | Switch(_, _, _)
     | On(_, _) => "stack switching"
     Select(_, _, _) => "select"
-    IfAnnotation(..) => "conditional annotation"
     _ => "instruction"
   }
 }
