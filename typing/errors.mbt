@@ -309,3 +309,44 @@ pub fn binop_type_mismatch(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// An instruction given the wrong number of operands.
+pub fn operand_count_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  expected~ : Int,
+  provided~ : Int,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This instruction expects")
+    .sep(@message.int(expected))
+    .sep(@message.text("operand(s) but"))
+    .sep(@message.int(provided))
+    .sep(@message.text("was/were provided.")),
+  )
+}
+
+///|
+/// An instruction that leaves the wrong number of values.
+///
+/// The counterpart of `operand_count_mismatch` on the other side: that one is
+/// about what an instruction was GIVEN, this about what it PRODUCED.
+pub fn value_count_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  expected~ : Int,
+  provided~ : Int,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This instruction provides")
+    .sep(@message.int(provided))
+    .sep(@message.text("value(s) but"))
+    .sep(@message.int(expected))
+    .sep(@message.text("was/were expected.")),
+  )
+}

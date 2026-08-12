@@ -1567,3 +1567,138 @@ test "the operator mismatch message" {
     content="This operator cannot be applied to operands of types 'i32' and 'f64'.",
   )
 }
+
+///|
+/// One argument is not one value. An argument that is itself a multi-result
+/// call supplies several, so `f(g())` where `g` returns two is a two-argument
+/// call written with one argument -- and counting arguments would reject it.
+test "operands are counted by value, not by argument" {
+  fn call(
+    args : Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)],
+    params : Array[@infer.Cell[@infer.InferredType]],
+  ) -> String {
+    let ctx = module_ctx()
+    let info = ctx.type_context.subtyping_info()
+    @typing.check_operands(info, ctx.diagnostics, loc_at(0, 30), args, params)
+    let msgs = ctx.diagnostics.collected()
+    msgs
+    .map(e => "\{e.loc.start.cnum}: \{@message.to_plain_string(e.message)}")
+    .join(" | ")
+  }
+
+  let i32 = () => @infer.valtype_cell(@infer.i32_valtype)
+  let i64 = () => @infer.valtype_cell(@infer.i64_valtype)
+  // Two arguments, one value each.
+  inspect(
+    call([([i32()], loc_at(5, 6)), ([i64()], loc_at(8, 9))], [i32(), i64()]),
+    content="",
+  )
+  // ONE argument supplying two values satisfies a two-parameter call.
+  inspect(call([([i32(), i64()], loc_at(5, 12))], [i32(), i64()]), content="")
+  // And the count that matters is the value count.
+  inspect(
+    call([([i32(), i64()], loc_at(5, 12))], [i32()]),
+    content="0: This instruction expects 1 operand(s) but 2 was/were provided.",
+  )
+  inspect(
+    call([], [i32()]),
+    content="0: This instruction expects 1 operand(s) but 0 was/were provided.",
+  )
+}
+
+///|
+/// A wrong value is reported at ITS OWN argument's span, so a wrong third
+/// argument points at the third argument rather than at the whole call.
+test "a bad operand points at its own argument" {
+  let ctx = module_ctx()
+  let info = ctx.type_context.subtyping_info()
+  @typing.check_operands(
+    info,
+    ctx.diagnostics,
+    loc_at(0, 30),
+    [
+      ([@infer.valtype_cell(@infer.i32_valtype)], loc_at(5, 6)),
+      ([@infer.valtype_cell(@infer.f64_valtype)], loc_at(8, 9)),
+    ],
+    [
+      @infer.valtype_cell(@infer.i32_valtype),
+      @infer.valtype_cell(@infer.i64_valtype),
+    ],
+  )
+  let e = ctx.diagnostics.collected()[0]
+  inspect(e.loc.start.cnum, content="8")
+  inspect(
+    @message.to_plain_string(e.message),
+    content="This expression has type 'f64' but is expected to have type 'i64'.",
+  )
+}
+
+///|
+/// A value inside a multi-result argument has no span of its own, so it is
+/// reported at the whole argument -- which is what the reader can act on
+/// anyway.
+test "a value inside a multi-result argument reports at the argument" {
+  let ctx = module_ctx()
+  let info = ctx.type_context.subtyping_info()
+  @typing.check_operands(
+    info,
+    ctx.diagnostics,
+    loc_at(0, 30),
+    [
+      (
+        [
+          @infer.valtype_cell(@infer.i32_valtype),
+          @infer.valtype_cell(@infer.f64_valtype),
+        ],
+        loc_at(5, 12),
+      ),
+    ],
+    [
+      @infer.valtype_cell(@infer.i32_valtype),
+      @infer.valtype_cell(@infer.i64_valtype),
+    ],
+  )
+  inspect(ctx.diagnostics.collected()[0].loc.start.cnum, content="5")
+}
+
+///|
+/// A count mismatch is reported once, and the values are NOT then paired up:
+/// with the wrong number of them, pairing would produce a second, misleading
+/// complaint about whichever happened to line up.
+test "a count mismatch does not also complain about types" {
+  let ctx = module_ctx()
+  let info = ctx.type_context.subtyping_info()
+  @typing.check_subtypes(
+    info,
+    ctx.diagnostics,
+    loc_at(0, 30),
+    [
+      @infer.valtype_cell(@infer.f64_valtype),
+      @infer.valtype_cell(@infer.f64_valtype),
+    ],
+    [@infer.valtype_cell(@infer.i32_valtype)],
+  )
+  inspect(ctx.diagnostics.collected().length(), content="1")
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="This instruction provides 2 value(s) but 1 was/were expected.",
+  )
+}
+
+///|
+/// A flexible literal passed as an argument is pinned by the parameter, which
+/// is the ordinary way a call resolves one.
+test "an argument literal is pinned by the parameter" {
+  let ctx = module_ctx()
+  let info = ctx.type_context.subtyping_info()
+  let literal = @infer.Cell::make(@typing.int_literal_lattice("1"))
+  @typing.check_operands(
+    info,
+    ctx.diagnostics,
+    loc_at(0, 30),
+    [([literal], loc_at(5, 6))],
+    [@infer.valtype_cell(@infer.i64_valtype)],
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(@infer.to_string(literal), content="i64")
+}
