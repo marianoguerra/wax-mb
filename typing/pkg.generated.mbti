@@ -325,6 +325,8 @@ pub fn tag_with_results(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn tee_target(@typing_env.ModuleContext, @ast.Ident, ResolvedVar, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
+pub fn type_binop(@type_store.SubtypingInfo, @diagnostic.Context, @basic.Annotated[@ast.BinOp, @basic.Location], @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
+
 pub fn type_get(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.InferredType]
 
 pub fn type_mismatch(@diagnostic.Context, @basic.Location, Int, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit

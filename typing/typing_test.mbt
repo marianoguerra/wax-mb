@@ -3969,3 +3969,114 @@ test "the raising forms end control" {
   inspect(ops3.stack is Unreachable, content="true")
   inspect(checker3.gaps().length(), content="0")
 }
+
+///|
+/// A binary operator is typed by how many of its operands are still abstract.
+/// With both concrete there is only validation; with one abstract the other's
+/// type is merged onto it; with both abstract the operator's own default is.
+///
+/// The merging is why this mutates rather than returning a verdict: an operand
+/// left `Unknown` would lower at the i32 default while the result was pinned to
+/// another width -- an incoherent instruction.
+test "an operator's default types operands nothing else constrains" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn binop(
+    op : @ast.BinOp,
+    a : @ast.InstrDesc[@basic.Location],
+    b : @ast.InstrDesc[@basic.Location],
+  ) -> (String, String, String) {
+    let ctx = module_ctx()
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let a_ = instr(a, 0)
+    let b_ = instr(b, 4)
+    let checked = checker.statement(
+      instr(BinOpI({ desc: op, info: loc_at(2, 3) }, a_, b_), 0),
+    )
+    guard! checked.desc is BinOpI(_, ca, cb)
+    (
+      checked.info.0.map(t => @infer.to_string(t)).join(","),
+      ca.info.0.map(t => @infer.to_string(t)).join(",") +
+      "/" +
+      cb.info.0.map(t => @infer.to_string(t)).join(","),
+      ctx.diagnostics
+      .collected()
+      .map(d => @message.to_plain_string(d.message))
+      .join(" / "),
+    )
+  }
+
+  // Two flexible literals added: still flexible, and merged so a later pin
+  // moves both.
+  inspect(binop(Add, Int("1"), Int("2")).0, content="number")
+  // A bitwise operator commits them to integers -- it has no float form.
+  inspect(binop(And, Int("1"), Int("2")).0, content="int")
+  // An unsigned division likewise.
+  inspect(binop(Div(Some(Unsigned)), Int("1"), Int("2")).0, content="int")
+  // A float division commits them the other way.
+  inspect(binop(Div(None), Int("1"), Int("2")).0, content="float")
+  // A comparison yields i32 whatever its operands were.
+  inspect(binop(Lt(Some(Signed)), Int("1"), Int("2")).0, content="i32")
+  // And it pins the operands to integers on the way.
+  inspect(binop(Lt(Some(Signed)), Int("1"), Int("2")).1, content="int/int")
+  // A float comparison takes a large literal AS a float: it is a numeric
+  // literal, so it is float-capable.
+  inspect(
+    binop(Lt(None), Int("4294967296"), Float("1.5")).1,
+    content="float/float",
+  )
+  // A signed comparison forces the same literal to i64 instead: it cannot be
+  // an i32, and this is an integer operation.
+  inspect(
+    binop(Lt(Some(Signed)), Int("4294967296"), Int("1")).1,
+    content="i64/i64",
+  )
+}
+
+///|
+/// Adding a float to a null has no meaning, and the complaint points at the
+/// OPERATOR: each operand is fine on its own, and it is the combination that
+/// is not.
+test "a binary operator blames itself, not its operands" {
+  let ctx = module_ctx()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let _ = checker.statement(
+    instr(
+      BinOpI(
+        { desc: Add, info: loc_at(2, 3) },
+        instr(Float("1.5"), 0),
+        instr(Null, 4),
+      ),
+      0,
+    ),
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="This operator cannot be applied to operands of types 'float' and 'null'.",
+  )
+  // At the operator's own span, not the whole expression's.
+  inspect(ctx.diagnostics.collected()[0].loc.start.cnum, content="2")
+  inspect(checker.gaps().length(), content="0")
+}

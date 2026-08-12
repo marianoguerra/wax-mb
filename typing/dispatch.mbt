@@ -489,6 +489,40 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Arithmetic ---
+    BinOpI(op, a, b) => {
+      let a_ = self.statement(a)
+      let b_ = self.statement(b)
+      let ty1 = expression_type(ctx, a_.info)
+      let ty2 = expression_type(ctx, b_.info)
+      // Snapshotted BEFORE `type_binop`, which unifies an `Error` operand onto
+      // the other's type as recovery and so erases the poison.
+      let poisoned = ty1.get() is Error || ty2.get() is Error
+      let ty = type_binop(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        op,
+        ty1,
+        ty2,
+      )
+      // An operand that already failed poisons the RESULT. The arms above treat
+      // `Error` like `Unknown` on purpose, so the operand cells still get a
+      // usable recovery type -- but the value this produces derives from a
+      // reported failure, and a consumer must not report about it again.
+      let ty = if poisoned {
+        @infer.Cell::make(@infer.InferredType::Error)
+      } else {
+        ty
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: BinOpI(op, a_, b_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))

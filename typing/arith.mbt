@@ -135,3 +135,199 @@ pub fn check_num_concrete(
     _ => binop_type_mismatch(diagnostics, location, ty1, ty2)
   }
 }
+
+///|
+/// The type `eqref`, which is what `==` and `!=` require of a reference.
+///
+/// Both lower to `ref.eq` -- `!=` is the same instruction negated -- so both
+/// take the same operands.
+fn eqref() -> @wasm_types.ValType[@type_store.Id] {
+  Ref({ nullable: true, typ: Eq })
+}
+
+///|
+/// Whether a concrete type is something `==` / `!=` accepts.
+fn comparable(
+  info : @type_store.SubtypingInfo,
+  ty : @infer.InferredType,
+) -> Bool {
+  match ty {
+    Valtype({ internal: Ref(_) as r, .. }) =>
+      @type_store.val_subtype(info, r, eqref())
+    Valtype({ internal: I32 | I64 | F32 | F64, .. })
+    | Number
+    | Int
+    | LargeInt
+    | Float
+    // The bottom reference IS an `eqref`, so `ref.eq` accepts it.
+    | UnknownRef => true
+    _ => false
+  }
+}
+
+///|
+/// Type a binary operator from its two operand types.
+///
+/// Split on how many operands are still ABSTRACT -- `Unknown` from dead code,
+/// `Error` from an already-reported failure. With both abstract there is
+/// nothing to validate, so the two cells are merged to the operator's own
+/// default and a result is still produced. With one abstract it is merged onto
+/// the known operand's type and that one is validated. With both concrete there
+/// is only validation to do.
+///
+/// The merging is why this mutates rather than returning a verdict: an operand
+/// left `Unknown` would be lowered at the i32 default while the result was
+/// pinned to another width, which is an incoherent instruction.
+pub fn type_binop(
+  info : @type_store.SubtypingInfo,
+  diagnostics : @diagnostic.Context,
+  op : @basic.Annotated[@ast.BinOp, @basic.Location],
+  ty1 : @infer.Cell[@infer.InferredType],
+  ty2 : @infer.Cell[@infer.InferredType],
+) -> @infer.Cell[@infer.InferredType] {
+  let location = op.info
+  let i32_cell = @infer.valtype_cell(@infer.i32_valtype)
+  fn mismatch() -> Unit {
+    // Pointed at the OPERATOR, not the whole expression: the operands are each
+    // fine on their own, and it is their combination that is not.
+    binop_type_mismatch(diagnostics, location, ty1, ty2)
+  }
+
+  let a = ty1.get()
+  let b = ty2.get()
+  let abstract1 = a is (Unknown | Error)
+  let abstract2 = b is (Unknown | Error)
+  if abstract1 && abstract2 {
+    return match op.desc {
+      Add | Sub | Mul => {
+        ty1.merge(ty2, Number)
+        ty1
+      }
+      Div(Some(_)) | Rem(_) | And | Or | Xor | Shl | Shr(_) => {
+        ty1.merge(ty2, Int)
+        ty1
+      }
+      Eq | Ne | Lt(Some(_)) | Gt(Some(_)) | Le(Some(_)) | Ge(Some(_)) => {
+        ty1.merge(ty2, Valtype(@infer.i32_valtype))
+        i32_cell
+      }
+      Div(None) => {
+        ty1.merge(ty2, Float)
+        ty1
+      }
+      Lt(None) | Gt(None) | Le(None) | Ge(None) => {
+        ty1.merge(ty2, Valtype(@infer.f32_valtype))
+        i32_cell
+      }
+    }
+  }
+  if abstract1 || abstract2 {
+    let typ = if abstract1 { b } else { a }
+    ty1.merge(ty2, typ)
+    return match op.desc {
+      Eq | Ne => {
+        match typ {
+          // A bare `null` compared for equality is an `eqref` null.
+          Null =>
+            ty1.set(
+              Valtype({
+                typ: Ref({ nullable: true, typ: Eq }),
+                internal: eqref(),
+                anon_comptype: None,
+              }),
+            )
+          _ => if !comparable(info, typ) { mismatch() }
+        }
+        i32_cell
+      }
+      Add | Sub | Mul => {
+        match typ {
+          Valtype({ internal: I32 | I64 | F32 | F64, .. })
+          | Number
+          | Int
+          | LargeInt
+          | Float => ()
+          _ => mismatch()
+        }
+        ty1
+      }
+      Div(Some(_)) | Rem(_) | And | Or | Xor | Shl | Shr(_) =>
+        check_int_bin_op(diagnostics, location, ty1, ty2)
+      Div(None) => check_float_bin_op(diagnostics, location, ty1, ty2)
+      Lt(Some(_)) | Gt(Some(_)) | Le(Some(_)) | Ge(Some(_)) => {
+        match typ {
+          Valtype({ internal: I32 | I64, .. }) | Int => ()
+          Number => ty1.set(Int)
+          // A signed comparison is an integer operation, so a large literal
+          // must be the i64 it defaults to rather than staying float-capable.
+          LargeInt => ty1.set(Valtype(@infer.i64_valtype))
+          _ => mismatch()
+        }
+        i32_cell
+      }
+      Lt(None) | Gt(None) | Le(None) | Ge(None) => {
+        match typ {
+          Valtype({ internal: F32 | F64, .. }) | Float => ()
+          // A float comparison takes a large literal AS a float: it is a
+          // numeric literal, so it is float-capable.
+          Number | LargeInt => ty1.set(Float)
+          _ => mismatch()
+        }
+        i32_cell
+      }
+    }
+  }
+  match op.desc {
+    Eq | Ne => {
+      match (a, b) {
+        (
+          Valtype({ internal: Ref(_) as r1, .. }),
+          Valtype({ internal: Ref(_) as r2, .. }),
+        ) =>
+          if !(@type_store.val_subtype(info, r1, eqref()) &&
+            @type_store.val_subtype(info, r2, eqref())) {
+            mismatch()
+          }
+        (Valtype({ internal: Ref(_) as r, .. }), Null) => {
+          if !@type_store.val_subtype(info, r, eqref()) {
+            mismatch()
+          }
+          ty1.merge(ty2, b)
+        }
+        (Null, Valtype({ internal: Ref(_) as r, .. })) => {
+          if !@type_store.val_subtype(info, r, eqref()) {
+            mismatch()
+          }
+          ty1.merge(ty2, b)
+        }
+        // `ref.eq` needs both operands `eqref`, and the bottom reference always
+        // is, so only the concrete side is checked.
+        (Valtype({ internal: Ref(_) as r, .. }), UnknownRef)
+        | (UnknownRef, Valtype({ internal: Ref(_) as r, .. })) =>
+          if !@type_store.val_subtype(info, r, eqref()) {
+            mismatch()
+          }
+        // Two nulls compare as two bottom references, which are `eqref`.
+        (UnknownRef | Null, UnknownRef | Null) => ()
+        // Anything non-reference is the ordinary numeric comparison.
+        _ => check_num_concrete(diagnostics, location, ty1, ty2)
+      }
+      i32_cell
+    }
+    Add | Sub | Mul => {
+      check_num_concrete(diagnostics, location, ty1, ty2)
+      ty1
+    }
+    Div(Some(_)) | Rem(_) | And | Or | Xor | Shl | Shr(_) =>
+      check_int_bin_op(diagnostics, location, ty1, ty2)
+    Div(None) => check_float_bin_op(diagnostics, location, ty1, ty2)
+    Lt(Some(_)) | Gt(Some(_)) | Le(Some(_)) | Ge(Some(_)) => {
+      let _ = check_int_bin_op(diagnostics, location, ty1, ty2)
+      i32_cell
+    }
+    Lt(None) | Gt(None) | Le(None) | Ge(None) => {
+      let _ = check_float_bin_op(diagnostics, location, ty1, ty2)
+      i32_cell
+    }
+  }
+}
