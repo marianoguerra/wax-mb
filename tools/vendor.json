@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "The third-party sources vendored into this repository, and the upstream",
+    "commit each was taken from. Inspect drift with tools/fetch-vendor.sh.",
+    "",
+    "Vendored rather than depended on. `wasm_bin/` started as Milky2018/wasm_core",
+    "0.5.0 and was then changed in ways a published dependency cannot be: its flat",
+    "ValueType was replaced by this project's Idx-generic wasm_types spine, its",
+    "silent 'emit 0x00 for anything unhandled' fallbacks were removed, and the",
+    "custom sections wax needs were added. See wasm_bin/VENDORED.md for the full",
+    "list and the reasoning.",
+    "",
+    "This is therefore a FORK, and the script does not restore files -- restoring",
+    "them would throw the fork away. It reports what changed upstream since the",
+    "pin, so an upstream fix can be reviewed and applied deliberately.",
+    "",
+    "sha256 is over the upstream file as fetched, NOT over our copy. It is what",
+    "makes 'upstream has not moved' a checkable claim rather than an assumption."
+  ],
+  "wasm_core": {
+    "repo": "Milky2018/wasmoon",
+    "version": "0.5.0",
+    "commit": "e720f3d2fa587621777c8c508d21739b215b7ad4",
+    "subdir": "modules/wasm_core",
+    "license": "Apache-2.0",
+    "vendored_into": "wasm_bin",
+    "files": {
+      "types/types.mbt": "5789e0c4834dbc1b4d17765affac87102b6b7adcafcf58878ea7aa047b951b74",
+      "encoder/encoder.mbt": "5d5851035228f9a5d9121bc0d33b77f6fff412ae865a983000ab682d749eb008"
+    }
+  }
+}
