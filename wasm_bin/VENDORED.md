@@ -52,7 +52,7 @@ they were counted.
 
 | upstream | what it did | now |
 |---|---|---|
-| `_ => w.write_byte(0x00)` in the opcode table | emitted `unreachable` for anything unmatched | `raise UnsupportedInstruction`. **256 instructions** land here: all of SIMD beyond loads and stores, `i64.mul_wide_s`/`_u`, and every atomic. They are modelled but not encoded, which upstream did not distinguish from encoded. |
+| `_ => w.write_byte(0x00)` in the opcode table | emitted `unreachable` for anything unmatched | gone, and with it the 256 instructions it hid — all of SIMD beyond loads and stores, `i64.mul_wide_s`/`_u`, and the atomics. Their opcodes came from `wasm-encoder`'s table. The match is now total over `Instruction`, which the compiler checks. |
 | `MultiValue \| InlineType => w.write_byte(0x40)` | wrote the *empty* block type, discarding the results | `raise UnresolvedBlockType` |
 | `_ => w.write_u32(0)` in the element section | wrote function index **0** for any initialiser that was not a bare `ref.func` | the compact encoding is chosen only when every initialiser is one; otherwise expressions are written |
 | `fn encode_memarg(_memidx, …)` | ignored the memory index outright | bit 6 of the alignment plus the index, per multi-memory |
@@ -86,12 +86,28 @@ The runtime `Value` type, structural hashing and equality, the `Show` instances
 `subtyping`, `equivalence`, `bit_conversion` and `numeric_limits` modules.
 None of them is on the path from a module to bytes.
 
-## What upstream still has that this does not
+### Added
 
-No custom sections at all: no `name`, no `target_features`, no
-`metadata.code.*`, no `sourceMappingURL`. `wasm_output.ml` emits all of them, so
-byte identity with the reference is impossible until they are added. That plus
-the 256 unencodable instructions is the work item.
+- **The custom sections.** Upstream emits none. `name` (all twelve subsections)
+  and `target_features` are here; `metadata.code.*` and `sourceMappingURL` are
+  not yet — see below.
+- **Stack switching.** Seven instructions (`cont.new`, `cont.bind`, `suspend`,
+  `resume`, `resume_throw`, `resume_throw_ref`, `switch`) plus the resume table.
+  Upstream's model could not express any of them, though the Wax AST has had
+  them since Phase 2.
+- **`atomic.fence`**, which cannot be spelled as an `Atomic` with a degenerate
+  memarg: the format wants a single `0x00` where the memarg would go.
+
+## What is still missing
+
+The `metadata.code.*` custom sections — `branch_hint`, `instr_freq`,
+`call_targets`, `compilation_priority`. 34 corpus files carry the hints that
+produce them. They need each hinted instruction's byte offset relative to the
+start of the function body, which means threading an offset sink through the
+opcode table the way `wasm_output.ml`'s `Encoder.hint_sink` does.
+
+`sourceMappingURL` and the source map itself are only emitted under
+`--source-map`, which the goldens do not use.
 
 ## Upstreaming
 

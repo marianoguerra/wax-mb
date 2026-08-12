@@ -12,7 +12,6 @@ pub fn encode(Module) -> Bytes raise EncodeError
 // Errors
 pub suberror EncodeError {
   UnresolvedBlockType
-  UnsupportedInstruction(Instruction)
 } derive(Eq, @debug.Debug)
 pub impl Show for EncodeError
 
@@ -171,6 +170,14 @@ pub(all) enum Instruction {
   MemoryFill(Int)
   ElemDrop(Int)
   Atomic(Int, Int, Int, Int64)
+  AtomicFence
+  ContNew(Int)
+  ContBind(Int, Int)
+  Suspend(Int)
+  Resume(Int, Array[OnClause])
+  ResumeThrow(Int, Int, Array[OnClause])
+  ResumeThrowRef(Int, Array[OnClause])
+  Switch(Int, Int)
   RefNull(@wasm_types.HeapType[Int])
   RefIsNull
   RefFunc(Int)
@@ -645,6 +652,11 @@ pub(all) struct Names {
   tags : Map[Int, Bytes]
 } derive(@debug.Debug)
 pub fn Names::empty() -> Self
+
+pub(all) enum OnClause {
+  OnLabel(Int, Int)
+  OnSwitch(Int)
+} derive(Eq, @debug.Debug)
 
 pub(all) struct RecGroup {
   start : Int

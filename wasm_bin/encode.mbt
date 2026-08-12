@@ -19,17 +19,14 @@
 /// file that loads, validates and runs, and silently does the wrong thing;
 /// against a differential harness that is the worst possible failure mode,
 /// because the diff says "these bytes differ" rather than "this is unhandled".
+///
+/// Only one case is left. The opcode table is now total over `Instruction` --
+/// the compiler says so, which is why there is no "unsupported instruction"
+/// variant here.
 pub suberror EncodeError {
   /// A block's signature was still inline. It has to become a type index, and
   /// interning it is the lowering's job, not the encoder's.
   UnresolvedBlockType
-  /// An instruction the opcode table does not cover yet.
-  ///
-  /// 256 of them, and removing the catch-all is what counted them: the whole of
-  /// SIMD beyond loads and stores, `i64.mul_wide_s`/`_u`, and every atomic.
-  /// They are modelled but not encoded, which upstream did not distinguish from
-  /// encoded -- see VENDORED.md, where the list is the work item.
-  UnsupportedInstruction(Instruction)
 } derive(Eq, Debug)
 
 ///|
@@ -38,8 +35,6 @@ pub impl Show for EncodeError with fn output(self, logger) {
     match self {
       UnresolvedBlockType =>
         "block type is still inline; intern it as a type index before encoding"
-      UnsupportedInstruction(instr) =>
-        "instruction not encodable yet: " + @debug.to_string(instr)
     },
   )
 }
@@ -416,6 +411,25 @@ fn encode_expr(
 ) -> Unit raise EncodeError {
   encode_instructions(w, instrs)
   w.write_byte(0x0B)
+}
+
+///|
+/// A resume table: one clause per tag the continuation may suspend with.
+fn encode_resume_table(w : BinaryWriter, clauses : Array[OnClause]) -> Unit {
+  w.write_u32(clauses.length())
+  for c in clauses {
+    match c {
+      OnLabel(tag, label) => {
+        w.write_byte(0x00)
+        w.write_u32(tag)
+        w.write_u32(label)
+      }
+      OnSwitch(tag) => {
+        w.write_byte(0x01)
+        w.write_u32(tag)
+      }
+    }
+  }
 }
 
 ///|

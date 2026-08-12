@@ -210,6 +210,18 @@ pub(all) enum Instruction {
   // subopcode: wasm threads/atomics subopcode
   // memarg: (memidx, align, offset)
   Atomic(Int, Int, Int, Int64)
+  /// `atomic.fence`, which unlike every other atomic has no memory operand.
+  AtomicFence
+
+  // Stack switching. Absent from upstream entirely -- the model had no way to
+  // say any of this -- though the Wax AST has had all seven since Phase 2.
+  ContNew(Int) // type index
+  ContBind(Int, Int) // source type index, target type index
+  Suspend(Int) // tag index
+  Resume(Int, Array[OnClause]) // type index, resume table
+  ResumeThrow(Int, Int, Array[OnClause]) // type index, tag index, resume table
+  ResumeThrowRef(Int, Array[OnClause]) // type index, resume table
+  Switch(Int, Int) // type index, tag index
 
   // Reference type instructions
   RefNull(HeapType) // ref.null: push a null reference to this heap type
@@ -730,6 +742,16 @@ pub(all) enum BlockType {
   MultiValue(Array[ValType])
   InlineType(Array[ValType], Array[ValType])
   TypeIndex(Int)
+} derive(Eq, Debug)
+
+///|
+/// One arm of a resume table: what happens when the continuation suspends with
+/// a given tag.
+pub(all) enum OnClause {
+  /// Branch to this label.
+  OnLabel(Int, Int)
+  /// Switch to the continuation on the stack.
+  OnSwitch(Int)
 } derive(Eq, Debug)
 
 ///|

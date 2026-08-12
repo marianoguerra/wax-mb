@@ -302,21 +302,59 @@ test "an inline block type is an error, not an empty one" {
 }
 
 ///|
-/// The 256 instructions the removed catch-all was hiding: all of SIMD beyond
-/// loads and stores, `i64.mul_wide_s`/`_u`, and every atomic. Upstream emitted
-/// `unreachable` for each -- a module that loads, validates and does the wrong
-/// thing, which against a byte-identity oracle is the worst available failure
-/// mode.
-test "an unencodable instruction is an error, not an unreachable" {
-  try @wasm_bin.encode(one_func([I32x4Splat])) catch {
-    e =>
-      inspect(
-        e.to_string(),
-        content="instruction not encodable yet: I32x4Splat",
-      )
-  } noraise {
-    _ => fail("expected an error")
-  }
+/// The 256 instructions the removed catch-all used to hide: all of SIMD past
+/// loads and stores, `i64.mul_wide_s`/`_u`, and the atomics. Upstream emitted
+/// `unreachable` for each. Their opcodes come from `wasm-encoder`'s instruction
+/// table, and this module -- one instruction of each argument shape -- was
+/// checked with `wasm-tools print`, which gives back exactly these mnemonics.
+test "the SIMD, wide-arithmetic and atomic opcodes" {
+  let m = one_func([
+    I32Const(0),
+    I32x4Splat,
+    Drop,
+    I32Const(0),
+    I8x16Splat,
+    I8x16ExtractLaneS(3),
+    Drop,
+    I32Const(0),
+    I8x16Splat,
+    I32Const(0),
+    I8x16Splat,
+    I8x16Shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+    Drop,
+    I64Const(2L),
+    I64Const(3L),
+    I64MulWideS,
+    Drop,
+    Drop,
+  ])
+  let h = hex(@wasm_bin.encode(m))
+  // i32x4.splat 0xFD 0x11; i8x16.extract_lane_s 0xFD 0x15 then the lane;
+  // i8x16.shuffle 0xFD 0x0D then sixteen lane bytes; i64.mul_wide_s 0xFC 0x15.
+  inspect(h.contains("fd11"), content="true")
+  inspect(h.contains("fd1503"), content="true")
+  inspect(h.contains("fd0d000102030405060708090a0b0c0d0e0f"), content="true")
+  inspect(h.contains("fc15"), content="true")
+}
+
+///|
+/// `atomic.fence` is the one atomic with no memory operand, so it cannot be
+/// spelled as an `Atomic` with a degenerate memarg: the format wants a single
+/// 0x00 where the memarg would go, not an alignment and an offset.
+test "atomics, and the fence that is not one" {
+  inspect(
+    hex(@wasm_bin.encode(one_func([AtomicFence]))).has_suffix("fe03000b"),
+    content="true",
+  )
+  let load = one_func([I32Const(0), Atomic(0x10, 0, 2, 0L), Drop])
+  load.memories.push({ ..default_limits(), shared: true, ma: Some(1UL) } |> mem)
+  // 0xFE, the sub-opcode as a byte, then the memarg
+  inspect(hex(@wasm_bin.encode(load)).contains("fe100200"), content="true")
+}
+
+///|
+fn mem(l : @wasm_bin.Limits) -> @wasm_bin.MemoryType {
+  { limits: l }
 }
 
 ///|
@@ -440,4 +478,37 @@ test "name entries are sorted by index, however they were inserted" {
     ),
     content="true",
   )
+}
+
+///|
+/// Stack switching, which upstream's model could not express at all -- the
+/// seven instructions simply were not there, though the Wax AST has had them
+/// since Phase 2. Opcodes and the resume table's shape are wasm_output.ml's.
+test "stack switching" {
+  fn tail(instrs : Array[@wasm_bin.Instruction]) -> String raise {
+    let h = hex(@wasm_bin.encode(one_func(instrs)))
+    h[h.length() - 2 - _tail_len(instrs) * 2:].to_owned()
+  }
+  inspect(tail([ContNew(1)]), content="e0010b")
+  inspect(tail([ContBind(1, 2)]), content="e101020b")
+  inspect(tail([Suspend(3)]), content="e2030b")
+  inspect(tail([Switch(1, 3)]), content="e601030b")
+  // resume $t (on $tag $label) (on $other switch)
+  inspect(
+    tail([Resume(1, [OnLabel(3, 0), OnSwitch(4)])]),
+    content="e301" + "02" + "00" + "03" + "00" + "01" + "04" + "0b",
+  )
+  inspect(
+    tail([ResumeThrow(1, 3, [])]),
+    content="e4" + "01" + "03" + "00" + "0b",
+  )
+  inspect(tail([ResumeThrowRef(1, [])]), content="e50100" + "0b")
+}
+
+///|
+/// Byte length of the encoded instructions, so a test can name just the tail it
+/// cares about rather than a whole module.
+fn _tail_len(instrs : Array[@wasm_bin.Instruction]) -> Int raise {
+  @wasm_bin.encode(one_func(instrs)).length() -
+  @wasm_bin.encode(one_func([])).length()
 }

@@ -683,8 +683,1122 @@ fn encode_instruction(
       w.write_u32(11)
       encode_memarg(w, memidx, align, offset)
     }
-    // Modelled but not encodable yet. Upstream wrote `0x00` here -- a valid
-    // `unreachable`, in place of whatever the instruction actually was.
-    _ => raise UnsupportedInstruction(instr)
+    // Stack switching. `wasm_core` had none of these; the encodings are
+    // wasm_output.ml's, which is what they are measured against.
+    ContNew(idx) => {
+      w.write_byte(0xE0)
+      w.write_u32(idx)
+    }
+    ContBind(from_idx, to_idx) => {
+      w.write_byte(0xE1)
+      w.write_u32(from_idx)
+      w.write_u32(to_idx)
+    }
+    Suspend(tag) => {
+      w.write_byte(0xE2)
+      w.write_u32(tag)
+    }
+    Resume(idx, clauses) => {
+      w.write_byte(0xE3)
+      w.write_u32(idx)
+      encode_resume_table(w, clauses)
+    }
+    ResumeThrow(idx, tag, clauses) => {
+      w.write_byte(0xE4)
+      w.write_u32(idx)
+      w.write_u32(tag)
+      encode_resume_table(w, clauses)
+    }
+    ResumeThrowRef(idx, clauses) => {
+      w.write_byte(0xE5)
+      w.write_u32(idx)
+      encode_resume_table(w, clauses)
+    }
+    Switch(idx, tag) => {
+      w.write_byte(0xE6)
+      w.write_u32(idx)
+      w.write_u32(tag)
+    }
+    // The threads proposal. The sub-opcode is a BYTE, not a LEB -- they all
+    // happen to be under 0x80, so the two agree today, but the reference writes
+    // a byte and that is what these bytes are measured against.
+    Atomic(op, memidx, align, offset) => {
+      w.write_byte(0xFE)
+      w.write_byte(op)
+      encode_memarg(w, memidx, align, offset)
+    }
+    // `atomic.fence` is the one atomic with no memory operand, so it cannot be
+    // spelled as an `Atomic` with a degenerate memarg: the format wants a
+    // single 0x00 where the memarg would go, not an alignment and an offset.
+    AtomicFence => {
+      w.write_byte(0xFE)
+      w.write_byte(0x03)
+      w.write_byte(0x00)
+    }
+    I16x8RelaxedDotI8x16I7x16S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x112)
+    }
+    I16x8RelaxedQ15mulrS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x111)
+    }
+    F64x2RelaxedMax => {
+      w.write_byte(0xFD)
+      w.write_u32(0x110)
+    }
+    F64x2RelaxedMin => {
+      w.write_byte(0xFD)
+      w.write_u32(0x10F)
+    }
+    F32x4RelaxedMax => {
+      w.write_byte(0xFD)
+      w.write_u32(0x10E)
+    }
+    F32x4RelaxedMin => {
+      w.write_byte(0xFD)
+      w.write_u32(0x10D)
+    }
+    I64x2RelaxedLaneselect => {
+      w.write_byte(0xFD)
+      w.write_u32(0x10C)
+    }
+    I32x4RelaxedLaneselect => {
+      w.write_byte(0xFD)
+      w.write_u32(0x10B)
+    }
+    I16x8RelaxedLaneselect => {
+      w.write_byte(0xFD)
+      w.write_u32(0x10A)
+    }
+    I8x16RelaxedLaneselect => {
+      w.write_byte(0xFD)
+      w.write_u32(0x109)
+    }
+    F64x2RelaxedNmadd => {
+      w.write_byte(0xFD)
+      w.write_u32(0x108)
+    }
+    F64x2RelaxedMadd => {
+      w.write_byte(0xFD)
+      w.write_u32(0x107)
+    }
+    F32x4RelaxedNmadd => {
+      w.write_byte(0xFD)
+      w.write_u32(0x106)
+    }
+    F32x4RelaxedMadd => {
+      w.write_byte(0xFD)
+      w.write_u32(0x105)
+    }
+    I32x4RelaxedTruncF64x2UZero => {
+      w.write_byte(0xFD)
+      w.write_u32(0x104)
+    }
+    I32x4RelaxedTruncF64x2SZero => {
+      w.write_byte(0xFD)
+      w.write_u32(0x103)
+    }
+    I32x4RelaxedTruncF32x4U => {
+      w.write_byte(0xFD)
+      w.write_u32(0x102)
+    }
+    I32x4RelaxedTruncF32x4S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x101)
+    }
+    I8x16RelaxedSwizzle => {
+      w.write_byte(0xFD)
+      w.write_u32(0x100)
+    }
+    F64x2PromoteLowF32x4 => {
+      w.write_byte(0xFD)
+      w.write_u32(0x5F)
+    }
+    F32x4DemoteF64x2Zero => {
+      w.write_byte(0xFD)
+      w.write_u32(0x5E)
+    }
+    F64x2ConvertLowI32x4U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xFF)
+    }
+    F64x2ConvertLowI32x4S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xFE)
+    }
+    I32x4TruncSatF64x2UZero => {
+      w.write_byte(0xFD)
+      w.write_u32(0xFD)
+    }
+    I32x4TruncSatF64x2SZero => {
+      w.write_byte(0xFD)
+      w.write_u32(0xFC)
+    }
+    F32x4ConvertI32x4U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xFB)
+    }
+    F32x4ConvertI32x4S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xFA)
+    }
+    I32x4TruncSatF32x4U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF9)
+    }
+    I32x4TruncSatF32x4S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF8)
+    }
+    F64x2Pmax => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF7)
+    }
+    F64x2Pmin => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF6)
+    }
+    F64x2Max => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF5)
+    }
+    F64x2Min => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF4)
+    }
+    F64x2Div => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF3)
+    }
+    F64x2Mul => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF2)
+    }
+    F64x2Sub => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF1)
+    }
+    F64x2Add => {
+      w.write_byte(0xFD)
+      w.write_u32(0xF0)
+    }
+    F64x2Sqrt => {
+      w.write_byte(0xFD)
+      w.write_u32(0xEF)
+    }
+    F64x2Neg => {
+      w.write_byte(0xFD)
+      w.write_u32(0xED)
+    }
+    F64x2Abs => {
+      w.write_byte(0xFD)
+      w.write_u32(0xEC)
+    }
+    F64x2Nearest => {
+      w.write_byte(0xFD)
+      w.write_u32(0x94)
+    }
+    F64x2Trunc => {
+      w.write_byte(0xFD)
+      w.write_u32(0x7A)
+    }
+    F64x2Floor => {
+      w.write_byte(0xFD)
+      w.write_u32(0x75)
+    }
+    F64x2Ceil => {
+      w.write_byte(0xFD)
+      w.write_u32(0x74)
+    }
+    F32x4Pmax => {
+      w.write_byte(0xFD)
+      w.write_u32(0xEB)
+    }
+    F32x4Pmin => {
+      w.write_byte(0xFD)
+      w.write_u32(0xEA)
+    }
+    F32x4Max => {
+      w.write_byte(0xFD)
+      w.write_u32(0xE9)
+    }
+    F32x4Min => {
+      w.write_byte(0xFD)
+      w.write_u32(0xE8)
+    }
+    F32x4Div => {
+      w.write_byte(0xFD)
+      w.write_u32(0xE7)
+    }
+    F32x4Mul => {
+      w.write_byte(0xFD)
+      w.write_u32(0xE6)
+    }
+    F32x4Sub => {
+      w.write_byte(0xFD)
+      w.write_u32(0xE5)
+    }
+    F32x4Add => {
+      w.write_byte(0xFD)
+      w.write_u32(0xE4)
+    }
+    F32x4Sqrt => {
+      w.write_byte(0xFD)
+      w.write_u32(0xE3)
+    }
+    F32x4Neg => {
+      w.write_byte(0xFD)
+      w.write_u32(0xE1)
+    }
+    F32x4Abs => {
+      w.write_byte(0xFD)
+      w.write_u32(0xE0)
+    }
+    F32x4Nearest => {
+      w.write_byte(0xFD)
+      w.write_u32(0x6A)
+    }
+    F32x4Trunc => {
+      w.write_byte(0xFD)
+      w.write_u32(0x69)
+    }
+    F32x4Floor => {
+      w.write_byte(0xFD)
+      w.write_u32(0x68)
+    }
+    F32x4Ceil => {
+      w.write_byte(0xFD)
+      w.write_u32(0x67)
+    }
+    I64x2ExtMulHighI32x4U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xDF)
+    }
+    I64x2ExtMulLowI32x4U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xDE)
+    }
+    I64x2ExtMulHighI32x4S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xDD)
+    }
+    I64x2ExtMulLowI32x4S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xDC)
+    }
+    I64x2Mul => {
+      w.write_byte(0xFD)
+      w.write_u32(0xD5)
+    }
+    I64x2Sub => {
+      w.write_byte(0xFD)
+      w.write_u32(0xD1)
+    }
+    I64x2Add => {
+      w.write_byte(0xFD)
+      w.write_u32(0xCE)
+    }
+    I64x2ShrU => {
+      w.write_byte(0xFD)
+      w.write_u32(0xCD)
+    }
+    I64x2ShrS => {
+      w.write_byte(0xFD)
+      w.write_u32(0xCC)
+    }
+    I64x2Shl => {
+      w.write_byte(0xFD)
+      w.write_u32(0xCB)
+    }
+    I64x2ExtendHighI32x4U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xCA)
+    }
+    I64x2ExtendLowI32x4U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xC9)
+    }
+    I64x2ExtendHighI32x4S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xC8)
+    }
+    I64x2ExtendLowI32x4S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xC7)
+    }
+    I64x2Bitmask => {
+      w.write_byte(0xFD)
+      w.write_u32(0xC4)
+    }
+    I64x2AllTrue => {
+      w.write_byte(0xFD)
+      w.write_u32(0xC3)
+    }
+    I64x2Neg => {
+      w.write_byte(0xFD)
+      w.write_u32(0xC1)
+    }
+    I64x2Abs => {
+      w.write_byte(0xFD)
+      w.write_u32(0xC0)
+    }
+    I32x4ExtMulHighI16x8U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xBF)
+    }
+    I32x4ExtMulLowI16x8U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xBE)
+    }
+    I32x4ExtMulHighI16x8S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xBD)
+    }
+    I32x4ExtMulLowI16x8S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xBC)
+    }
+    I32x4DotI16x8S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xBA)
+    }
+    I32x4MaxU => {
+      w.write_byte(0xFD)
+      w.write_u32(0xB9)
+    }
+    I32x4MaxS => {
+      w.write_byte(0xFD)
+      w.write_u32(0xB8)
+    }
+    I32x4MinU => {
+      w.write_byte(0xFD)
+      w.write_u32(0xB7)
+    }
+    I32x4MinS => {
+      w.write_byte(0xFD)
+      w.write_u32(0xB6)
+    }
+    I32x4Mul => {
+      w.write_byte(0xFD)
+      w.write_u32(0xB5)
+    }
+    I32x4Sub => {
+      w.write_byte(0xFD)
+      w.write_u32(0xB1)
+    }
+    I32x4Add => {
+      w.write_byte(0xFD)
+      w.write_u32(0xAE)
+    }
+    I32x4ShrU => {
+      w.write_byte(0xFD)
+      w.write_u32(0xAD)
+    }
+    I32x4ShrS => {
+      w.write_byte(0xFD)
+      w.write_u32(0xAC)
+    }
+    I32x4Shl => {
+      w.write_byte(0xFD)
+      w.write_u32(0xAB)
+    }
+    I32x4ExtendHighI16x8U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xAA)
+    }
+    I32x4ExtendLowI16x8U => {
+      w.write_byte(0xFD)
+      w.write_u32(0xA9)
+    }
+    I32x4ExtendHighI16x8S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xA8)
+    }
+    I32x4ExtendLowI16x8S => {
+      w.write_byte(0xFD)
+      w.write_u32(0xA7)
+    }
+    I32x4Bitmask => {
+      w.write_byte(0xFD)
+      w.write_u32(0xA4)
+    }
+    I32x4AllTrue => {
+      w.write_byte(0xFD)
+      w.write_u32(0xA3)
+    }
+    I32x4Neg => {
+      w.write_byte(0xFD)
+      w.write_u32(0xA1)
+    }
+    I32x4Abs => {
+      w.write_byte(0xFD)
+      w.write_u32(0xA0)
+    }
+    I32x4ExtAddPairwiseI16x8U => {
+      w.write_byte(0xFD)
+      w.write_u32(0x7F)
+    }
+    I32x4ExtAddPairwiseI16x8S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x7E)
+    }
+    I16x8ExtMulHighI8x16U => {
+      w.write_byte(0xFD)
+      w.write_u32(0x9F)
+    }
+    I16x8ExtMulLowI8x16U => {
+      w.write_byte(0xFD)
+      w.write_u32(0x9E)
+    }
+    I16x8ExtMulHighI8x16S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x9D)
+    }
+    I16x8ExtMulLowI8x16S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x9C)
+    }
+    I16x8AvgrU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x9B)
+    }
+    I16x8MaxU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x99)
+    }
+    I16x8MaxS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x98)
+    }
+    I16x8MinU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x97)
+    }
+    I16x8MinS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x96)
+    }
+    I16x8Mul => {
+      w.write_byte(0xFD)
+      w.write_u32(0x95)
+    }
+    I16x8SubSatU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x93)
+    }
+    I16x8SubSatS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x92)
+    }
+    I16x8Sub => {
+      w.write_byte(0xFD)
+      w.write_u32(0x91)
+    }
+    I16x8AddSatU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x90)
+    }
+    I16x8AddSatS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x8F)
+    }
+    I16x8Add => {
+      w.write_byte(0xFD)
+      w.write_u32(0x8E)
+    }
+    I16x8ShrU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x8D)
+    }
+    I16x8ShrS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x8C)
+    }
+    I16x8Shl => {
+      w.write_byte(0xFD)
+      w.write_u32(0x8B)
+    }
+    I16x8ExtendHighI8x16U => {
+      w.write_byte(0xFD)
+      w.write_u32(0x8A)
+    }
+    I16x8ExtendLowI8x16U => {
+      w.write_byte(0xFD)
+      w.write_u32(0x89)
+    }
+    I16x8ExtendHighI8x16S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x88)
+    }
+    I16x8ExtendLowI8x16S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x87)
+    }
+    I16x8NarrowI32x4U => {
+      w.write_byte(0xFD)
+      w.write_u32(0x86)
+    }
+    I16x8NarrowI32x4S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x85)
+    }
+    I16x8Bitmask => {
+      w.write_byte(0xFD)
+      w.write_u32(0x84)
+    }
+    I16x8AllTrue => {
+      w.write_byte(0xFD)
+      w.write_u32(0x83)
+    }
+    I16x8Q15MulrSatS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x82)
+    }
+    I16x8Neg => {
+      w.write_byte(0xFD)
+      w.write_u32(0x81)
+    }
+    I16x8Abs => {
+      w.write_byte(0xFD)
+      w.write_u32(0x80)
+    }
+    I16x8ExtAddPairwiseI8x16U => {
+      w.write_byte(0xFD)
+      w.write_u32(0x7D)
+    }
+    I16x8ExtAddPairwiseI8x16S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x7C)
+    }
+    I8x16AvgrU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x7B)
+    }
+    I8x16MaxU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x79)
+    }
+    I8x16MaxS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x78)
+    }
+    I8x16MinU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x77)
+    }
+    I8x16MinS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x76)
+    }
+    I8x16SubSatU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x73)
+    }
+    I8x16SubSatS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x72)
+    }
+    I8x16Sub => {
+      w.write_byte(0xFD)
+      w.write_u32(0x71)
+    }
+    I8x16AddSatU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x70)
+    }
+    I8x16AddSatS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x6f)
+    }
+    I8x16Add => {
+      w.write_byte(0xFD)
+      w.write_u32(0x6e)
+    }
+    I8x16ShrU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x6d)
+    }
+    I8x16ShrS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x6c)
+    }
+    I8x16Shl => {
+      w.write_byte(0xFD)
+      w.write_u32(0x6b)
+    }
+    I8x16NarrowI16x8U => {
+      w.write_byte(0xFD)
+      w.write_u32(0x66)
+    }
+    I8x16NarrowI16x8S => {
+      w.write_byte(0xFD)
+      w.write_u32(0x65)
+    }
+    I8x16Bitmask => {
+      w.write_byte(0xFD)
+      w.write_u32(0x64)
+    }
+    I8x16AllTrue => {
+      w.write_byte(0xFD)
+      w.write_u32(0x63)
+    }
+    I8x16Popcnt => {
+      w.write_byte(0xFD)
+      w.write_u32(0x62)
+    }
+    I8x16Neg => {
+      w.write_byte(0xFD)
+      w.write_u32(0x61)
+    }
+    I8x16Abs => {
+      w.write_byte(0xFD)
+      w.write_u32(0x60)
+    }
+    V128AnyTrue => {
+      w.write_byte(0xFD)
+      w.write_u32(0x53)
+    }
+    V128Bitselect => {
+      w.write_byte(0xFD)
+      w.write_u32(0x52)
+    }
+    V128Xor => {
+      w.write_byte(0xFD)
+      w.write_u32(0x51)
+    }
+    V128Or => {
+      w.write_byte(0xFD)
+      w.write_u32(0x50)
+    }
+    V128AndNot => {
+      w.write_byte(0xFD)
+      w.write_u32(0x4F)
+    }
+    V128And => {
+      w.write_byte(0xFD)
+      w.write_u32(0x4E)
+    }
+    V128Not => {
+      w.write_byte(0xFD)
+      w.write_u32(0x4D)
+    }
+    F64x2Ge => {
+      w.write_byte(0xFD)
+      w.write_u32(0x4C)
+    }
+    F64x2Le => {
+      w.write_byte(0xFD)
+      w.write_u32(0x4B)
+    }
+    F64x2Gt => {
+      w.write_byte(0xFD)
+      w.write_u32(0x4A)
+    }
+    F64x2Lt => {
+      w.write_byte(0xFD)
+      w.write_u32(0x49)
+    }
+    F64x2Ne => {
+      w.write_byte(0xFD)
+      w.write_u32(0x48)
+    }
+    F64x2Eq => {
+      w.write_byte(0xFD)
+      w.write_u32(0x47)
+    }
+    F32x4Ge => {
+      w.write_byte(0xFD)
+      w.write_u32(0x46)
+    }
+    F32x4Le => {
+      w.write_byte(0xFD)
+      w.write_u32(0x45)
+    }
+    F32x4Gt => {
+      w.write_byte(0xFD)
+      w.write_u32(0x44)
+    }
+    F32x4Lt => {
+      w.write_byte(0xFD)
+      w.write_u32(0x43)
+    }
+    F32x4Ne => {
+      w.write_byte(0xFD)
+      w.write_u32(0x42)
+    }
+    F32x4Eq => {
+      w.write_byte(0xFD)
+      w.write_u32(0x41)
+    }
+    I64x2GeS => {
+      w.write_byte(0xFD)
+      w.write_u32(0xDB)
+    }
+    I64x2LeS => {
+      w.write_byte(0xFD)
+      w.write_u32(0xDA)
+    }
+    I64x2GtS => {
+      w.write_byte(0xFD)
+      w.write_u32(0xD9)
+    }
+    I64x2LtS => {
+      w.write_byte(0xFD)
+      w.write_u32(0xD8)
+    }
+    I64x2Ne => {
+      w.write_byte(0xFD)
+      w.write_u32(0xD7)
+    }
+    I64x2Eq => {
+      w.write_byte(0xFD)
+      w.write_u32(0xD6)
+    }
+    I32x4GeU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x40)
+    }
+    I32x4GeS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x3F)
+    }
+    I32x4LeU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x3E)
+    }
+    I32x4LeS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x3D)
+    }
+    I32x4GtU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x3C)
+    }
+    I32x4GtS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x3B)
+    }
+    I32x4LtU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x3A)
+    }
+    I32x4LtS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x39)
+    }
+    I32x4Ne => {
+      w.write_byte(0xFD)
+      w.write_u32(0x38)
+    }
+    I32x4Eq => {
+      w.write_byte(0xFD)
+      w.write_u32(0x37)
+    }
+    I16x8GeU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x36)
+    }
+    I16x8GeS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x35)
+    }
+    I16x8LeU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x34)
+    }
+    I16x8LeS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x33)
+    }
+    I16x8GtU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x32)
+    }
+    I16x8GtS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x31)
+    }
+    I16x8LtU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x30)
+    }
+    I16x8LtS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x2F)
+    }
+    I16x8Ne => {
+      w.write_byte(0xFD)
+      w.write_u32(0x2E)
+    }
+    I16x8Eq => {
+      w.write_byte(0xFD)
+      w.write_u32(0x2D)
+    }
+    I8x16GeU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x2C)
+    }
+    I8x16GeS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x2B)
+    }
+    I8x16LeU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x2A)
+    }
+    I8x16LeS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x29)
+    }
+    I8x16GtU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x28)
+    }
+    I8x16GtS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x27)
+    }
+    I8x16LtU => {
+      w.write_byte(0xFD)
+      w.write_u32(0x26)
+    }
+    I8x16LtS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x25)
+    }
+    I8x16Ne => {
+      w.write_byte(0xFD)
+      w.write_u32(0x24)
+    }
+    I8x16Eq => {
+      w.write_byte(0xFD)
+      w.write_u32(0x23)
+    }
+    F64x2ReplaceLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x22)
+      w.write_byte(lane)
+    }
+    F32x4ReplaceLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x20)
+      w.write_byte(lane)
+    }
+    I64x2ReplaceLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x1E)
+      w.write_byte(lane)
+    }
+    I32x4ReplaceLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x1C)
+      w.write_byte(lane)
+    }
+    I16x8ReplaceLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x1A)
+      w.write_byte(lane)
+    }
+    I8x16ReplaceLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x17)
+      w.write_byte(lane)
+    }
+    F64x2ExtractLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x21)
+      w.write_byte(lane)
+    }
+    F32x4ExtractLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x1F)
+      w.write_byte(lane)
+    }
+    I64x2ExtractLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x1D)
+      w.write_byte(lane)
+    }
+    I32x4ExtractLane(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x1B)
+      w.write_byte(lane)
+    }
+    I16x8ExtractLaneU(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x19)
+      w.write_byte(lane)
+    }
+    I16x8ExtractLaneS(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x18)
+      w.write_byte(lane)
+    }
+    I8x16ExtractLaneU(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x16)
+      w.write_byte(lane)
+    }
+    I8x16ExtractLaneS(lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x15)
+      w.write_byte(lane)
+    }
+    F64x2Splat => {
+      w.write_byte(0xFD)
+      w.write_u32(0x14)
+    }
+    F32x4Splat => {
+      w.write_byte(0xFD)
+      w.write_u32(0x13)
+    }
+    I64x2Splat => {
+      w.write_byte(0xFD)
+      w.write_u32(0x12)
+    }
+    I32x4Splat => {
+      w.write_byte(0xFD)
+      w.write_u32(0x11)
+    }
+    I16x8Splat => {
+      w.write_byte(0xFD)
+      w.write_u32(0x10)
+    }
+    I8x16Splat => {
+      w.write_byte(0xFD)
+      w.write_u32(0x0F)
+    }
+    I8x16Swizzle => {
+      w.write_byte(0xFD)
+      w.write_u32(0x0E)
+    }
+    I8x16Shuffle(lanes) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x0D)
+      for lane in lanes {
+        w.write_byte(lane)
+      }
+    }
+    V128Store64Lane(memidx, align, offset, lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x5B)
+      encode_memarg(w, memidx, align, offset)
+      w.write_byte(lane)
+    }
+    V128Store32Lane(memidx, align, offset, lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x5A)
+      encode_memarg(w, memidx, align, offset)
+      w.write_byte(lane)
+    }
+    V128Store16Lane(memidx, align, offset, lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x59)
+      encode_memarg(w, memidx, align, offset)
+      w.write_byte(lane)
+    }
+    V128Store8Lane(memidx, align, offset, lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x58)
+      encode_memarg(w, memidx, align, offset)
+      w.write_byte(lane)
+    }
+    V128Load64Lane(memidx, align, offset, lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x57)
+      encode_memarg(w, memidx, align, offset)
+      w.write_byte(lane)
+    }
+    V128Load32Lane(memidx, align, offset, lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x56)
+      encode_memarg(w, memidx, align, offset)
+      w.write_byte(lane)
+    }
+    V128Load16Lane(memidx, align, offset, lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x55)
+      encode_memarg(w, memidx, align, offset)
+      w.write_byte(lane)
+    }
+    V128Load8Lane(memidx, align, offset, lane) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x54)
+      encode_memarg(w, memidx, align, offset)
+      w.write_byte(lane)
+    }
+    V128Load64Zero(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x5D)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load32Zero(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x5C)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load64Splat(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x0A)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load32Splat(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x09)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load16Splat(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x08)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load8Splat(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x07)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load32x2U(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x06)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load32x2S(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x05)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load16x4U(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x04)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load16x4S(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x03)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load8x8U(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x02)
+      encode_memarg(w, memidx, align, offset)
+    }
+    V128Load8x8S(memidx, align, offset) => {
+      w.write_byte(0xFD)
+      w.write_u32(0x01)
+      encode_memarg(w, memidx, align, offset)
+    }
+    I64MulWideU => {
+      w.write_byte(0xFC)
+      w.write_u32(0x16)
+    }
+    I64MulWideS => {
+      w.write_byte(0xFC)
+      w.write_u32(0x15)
+    }
+    I32x4RelaxedDotI8x16I7x16AddS => {
+      w.write_byte(0xFD)
+      w.write_u32(0x113)
+    }
   }
 }
