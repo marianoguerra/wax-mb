@@ -2647,3 +2647,100 @@ test "a literal's type comes from its spelling alone" {
   inspect(lat(Null), content="null")
   inspect(lat(Nop), content="not a literal")
 }
+
+///|
+/// A `br` to a BLOCK's label jumps to its end and delivers the block's results.
+/// A `br` to a LOOP's label jumps to its top and delivers the loop's
+/// parameters -- it is re-entering, not leaving. That is the whole difference
+/// between the two, and getting it backwards would accept branches carrying
+/// entirely the wrong values.
+test "a branch to a loop delivers its parameters, not its results" {
+  let ctx = module_ctx()
+  let ops = @typing.Operands::new()
+  let i32_ = () => @infer.valtype_cell(@infer.i32_valtype)
+  let f64_ = () => @infer.valtype_cell(@infer.f64_valtype)
+  // What the label's frame says a branch to it must deliver.
+  let seen : Array[String] = []
+  fn peek() -> Unit {
+    let target = @typing.branch_target(ctx, id("l"))
+    seen.push(target.map(c => @infer.to_string(c)).join(","))
+  }
+
+  // A block taking an f64 and producing an i32: branching to it delivers i32.
+  ops.push(None, f64_())
+  @typing.checked_block(
+    ctx,
+    ops,
+    loc_at(0, 20),
+    Some(id("l")),
+    [f64_()],
+    [i32_()],
+    [i32_()],
+    () => {
+      peek()
+      // The parameter the block was given is on its OWN stack, not the caller's:
+      // consume it, then produce the result.
+      ops.pop_any(@ref.new(None), 0, 1) |> ignore
+      ops.push(None, i32_())
+    },
+  )
+  // A loop of the same shape: branching to it delivers f64.
+  @typing.checked_block(
+    ctx,
+    ops,
+    loc_at(0, 20),
+    Some(id("l")),
+    [f64_()],
+    [i32_()],
+    [f64_()],
+    () => {
+      peek()
+      ops.pop_any(@ref.new(None), 0, 1) |> ignore
+      ops.push(None, i32_())
+    },
+  )
+  inspect(seen.join(" | "), content="i32 | f64")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+}
+
+///|
+/// A missing `else` means the false path falls straight through, delivering
+/// what it was given. Sound only when the parameters already are the results.
+test "an if without an else must fall through to its own result" {
+  let ctx = module_ctx()
+  let info = ctx.type_context.subtyping_info()
+  let i32_ = () => @infer.valtype_cell(@infer.i32_valtype)
+  let f64_ = () => @infer.valtype_cell(@infer.f64_valtype)
+  // Void: nothing promised, nothing to deliver.
+  inspect(@typing.missing_else_ok(info, [], []), content="true")
+  // Takes an i32 and produces one: the false path passes it along.
+  inspect(@typing.missing_else_ok(info, [i32_()], [i32_()]), content="true")
+  // Produces a value it was never given.
+  inspect(@typing.missing_else_ok(info, [], [i32_()]), content="false")
+  // Given the wrong one.
+  inspect(@typing.missing_else_ok(info, [f64_()], [i32_()]), content="false")
+}
+
+///|
+/// A block whose declared shape does not resolve has no shape to check its body
+/// against, and inventing one would invent complaints. The failure was already
+/// reported by the resolver.
+test "a block whose shape does not resolve has none" {
+  let ctx = module_ctx()
+  let bad : @ast.FuncType = {
+    params: [],
+    results: [Ref({ nullable: true, typ: Type(id("nope")) })],
+  }
+  inspect(
+    @typing.block_signature(ctx.type_context, ctx.diagnostics, bad) is None,
+    content="true",
+  )
+  let good : @ast.FuncType = {
+    params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+    results: [F64],
+  }
+  guard! @typing.block_signature(ctx.type_context, ctx.diagnostics, good)
+    is Some((params, results))
+  inspect(params.map(c => @infer.to_string(c)).join(","), content="i32")
+  inspect(results.map(c => @infer.to_string(c)).join(","), content="f64")
+}

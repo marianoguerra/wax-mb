@@ -569,3 +569,37 @@ pub fn not_an_expression(
     .sep(@message.text("values.")),
   )
 }
+
+///|
+/// An `if` that must produce a value but has no `else`.
+pub fn if_without_else(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This ")
+    .sep(@message.code("if"))
+    .sep(@message.text(" must produce a value and so requires an "))
+    .sep(@message.code("else"))
+    .sep(@message.text(" branch.")),
+  )
+}
+
+///|
+/// A block used as an expression that declares parameters.
+///
+/// Expression position has no stack for them to come from.
+pub fn parameterized_block_expression(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "A block, loop or if used as an expression cannot take parameters.",
+    ),
+  )
+}

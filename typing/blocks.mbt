@@ -148,3 +148,97 @@ pub fn infer_result(
 ) -> @infer.Cell[@infer.InferredType]? {
   join_collected(ctx.diagnostics, location, cs.collected, lub)
 }
+
+///|
+/// A block's declared parameters and results, as cells.
+///
+/// `None` when either fails to resolve: the block's shape is then unknown, and
+/// checking its body against a shape we do not have would invent complaints.
+/// The failure was already reported by the resolver.
+pub fn block_signature(
+  ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
+  typ : @ast.FuncType,
+) -> (
+  Array[@infer.Cell[@infer.InferredType]],
+  Array[@infer.Cell[@infer.InferredType]],
+)? {
+  let params : Array[@infer.Cell[@infer.InferredType]] = []
+  for p in typ.params {
+    guard internalize(ctx, diagnostics, p.desc.1) is Some(c) else {
+      return None
+    }
+    params.push(c)
+  }
+  let results : Array[@infer.Cell[@infer.InferredType]] = []
+  for r in typ.results {
+    guard internalize(ctx, diagnostics, r) is Some(c) else { return None }
+    results.push(c)
+  }
+  Some((params, results))
+}
+
+///|
+/// Check a block body against a declared shape.
+///
+/// The counterpart of `collect_into`: that one is for a block whose result is
+/// being INFERRED, this one for a block that already knows what it produces.
+/// Both run the body on a fresh empty stack under a control frame; the
+/// difference is what happens at the exit. Here the results are simply popped
+/// and checked, because there is a declared type to check them against.
+///
+/// `branch_target` is the one parameter that is not always `results`, and the
+/// distinction is the whole difference between a block and a loop. A `br` to a
+/// block's label jumps to its END and so delivers the block's RESULTS. A `br`
+/// to a loop's label jumps to its TOP and so delivers the loop's PARAMETERS --
+/// it is re-entering, not leaving. Passing `results` for a loop would accept
+/// branches carrying the wrong values entirely.
+pub fn checked_block(
+  ctx : @typing_env.ModuleContext,
+  ops : Operands,
+  location : @basic.Location,
+  label : @ast.Ident?,
+  params : Array[@infer.Cell[@infer.InferredType]],
+  results : Array[@infer.Cell[@infer.InferredType]],
+  branch_target : Array[@infer.Cell[@infer.InferredType]],
+  check_body : () -> Unit,
+) -> Unit {
+  with_empty_stack(ops, ctx.diagnostics, location, () => {
+    // The parameters were popped off the ENCLOSING stack by the caller; they go
+    // back on the block's own, which is otherwise empty. That is what keeps a
+    // block from reaching values it was not given.
+    ops.push_results(location, params)
+    ctx.with_frame(
+      @typing_env.ControlFrame::new(branch_target, label~),
+      check_body,
+    )
+    ops.pop_args(
+      ctx.type_context.subtyping_info(),
+      ctx.diagnostics,
+      Output,
+      location,
+      results,
+    )
+  })
+}
+
+///|
+/// Whether an `if` without an `else` is well formed.
+///
+/// A missing `else` means the false path falls straight through, delivering the
+/// parameters it was given. That is only sound when the parameters already ARE
+/// the results -- same count, each a subtype -- because otherwise the block
+/// promises a value the false path never produces.
+pub fn missing_else_ok(
+  info : @type_store.SubtypingInfo,
+  params : Array[@infer.Cell[@infer.InferredType]],
+  results : Array[@infer.Cell[@infer.InferredType]],
+) -> Bool {
+  guard params.length() == results.length() else { return false }
+  for i in 0..<params.length() {
+    if !subtype(info, params[i], results[i]) {
+      return false
+    }
+  }
+  true
+}
