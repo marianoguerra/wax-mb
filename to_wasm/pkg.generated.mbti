@@ -1,0 +1,52 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/to_wasm"
+
+import {
+  "waxmb/wax/ast",
+  "waxmb/wax/basic",
+  "waxmb/wax/type_store",
+  "waxmb/wax/typing_env",
+  "waxmb/wax/wasm_bin",
+  "waxmb/wax/wasm_types",
+}
+
+// Values
+pub fn assign_indices(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Indices
+
+pub fn lower_reftype(@wasm_types.RefType[@type_store.Id]) -> @wasm_types.RefType[Int]
+
+pub fn lower_valtype(@wasm_types.ValType[@type_store.Id]) -> @wasm_types.ValType[Int]
+
+pub fn type_section(@type_store.TypeStore) -> (Array[@wasm_bin.SubType], Array[@wasm_bin.RecGroup])
+
+// Errors
+
+// Types and methods
+pub struct Indices {
+  funcs : Space
+  globals : Space
+  memories : Space
+  tables : Space
+  tags : Space
+  datas : Space
+  elems : Space
+  mut imported_funcs : Int
+  mut imported_globals : Int
+  mut imported_memories : Int
+  mut imported_tables : Int
+  mut imported_tags : Int
+}
+pub fn Indices::new() -> Self
+
+pub struct Space {
+  by_name : Map[String, Int]
+  mut next : Int
+}
+pub fn Space::assign(Self, String) -> Int
+pub fn Space::get(Self, String) -> Int?
+pub fn Space::length(Self) -> Int
+pub fn Space::new() -> Self
+
+// Type aliases
+
+// Traits

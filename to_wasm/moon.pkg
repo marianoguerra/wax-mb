@@ -1,0 +1,13 @@
+import {
+  "waxmb/wax/basic",
+  "waxmb/wax/ast",
+  "waxmb/wax/typing_env",
+  "waxmb/wax/typing",
+  "waxmb/wax/type_store",
+  "waxmb/wax/wasm_types",
+  "waxmb/wax/wasm_bin",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
