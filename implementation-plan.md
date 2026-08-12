@@ -22,8 +22,8 @@ order it makes sense to do it.
 **Phase 6 — the type checker**
 
 - [x] 8. `ast_utils` — the surface-form desugarings
-- [ ] 8b. The unlisted prerequisites *(new; see below)* — `spell_check` and
-  `feature` done, ~1.9k lines left
+- [ ] 8b. The unlisted prerequisites *(new; see below)* — `spell_check`,
+  `feature`, `types` and `cond_solver` done, ~1.3k lines left
 - [x] 9. `members` — the method and intrinsic table *(the checker-facing half)*
 - [x] 10. `infer` — inference cells and the numeric-literal lattice *(done before 9; see there)*
 - [ ] 11. `typing_env` — symbol tables
@@ -695,18 +695,18 @@ Measured while starting task 11. `typing_env.ml` and `typing.ml` reach into
 nine modules that **no task lists and this port does not have**, and
 `typing_env`'s `module_context` cannot even be *typed* without the first three:
 
-| module | lines | uses in the typer | what it is |
-|---|---|---|---|
-| `lib-wasm/types.ml` | 372 | 71 | the interned type store: rec-group normalisation, canonical indices, subtyping info |
-| `lib-wasm/simd.ml` | 856 | — | every vector op, with its operand and result types; how `v.add_i32x4(w)` dispatches |
-| `lib-wasm/cond_solver.ml` | 240 | 4 | the conditional-compilation assumption every declaration carries |
-| `lib-wasm/atomics.ml` | 179 | 5 | the atomic memory operations |
-| `lib-wasm/cond_explore.ml` | 133 | 1 | enumerating the branches of a conditional module |
-| `lib-utils/spell_check.ml` | 126 | 8 | "did you mean" — **ported**, `spell/` |
-| `lib-wasm/misc.ml` | 100 | 13 | assorted wasm-side helpers |
-| `lib-utils/feature.ml` | 86 | 29 | the proposal gating — **ported**, `feature/` |
+| module | lines | uses in the typer | what it is | |
+|---|---|---|---|---|
+| `lib-wasm/types.ml` | 372 | 71 | the interned type store: rec-group normalisation, canonical indices, subtyping info | **done**, `type_store/` |
+| `lib-wasm/simd.ml` | 856 | — | every vector op, with its operand and result types; how `v.add_i32x4(w)` dispatches | |
+| `lib-wasm/cond_solver.ml` | 240 **+ 1545** | 4 | the conditional-compilation assumption every declaration carries | **done**, `cond/` |
+| `lib-wasm/atomics.ml` | 179 | 5 | the atomic memory operations | |
+| `lib-wasm/cond_explore.ml` | 133 | 1 | enumerating the branches of a conditional module | |
+| `lib-utils/spell_check.ml` | 126 | 8 | "did you mean" | **done**, `spell/` |
+| `lib-wasm/misc.ml` | 100 | 13 | assorted wasm-side helpers | |
+| `lib-utils/feature.ml` | 86 | 29 | the proposal gating | **done**, `feature/` |
 
-**Two are done.**
+**Four are done.**
 
 - **`spell/`** — OCaml's own Damerau-Levenshtein, banded around the diagonal so
   a candidate that is obviously too far is abandoned rather than measured, with
@@ -716,11 +716,24 @@ nine modules that **no task lists and this port does not have**, and
   lose: a feature can be off by DEFAULT or off because someone wrote
   `-X name=off`, and a module declaring the second is a conflict to report where
   the first is just an opt-in. 8 tests.
+- **`type_store/`** — the blocker. Two more instantiations of the `Idx`-generic
+  `wasm_types` spine (`Idx = Id`, a canonical store index; `Idx = RefIndex`,
+  which can also name a member of the group being registered), so this is an
+  addition to the type family rather than a fourth copy of it. The reference
+  needs a functor applied three times plus a mapping functor, because OCaml's
+  `Make_types` also parameterises the array wrappers; both forms here use plain
+  arrays, so the wrapper types are generic in `Idx` and written once. 9 tests.
+- **`cond/`** — **not a port.** The row above understates `cond_solver.ml`
+  badly: it is 240 lines *on top of* `vendor/theo`, a 1545-line BDD engine with
+  generic theory combination. That generality is not needed. Wax's condition
+  language admits three kinds of variable and every atom constrains one variable
+  against a constant, so satisfiability decomposes per variable and DPLL over
+  the atoms decides it completely. ~800 lines instead of ~1800, complete and
+  sound, with the translation and its diagnostics following `cond_solver.ml`
+  exactly because oracle 3 compares them. 10 tests.
 
-**The rest is ~1.9k lines**, and `types.ml` is the one that blocks: 71 of the
-typer's references go through it, and `module_context` holds a
-`Wax_wasm.Types.t` and a `subtyping_info`. It is the natural next task, before
-11.
+**The rest is ~1.3k lines**, dominated by `simd.ml`. None of it blocks
+`typing_env` the way `types.ml` did.
 
 ## 11. `typing_env` — symbol tables
 
