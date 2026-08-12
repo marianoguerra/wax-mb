@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 60159 poisoned 0 files 1903 clean 1426",
+    content="nodes 71397 poisoned 0 files 1903 clean 1506",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -133,13 +133,13 @@ test "the checker annotates every node it reaches" {
   top.sort_by((a, b) => b.1 - a.1)
   let expected =
     #|497 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
-    #|268 This instruction provides 0 value(s) but 1 was/were expected.
     #|220 This value remains on the stack.
-    #|113 An expression is expected here. This instruction returns 0 values.
-    #|106 Expecting 1 returned value(s) from the stack, but there are 0.
+    #|104 Expecting 1 returned value(s) from the stack, but there are 0.
+    #|103 An expression is expected here. This instruction returns 0 values.
     #|100 Expected struct.
     #|49 Cannot infer the array type here; add an explicit type, as in '[T| ..]'.
-    #|41 This instruction provides 1 value(s) but 2 was/were expected.
+    #|16 This type test is always true: the value already has this type.
+    #|15 A global named 'g' is already bound.
   let n = if top.length() < 8 { top.length() } else { 8 }
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),

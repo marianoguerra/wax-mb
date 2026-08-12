@@ -3511,7 +3511,7 @@ test "the dispatcher types what it has arms for" {
   inspect(typed(Null), content="null")
   inspect(typed(Nop), content="")
   inspect(typed(Get({ name: "g", loc: loc_at(0, 1) })), content="f64")
-  // A sequence takes its last statement's values.
+  // A sequence is a tuple: one value per element, in order.
   inspect(
     typed(
       Sequence([
@@ -3519,7 +3519,7 @@ test "the dispatcher types what it has arms for" {
         instr(Get({ name: "g", loc: loc_at(0, 1) }), 2),
       ]),
     ),
-    content="f64",
+    content="number,f64",
   )
   // `unreachable` leaves nothing, and marks everything after it dead.
   inspect(typed(Unreachable), content="")
@@ -4384,15 +4384,36 @@ test "a tuple let matches names to values in order" {
     }
   }
 
-  // A `Sequence` leaves only its LAST statement's values, so this provides one
-  // where two names want two.
+  // Two names take a two-element tuple, left to right.
   let _ = checker.statement(
     instr(
       Let(
         [(Some(id("a")), None), (Some(id("b")), None)],
         Some(
-          instr(Sequence([instr(Int("1"), 10), instr(Get(id("g")), 14)]), 10),
+          instr(Sequence([instr(Get(id("g")), 10), instr(Char('x'), 14)]), 10),
         ),
+      ),
+      0,
+    ),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  fn bound(n : String) -> String {
+    match ctx.locals.get(n) {
+      Some((Some(v), _)) => @infer.to_string(@infer.valtype_cell(v))
+      _ => "poison"
+    }
+  }
+
+  inspect(bound("a"), content="f64")
+  inspect(bound("b"), content="i32")
+
+  // One value short of the names, and the shortfall is reported once: the
+  // leftover name takes poison rather than a guess.
+  let _ = checker.statement(
+    instr(
+      Let(
+        [(Some(id("c")), None), (Some(id("d")), None)],
+        Some(instr(Get(id("g")), 20)),
       ),
       0,
     ),
@@ -4401,21 +4422,8 @@ test "a tuple let matches names to values in order" {
     @message.to_plain_string(ctx.diagnostics.collected()[0].message),
     content="This instruction provides 1 value(s) but 2 was/were expected.",
   )
-  // The first name still took the one value there was; the second is poison.
-  inspect(
-    match ctx.locals.get("a") {
-      Some((Some(v), _)) => @infer.to_string(@infer.valtype_cell(v))
-      _ => "poison"
-    },
-    content="f64",
-  )
-  inspect(
-    match ctx.locals.get("b") {
-      Some((None, _)) => "poison"
-      _ => "typed"
-    },
-    content="poison",
-  )
+  inspect(bound("c"), content="f64")
+  inspect(bound("d"), content="poison")
   inspect(checker.gaps().length(), content="0")
 }
 
@@ -8464,5 +8472,44 @@ test "a method call reads as an instruction or a call by its receiver" {
   inspect(
     call("rotl", true, 1),
     content="any | There is no field named 'rotl'.",
+  )
+}
+
+///|
+/// A tuple produces ONE value per element, in order. That is how a multi-value
+/// operand is written -- `br_if 'l (9, cond)` delivers 9 and tests cond -- so
+/// reading only the last element's values loses every one before it.
+test "a tuple produces one value per element" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let ctx = module_ctx()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let c = checker.expression(
+    instr(
+      Sequence([
+        instr(Int("9"), 20),
+        instr(Cast(instr(Int("1"), 22), Value(I64)), 22),
+      ]),
+      10,
+    ),
+  )
+  inspect(
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / "),
+    content="number,i64 | ",
   )
 }

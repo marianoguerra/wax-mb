@@ -504,3 +504,137 @@ fn elements_compatible(
     _ => false
   }
 }
+
+///|
+/// Whether a qualified path names a declared CONTINUATION type.
+///
+/// A continuation type is also a namespace, holding the two constructors that
+/// build one: `k::new(f)` wraps a function, `k::bind(x, c)` binds away a leading
+/// parameter of another continuation. Both yield a `&k`, which is why the type
+/// itself is the namespace.
+fn Checker::cont_namespace(
+  self : Checker,
+  callee : @ast.Instr[@basic.Location],
+) -> @ast.Ident? {
+  guard callee.desc is Path(ns, _) else { return None }
+  guard self.ctx.type_context.types.find_no_mark(ns.name) is Some((_, def)) else {
+    return None
+  }
+  guard def.typ is Cont(_) else { return None }
+  Some(ns)
+}
+
+///|
+/// Type `k::new(f)` and `k::bind(x, c)`.
+///
+/// Both build a FRESH continuation of exactly `k`, so both produce an exact
+/// reference -- the same rule as `struct.new` and `array.new`, and gated on the
+/// same feature, since exact reference types belong to custom-descriptors.
+///
+/// The typed node is the raw `cont.new` / `cont.bind` form rather than the path
+/// spelling: the two are the same instruction, and the lowering has one place to
+/// read it from.
+fn Checker::cont_construct(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+  ns : @ast.Ident,
+  name : @ast.Ident,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let ctx = self.ctx
+  let checked = args.map(a => self.expression(a))
+  match name.name {
+    "new" =>
+      if checked.length() == 1 {
+        // The function a continuation is made of, as a NULLABLE reference: a
+        // null one traps when resumed rather than being rejected here.
+        if lookup_cont_inner(ctx.type_context, ctx.diagnostics, ns) is Some(ft) &&
+          internalize(
+            ctx.type_context,
+            ctx.diagnostics,
+            Ref({ nullable: true, typ: Type(ft) }),
+          )
+          is Some(want) {
+          check_subtype(
+            ctx.type_context.subtyping_info(),
+            ctx.diagnostics,
+            args[0].info,
+            expression_type(ctx, checked[0].info),
+            want,
+          )
+        }
+        {
+          desc: ContNew(ns, checked[0]),
+          info: annotate([self.fresh_continuation(ns)], i.info),
+          hints: i.hints,
+          expected: i.expected,
+        }
+      } else {
+        operand_count_mismatch(
+          ctx.diagnostics,
+          i.info,
+          expected=1,
+          provided=checked.length(),
+        )
+        self.cont_construct_recovery(i, ns, name, checked)
+      }
+    "bind" =>
+      // The SOURCE continuation is the last operand -- the bound values come
+      // first, as they do on the stack -- and its type is what says which
+      // continuation is being narrowed.
+      if checked.length() >= 1 &&
+        cont_receiver_type(ctx, checked[checked.length() - 1]) is Some(src) {
+        self.check_cont_bind(i.info, src, ns, args, checked)
+        {
+          desc: ContBind(src, ns, checked),
+          info: annotate([self.fresh_continuation(ns)], i.info),
+          hints: i.hints,
+          expected: i.expected,
+        }
+      } else {
+        if checked.is_empty() {
+          operand_count_mismatch(
+            ctx.diagnostics,
+            i.info,
+            expected=1,
+            provided=0,
+          )
+        }
+        self.cont_construct_recovery(i, ns, name, checked)
+      }
+    _ => {
+      unknown_intrinsic(ctx.diagnostics, i.info, ns.name, name.name)
+      self.cont_construct_recovery(i, ns, name, checked)
+    }
+  }
+}
+
+///|
+/// Keep a malformed continuation construction as the call it was written as.
+///
+/// The arguments are already typed, so their own mistakes are reported; only
+/// this node's result is poison, and poison is what stops the failure being
+/// reported again by whatever consumes it.
+fn Checker::cont_construct_recovery(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+  ns : @ast.Ident,
+  name : @ast.Ident,
+  checked : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  ignore(self)
+  {
+    desc: Call(
+      {
+        desc: Path(ns, name),
+        info: annotate([], i.info),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      },
+      checked,
+    ),
+    info: annotate([@infer.Cell::make(@infer.InferredType::Error)], i.info),
+    hints: i.hints,
+    expected: i.expected,
+  }
+}

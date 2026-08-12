@@ -128,14 +128,18 @@ pub fn Checker::statement(
       self.rebuild_labelled(i, e_)
     }
 
-    // --- A plain sequence: each in turn, the last one's values are the
-    // sequence's ---
+    // --- A tuple: each element contributes ONE value, in order ---
+    //
+    // This is how a multi-value operand is written -- `br_if 'l (9, cond)`
+    // delivers 9 and tests cond -- so the sequence produces one value per
+    // element rather than only its last one's. `expression_type` is what
+    // insists on the one, and reports an element that produces none or several.
     Sequence(l) => {
       let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
-      let mut types : Array[@infer.Cell[@infer.InferredType]] = []
+      let types : Array[@infer.Cell[@infer.InferredType]] = []
       for s in l {
         let c = self.expression(s)
-        types = c.info.0
+        types.push(expression_type(ctx, c.info))
         checked.push(c)
       }
       {
@@ -1671,6 +1675,12 @@ pub fn Checker::statement(
         expected: i.expected,
       }
     }
+    // --- A continuation constructor: `k::new(f)`, `k::bind(x, c)` ---
+    Call(callee, args) if self.cont_namespace(callee) is Some(_) => {
+      guard callee.desc is Path(ns, name) else { return self.poisoned(i) }
+      self.cont_construct(i, ns, name, args)
+    }
+
     // --- A SIMD operation written on a value: `x.add_i32x4(y)` ---
     // --- A free intrinsic: `v128::i8x16(..)`, `v128::bitselect(..)` ---
     Call(callee, args) if callee.desc is Path(_, _) => {
