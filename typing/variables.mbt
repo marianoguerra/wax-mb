@@ -454,3 +454,66 @@ pub fn bound_value_type(
     _ => resolve_omitted_valtype(ctx.type_context, ctx.diagnostics, result_ty)
   }
 }
+
+///|
+/// Whether a method receiver names a value whose type is a REFERENCE.
+///
+/// This decides between two readings of the same spelling. `x.min(y)` is the
+/// scalar intrinsic when `x` is a number, and an indirect call through a
+/// function-pointer field when `x` is a struct reference -- so the receiver's
+/// type disambiguates, not the argument count.
+///
+/// Pure: it reads the name's type out of the locals and globals and records
+/// nothing, because it runs as a GUARD, before anything has been typed.
+pub fn receiver_is_ref(
+  ctx : @typing_env.ModuleContext,
+  recv : @ast.Instr[@basic.Location],
+) -> Bool {
+  fn is_ref(t : @infer.InferredValType?) -> Bool {
+    t is Some({ typ: Ref(_), .. })
+  }
+
+  guard recv.desc is Get(name) else { return false }
+  match ctx.locals.get(name.name) {
+    Some((ity, _)) => is_ref(ity)
+    None =>
+      match ctx.globals.visible(name.name) {
+        [(_, ity), ..] => is_ref(ity)
+        [] => false
+      }
+  }
+}
+
+///|
+/// Whether a method receiver names a value whose type is a reference to an ARRAY
+/// type.
+///
+/// Pure like `receiver_is_ref`, and for the same reason: it gates a bulk-method
+/// call before anything has been typed, so a struct with a field named `fill` or
+/// `copy` is left to the indirect-call path.
+pub fn receiver_is_array_ref(
+  ctx : @typing_env.ModuleContext,
+  recv : @ast.Instr[@basic.Location],
+) -> Bool {
+  fn ref_name(t : @infer.InferredValType?) -> @ast.Ident? {
+    match t {
+      Some({ typ: Ref({ typ: Type(n) | Exact(n), .. }), .. }) => Some(n)
+      _ => None
+    }
+  }
+
+  guard recv.desc is Get(name) else { return false }
+  let named = match ctx.locals.get(name.name) {
+    Some((ity, _)) => ref_name(ity)
+    None =>
+      match ctx.globals.visible(name.name) {
+        [(_, ity), ..] => ref_name(ity)
+        [] => None
+      }
+  }
+  guard named is Some(n) else { return false }
+  match ctx.types.find_no_mark(n.name) {
+    Some((_, sub)) => sub.typ is Array(_)
+    None => false
+  }
+}

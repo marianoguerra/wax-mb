@@ -8388,3 +8388,81 @@ test "a construction takes its type from what the context expects" {
     content="any named=false | Cannot infer the array type here; add an explicit type, as in '[T| ..]'.",
   )
 }
+
+///|
+/// A method call is one syntax covering two different things, and the RECEIVER
+/// decides which. `x.min(y)` is a wasm instruction with the receiver as its
+/// first operand; `s.min(a, b)` is an indirect call through a struct field that
+/// happens to be called `min`. Not even the argument count separates them.
+test "a method call reads as an instruction or a call by its receiver" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn call(meth : String, recv_is_ref : Bool, nargs : Int) -> String {
+    let ctx = module_ctx()
+    let _ = @typing.add_type(ctx.type_context, ctx.diagnostics, [
+      {
+        desc: (
+          id("s"),
+          {
+            typ: Struct([]),
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: None,
+          },
+        ),
+        info: loc_at(0, 1),
+      },
+    ])
+    let recv_type : @wasm_types.ValType[@ast.Ident] = if recv_is_ref {
+      Ref({ nullable: true, typ: Type(id("s")) })
+    } else {
+      I32
+    }
+    @typing.declare_local(ctx, id("x"), recv_type)
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let args = Array::makei(nargs, k => instr(Int("1"), 40 + k))
+    let c = checker.expression(
+      instr(
+        Call(
+          instr(StructGet(instr(Get(id("x")), 20), id(meth, at=30)), 20),
+          args,
+        ),
+        10,
+      ),
+    )
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // A numeric receiver: `x.rotl(1)` is the instruction, and its result is the
+  // receiver's own type.
+  inspect(call("rotl", false, 1), content="i32 | ")
+  // The wrong arity still yields the method node -- an auto-closed `x.rotl()`
+  // is worth keeping as a call -- with the arity reported and the receiver's
+  // type carried out.
+  inspect(
+    call("rotl", false, 0),
+    content="i32 | This instruction expects 1 operand(s) but 0 was/were provided.",
+  )
+  // A REFERENCE receiver with the same spelling is an indirect call through a
+  // field, so it is the struct that is asked about the name.
+  inspect(
+    call("rotl", true, 1),
+    content="any | There is no field named 'rotl'.",
+  )
+}

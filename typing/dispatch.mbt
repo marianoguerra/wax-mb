@@ -1798,6 +1798,30 @@ pub fn Checker::statement(
       }
     }
 
+    // --- An array bulk method: `a.fill(..)`, `a.copy(..)`, `a.init(..)` ---
+    Call(callee, args) if self.array_bulk_method(callee) is Some(_) => {
+      guard callee.desc is StructGet(recv, meth) else {
+        return self.poisoned(i)
+      }
+      self.array_bulk_call(i, callee, recv, meth, args)
+    }
+
+    // --- Stack switching written as a method on the continuation ---
+    Call(callee, args) if self.cont_method(callee) is Some(_) => {
+      guard callee.desc is StructGet(recv, meth) else {
+        return self.poisoned(i)
+      }
+      self.cont_method_call(i, callee, recv, meth, args, [])
+    }
+
+    // --- A scalar binary intrinsic: `x.min(y)`, `x.rotl(1)` ---
+    Call(callee, args) if self.is_binary_intrinsic(callee) => {
+      guard callee.desc is StructGet(recv, meth) else {
+        return self.poisoned(i)
+      }
+      self.binary_intrinsic(i, callee, recv, meth, args)
+    }
+
     // --- An ordinary call through a function reference ---
     Call(callee, args) => {
       let (callee_, args_, results) = self.call(loc, callee, args)
@@ -2006,9 +2030,20 @@ pub fn Checker::statement(
         !self.is_resume_call(inner) {
         on_clause_context(ctx.diagnostics, loc)
       }
-      // Recover by typing the wrapped expression and carrying its result: the
-      // handlers being misplaced says nothing about what it computes.
-      let inner_ = self.expression(inner)
+      // The handlers belong to the resume, so they are handed to it -- the raw
+      // `resume` forms carry their own, and the METHOD form has none of its own
+      // to carry, which is the whole reason this spelling exists.
+      let inner_ = match inner.desc {
+        Call(callee, args) if self.cont_method(callee) is Some(_) => {
+          guard callee.desc is StructGet(recv, meth) else {
+            return self.poisoned(i)
+          }
+          self.cont_method_call(inner, callee, recv, meth, args, handlers)
+        }
+        // Recover by typing the wrapped expression and carrying its result: the
+        // handlers being misplaced says nothing about what it computes.
+        _ => self.expression(inner)
+      }
       {
         desc: On(inner_, handlers),
         info: annotate(inner_.info.0, loc),

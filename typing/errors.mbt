@@ -1358,3 +1358,53 @@ pub fn number_literal_required(
     @message.text("Only number literals are allowed here."),
   )
 }
+
+///|
+/// A `switch` written without its enabling tag.
+///
+/// Anchored at the METHOD rather than the call expression: a chained
+/// `c.switch().switch()` would otherwise report both at the column the chain
+/// starts in, two identical messages one on top of the other.
+pub fn switch_needs_tag(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A")
+    .sep(@message.code("switch"))
+    .sep(@message.text("names its enabling tag as a labelled immediate, e.g."))
+    .sep(@message.code("c.switch(x, tag: t)").seq(@message.text("."))),
+  )
+}
+
+///|
+/// A `resume_throw` written without the tag it raises.
+pub fn resume_throw_needs_tag(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.code("resume_throw")
+    .sep(@message.text("raises a tag applied to its payload, e.g."))
+    .sep(@message.code("c.resume_throw(exc(x))").seq(@message.text("."))),
+  )
+}
+
+///|
+/// An `array.copy` between arrays whose elements do not line up.
+pub fn incompatible_array_elements(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "The source and destination array element types are incompatible.",
+    ),
+  )
+}

@@ -203,6 +203,8 @@ pub fn immediate_supertype(@ast.SubType) -> @wasm_types.HeapType[@ast.Ident]
 
 pub fn immutable(@diagnostic.Context, @basic.Location, String) -> Unit
 
+pub fn incompatible_array_elements(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn incompatible_element_type(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn index_structs_by_fields(@typing_env.ModuleContext) -> Unit
@@ -244,6 +246,8 @@ pub fn invalid_management_call(@diagnostic.Context, @basic.Location, String) -> 
 pub fn invalid_method_receiver(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn invalid_string_element_type(@diagnostic.Context, @basic.Location) -> Unit
+
+pub fn is_binary_method(String) -> Bool
 
 pub fn is_bottom_heaptype(@wasm_types.HeapType[@ast.Ident]) -> Bool
 
@@ -373,6 +377,10 @@ pub fn peel_while(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @ba
 
 pub fn positional_memory_immediate(@diagnostic.Context, @basic.Location, String) -> Unit
 
+pub fn receiver_is_array_ref(@typing_env.ModuleContext, @ast.Instr[@basic.Location]) -> Bool
+
+pub fn receiver_is_ref(@typing_env.ModuleContext, @ast.Instr[@basic.Location]) -> Bool
+
 pub fn redundant_cast(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
 
 pub fn reftype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
@@ -409,6 +417,8 @@ pub fn resolve_type_ref(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident
 
 pub fn resolve_variable(@typing_env.ModuleContext, @ast.Ident) -> ResolvedVar
 
+pub fn resume_throw_needs_tag(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn segment_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
 pub fn select_type_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
@@ -434,6 +444,8 @@ pub fn string_not_unicode(@diagnostic.Context, @basic.Location) -> Unit
 pub let string_type_name : String
 
 pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], location? : @basic.Location?, pin? : Bool) -> Bool
+
+pub fn switch_needs_tag(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn table_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
