@@ -5475,3 +5475,91 @@ test "a descriptor lookup follows the clause and keeps exactness" {
   // Exact in, exact out.
   inspect(described(true), content="&!desc")
 }
+
+///|
+/// A catch is a BRANCH: when the exception fires, control jumps to the named
+/// label carrying the tag's payload. So the payload has to fit that label's
+/// branch target, exactly as a `br`'s value does. The four clause forms differ
+/// only in what they deliver.
+test "a catch delivers its payload to the label it names" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // A handler block taking what the catch delivers, wrapping a try_table.
+  fn run(
+    handler_results : Array[@wasm_types.ValType[@ast.Ident]],
+    catches : Array[@ast.Catch],
+  ) -> String {
+    let ctx = module_ctx()
+    ctx.tags.add(ctx.diagnostics, "oops", loc_at(0, 4), {
+      params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+      results: [],
+    })
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement(
+      instr(
+        Block(
+          label=Some(id("h")),
+          typ={ params: [], results: handler_results },
+          block={
+            desc: [
+              instr(
+                TryTable(
+                  label=None,
+                  typ={ params: [], results: [] },
+                  catches~,
+                  block={ desc: [], info: loc_at(60, 61) },
+                ),
+                30,
+              ),
+              // The handler block still has to produce its own result.
+              instr(Unreachable, 70),
+            ],
+            info: loc_at(20, 21),
+          },
+        ),
+        10,
+      ),
+    )
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // A plain catch delivers the tag's parameters: one i32.
+  inspect(run([I32], [Catch(id("oops"), id("h"))]), content="")
+  // A `_ref` catch appends the exception itself, so the handler can rethrow.
+  inspect(
+    run([I32, Ref({ nullable: false, typ: Exn })], [
+      CatchRef(id("oops"), id("h")),
+    ]),
+    content="",
+  )
+  // A catch-all delivers nothing.
+  inspect(run([], [CatchAll(id("h"))]), content="")
+  // And a catch-all `_ref` delivers only the exception.
+  inspect(
+    run([Ref({ nullable: false, typ: Exn })], [CatchAllRef(id("h"))]),
+    content="",
+  )
+  // Delivering one value to a handler that wants none is an arity complaint.
+  inspect(
+    run([], [Catch(id("oops"), id("h"))]),
+    content="This instruction provides 1 value(s) but 0 was/were expected.",
+  )
+  // Delivering an i32 where the handler wants an f64 is a type complaint.
+  inspect(
+    run([F64], [Catch(id("oops"), id("h"))]),
+    content="Catching this exception provides a value of type 'i32' but the handler's branch target expects 'f64'.",
+  )
+}

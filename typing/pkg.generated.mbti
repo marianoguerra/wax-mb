@@ -43,6 +43,8 @@ pub fn cannot_infer_struct_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn cast_always_fails(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
 
+pub fn catch_target_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
+
 pub fn check_elem_subtype(@typing_env.ModuleContext, @basic.Location, @wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> Unit
 
 pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
@@ -64,6 +66,8 @@ pub fn check_start_signature(@typing_env.ModuleContext, @ast.Ident, Array[@ast.A
 pub fn check_subtype(@type_store.SubtypingInfo, @diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], pin? : Bool, expected_at? : @basic.Location?) -> Unit
 
 pub fn check_subtypes(@type_store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], pin? : Bool) -> Unit
+
+pub fn check_trytable_catches(@typing_env.ModuleContext, Array[@ast.Catch]) -> Unit
 
 pub fn check_unique_param_names(@diagnostic.Context, Array[@basic.Annotated[(@ast.Ident?, @wasm_types.ValType[@ast.Ident]), @basic.Location]]) -> Unit
 

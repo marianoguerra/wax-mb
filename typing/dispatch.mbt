@@ -1193,6 +1193,35 @@ pub fn Checker::statement(
       }
     }
 
+    // --- A raw try_table ---
+    TryTable(label~, typ~, catches~, block~) => {
+      guard self.signature_of(typ) is Some((params, results)) else {
+        return self.poisoned(i)
+      }
+      self.ops.pop_args(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        Input,
+        loc,
+        params,
+      )
+      let body = self.body(loc, label, params, results, results, block.desc)
+      // Checked INSIDE the frame's lifetime is wrong: a catch branches to a
+      // label in the ENCLOSING scope, not to the try's own. Checking after the
+      // body has closed its frame is what makes that true.
+      check_trytable_catches(ctx, catches)
+      self.ops.push_results(loc, results)
+      {
+        desc: TryTable(label~, typ~, catches~, block={
+          desc: body,
+          info: block.info,
+        }),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))

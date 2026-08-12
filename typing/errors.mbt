@@ -1090,3 +1090,22 @@ pub fn type_without_descriptor(
     ),
   )
 }
+
+///|
+/// A catch clause whose payload does not fit the handler's branch target.
+pub fn catch_target_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  provided : @infer.Cell[@infer.InferredType],
+  expected : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Catching this exception provides a value of type")
+    .sep(@message.type_(@infer.to_string(provided)))
+    .sep(@message.text("but the handler's branch target expects"))
+    .sep(@message.type_(@infer.to_string(expected)))
+    .seq(@message.text(".")),
+  )
+}

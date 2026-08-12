@@ -242,3 +242,81 @@ pub fn missing_else_ok(
   }
   true
 }
+
+///|
+/// Check a `try_table`'s catch clauses against the labels they branch to.
+///
+/// A catch is a BRANCH: when the exception fires, control jumps to the named
+/// label carrying the tag's payload. So the payload has to fit that label's
+/// branch target, exactly as a `br`'s value does -- the difference is only
+/// where the value comes from.
+///
+/// The four clause forms differ in what they deliver: a plain catch delivers
+/// the tag's parameters, a `_ref` catch appends the `&exn` itself so the
+/// handler can rethrow, a catch-all delivers nothing, and a catch-all `_ref`
+/// delivers only the exception.
+pub fn check_trytable_catches(
+  ctx : @typing_env.ModuleContext,
+  catches : Array[@ast.Catch],
+) -> Unit {
+  fn exn_ref() -> @infer.Cell[@infer.InferredType]? {
+    internalize(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: false, typ: Exn }),
+    )
+  }
+
+  fn tag_params(tag : @ast.Ident) -> Array[@infer.Cell[@infer.InferredType]]? {
+    guard find(ctx.tags, ctx.diagnostics, tag) is Some(ft) else { return None }
+    // A tag describes what is thrown; a throw does not return.
+    if !ft.results.is_empty() {
+      tag_with_results(ctx.diagnostics, tag.loc)
+    }
+    let out : Array[@infer.Cell[@infer.InferredType]] = []
+    for p in ft.params {
+      guard internalize(ctx.type_context, ctx.diagnostics, p.desc.1) is Some(c) else {
+        return None
+      }
+      out.push(c)
+    }
+    Some(out)
+  }
+
+  fn check(
+    types : Array[@infer.Cell[@infer.InferredType]],
+    label : @ast.Ident,
+  ) -> Unit {
+    let params = branch_target(ctx, label)
+    if types.length() != params.length() {
+      value_count_mismatch(
+        ctx.diagnostics,
+        label.loc,
+        expected=params.length(),
+        provided=types.length(),
+      )
+      return
+    }
+    for k, provided in types {
+      if !subtype(ctx.type_context.subtyping_info(), provided, params[k]) {
+        catch_target_mismatch(ctx.diagnostics, label.loc, provided, params[k])
+      }
+    }
+  }
+
+  for c in catches {
+    match c {
+      Catch(tag, label) => if tag_params(tag) is Some(ps) { check(ps, label) }
+      CatchRef(tag, label) =>
+        // The exception object rides along after the payload, so the handler
+        // can rethrow what it caught.
+        if tag_params(tag) is Some(ps) && exn_ref() is Some(e) {
+          let all = ps.copy()
+          all.push(e)
+          check(all, label)
+        }
+      CatchAll(label) => check([], label)
+      CatchAllRef(label) => if exn_ref() is Some(e) { check([e], label) }
+    }
+  }
+}
