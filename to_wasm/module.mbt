@@ -207,7 +207,7 @@ fn Lowering::field(
         init: inits,
       })
     }
-    Data(mode~, init~, ..) => {
+    Data(name~, mode~, init~, ..) => {
       let mode_ = match mode {
         Passive => @wasm_bin.DataMode::Passive
         Active(mem, offset) => {
@@ -215,6 +215,13 @@ fn Lowering::field(
           self.instr(out, offset)
           Active(self.memory_index(mem, loc), out)
         }
+      }
+      // A data segment's name belongs to the index it is about to take, which
+      // is the length before the push -- the same reasoning the element
+      // segments use, and the reason both are recorded here rather than in the
+      // declaration pass: a segment has no declaration of its own.
+      if name is Some(n) {
+        note_name(m.names.data, m.datas.length(), n.name)
       }
       m.datas.push({ mode: mode_, init: data_bytes(init, loc) })
     }
