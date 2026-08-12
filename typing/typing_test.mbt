@@ -6683,3 +6683,165 @@ test "a narrowing store accepts a value wider than it writes" {
     content="This expression has type 'f64' but is expected to have type 'f32'.",
   )
 }
+
+///|
+/// The five management names serve both memories and tables, so only the
+/// RECEIVER tells them apart -- and each has its own operand shape, with the
+/// table's element type standing where a memory has an i32 byte.
+test "management calls take their receiver's shape" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn run(
+    recv : String,
+    meth : String,
+    args : Array[@ast.Instr[@basic.Location]],
+  ) -> String {
+    let ctx = module_ctx()
+    ctx.memories.add(ctx.diagnostics, "mem", loc_at(0, 3), (0, I32))
+    ctx.memories.add(ctx.diagnostics, "wide", loc_at(4, 8), (1, I64))
+    ctx.tables.add(
+      ctx.diagnostics,
+      "tab",
+      loc_at(10, 13),
+      (I32, { nullable: true, typ: Func }),
+    )
+    ctx.datas.add(ctx.diagnostics, "seg", loc_at(14, 17), ())
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(
+      instr(
+        Call(
+          instr(
+            StructGet(instr(Get(id(recv)), 20), {
+              name: meth,
+              loc: loc_at(24, 30),
+            }),
+            20,
+          ),
+          args,
+        ),
+        10,
+      ),
+    )
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  // A memory's size and grow answer in its ADDRESS type.
+  inspect(run("mem", "size", []), content="i32 |  | 0")
+  inspect(run("wide", "size", []), content="i64 |  | 0")
+  inspect(run("mem", "grow", [instr(Int("1"), 30)]), content="i32 |  | 0")
+  // A table's too, and its size counts elements rather than pages -- same
+  // spelling, different operation, told apart by the receiver alone.
+  inspect(run("tab", "size", []), content="i32 |  | 0")
+  // `mem.fill` writes a BYTE, so its value operand is an i32.
+  inspect(
+    run("mem", "fill", [
+      instr(Int("0"), 30),
+      instr(Int("0"), 34),
+      instr(Int("4"), 38),
+    ]),
+    content=" |  | 0",
+  )
+  // `tab.fill` writes an ELEMENT, so a byte will not do.
+  inspect(
+    run("tab", "fill", [
+      instr(Int("0"), 30),
+      instr(Int("0"), 34),
+      instr(Int("4"), 38),
+    ]),
+    content=" | This expression has type 'number' but is expected to have type '&?func'. | 0",
+  )
+  inspect(
+    run("tab", "fill", [
+      instr(Int("0"), 30),
+      instr(Null, 34),
+      instr(Int("4"), 38),
+    ]),
+    content=" |  | 0",
+  )
+  // A shape that matches nothing recovers with a VALUE, not with nothing: some
+  // of these produce one, and claiming none would cascade where the call is
+  // used as an expression.
+  inspect(
+    run("mem", "grow", []),
+    content="any | Invalid arguments in call to 'grow'. | 0",
+  )
+}
+
+///|
+/// A cross-memory copy names the OTHER memory as a static operand. The length
+/// indexes both sides, so it is typed at the NARROWER of the two address types
+/// -- typing it at the wider one would accept a length the narrow side cannot
+/// address.
+test "a cross-memory copy takes its length at the narrower width" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn copy(
+    dst : String,
+    src : String,
+    len : @ast.InstrDesc[@basic.Location],
+  ) -> String {
+    let ctx = module_ctx()
+    ctx.memories.add(ctx.diagnostics, "narrow", loc_at(0, 6), (0, I32))
+    ctx.memories.add(ctx.diagnostics, "wide", loc_at(8, 12), (1, I64))
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement(
+      instr(
+        Call(
+          instr(
+            StructGet(instr(Get(id(dst)), 20), {
+              name: "copy",
+              loc: loc_at(24, 28),
+            }),
+            20,
+          ),
+          [
+            instr(Get(id(src)), 30),
+            instr(Int("0"), 34),
+            instr(Int("0"), 38),
+            instr(len, 42),
+          ],
+        ),
+        10,
+      ),
+    )
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // Both 64-bit: the length may be an i64.
+  inspect(copy("wide", "wide", Int("4294967296")), content="")
+  // One side 32-bit: the length must fit an i32, so a larger literal does not.
+  inspect(
+    copy("wide", "narrow", Int("4294967296")),
+    content="This expression has type 'large number' but is expected to have type 'i32'.",
+  )
+}

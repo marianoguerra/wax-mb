@@ -1624,6 +1624,27 @@ pub fn Checker::statement(
     }
 
     // --- A memory access written as a method call ---
+    Call(callee, args) if self.mgmt_kind(callee) is Some(_) => {
+      guard callee.desc is StructGet(recv, meth) else {
+        return self.poisoned(i)
+      }
+      guard recv.desc is Get(name) else { return self.poisoned(i) }
+      let on_memory = self.mgmt_kind(callee) == Some(true)
+      let (checked_args, results) = if on_memory {
+        self.mem_mgmt(loc, name, meth, args)
+      } else {
+        self.table_mgmt(loc, name, meth, args)
+      }
+      {
+        desc: Call(
+          callee.map_info(_ => annotate([], callee.info)),
+          checked_args,
+        ),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
     Call(callee, args) if self.is_mem_access(callee) => {
       guard callee.desc is StructGet(recv, meth) else {
         return self.poisoned(i)
@@ -2803,4 +2824,251 @@ fn Checker::is_mem_access(
   guard callee.desc is StructGet(recv, meth) else { return false }
   guard recv.desc is Get(memname) else { return false }
   classify_method_call(self.ctx, memname, meth.name) is MemAccess
+}
+
+///|
+/// Whether a call manages a memory (`Some(true)`) or a table (`Some(false)`).
+///
+/// The same five method names serve both, so only the RECEIVER tells them
+/// apart -- `size` on a memory counts pages, `size` on a table counts elements.
+fn Checker::mgmt_kind(
+  self : Checker,
+  callee : @ast.Instr[@basic.Location],
+) -> Bool? {
+  guard callee.desc is StructGet(recv, meth) else { return None }
+  guard recv.desc is Get(name) else { return None }
+  match classify_method_call(self.ctx, name, meth.name) {
+    MemManage => Some(true)
+    TableManage => Some(false)
+    _ => None
+  }
+}
+
+///|
+/// The cell for an address type: what indexes a memory or table of that width.
+fn address_cell(
+  at : @wasm_types.AddressType,
+) -> @infer.Cell[@infer.InferredType] {
+  @infer.valtype_cell(
+    match at {
+      I32 => @infer.i32_valtype
+      I64 => @infer.i64_valtype
+    },
+  )
+}
+
+///|
+/// The NARROWER of two address types.
+///
+/// A cross-memory copy's length indexes both sides, so it has to fit whichever
+/// is smaller -- typing it at the wider one would accept a length the narrow
+/// side cannot address.
+fn narrower(
+  a : @wasm_types.AddressType,
+  b : @wasm_types.AddressType,
+) -> @wasm_types.AddressType {
+  match (a, b) {
+    (I64, I64) => I64
+    _ => I32
+  }
+}
+
+///|
+/// Type a memory management call: `mem.size()`, `mem.grow(n)`, `mem.fill(..)`,
+/// `mem.copy(..)`, `mem.init(seg, ..)`.
+fn Checker::mem_mgmt(
+  self : Checker,
+  location : @basic.Location,
+  name : @ast.Ident,
+  meth : @ast.Ident,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> (
+  Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  Array[@infer.Cell[@infer.InferredType]],
+) {
+  let ctx = self.ctx
+  let at = match ctx.memories.find_no_mark(name.name) {
+    Some((_, a)) => a
+    None => @wasm_types.AddressType::I32
+  }
+  // A leading name argument is the OTHER memory of a copy, or the segment of an
+  // init: it names a static operand rather than a value, so it is not typed as
+  // an expression.
+  let leading = if args.length() == 4 && args[0].desc is Get(n) {
+    Some(n)
+  } else {
+    None
+  }
+  let rest = if leading is Some(_) { args[1:].to_owned() } else { args }
+  let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  if leading is Some(n) {
+    checked.push(args[0].map_info(_ => annotate([], args[0].info)))
+    if meth.name == "init" {
+      let _ = find(ctx.datas, ctx.diagnostics, n)
+    }
+  }
+  let typed = rest.map(a => self.statement(a))
+  for c in typed {
+    checked.push(c)
+  }
+  fn want(k : Int, cell : @infer.Cell[@infer.InferredType]) -> Unit {
+    if k < typed.length() {
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        rest[k].info,
+        expression_type(ctx, typed[k].info),
+        cell,
+      )
+    }
+  }
+
+  let i32c = () => @infer.valtype_cell(@infer.i32_valtype)
+  match (meth.name, leading, typed.length()) {
+    ("size", None, 0) => (checked, [address_cell(at)])
+    ("grow", None, 1) => {
+      want(0, address_cell(at))
+      (checked, [address_cell(at)])
+    }
+    ("fill", None, 3) => {
+      want(0, address_cell(at))
+      want(1, i32c())
+      want(2, address_cell(at))
+      (checked, [])
+    }
+    ("copy", None, 3) => {
+      want(0, address_cell(at))
+      want(1, address_cell(at))
+      want(2, address_cell(at))
+      (checked, [])
+    }
+    ("copy", Some(src), 3) => {
+      let src_at = match ctx.memories.find_no_mark(src.name) {
+        Some((_, a)) => a
+        None => at
+      }
+      want(0, address_cell(at))
+      want(1, address_cell(src_at))
+      want(2, address_cell(narrower(at, src_at)))
+      (checked, [])
+    }
+    ("init", Some(_), 3) => {
+      want(0, address_cell(at))
+      want(1, i32c())
+      want(2, i32c())
+      (checked, [])
+    }
+    _ => {
+      invalid_management_call(ctx.diagnostics, location, meth.name)
+      // Recovered with a VALUE rather than nothing: `size` and `grow` produce
+      // one, and claiming none would cascade into a spurious value-count
+      // complaint wherever the call was used as an expression.
+      (checked, [@infer.Cell::make(@infer.InferredType::Error)])
+    }
+  }
+}
+
+///|
+/// Type a table management call. The same five names as a memory's, with the
+/// element type standing where a memory has an i32 byte.
+fn Checker::table_mgmt(
+  self : Checker,
+  location : @basic.Location,
+  name : @ast.Ident,
+  meth : @ast.Ident,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> (
+  Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  Array[@infer.Cell[@infer.InferredType]],
+) {
+  let ctx = self.ctx
+  let (at, rt) = match ctx.tables.find_no_mark(name.name) {
+    Some(t) => t
+    None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
+  }
+  let elt = internalize(ctx.type_context, ctx.diagnostics, Ref(rt))
+  let leading = if args.length() == 4 && args[0].desc is Get(n) {
+    Some(n)
+  } else {
+    None
+  }
+  let rest = if leading is Some(_) { args[1:].to_owned() } else { args }
+  let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  if leading is Some(n) {
+    checked.push(args[0].map_info(_ => annotate([], args[0].info)))
+    match meth.name {
+      "init" =>
+        if find(ctx.elems, ctx.diagnostics, n) is Some(src) {
+          check_elem_subtype(ctx, location, src, rt)
+        }
+      "copy" =>
+        if ctx.tables.find_no_mark(n.name) is Some((_, src_rt)) {
+          check_elem_subtype(ctx, location, src_rt, rt)
+        }
+      _ => ()
+    }
+  }
+  let typed = rest.map(a => self.statement(a))
+  for c in typed {
+    checked.push(c)
+  }
+  fn want(k : Int, cell : @infer.Cell[@infer.InferredType]) -> Unit {
+    if k < typed.length() {
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        rest[k].info,
+        expression_type(ctx, typed[k].info),
+        cell,
+      )
+    }
+  }
+
+  fn want_elt(k : Int) -> Unit {
+    if elt is Some(e) {
+      want(k, e)
+    }
+  }
+
+  let i32c = () => @infer.valtype_cell(@infer.i32_valtype)
+  match (meth.name, leading, typed.length()) {
+    ("size", None, 0) => (checked, [address_cell(at)])
+    ("grow", None, 2) => {
+      want_elt(0)
+      want(1, address_cell(at))
+      (checked, [address_cell(at)])
+    }
+    ("fill", None, 3) => {
+      want(0, address_cell(at))
+      want_elt(1)
+      want(2, address_cell(at))
+      (checked, [])
+    }
+    ("copy", None, 3) => {
+      want(0, address_cell(at))
+      want(1, address_cell(at))
+      want(2, address_cell(at))
+      (checked, [])
+    }
+    ("copy", Some(src), 3) => {
+      let src_at = match ctx.tables.find_no_mark(src.name) {
+        Some((a, _)) => a
+        None => at
+      }
+      want(0, address_cell(at))
+      want(1, address_cell(src_at))
+      want(2, address_cell(narrower(at, src_at)))
+      (checked, [])
+    }
+    ("init", Some(_), 3) => {
+      want(0, address_cell(at))
+      want(1, i32c())
+      want(2, i32c())
+      (checked, [])
+    }
+    _ => {
+      invalid_management_call(ctx.diagnostics, location, meth.name)
+      (checked, [@infer.Cell::make(@infer.InferredType::Error)])
+    }
+  }
 }

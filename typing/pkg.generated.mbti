@@ -221,6 +221,8 @@ pub fn invalid_cast_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn invalid_lane_index(@diagnostic.Context, @basic.Location, Int) -> Unit
 
+pub fn invalid_management_call(@diagnostic.Context, @basic.Location, String) -> Unit
+
 pub fn invalid_string_element_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn is_bottom_heaptype(@wasm_types.HeapType[@ast.Ident]) -> Bool

@@ -1223,3 +1223,19 @@ pub fn positional_memory_immediate(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// A management call whose method and argument shape match nothing.
+pub fn invalid_management_call(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  meth : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Invalid arguments in call to")
+    .sep(@message.code(meth))
+    .seq(@message.text(".")),
+  )
+}
