@@ -317,6 +317,56 @@ fn Lowering::hinted(
           }
         }
       }
+      // The ARRAY bulk methods wear the same three names as the memory and
+      // table ones. What tells them apart is that the receiver is a VALUE of
+      // array type rather than the name of a space, so the type index it
+      // carries is the immediate.
+      if callee.desc is StructGet(recv, meth) {
+        if node_type_index(recv) is Some(at) {
+          match meth.name {
+            "fill" if args.length() == 3 => {
+              self.instr(out, recv)
+              for a in args {
+                self.instr(out, a)
+              }
+              out.push(ArrayFill(at))
+              return
+            }
+            // `dst.copy(i, src, j, n)` names TWO array types: the destination
+            // is the receiver and the source is the second argument, and both
+            // are immediates. The source array is still emitted as an operand.
+            "copy" if args.length() == 4 => {
+              guard node_type_index(args[1]) is Some(st) else {
+                raise Unresolved("source array type", loc)
+              }
+              self.instr(out, recv)
+              for a in args {
+                self.instr(out, a)
+              }
+              out.push(ArrayCopy(at, st))
+              return
+            }
+            // `arr.init(seg, dst, src, n)`: the segment name is an immediate,
+            // and which of the two instructions this is depends on whether the
+            // name is an element segment or a data one.
+            "init" if args.length() == 4 && args[0].desc is Get(seg) => {
+              self.instr(out, recv)
+              for a in args[1:] {
+                self.instr(out, a)
+              }
+              if self.indices.elems.get(seg.name) is Some(e) {
+                out.push(ArrayInitElem(at, e))
+              } else if self.indices.datas.get(seg.name) is Some(d) {
+                out.push(ArrayInitData(at, d))
+              } else {
+                raise Unresolved("array init segment", loc)
+              }
+              return
+            }
+            _ => ()
+          }
+        }
+      }
       // Memory and table management: the same five names on both, told apart
       // by which space the receiver is in -- `size` on a memory counts pages
       // and on a table counts elements.
