@@ -951,6 +951,12 @@ pub fn Checker::statement(
         // it is ever run.
         Value(v) => {
           let want = internalize(ctx.type_context, ctx.diagnostics, v)
+          // Settle a still-flexible operand at the type the cast names, BEFORE
+          // the result type is decided: a literal has no width of its own, and
+          // the cast is what says which one it takes.
+          if want is Some(w) && w.get() is Valtype(target) {
+            ground_value_cast(natural, target.internal)
+          }
           if want is Some(w) {
             lint_ref_cast(
               ctx,
@@ -984,7 +990,8 @@ pub fn Checker::statement(
           }
         // `e as i32_s` and friends: a numeric conversion, whose result is the
         // named numeric type and nothing else.
-        Signed(typ~, ..) =>
+        Signed(typ~, ..) => {
+          ground_signed_cast(natural, typ)
           @infer.valtype_cell(
             match typ {
               I32 => @infer.i32_valtype
@@ -993,6 +1000,7 @@ pub fn Checker::statement(
               F64 => @infer.f64_valtype
             },
           )
+        }
       }
       {
         desc: Cast(operand_, target),

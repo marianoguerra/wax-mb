@@ -212,3 +212,72 @@ pub fn conditional_cast_types(
     }
   }
 }
+
+///|
+/// Ground a cast's operand at the type the cast names, when it is still
+/// flexible.
+///
+/// `1.5 as f32` is an `f32.const`, not an `f64.const` and a demote. The
+/// difference is that a literal is a VALUE, not a computation: there is nothing
+/// to convert, only a width to settle on, and the cast is the thing that says
+/// which. Leaving it flexible makes the literal default to its own width and
+/// turns the cast into a real conversion -- which rounds twice, and rounding a
+/// decimal to f64 and then demoting is not always the f32 rounding of that
+/// decimal.
+///
+/// Only the still-abstract types move. A value already committed to a width is
+/// pinned, and converting it is exactly what the cast is then for.
+pub fn ground_value_cast(
+  operand : @infer.Cell[@infer.InferredType],
+  target : @wasm_types.ValType[@type_store.Id],
+) -> Unit {
+  let ground = match (operand.get(), target) {
+    // An integer literal boxed as an i31 or handed to the extern hierarchy is
+    // an i32: `ref.i31` takes one.
+    (Number | Int, Ref({ typ: I31 | Extern, .. })) => Some(@infer.i32_valtype)
+    (Number | Int, I32) => Some(@infer.i32_valtype)
+    (Number | Int, I64) => Some(@infer.i64_valtype)
+    // A still-flexible literal folds straight to the target float. A value
+    // already committed to the other FAMILY does not: `int` to `float` needs a
+    // signedness to name a `convert`, so it is a signed cast or nothing.
+    (Number | Float, F32) => Some(@infer.f32_valtype)
+    (Number | Float, F64) => Some(@infer.f64_valtype)
+    // A literal too big for i32 is an i64; casting it to i32 wraps.
+    (LargeInt, I32 | I64) => Some(@infer.i64_valtype)
+    (LargeInt, F32) => Some(@infer.f32_valtype)
+    (LargeInt, F64) => Some(@infer.f64_valtype)
+    (LargeInt, Ref({ typ: I31 | Extern, .. })) => Some(@infer.i64_valtype)
+    _ => None
+  }
+  if ground is Some(v) {
+    operand.set(Valtype(v))
+  }
+}
+
+///|
+/// The same for a cast that states a signedness.
+///
+/// Every one of these is a real instruction -- a widen, a truncation, a
+/// conversion -- so what is being settled is the SOURCE the instruction reads,
+/// not the value. `n as f64_s` converts an integer, so a flexible `n` is the
+/// i32 the `f64.convert_i32_s` takes; `n as i32_s` truncates a float, so a
+/// flexible `n` is the f64 that `i32.trunc_f64_s` reads. The same literal
+/// grounds differently under the two, and the cast is the only thing that says
+/// which.
+pub fn ground_signed_cast(
+  operand : @infer.Cell[@infer.InferredType],
+  target : @ast.NumType,
+) -> Unit {
+  let ground = match (operand.get(), target) {
+    (Number | Int, I64 | F32 | F64) => Some(@infer.i32_valtype)
+    (LargeInt, F32 | F64) => Some(@infer.i64_valtype)
+    // The only numeric-to-integer signed cast is a float truncation: there is
+    // no signed integer-to-integer conversion, so the source is a float.
+    (LargeInt, I32 | I64) => Some(@infer.f64_valtype)
+    (Number, I32) => Some(@infer.f64_valtype)
+    _ => None
+  }
+  if ground is Some(v) {
+    operand.set(Valtype(v))
+  }
+}

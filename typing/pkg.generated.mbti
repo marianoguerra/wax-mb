@@ -224,6 +224,10 @@ pub fn get_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
 pub fn get_type_definition(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident) -> @ast.SubType?
 
+pub fn ground_signed_cast(@infer.Cell[@infer.InferredType], @ast.NumType) -> Unit
+
+pub fn ground_value_cast(@infer.Cell[@infer.InferredType], @wasm_types.ValType[@type_store.Id]) -> Unit
+
 pub fn has_expectation(@infer.Cell[@infer.InferredType]) -> Bool
 
 pub fn heap_lub(@typing_env.TypeContext, @wasm_types.HeapType[@ast.Ident], @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@ast.Ident]?
