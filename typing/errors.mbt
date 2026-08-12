@@ -1027,3 +1027,32 @@ pub fn expected_ref(
 ) -> Unit {
   ctx.report(location, Error, @message.text("Expected a reference type."))
 }
+
+///|
+/// A string building an `i16` array that is not valid Unicode.
+pub fn string_not_unicode(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "A string building an [i16] array must be a valid Unicode string.",
+    ),
+  )
+}
+
+///|
+/// A string literal building an array of something other than bytes or
+/// 16-bit code units.
+pub fn invalid_string_element_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A string literal can only build an [i8] or [i16] array."),
+  )
+}

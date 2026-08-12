@@ -1044,6 +1044,51 @@ pub fn Checker::statement(
       }
     }
 
+    // --- A string literal, which builds a byte array ---
+    Str(name, bytes) => {
+      // Its natural type is the canonical `<string>` array. It adopts another
+      // only when one is named explicitly.
+      let typ : @ast.Ident = match name {
+        Some(n) => n
+        None => { name: string_type_name, loc }
+      }
+      // A string that resolves to the canonical array is a use of every source
+      // type that deduplicated onto it, even though it names none of them --
+      // which is why this is recorded by INDEX rather than by name.
+      if name is None {
+        if resolve_type_name(ctx.type_context, ctx.diagnostics, typ)
+          is Some(canonical) {
+          let entry = (ctx.origin.val, canonical)
+          if !ctx.canonical_type_references.contains(entry) {
+            ctx.canonical_type_references.push(entry)
+          }
+        }
+      }
+      if lookup_array_type(ctx.type_context, ctx.diagnostics, typ)
+        is Some(field) {
+        match field.typ {
+          Packed(I8) => ()
+          // An `i16` array holds code units, so the bytes have to decode.
+          Packed(I16) =>
+            if !is_valid_utf8(bytes) {
+              string_not_unicode(ctx.diagnostics, loc)
+            }
+          Value(_) => invalid_string_element_type(ctx.diagnostics, loc)
+        }
+      }
+      let ty = match construction_result(ctx, typ) {
+        Some(c) => c
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: Str(name, bytes),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))

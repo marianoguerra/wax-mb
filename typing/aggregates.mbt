@@ -186,3 +186,59 @@ pub fn construction_result(
     inline=inline_comptype(ctx, name),
   )
 }
+
+///|
+/// Whether a byte string decodes as UTF-8.
+///
+/// Needed because an `i16` array holds code UNITS rather than bytes, so what
+/// goes into it has to be text and not an arbitrary blob.
+pub fn is_valid_utf8(b : Bytes) -> Bool {
+  let n = b.length()
+  let mut i = 0
+  while i < n {
+    let c = b[i].to_int()
+    let extra = if c < 0x80 {
+      0
+    } else if c >= 0xC2 && c <= 0xDF {
+      1
+    } else if c >= 0xE0 && c <= 0xEF {
+      2
+    } else if c >= 0xF0 && c <= 0xF4 {
+      3
+    } else {
+      return false
+    }
+    if i + extra >= n {
+      return false
+    }
+    for k in 1..<=extra {
+      let cc = b[i + k].to_int()
+      if cc < 0x80 || cc > 0xBF {
+        return false
+      }
+    }
+    // The ranges above admit a few sequences the standard excludes -- an
+    // overlong three-byte form, a surrogate, a code point past U+10FFFF -- so
+    // the first continuation byte is narrowed per lead byte.
+    if extra == 2 {
+      let cc = b[i + 1].to_int()
+      if c == 0xE0 && cc < 0xA0 {
+        return false
+      }
+      if c == 0xED && cc > 0x9F {
+        return false
+      }
+    }
+    if extra == 3 {
+      let cc = b[i + 1].to_int()
+      if c == 0xF0 && cc < 0x90 {
+        return false
+      }
+      if c == 0xF4 && cc > 0x8F {
+        return false
+      }
+    }
+    i = i + extra + 1
+  }
+  true
+}

@@ -321,6 +321,11 @@ pub fn[Info] declare_fields(
       let _ = add_type(ctx.type_context, ctx.diagnostics, group)
     }
   })
+  // The canonical byte array a string literal builds. Registered AFTER the
+  // source types, so a user type with the same shape is what it dedups ONTO
+  // rather than the other way round -- which is how a string literal comes to
+  // count as a use of that user type.
+  register_string_type(ctx)
   index_structs_by_fields(ctx)
   let state = { memory_index: 0 }
   walk_fields(ctx, fields, field => {
@@ -420,4 +425,33 @@ pub fn index_structs_by_fields(ctx : @typing_env.ModuleContext) -> Unit {
       Some(None) => ()
     }
   }
+}
+
+///|
+/// The type name a string literal builds by default: a mutable byte array.
+///
+/// Unwritable, so it cannot collide with a source name; canonical, so a user
+/// type declared as `array(mut i8)` interns to the same index and a string
+/// literal is a genuine use of it.
+pub let string_type_name : String = "<string>"
+
+///|
+/// Register the canonical `mut i8` array that a bare string literal builds.
+pub fn register_string_type(ctx : @typing_env.ModuleContext) -> Unit {
+  let name : @ast.Ident = { name: string_type_name, loc: @basic.dummy_loc }
+  let _ = add_type(ctx.type_context, ctx.diagnostics, [
+    {
+      desc: (
+        name,
+        {
+          typ: Array({ mut_: true, typ: Packed(I8) }),
+          supertype: None,
+          final_: true,
+          descriptor: None,
+          describes: None,
+        },
+      ),
+      info: @basic.dummy_loc,
+    },
+  ])
 }

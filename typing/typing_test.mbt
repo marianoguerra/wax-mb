@@ -5208,3 +5208,119 @@ test "an inline function cast target mints a type" {
   )
   inspect(checker.gaps().length(), content="0")
 }
+
+///|
+/// A string literal builds a byte array. Its natural type is the canonical
+/// `<string>` array -- and because that is CANONICAL, a user type declared with
+/// the same shape interns to the same index, so a bare string is a genuine use
+/// of it even though it names nothing.
+test "a string builds the canonical byte array" {
+  let ctx = module_ctx()
+  let module_ : @ast.Module[@basic.Location] = [
+    {
+      desc: Type([
+        {
+          desc: (
+            id("bytes"),
+            {
+              // The same shape as `<string>`: mutable i8.
+              typ: Array({ mut_: true, typ: Packed(I8) }),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(0, 5),
+        },
+      ]),
+      info: loc_at(0, 5),
+    },
+  ]
+  @typing.declare_fields(ctx, module_)
+  // Both names reach the same interned type.
+  inspect(
+    @typing.resolve_type_name(ctx.type_context, ctx.diagnostics, id("bytes")) ==
+    @typing.resolve_type_name(ctx.type_context, ctx.diagnostics, {
+      name: "<string>",
+      loc: loc_at(0, 1),
+    }),
+    content="true",
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement({
+    desc: Str(None, b"hi"),
+    info: loc_at(0, 4),
+    hints: { branch: None, freq: None, targets: None },
+    expected: None,
+  })
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(
+    checked.info.0.map(t => @infer.to_string(t)).join(","),
+    // Rendered by its SHAPE: the generated `<string>` name means nothing to a
+    // reader, so `anon_comptype` shows the array instead.
+    content="[mut i8]",
+  )
+  // Recorded as a canonical reference -- a use nobody wrote a name for.
+  inspect(ctx.canonical_type_references.length(), content="1")
+  inspect(checker.gaps().length(), content="0")
+}
+
+///|
+/// A string may name another array type, and then the element type decides what
+/// it may contain: bytes take anything, code units must decode as text, and
+/// anything else is not a string's array at all.
+test "a string's element type decides what it may hold" {
+  fn build(
+    elem : @wasm_types.StorageType[@ast.Ident],
+    bytes : Bytes,
+  ) -> String {
+    let ctx = module_ctx()
+    let module_ : @ast.Module[@basic.Location] = [
+      {
+        desc: Type([
+          {
+            desc: (
+              id("chars"),
+              {
+                typ: Array({ mut_: true, typ: elem }),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(0, 5),
+          },
+        ]),
+        info: loc_at(0, 5),
+      },
+    ]
+    @typing.declare_fields(ctx, module_)
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement({
+      desc: Str(Some(id("chars")), bytes),
+      info: loc_at(0, 4),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    })
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // Bytes hold anything.
+  inspect(build(Packed(I8), b"\xff\xfe"), content="")
+  // Code units hold text.
+  inspect(build(Packed(I16), b"hi"), content="")
+  inspect(
+    build(Packed(I16), b"\xff\xfe"),
+    content="A string building an [i16] array must be a valid Unicode string.",
+  )
+  // Anything else is not a string's array.
+  inspect(
+    build(Value(F64), b"hi"),
+    content="A string literal can only build an [i8] or [i16] array.",
+  )
+}
