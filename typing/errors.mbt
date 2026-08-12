@@ -843,3 +843,61 @@ pub fn unknown_operand_type(
     ),
   )
 }
+
+///|
+/// A field name the receiver's struct type does not declare.
+pub fn missing_field(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("There is no field named")
+    .sep(@message.ident(name))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// A field access on something that is not a struct.
+pub fn expected_struct(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(location, Error, @message.text("Expected struct."))
+}
+
+///|
+/// An index into something that is not an array.
+pub fn expected_array(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(location, Error, @message.text("Expected array."))
+}
+
+///|
+/// An instruction method written as a field access, without its parentheses.
+///
+/// `x.sqrt` is almost always `x.sqrt()` mistyped, and saying so is more useful
+/// than "there is no field named sqrt".
+pub fn method_needs_parentheses(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  meth : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.code(meth)
+    .sep(
+      @message.text(
+        "is an instruction method and must be called with parentheses, as",
+      ),
+    )
+    .sep(@message.code(meth + "()"))
+    .seq(@message.text(".")),
+  )
+}

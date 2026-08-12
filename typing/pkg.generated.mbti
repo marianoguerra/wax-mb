@@ -105,9 +105,13 @@ pub fn exact_reparse_matches(@wasm_types.ValType[@type_store.Id], @infer.Cell[@i
 
 pub fn expand_splices(@typing_env.TypeContext, @diagnostic.Context, Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]
 
+pub fn expected_array(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn expected_array_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn expected_func_type(@diagnostic.Context, @basic.Location) -> Unit
+
+pub fn expected_struct(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn expected_struct_type(@diagnostic.Context, @basic.Location) -> Unit
 
@@ -187,6 +191,8 @@ pub fn is_mem_method(String) -> Bool
 
 pub fn is_mgmt_method(String) -> Bool
 
+pub fn is_unary_method(String) -> Bool
+
 pub fn join_collected(@diagnostic.Context, @basic.Location, Array[(@basic.Location?, @infer.Cell[@infer.InferredType])], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
@@ -239,7 +245,11 @@ pub fn memory_offset_too_large(@diagnostic.Context, @basic.Location, UInt64) -> 
 
 pub fn memory_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
+pub fn method_needs_parentheses(@diagnostic.Context, @basic.Location, String) -> Unit
+
 pub fn missing_else_ok(@type_store.SubtypingInfo, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]]) -> Bool
+
+pub fn missing_field(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn missing_lane_immediate(@diagnostic.Context, @basic.Location) -> Unit
 

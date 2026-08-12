@@ -679,6 +679,88 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Reading a struct field ---
+    StructGet(recv, field) => {
+      let recv_ = self.statement(recv)
+      let ty = self.field_type_of(
+        recv.info,
+        expression_type(ctx, recv_.info),
+        field,
+      )
+      self.ops.push(Some(loc), ty)
+      {
+        desc: StructGet(recv_, field),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Writing one ---
+    StructSet(recv, field, value) => {
+      // Emission order: the struct receiver, then the stored value.
+      let recv_ = self.statement(recv)
+      let declared = self.field_slot(
+        recv.info,
+        expression_type(ctx, recv_.info),
+        field,
+      )
+      let value_ = self.statement(value)
+      if declared is Some(ft) {
+        if !ft.mut_ {
+          immutable(ctx.diagnostics, field.loc, "field")
+        }
+        // Written at the UNPACKED width: a packed field takes a plain i32 and
+        // narrows implicitly, unlike a read, which remembers how narrow it was.
+        if internalize(ctx.type_context, ctx.diagnostics, unpack_type(ft))
+          is Some(want) {
+          check_subtype(
+            ctx.type_context.subtyping_info(),
+            ctx.diagnostics,
+            value.info,
+            expression_type(ctx, value_.info),
+            want,
+          )
+        }
+      }
+      {
+        desc: StructSet(recv_, field, value_),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Reading an array element ---
+    ArrayGet(recv, index) => {
+      // Emission order: the array, then the index.
+      let recv_ = self.statement(recv)
+      let index_ = self.statement(index)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        index.info,
+        expression_type(ctx, index_.info),
+        @infer.valtype_cell(@infer.i32_valtype),
+      )
+      let ty = match
+        self.element_slot(recv.info, expression_type(ctx, recv_.info)) {
+        Some(ft) =>
+          match field_read_type(ctx.type_context, ctx.diagnostics, ft) {
+            Some(c) => c
+            None => @infer.Cell::make(@infer.InferredType::Error)
+          }
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      self.ops.push(Some(loc), ty)
+      {
+        desc: ArrayGet(recv_, index_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -1003,5 +1085,126 @@ fn Checker::bind(
       if binding.0 is Some(name) {
         bind_local(ctx, name, bound_value_type(ctx, location, value))
       }
+  }
+}
+
+///|
+/// The struct type a receiver refers to, as its declared fields.
+///
+/// `None` with a complaint already made. The three no-answer cases are three
+/// different things: an `Error` receiver has been reported elsewhere and is
+/// left alone, an `Unknown` or bottom-reference one has a type nobody can name,
+/// and anything else is simply not a struct.
+fn Checker::receiver_fields(
+  self : Checker,
+  location : @basic.Location,
+  ty : @infer.Cell[@infer.InferredType],
+  field : @ast.Ident,
+) -> Array[
+  @basic.Annotated[
+    (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+    @basic.Location,
+  ],
+]? {
+  let ctx = self.ctx
+  match ty.get() {
+    Valtype({ typ: Ref({ typ: Type(name) | Exact(name), .. }), .. }) =>
+      match ctx.types.find_no_mark(name.name) {
+        Some((_, def)) =>
+          match def.typ {
+            Struct(fields) => Some(fields)
+            _ => {
+              // A name that is an instruction method was almost certainly meant
+              // as the parenthesised call.
+              if is_unary_method(field.name) {
+                method_needs_parentheses(ctx.diagnostics, field.loc, field.name)
+              } else {
+                expected_struct(ctx.diagnostics, location)
+              }
+              None
+            }
+          }
+        None => None
+      }
+    // Already reported where it failed; nothing more to say.
+    Error => None
+    Unknown | UnknownRef => {
+      unknown_operand_type(ctx.diagnostics, location)
+      None
+    }
+    _ => {
+      if is_unary_method(field.name) {
+        method_needs_parentheses(ctx.diagnostics, field.loc, field.name)
+      } else {
+        expected_struct(ctx.diagnostics, location)
+      }
+      None
+    }
+  }
+}
+
+///|
+/// The declared slot of a named field on a receiver.
+fn Checker::field_slot(
+  self : Checker,
+  location : @basic.Location,
+  ty : @infer.Cell[@infer.InferredType],
+  field : @ast.Ident,
+) -> @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]? {
+  guard self.receiver_fields(location, ty, field) is Some(fields) else {
+    return None
+  }
+  match find_field(fields, field.name) {
+    Some((_, ft)) => Some(ft)
+    None => {
+      missing_field(self.ctx.diagnostics, field.loc, field.name)
+      None
+    }
+  }
+}
+
+///|
+/// The type reading a named field produces.
+fn Checker::field_type_of(
+  self : Checker,
+  location : @basic.Location,
+  ty : @infer.Cell[@infer.InferredType],
+  field : @ast.Ident,
+) -> @infer.Cell[@infer.InferredType] {
+  match self.field_slot(location, ty, field) {
+    Some(ft) =>
+      match field_read_type(self.ctx.type_context, self.ctx.diagnostics, ft) {
+        Some(c) => c
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+    None => @infer.Cell::make(@infer.InferredType::Error)
+  }
+}
+
+///|
+/// The element slot of an array receiver.
+fn Checker::element_slot(
+  self : Checker,
+  location : @basic.Location,
+  ty : @infer.Cell[@infer.InferredType],
+) -> @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]? {
+  let ctx = self.ctx
+  match ty.get() {
+    Valtype({ typ: Ref({ typ: Type(name) | Exact(name), .. }), .. }) =>
+      lookup_array_type(
+        ctx.type_context,
+        ctx.diagnostics,
+        name,
+        location=Some(location),
+      )
+    Error => None
+    Unknown | UnknownRef => {
+      unknown_operand_type(ctx.diagnostics, location)
+      None
+    }
+    _ => {
+      expected_array(ctx.diagnostics, location)
+      None
+    }
   }
 }

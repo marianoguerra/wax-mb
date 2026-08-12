@@ -4444,3 +4444,169 @@ test "a bare declaration starts initialized only if it can" {
     content="declared, uninitialized",
   )
 }
+
+///|
+/// A field READ produces the packed width remembered -- `Int8`/`Int16` -- while
+/// a field WRITE takes a plain i32. That asymmetry is the whole packed story,
+/// and this is where it reaches an instruction.
+test "a struct access reads packed and writes plain" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn with_point() -> (@typing_env.ModuleContext, @typing.Checker) {
+    let ctx = module_ctx()
+    let _ = @typing.add_type(ctx.type_context, ctx.diagnostics, [
+      {
+        desc: (
+          id("point"),
+          {
+            typ: Struct([
+              {
+                desc: (id("x"), { mut_: true, typ: Packed(I8) }),
+                info: loc_at(0, 1),
+              },
+              {
+                desc: (id("y"), { mut_: false, typ: Value(F64) }),
+                info: loc_at(2, 3),
+              },
+            ]),
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: None,
+          },
+        ),
+        info: loc_at(0, 5),
+      },
+    ])
+    @typing.bind_local(
+      ctx,
+      id("p"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: false, typ: Type(id("point")) }),
+      ),
+    )
+    (ctx, @typing.Checker::new(ctx, @typing.Operands::new()))
+  }
+
+  // A packed read remembers how narrow it was, so the lowering can pick the
+  // signed or unsigned accessor.
+  let (ctx, checker) = with_point()
+  let read = checker.statement(
+    instr(StructGet(instr(Get(id("p")), 0), id("x")), 4),
+  )
+  inspect(read.info.0.map(t => @infer.to_string(t)).join(","), content="i8")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(checker.gaps().length(), content="0")
+
+  // A write takes a plain i32, so an integer literal is accepted.
+  let (ctx2, checker2) = with_point()
+  let _ = checker2.statement(
+    instr(StructSet(instr(Get(id("p")), 0), id("x"), instr(Int("1"), 10)), 4),
+  )
+  inspect(ctx2.diagnostics.collected().length(), content="0")
+
+  // An immutable field cannot be written.
+  let (ctx3, checker3) = with_point()
+  let _ = checker3.statement(
+    instr(
+      StructSet(instr(Get(id("p")), 0), id("y"), instr(Float("1.5"), 10)),
+      4,
+    ),
+  )
+  inspect(
+    @message.to_plain_string(ctx3.diagnostics.collected()[0].message),
+    content="This field is immutable and cannot be assigned.",
+  )
+
+  // A field the type does not declare.
+  let (ctx4, checker4) = with_point()
+  let _ = checker4.statement(
+    instr(StructGet(instr(Get(id("p")), 0), id("z")), 4),
+  )
+  inspect(
+    @message.to_plain_string(ctx4.diagnostics.collected()[0].message),
+    content="There is no field named 'z'.",
+  )
+
+  // A name that is an instruction method was almost certainly meant as a call.
+  let (ctx5, checker5) = with_point()
+  let _ = checker5.statement(
+    instr(StructGet(instr(Int("1"), 0), id("sqrt")), 4),
+  )
+  inspect(
+    @message.to_plain_string(ctx5.diagnostics.collected()[0].message),
+    content="'sqrt' is an instruction method and must be called with parentheses, as 'sqrt()'.",
+  )
+}
+
+///|
+/// An array index is checked against i32, and the element type comes from the
+/// array's own declaration.
+test "an array index reads its element type" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let ctx = module_ctx()
+  let _ = @typing.add_type(ctx.type_context, ctx.diagnostics, [
+    {
+      desc: (
+        id("bytes"),
+        {
+          typ: Array({ mut_: true, typ: Packed(I8) }),
+          supertype: None,
+          final_: true,
+          descriptor: None,
+          describes: None,
+        },
+      ),
+      info: loc_at(0, 5),
+    },
+  ])
+  @typing.bind_local(
+    ctx,
+    id("b"),
+    @typing.internalize_valtype(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: false, typ: Type(id("bytes")) }),
+    ),
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let read = checker.statement(
+    instr(ArrayGet(instr(Get(id("b")), 0), instr(Int("0"), 10)), 4),
+  )
+  inspect(read.info.0.map(t => @infer.to_string(t)).join(","), content="i8")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+
+  // Indexing something that is not an array.
+  let checker2 = @typing.Checker::new(ctx, @typing.Operands::new())
+  let _ = checker2.statement(
+    instr(ArrayGet(instr(Int("1"), 0), instr(Int("0"), 10)), 4),
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="Expected array.",
+  )
+  inspect(checker2.gaps().length(), content="0")
+}

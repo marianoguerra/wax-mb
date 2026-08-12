@@ -154,3 +154,30 @@ pub fn functype_matches(
   }
   true
 }
+
+///|
+/// The no-argument instruction methods, written as a call on a value:
+/// `x.sqrt()`, `arr.length()`.
+///
+/// They matter to the FIELD-access arm as much as to the call arm: `x.sqrt`
+/// without parentheses is almost always `x.sqrt()` mistyped, and saying that is
+/// more useful than "there is no field named sqrt".
+pub fn is_unary_method(m : String) -> Bool {
+  match m {
+    "clz"
+    | "ctz"
+    | "popcnt"
+    | "extend8_s"
+    | "extend16_s"
+    | "abs"
+    | "ceil"
+    | "floor"
+    | "trunc"
+    | "nearest"
+    | "sqrt"
+    | "to_bits"
+    | "from_bits"
+    | "length" => true
+    _ => false
+  }
+}
