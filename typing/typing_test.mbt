@@ -4307,3 +4307,140 @@ test "a tee produces its target's type" {
     content="'g' cannot be assigned.",
   )
 }
+
+///|
+/// A `let` with an annotation gives the local the ANNOTATION's type, not the
+/// initializer's -- which is the point of writing one: it may be wider than
+/// what the initializer happens to produce.
+///
+/// Without one the local takes the value's own type, resolved to a width,
+/// because a local has to have one even where the value has not committed.
+test "a let takes its annotation's type, or resolves the value's" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn bound(
+    annot : @wasm_types.ValType[@ast.Ident]?,
+    init : @ast.InstrDesc[@basic.Location],
+  ) -> String {
+    let ctx = module_ctx()
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement(
+      instr(Let([(Some(id("x")), annot)], Some(instr(init, 10))), 0),
+    )
+    match ctx.locals.get("x") {
+      Some((Some(v), _)) => @infer.to_string(@infer.valtype_cell(v))
+      Some((None, _)) => "poison"
+      None => "unbound"
+    }
+  }
+
+  // Annotated: the local is f64 even though the literal would default to i32.
+  inspect(bound(Some(F64), Int("1")), content="f64")
+  // Unannotated: the literal resolves to its own default width.
+  inspect(bound(None, Int("1")), content="i32")
+  inspect(bound(None, Float("1.5")), content="f64")
+  // A large literal defaults to i64, not i32.
+  inspect(bound(None, Int("4294967296")), content="i64")
+}
+
+///|
+/// A multi-value initializer feeds its values to the names left to right, and a
+/// count mismatch is reported at the initializer.
+test "a tuple let matches names to values in order" {
+  let ctx = module_ctx()
+  ctx.globals.add(
+    ctx.diagnostics,
+    "g",
+    loc_at(0, 1),
+    (false, Some(@infer.f64_valtype)),
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // A `Sequence` leaves only its LAST statement's values, so this provides one
+  // where two names want two.
+  let _ = checker.statement(
+    instr(
+      Let(
+        [(Some(id("a")), None), (Some(id("b")), None)],
+        Some(
+          instr(Sequence([instr(Int("1"), 10), instr(Get(id("g")), 14)]), 10),
+        ),
+      ),
+      0,
+    ),
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="This instruction provides 1 value(s) but 2 was/were expected.",
+  )
+  // The first name still took the one value there was; the second is poison.
+  inspect(
+    match ctx.locals.get("a") {
+      Some((Some(v), _)) => @infer.to_string(@infer.valtype_cell(v))
+      _ => "poison"
+    },
+    content="f64",
+  )
+  inspect(
+    match ctx.locals.get("b") {
+      Some((None, _)) => "poison"
+      _ => "typed"
+    },
+    content="poison",
+  )
+  inspect(checker.gaps().length(), content="0")
+}
+
+///|
+/// `let x: t;` declares a local with no initializer. Whether it starts holding
+/// a value is decided by the type: a defaultable one has a zero to start at, a
+/// non-nullable reference does not and stays uninitialized until assigned.
+test "a bare declaration starts initialized only if it can" {
+  fn declared(typ : @wasm_types.ValType[@ast.Ident]) -> String {
+    let ctx = module_ctx()
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement({
+      desc: Let([(Some(id("x")), Some(typ))], None),
+      info: loc_at(0, 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    })
+    if ctx.locals.contains("x") {
+      if ctx.initialized_locals.contains("x") {
+        "holds a value"
+      } else {
+        "declared, uninitialized"
+      }
+    } else {
+      "not declared"
+    }
+  }
+
+  inspect(declared(I32), content="holds a value")
+  inspect(declared(Ref({ nullable: true, typ: Any })), content="holds a value")
+  inspect(
+    declared(Ref({ nullable: false, typ: Any })),
+    content="declared, uninitialized",
+  )
+}

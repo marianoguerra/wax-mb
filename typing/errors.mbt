@@ -828,3 +828,18 @@ pub fn tag_with_results(
     @message.text("An exception tag cannot have result values."),
   )
 }
+
+///|
+/// A value whose type nobody can name, where one is needed.
+pub fn unknown_operand_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "Cannot determine the type of this expression, which is needed to compile this operation.",
+    ),
+  )
+}

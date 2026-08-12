@@ -627,6 +627,58 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Local binding ---
+    Let(bindings, Some(init)) => {
+      let checked = self.statement(init)
+      if bindings.length() == 1 {
+        // One name takes the whole initializer, which must therefore be a
+        // one-value expression -- `expression_type` says so if it is not.
+        let ty = expression_type(ctx, checked.info)
+        self.bind(init.info, bindings[0], ty)
+      } else {
+        // Each name takes one value off a multi-value initializer, left to
+        // right: the names match the values in order.
+        let values = checked.info.0
+        if values.length() != bindings.length() {
+          value_count_mismatch(
+            ctx.diagnostics,
+            init.info,
+            expected=bindings.length(),
+            provided=values.length(),
+          )
+        }
+        for k, binding in bindings {
+          let ty = if k < values.length() {
+            values[k]
+          } else {
+            @infer.Cell::make(@infer.InferredType::Error)
+          }
+          self.bind(init.info, binding, ty)
+        }
+      }
+      {
+        desc: Let(bindings, Some(checked)),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    Let(bindings, None) => {
+      // No initializer: each annotated name declares a local at its zero value.
+      // An unannotated one has no type to take and declares nothing at all.
+      for binding in bindings {
+        if binding.0 is Some(name) && binding.1 is Some(typ) {
+          declare_local(ctx, name, typ)
+        }
+      }
+      {
+        desc: Let(bindings, None),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -912,4 +964,44 @@ fn Checker::split_on_last(
     return (@infer.Cell::make(@infer.InferredType::Error), [])
   }
   (types[types.length() - 1], types[0:types.length() - 1].to_owned())
+}
+
+///|
+/// Bind one name of a `let` to one value of its initializer.
+///
+/// With an annotation the value is checked against it, and the local takes the
+/// ANNOTATION's type -- which is the point of writing one: it may be wider than
+/// what the initializer happens to produce.
+///
+/// Without one the local takes the value's own type, resolved to a width, since
+/// a local has to have one even where the value it was given has not committed.
+fn Checker::bind(
+  self : Checker,
+  location : @basic.Location,
+  binding : (@ast.Ident?, @wasm_types.ValType[@ast.Ident]?),
+  value : @infer.Cell[@infer.InferredType],
+) -> Unit {
+  let ctx = self.ctx
+  match binding.1 {
+    Some(typ) => {
+      guard internalize_valtype(ctx.type_context, ctx.diagnostics, typ)
+        is Some(ity) else {
+        return
+      }
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        location,
+        value,
+        @infer.valtype_cell(ity),
+      )
+      if binding.0 is Some(name) {
+        bind_local(ctx, name, Some(ity))
+      }
+    }
+    None =>
+      if binding.0 is Some(name) {
+        bind_local(ctx, name, bound_value_type(ctx, location, value))
+      }
+  }
 }

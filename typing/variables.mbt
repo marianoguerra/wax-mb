@@ -431,3 +431,26 @@ pub fn declare_local(
     mark_initialized(ctx, name.name)
   }
 }
+
+///|
+/// The type a local takes from an initializer with no annotation.
+///
+/// An `Error` initializer has no determinable type, so the local is recorded as
+/// POISON (`None`) rather than defaulting to i32 -- a wrong type here would
+/// cascade into every use of the local. An `Unknown` one is additionally
+/// reported: unlike `Error` it has not been complained about yet, and a binding
+/// whose type nobody can name is worth saying out loud.
+pub fn bound_value_type(
+  ctx : @typing_env.ModuleContext,
+  location : @basic.Location,
+  result_ty : @infer.Cell[@infer.InferredType],
+) -> @infer.InferredValType? {
+  match result_ty.get() {
+    Error => None
+    Unknown => {
+      unknown_operand_type(ctx.diagnostics, location)
+      None
+    }
+    _ => resolve_omitted_valtype(ctx.type_context, ctx.diagnostics, result_ty)
+  }
+}

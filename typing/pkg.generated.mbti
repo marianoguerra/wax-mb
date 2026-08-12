@@ -31,6 +31,8 @@ pub fn block_exit_type_mismatch(@diagnostic.Context, @basic.Location, @basic.Loc
 
 pub fn block_signature(@typing_env.TypeContext, @diagnostic.Context, @ast.FuncType) -> (Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]])?
 
+pub fn bound_value_type(@typing_env.ModuleContext, @basic.Location, @infer.Cell[@infer.InferredType]) -> @infer.InferredValType?
+
 pub fn br_if_result_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn branch_target(@typing_env.ModuleContext, @ast.Ident) -> Array[@infer.Cell[@infer.InferredType]]
@@ -340,6 +342,8 @@ pub fn typed_branch_label(@basic.Location, @infer.Cell[@infer.InferredType]) -> 
 pub fn unbound_name(@diagnostic.Context, @basic.Location, String, String, suggestions? : Array[String]) -> Unit
 
 pub fn uninitialized_local(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn unknown_operand_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn unpack_type(@wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.ValType[@ast.Ident]
 
