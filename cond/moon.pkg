@@ -1,0 +1,11 @@
+import {
+  "waxmb/wax/basic",
+  "waxmb/wax/wasm_types",
+  "waxmb/wax/diagnostic",
+  "waxmb/wax/message",
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
