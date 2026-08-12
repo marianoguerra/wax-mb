@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 101289 poisoned 0 files 1903 clean 1596",
+    content="nodes 103311 poisoned 0 files 1903 clean 1607",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -132,14 +132,14 @@ test "the checker annotates every node it reaches" {
   }
   top.sort_by((a, b) => b.1 - a.1)
   let expected =
-    #|49 Cannot infer the array type here; add an explicit type, as in '[T| ..]'.
     #|33 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
     #|27 This value remains on the stack.
     #|23 Expecting 1 returned value(s) from the stack, but there are 0.
     #|22 This cast always traps: the value can never have this type.
     #|17 This type test is always true: the value already has this type.
-    #|15 A global named 'g' is already bound.
     #|15 A global named 'object_tag' is already bound.
+    #|15 A global named 'g' is already bound.
+    #|12 There is no field named 'next'.
   let n = if top.length() < 8 { top.length() } else { 8 }
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),

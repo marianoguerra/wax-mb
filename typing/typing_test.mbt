@@ -8664,3 +8664,68 @@ test "a try takes its result from its annotation, its context, or its exits" {
   // join is the result.
   inspect(run(false, false), content="i32 results=i32 | ")
 }
+
+///|
+/// Every WRITE is a check position: the destination's type is known before the
+/// value is typed, so a literal stored there takes that type rather than having
+/// to name one. A local, a struct field and an array element are all the same
+/// rule, and getting it wrong in one place shows up as the literal being
+/// uninferable.
+test "a write hands its destination's type to the value" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // `[0; n]` -- an array of n zeroes, with no type named.
+  let literal = instr(Array(None, instr(Int("0"), 20), instr(Int("8"), 22)), 18)
+  fn run(assign : Bool) -> String {
+    let ctx = module_ctx()
+    let _ = @typing.add_type(ctx.type_context, ctx.diagnostics, [
+      {
+        desc: (
+          id("ints"),
+          {
+            typ: Array({ mut_: true, typ: Value(I32) }),
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: None,
+          },
+        ),
+        info: loc_at(0, 1),
+      },
+    ])
+    @typing.declare_local(
+      ctx,
+      id("xs"),
+      Ref({ nullable: false, typ: Type(id("ints")) }),
+    )
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = if assign {
+      checker.statement(instr(Set(id("xs", at=10), None, literal), 10))
+    } else {
+      checker.expression(literal)
+    }
+    ignore(c)
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // Assigned to a local of array type, the literal takes it.
+  inspect(run(true), content="")
+  // Standing on its own, there is nothing to take.
+  inspect(
+    run(false),
+    content="Cannot infer the array type here; add an explicit type, as in '[T| ..]'.",
+  )
+}

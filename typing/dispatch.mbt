@@ -568,19 +568,14 @@ pub fn Checker::statement(
           }
           rhs
         }
-        None => {
-          let rhs = self.expression(value)
-          if target is Some(t) {
-            check_subtype(
-              ctx.type_context.subtyping_info(),
-              ctx.diagnostics,
-              value.info,
-              expression_type(ctx, rhs.info),
-              t,
-            )
+        // A plain assignment CHECKS its value against the target's type, which
+        // is what lets `xs = [| .. |]` take the target's array type rather than
+        // having to name one.
+        None =>
+          match target {
+            Some(t) => self.check(t, value)
+            None => self.expression(value)
           }
-          rhs
-        }
       }
       // A compound assignment's desugared READ already reported an unbound name
       // at this span; reporting the write too would say it twice.
@@ -594,21 +589,19 @@ pub fn Checker::statement(
     }
     Tee(idx, value) => {
       let resolved = resolve_variable(ctx, idx)
-      let checked = self.expression(value)
-      let operand = expression_type(ctx, checked.info)
-      let ty = tee_target(ctx, idx, resolved, operand)
       // A tee assigns AND leaves the value, so where the target has a type the
-      // operand is checked against it -- and the tee produces the target's
-      // type, not the operand's.
-      if resolved is Local(Some(_), _) {
-        check_subtype(
-          ctx.type_context.subtyping_info(),
-          ctx.diagnostics,
-          value.info,
-          operand,
-          ty,
-        )
+      // value is CHECKED against it -- and the tee then produces the target's
+      // type, not the value's.
+      let checked = match resolved {
+        Local(Some(v), _) => self.check(@infer.valtype_cell(v), value)
+        _ => self.expression(value)
       }
+      let ty = tee_target(
+        ctx,
+        idx,
+        resolved,
+        expression_type(ctx, checked.info),
+      )
       {
         desc: Tee(idx, checked),
         info: annotate([ty], loc),
@@ -706,23 +699,22 @@ pub fn Checker::statement(
         expression_type(ctx, recv_.info),
         field,
       )
-      let value_ = self.expression(value)
-      if declared is Some(ft) {
-        if !ft.mut_ {
-          immutable(ctx.diagnostics, field.loc, "field")
+      // Written at the UNPACKED width: a packed field takes a plain i32 and
+      // narrows implicitly, unlike a read, which remembers how narrow it was.
+      // Resolved BEFORE the value, so a literal stored there can take the
+      // field's type rather than having to name one.
+      let want = match declared {
+        Some(ft) => {
+          if !ft.mut_ {
+            immutable(ctx.diagnostics, field.loc, "field")
+          }
+          internalize(ctx.type_context, ctx.diagnostics, unpack_type(ft))
         }
-        // Written at the UNPACKED width: a packed field takes a plain i32 and
-        // narrows implicitly, unlike a read, which remembers how narrow it was.
-        if internalize(ctx.type_context, ctx.diagnostics, unpack_type(ft))
-          is Some(want) {
-          check_subtype(
-            ctx.type_context.subtyping_info(),
-            ctx.diagnostics,
-            value.info,
-            expression_type(ctx, value_.info),
-            want,
-          )
-        }
+        None => None
+      }
+      let value_ = match want {
+        Some(w) => self.check(w, value)
+        None => self.expression(value)
       }
       {
         desc: StructSet(recv_, field, value_),
@@ -2096,15 +2088,10 @@ pub fn Checker::statement(
         expression_type(ctx, index_.info),
         address_cell(at),
       )
-      let value_ = self.expression(value)
-      if internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) is Some(want) {
-        check_subtype(
-          ctx.type_context.subtyping_info(),
-          ctx.diagnostics,
-          value.info,
-          expression_type(ctx, value_.info),
-          want,
-        )
+      let value_ = match
+        internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) {
+        Some(want) => self.check(want, value)
+        None => self.expression(value)
       }
       {
         desc: ArraySet(
@@ -2129,23 +2116,22 @@ pub fn Checker::statement(
         @infer.valtype_cell(@infer.i32_valtype),
       )
       let slot = self.element_slot(recv.info, expression_type(ctx, recv_.info))
-      let value_ = self.expression(value)
-      if slot is Some(ft) {
-        if !ft.mut_ {
-          immutable(ctx.diagnostics, loc, "array")
+      // Written at the UNPACKED width, as a struct field is: the array
+      // remembers the narrow type, the value being stored does not have to.
+      // Resolved before the value, so a literal stored there can take the
+      // element type rather than having to name one.
+      let want = match slot {
+        Some(ft) => {
+          if !ft.mut_ {
+            immutable(ctx.diagnostics, loc, "array")
+          }
+          internalize(ctx.type_context, ctx.diagnostics, unpack_type(ft))
         }
-        // Written at the UNPACKED width, as a struct field is: the array
-        // remembers the narrow type, the value being stored does not have to.
-        if internalize(ctx.type_context, ctx.diagnostics, unpack_type(ft))
-          is Some(want) {
-          check_subtype(
-            ctx.type_context.subtyping_info(),
-            ctx.diagnostics,
-            value.info,
-            expression_type(ctx, value_.info),
-            want,
-          )
-        }
+        None => None
+      }
+      let value_ = match want {
+        Some(w) => self.check(w, value)
+        None => self.expression(value)
       }
       {
         desc: ArraySet(recv_, index_, value_),
