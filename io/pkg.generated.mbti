@@ -14,6 +14,8 @@ pub fn stderr_is_tty() -> Bool
 
 pub fn stdout_is_tty() -> Bool
 
+pub fn write_stdout_bytes(Bytes) -> Unit
+
 // Errors
 
 // Types and methods

@@ -15,6 +15,12 @@ fn unsupported(what : String) -> Unit {
 }
 
 ///|
+pub fn write_stdout_bytes(b : Bytes) -> Unit {
+  ignore(b)
+  unsupported("writing bytes to stdout")
+}
+
+///|
 pub fn print(s : String) -> Unit {
   ignore(s)
   unsupported("writing to stdout")

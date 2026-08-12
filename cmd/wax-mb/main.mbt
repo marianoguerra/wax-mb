@@ -100,17 +100,27 @@ fn check(
     warn_unused=true,
   )
   ignore(path)
-  let collected = diagnostics.collected()
+  render_diagnostics(src, opts, diagnostics.collected())
+}
+
+///|
+/// Render a run's diagnostics, returning whether anything was rejected.
+///
+/// The collector buffers everything RAW: the policy belongs to whoever finally
+/// re-reports it, which is here. A named warning is hidden, kept, or promoted to
+/// an error according to it -- so a lint that is off by default costs nothing to
+/// have implemented.
+fn render_diagnostics(
+  src : String,
+  opts : Options,
+  collected : Array[@diagnostic.Diagnostic],
+) -> Bool {
   guard !collected.is_empty() else { return false }
   let theme = @diagnostic.get_theme(
     color=opts.color,
     palette=@colors.wax_theme,
     is_tty=@io.stderr_is_tty(),
   )
-  // The collector buffers everything RAW: the policy belongs to whoever
-  // finally re-reports it, which is here. A named warning is hidden, kept, or
-  // promoted to an error according to it -- so a lint that is off by default
-  // costs nothing to have implemented.
   let policy = @warning.default_policy
   let mut rejected = false
   for d in collected {
@@ -136,6 +146,47 @@ fn check(
     }
   }
   rejected
+}
+
+///|
+/// Whether an output format has no implementation.
+fn not_implemented_format(f : String) -> Bool {
+  !(f == "wax" || f == "wasm")
+}
+
+///|
+/// Check and lower one module to wasm bytes.
+///
+/// The diagnostics are rendered as `check` renders them, because a compile that
+/// reports nothing and a check that reports nothing are the same claim about the
+/// same module -- and a compile that reports an ERROR produces no bytes at all
+/// rather than bytes derived from a module known to be wrong.
+fn compile(
+  path : String,
+  src : String,
+  m : @ast.LocModule,
+  opts : Options,
+) -> Result[Bytes, String] {
+  let diagnostics = @diagnostic.collector(source=Some(src))
+  let store = @type_store.TypeStore::new()
+  // No lints on the conversion path: a compile reports what stops it producing
+  // a module, and a style warning does not. The reference draws the same line --
+  // `wax f.wax -f wasm` is silent on a module `wax check` would comment on.
+  let (ctx, typed) = @typing.check_module(
+    diagnostics,
+    store,
+    @feature.default(),
+    m,
+  )
+  if render_diagnostics(src, opts, diagnostics.collected()) {
+    return Err("\{path}: rejected")
+  }
+  let module_ = @to_wasm.lower_module(ctx, store, m, typed) catch {
+    e => return Err("\{path}: \{e}")
+  }
+  Ok(@wasm_bin.encode(module_)) catch {
+    e => Err("\{path}: \{e}")
+  }
 }
 
 ///|
@@ -183,9 +234,9 @@ fn run(argv : Array[String]) -> Status {
     )
     return Usage
   }
-  if opts.command is Convert && opts.output_format != "wax" {
+  if opts.command is Convert && not_implemented_format(opts.output_format) {
     @io.eprintln(
-      "wax-mb: output format '\{opts.output_format}' is not implemented (only 'wax')",
+      "wax-mb: output format '\{opts.output_format}' is not implemented (only 'wax' and 'wasm')",
     )
     return Usage
   }
@@ -215,6 +266,33 @@ fn run(argv : Array[String]) -> Status {
         if !failed && check(path, src, m, opts) {
           rejected = true
         }
+      (Some(m), Convert) if opts.output_format == "wasm" => {
+        // The checker has to run first: the lowering reads the types it left on
+        // every node, which is the whole interface between the two.
+        if failed {
+          return Rejected
+        }
+        match compile(path, src, m, opts) {
+          Err(msg) => {
+            @io.eprintln("wax-mb: " + msg)
+            return Rejected
+          }
+          Ok(bytes) =>
+            match opts.output_path {
+              // `-o -` and no `-o` both mean stdout, which for a binary is the
+              // raw bytes and nothing else.
+              None => @io.write_stdout_bytes(bytes)
+              Some("-") => @io.write_stdout_bytes(bytes)
+              Some(out) =>
+                @fs.write_bytes_to_file(out, bytes) catch {
+                  _ => {
+                    @io.eprintln("wax-mb: cannot write \{out}")
+                    return Usage
+                  }
+                }
+            }
+        }
+      }
       (Some(m), Convert) =>
         match opts.output_path {
           // Writing to stdout, which may be a terminal.

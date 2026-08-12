@@ -21,7 +21,23 @@ pub suberror LowerError {
   NotLowered(String, @basic.Location)
   /// A name or type the checker accepted but that did not survive to here.
   Unresolved(String, @basic.Location)
-} derive(@debug.Debug)
+}
+
+///|
+/// A one-line description, for the CLI's report.
+///
+/// The location is named as `file:line:col` rather than rendered as a caret
+/// diagram: this is a gap in the port, not a fault in the user's module, and
+/// the two should not look alike.
+pub impl Show for LowerError with fn output(self, logger) {
+  let (what, kind, loc) = match self {
+    NotLowered(what, loc) => (what, "not lowered yet", loc)
+    Unresolved(what, loc) => (what, "did not resolve", loc)
+  }
+  logger.write_string(
+    "\{loc.start.fname}:\{loc.start.lnum}:\{loc.start.column1()}: \{what} \{kind}",
+  )
+}
 
 ///|
 /// What the lowering needs to know while walking one module.

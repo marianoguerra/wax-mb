@@ -2,7 +2,6 @@
 package "waxmb/wax/to_wasm"
 
 import {
-  "moonbitlang/core/debug",
   "waxmb/wax/ast",
   "waxmb/wax/basic",
   "waxmb/wax/infer",
@@ -39,7 +38,8 @@ pub fn type_section(@type_store.TypeStore) -> (Array[@wasm_bin.SubType], Array[@
 pub suberror LowerError {
   NotLowered(String, @basic.Location)
   Unresolved(String, @basic.Location)
-} derive(@debug.Debug)
+}
+pub impl Show for LowerError
 
 // Types and methods
 pub struct Indices {

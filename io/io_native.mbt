@@ -25,6 +25,17 @@ pub fn println(s : String) -> Unit {
 }
 
 ///|
+/// Write raw bytes to stdout.
+///
+/// The binary output path: a `.wasm` module is bytes, not text, so it must not
+/// go through the UTF-8 encoder that `print` uses -- that would mangle every
+/// byte above 0x7f into a multi-byte sequence and produce a file the module
+/// never was.
+pub fn write_stdout_bytes(b : Bytes) -> Unit {
+  write_stdout(b, b.length())
+}
+
+///|
 /// Write `s` to stderr as UTF-8, adding nothing.
 pub fn eprint(s : String) -> Unit {
   let b = @utf8.encode(s)

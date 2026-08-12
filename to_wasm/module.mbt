@@ -55,7 +55,7 @@ fn Lowering::field(
 ) -> Unit raise LowerError {
   let loc = field.info
   match field.desc {
-    Func(name~, body~, attributes~, ..) => {
+    Func(name~, sign~, body~, attributes~, ..) => {
       // The function's TYPE index comes from the checker, which interned the
       // signature when it declared the function -- so the type section and the
       // function section agree by construction rather than by a second lookup.
@@ -63,7 +63,7 @@ fn Lowering::field(
         raise Unresolved("function signature", loc)
       }
       m.funcs.push(entry.0.to_int_for_tests_only())
-      let code = self.function_body(entry.0, body.0, body.1, loc)
+      let code = self.function_body(entry.0, sign, body.0, body.1, loc)
       m.codes.push(code)
       self.export_of(m, attributes, Func(self.func_index(name, loc)))
     }
@@ -76,6 +76,11 @@ fn Lowering::field(
       m.globals.push({ type_: { mut_, typ: ty }, init })
       self.export_of(m, attributes, Global(self.global_index(name, loc)))
     }
+    // Nothing to emit: the type section comes from the STORE, which interned
+    // every declaration as it was made, so a `type` field has already had its
+    // effect by the time the lowering runs. A module annotation carries feature
+    // and name metadata the checker consumed, not code.
+    Type(_) | ModuleAnnotation(_) => ()
     _ => raise NotLowered(field_name(field.desc), loc)
   }
 }
@@ -89,6 +94,7 @@ fn Lowering::field(
 fn Lowering::function_body(
   self : Lowering,
   type_id : @type_store.Id,
+  sign : @ast.FuncType?,
   label : @ast.Ident?,
   instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
   loc : @basic.Location,
@@ -96,22 +102,91 @@ fn Lowering::function_body(
   self.locals = Map([])
   self.local_types = []
   self.labels = []
-  let sig = self.store.subtyping_info().get_subtype(type_id)
-  guard sig.typ is Func(ft) else { raise Unresolved("function type", loc) }
-  ignore(ft)
-  // The parameter NAMES are not in the store, only their types; they come from
-  // the source signature, which the typed field no longer carries. Until that
-  // is threaded through, a function with parameters is not lowered rather than
-  // lowered with the wrong slots.
-  if ft.params.length() > 0 {
-    raise NotLowered("function with parameters", loc)
+  let sub = self.store.subtyping_info().get_subtype(type_id)
+  guard sub.typ is Func(ft) else { raise Unresolved("function type", loc) }
+  // The parameter TYPES come from the store, already in index form and already
+  // deduplicated; the NAMES come from the written signature. They are the same
+  // list in the same order, which is what lets the two be zipped rather than
+  // re-derived.
+  guard sign is Some(sign) else {
+    if ft.params.length() > 0 {
+      raise Unresolved("parameter names", loc)
+    } else {
+      { locals: [], body: self.lower_body(label, instrs), priority: None }
+    }
   }
+  guard sign.params.length() == ft.params.length() else {
+    raise Unresolved("parameter count", loc)
+  }
+  for k, p in sign.params {
+    if p.desc.0 is Some(name) {
+      self.locals[name.name] = k
+    }
+  }
+  // Then the declared locals, numbered after the parameters in the order they
+  // are written -- which is how wasm numbers them, so no arithmetic is needed
+  // at any `local.get`.
+  self.collect_locals(instrs, ft.params.length())
+  let body = self.lower_body(label, instrs)
+  { locals: self.local_types, body, priority: None }
+}
+
+///|
+/// Assign a slot to every `let` binding in a body, in source order.
+fn Lowering::collect_locals(
+  self : Lowering,
+  instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  start : Int,
+) -> Unit raise LowerError {
+  let mut next = start
+  fn visit(
+    i : @ast.Instr[@typing_env.InferredAnnotation],
+  ) -> Unit raise LowerError {
+    if i.desc is Let(bindings, init) {
+      for k, b in bindings {
+        guard b.0 is Some(name) else { continue }
+        // The slot's type: what the initializer produced at that position. A
+        // written annotation says the same thing, since the checker has already
+        // made the initializer agree with it.
+        let ty = match init {
+          Some(e) =>
+            if e.info.0.length() > k &&
+              @typing_env.standalone_valtype(e.info.0[k]) is Some(v) {
+              Some(lower_valtype(v.internal))
+            } else {
+              None
+            }
+          None => None
+        }
+        guard ty is Some(ty) else { raise Unresolved("local type", i.info.1) }
+        self.locals[name.name] = next
+        self.local_types.push(ty)
+        next = next + 1
+      }
+    }
+    for sub in i.sub_instrs() {
+      visit(sub)
+    }
+  }
+
+  for s in instrs {
+    visit(s)
+  }
+}
+
+///|
+/// The body's instructions, under the function's own label.
+fn Lowering::lower_body(
+  self : Lowering,
+  label : @ast.Ident?,
+  instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+) -> Array[@wasm_bin.Instruction] raise LowerError {
   let body : Array[@wasm_bin.Instruction] = []
   self.labels.push(label.map(l => l.name))
   for s in instrs {
     self.instr(body, s)
   }
-  { locals: self.local_types, body, priority: None }
+  body
 }
 
 ///|
