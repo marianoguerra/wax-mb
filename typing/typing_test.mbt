@@ -24,7 +24,7 @@ fn id(name : String, at? : Int = 0) -> @ast.Ident {
 fn ctx_with(
   defined : Array[String],
   features? : @feature.Set = @feature.default(),
-) -> @typing.TypeContext raise {
+) -> @typing_env.TypeContext raise {
   let store = @type_store.TypeStore::new()
   let cond = @ref.new(@cond.true_)
   let ns = @typing_env.Namespace::new(cond)
@@ -54,7 +54,7 @@ fn ctx_with(
     let idx = store.add_rectype(group)
     tbl.add(n, loc_at(0, 1), (Def(idx), empty))
   }
-  @typing.TypeContext::new(store, tbl, features)
+  @typing_env.TypeContext::new(store, tbl, features)
 }
 
 ///|

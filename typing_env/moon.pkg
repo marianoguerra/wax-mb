@@ -6,10 +6,14 @@ import {
   "waxmb/wax/cond",
   "waxmb/wax/diagnostic",
   "waxmb/wax/wasm_types",
+  "waxmb/wax/type_store",
+  "waxmb/wax/feature",
   "moonbitlang/core/ref",
 }
 
 import {
   "moonbitlang/core/test",
-  "waxmb/wax/wasm_types",
+  "waxmb/wax/type_store",
+  "waxmb/wax/feature",
+  "waxmb/wax/infer",
 } for "test"

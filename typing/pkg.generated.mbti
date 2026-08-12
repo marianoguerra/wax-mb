@@ -15,7 +15,7 @@ import {
 }
 
 // Values
-pub fn comptype(TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
+pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
 
 pub fn diff_ref_type(@wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@ast.Ident]
 
@@ -29,9 +29,9 @@ pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) 
 
 pub fn field_subtype(@type_store.SubtypingInfo, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]], @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) -> Bool
 
-pub fn get_type_definition(TypeContext, @ast.Ident) -> @ast.SubType?
+pub fn get_type_definition(@typing_env.TypeContext, @ast.Ident) -> @ast.SubType?
 
-pub fn heaptype(TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
+pub fn heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
 
 pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 
@@ -41,21 +41,21 @@ pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.L
 
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
 
-pub fn n_fieldtype(TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
+pub fn n_fieldtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
 
-pub fn n_functype(TypeContext, @diagnostic.Context, @ast.FuncType) -> @type_store.FuncType[@type_store.RefIndex]?
+pub fn n_functype(@typing_env.TypeContext, @diagnostic.Context, @ast.FuncType) -> @type_store.FuncType[@type_store.RefIndex]?
 
-pub fn n_heaptype(TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.RefIndex]?
+pub fn n_heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.RefIndex]?
 
-pub fn n_reftype(TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.RefIndex]?
+pub fn n_reftype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.RefIndex]?
 
-pub fn n_storagetype(TypeContext, @diagnostic.Context, @wasm_types.StorageType[@ast.Ident]) -> @wasm_types.StorageType[@type_store.RefIndex]?
+pub fn n_storagetype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.StorageType[@ast.Ident]) -> @wasm_types.StorageType[@type_store.RefIndex]?
 
-pub fn n_valtype(TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.RefIndex]?
+pub fn n_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.RefIndex]?
 
 pub fn non_empty_stack(@diagnostic.Context, @basic.Location, String) -> Unit
 
-pub fn reftype(TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
+pub fn reftype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
 
 pub fn render_stack(Stack) -> String
 
@@ -63,13 +63,13 @@ pub fn report_leftovers(Stack, @diagnostic.Context, @basic.Location, (Stack) -> 
 
 pub fn report_missing_hole(Operands, @diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
 
-pub fn require_feature(TypeContext, @diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
+pub fn require_feature(@typing_env.TypeContext, @diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
 
 pub fn resolve_declared(@infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
-pub fn resolve_type_name(TypeContext, @ast.Ident) -> @type_store.Id?
+pub fn resolve_type_name(@typing_env.TypeContext, @ast.Ident) -> @type_store.Id?
 
-pub fn resolve_type_ref(TypeContext, @ast.Ident) -> @type_store.RefIndex?
+pub fn resolve_type_ref(@typing_env.TypeContext, @ast.Ident) -> @type_store.RefIndex?
 
 pub fn short_stack(@diagnostic.Context, StackKind, @basic.Location, Int, Int) -> Unit
 
@@ -79,7 +79,7 @@ pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @inf
 
 pub fn type_mismatch(@diagnostic.Context, @basic.Location, Int, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
-pub fn valtype(TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.Id]?
+pub fn valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.Id]?
 
 // Errors
 
@@ -116,16 +116,6 @@ pub(all) enum StackKind {
   Output
   Holes
 } derive(Eq, @debug.Debug)
-
-pub struct TypeContext {
-  store : @type_store.TypeStore
-  types : @typing_env.Tbl[(@type_store.RefIndex, @ast.SubType)]
-  features : @feature.Set
-  mut subtyping_cache : @type_store.SubtypingInfo?
-}
-pub fn TypeContext::invalidate(Self) -> Unit
-pub fn TypeContext::new(@type_store.TypeStore, @typing_env.Tbl[(@type_store.RefIndex, @ast.SubType)], @feature.Set) -> Self
-pub fn TypeContext::subtyping_info(Self) -> @type_store.SubtypingInfo
 
 // Type aliases
 pub type ValLub = (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?

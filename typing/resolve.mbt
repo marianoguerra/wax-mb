@@ -14,57 +14,12 @@
 // type ending the run.
 
 ///|
-/// The type-resolution context: the names in scope, the store they resolve
-/// into, and the proposals that are enabled.
-pub struct TypeContext {
-  /// The interned store the resolved indices point into.
-  store : @type_store.TypeStore
-  /// Name to (index, definition), under the current branch assumption.
-  types : @typing_env.Tbl[(@type_store.RefIndex, @ast.SubType)]
-  features : @feature.Set
-  /// Subtyping info for `store`, computed on demand and dropped whenever a type
-  /// is added -- including a function type minted mid-check for an inline
-  /// `&fn(..)` cast target -- so a query always sees the current type space.
-  mut subtyping_cache : @type_store.SubtypingInfo?
-}
-
-///|
-pub fn TypeContext::new(
-  store : @type_store.TypeStore,
-  types : @typing_env.Tbl[(@type_store.RefIndex, @ast.SubType)],
-  features : @feature.Set,
-) -> TypeContext {
-  { store, types, features, subtyping_cache: None }
-}
-
-///|
-/// Subtyping info for the current type space.
-pub fn TypeContext::subtyping_info(
-  self : TypeContext,
-) -> @type_store.SubtypingInfo {
-  match self.subtyping_cache {
-    Some(i) => i
-    None => {
-      let i = self.store.subtyping_info()
-      self.subtyping_cache = Some(i)
-      i
-    }
-  }
-}
-
-///|
-/// Note that the type space changed, so the next query recomputes.
-pub fn TypeContext::invalidate(self : TypeContext) -> Unit {
-  self.subtyping_cache = None
-}
-
-///|
 /// The definition a name refers to, if it resolves.
 ///
 /// One of the two things the code generator needs from the checker; the other
 /// is the annotation itself.
 pub fn get_type_definition(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   name : @ast.Ident,
 ) -> @ast.SubType? {
   ctx.types.resolve(name.name, name.loc).map(r => r.1)
@@ -74,7 +29,7 @@ pub fn get_type_definition(
 /// How a source reference appears inside a rec group being registered: a `Def`
 /// for a type already in the store, a `Rec` for one this very group defines.
 pub fn resolve_type_ref(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   name : @ast.Ident,
 ) -> @type_store.RefIndex? {
   ctx.types.resolve(name.name, name.loc).map(r => r.0)
@@ -86,7 +41,7 @@ pub fn resolve_type_ref(
 /// A `Rec` here would mean a group still under construction, which the callers
 /// of this -- as opposed to `resolve_type_ref` -- never look up.
 pub fn resolve_type_name(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   name : @ast.Ident,
 ) -> @type_store.Id? {
   match resolve_type_ref(ctx, name) {
@@ -101,7 +56,7 @@ pub fn resolve_type_name(
 /// Checking continues either way, so one disabled feature does not swallow
 /// every error after it.
 pub fn require_feature(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   location : @basic.Location,
   feature : @feature.Feature,
@@ -118,7 +73,7 @@ pub fn require_feature(
 
 ///|
 pub fn heaptype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   h : @wasm_types.HeapType[@ast.Ident],
 ) -> @wasm_types.HeapType[@type_store.Id]? {
@@ -150,7 +105,7 @@ pub fn heaptype(
 
 ///|
 pub fn reftype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   r : @wasm_types.RefType[@ast.Ident],
 ) -> @wasm_types.RefType[@type_store.Id]? {
@@ -161,7 +116,7 @@ pub fn reftype(
 
 ///|
 pub fn valtype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ty : @wasm_types.ValType[@ast.Ident],
 ) -> @wasm_types.ValType[@type_store.Id]? {
@@ -184,7 +139,7 @@ pub fn valtype(
 /// currently being registered -- which is what lets a group of mutually
 /// recursive types be built at all, and what lets it dedup wherever it lands.
 pub fn n_heaptype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   h : @wasm_types.HeapType[@ast.Ident],
 ) -> @wasm_types.HeapType[@type_store.RefIndex]? {
@@ -214,7 +169,7 @@ pub fn n_heaptype(
 
 ///|
 pub fn n_reftype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   r : @wasm_types.RefType[@ast.Ident],
 ) -> @wasm_types.RefType[@type_store.RefIndex]? {
@@ -225,7 +180,7 @@ pub fn n_reftype(
 
 ///|
 pub fn n_valtype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ty : @wasm_types.ValType[@ast.Ident],
 ) -> @wasm_types.ValType[@type_store.RefIndex]? {
@@ -242,7 +197,7 @@ pub fn n_valtype(
 
 ///|
 pub fn n_storagetype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ty : @wasm_types.StorageType[@ast.Ident],
 ) -> @wasm_types.StorageType[@type_store.RefIndex]? {
@@ -255,7 +210,7 @@ pub fn n_storagetype(
 
 ///|
 pub fn n_fieldtype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ty : @wasm_types.FieldType[@ast.Ident],
 ) -> @wasm_types.FieldType[@type_store.RefIndex]? {
@@ -286,7 +241,7 @@ fn[A, B] map_all(xs : Array[A], f : (A) -> B?) -> Array[B]? {
 /// The check runs even when a parameter's type fails to resolve, because a
 /// duplicate name is worth reporting whether or not the types are sound.
 pub fn n_functype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ft : @ast.FuncType,
 ) -> @type_store.FuncType[@type_store.RefIndex]? {
@@ -328,7 +283,7 @@ fn check_unique_param_names(
 ///|
 /// What a defined type defines.
 pub fn comptype(
-  ctx : TypeContext,
+  ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ty : @ast.CompType,
 ) -> @type_store.CompType[@type_store.RefIndex]? {

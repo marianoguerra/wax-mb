@@ -208,3 +208,92 @@ test "source slices" {
   )
   inspect(@typing_env.source_slice(None, loc_at(0, 3)) is None, content="true")
 }
+
+///|
+/// The module context's constructor is the only place that can guarantee every
+/// table shares one branch assumption and one origin -- and that sharing is
+/// what lets a fact set in one place be seen in another.
+test "the tables share their refs" {
+  let ctx = @typing_env.ModuleContext::new(
+    @diagnostic.collector(),
+    @type_store.TypeStore::new(),
+    @feature.default(),
+  )
+  let env = @cond.Env::new()
+  let debug = env.of_cond(@diagnostic.collector(), loc_at(0, 0), var_("debug"))
+
+  // Declared under `#[if($debug)]` in one table...
+  ctx.cond.val = debug
+  ctx.functions.add("f", loc_at(10, 11), None)
+  ctx.globals.add("g", loc_at(12, 13), (false, None))
+
+  // ...and invisible from the other branch in BOTH, because they share `cond`.
+  ctx.cond.val = @cond.not_(debug)
+  inspect(ctx.functions.visible("f").length(), content="0")
+  inspect(ctx.globals.visible("g").length(), content="0")
+  ctx.cond.val = debug
+  inspect(ctx.functions.visible("f").length(), content="1")
+  inspect(ctx.globals.visible("g").length(), content="1")
+
+  // And one origin attributes lookups in every table.
+  ctx.origin.val = FromFunction("main")
+  let _ = ctx.functions.resolve("f", loc_at(20, 21))
+  let _ = ctx.globals.resolve("g", loc_at(22, 23))
+  inspect(ctx.functions.referrers("f").length(), content="1")
+  inspect(ctx.globals.referrers("g").length(), content="1")
+}
+
+///|
+/// Per-function state is reset on entry, and the fields it clears are exactly
+/// the ones documented as per-function -- which is what makes that claim
+/// checkable rather than a set of promises spread through the record.
+test "entering a function clears the per-function state" {
+  let ctx = @typing_env.ModuleContext::new(
+    @diagnostic.collector(),
+    @type_store.TypeStore::new(),
+    @feature.default(),
+  )
+  ctx.locals["x"] = (None, loc_at(0, 1))
+  ctx.initialized_locals["x"] = ()
+  ctx.read_locals.push(5)
+  ctx.local_decls.push({ name: "x", loc: loc_at(0, 1) })
+  ctx.used_labels.push(7)
+  ctx.unresolved_label.val = true
+  ctx.enter_function(return_types=[@infer.valtype_cell(@infer.i32_valtype)])
+  inspect(ctx.locals.length(), content="0")
+  inspect(ctx.initialized_locals.length(), content="0")
+  inspect(ctx.read_locals.length(), content="0")
+  inspect(ctx.local_decls.length(), content="0")
+  inspect(ctx.used_labels.length(), content="0")
+  inspect(ctx.unresolved_label.val, content="false")
+  inspect(ctx.control_types.length(), content="0")
+  inspect(ctx.return_types.length(), content="1")
+}
+
+///|
+/// A control frame lasts exactly as long as the block that opened it, and an
+/// assignment inside a block does not escape it -- the block may not run.
+test "frames and initialization do not outlive their block" {
+  let ctx = @typing_env.ModuleContext::new(
+    @diagnostic.collector(),
+    @type_store.TypeStore::new(),
+    @feature.default(),
+  )
+  ctx.enter_function(return_types=[])
+  ctx.initialized_locals["outer"] = ()
+  let depth = ctx.with_frame(@typing_env.ControlFrame::new([]), () => {
+    // Inside, the new frame is innermost and the outer ones are still reachable.
+    ctx.initialized_locals["inner"] = ()
+    ctx.control_types.length()
+  })
+  inspect(depth, content="1")
+  inspect(ctx.control_types.length(), content="0")
+  // The assignment inside DID escape, because nothing asked for a snapshot.
+  inspect(ctx.initialized_locals.contains("inner"), content="true")
+
+  // With a snapshot it does not.
+  ctx.initialized_locals.remove("inner")
+  ctx.with_initialized_snapshot(() => ctx.initialized_locals["inner"] = ())
+  inspect(ctx.initialized_locals.contains("inner"), content="false")
+  inspect(ctx.initialized_locals.contains("outer"), content="true")
+}
