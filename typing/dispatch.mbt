@@ -1952,6 +1952,124 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Constructing a struct through its descriptor ---
+    StructDesc(desc, fields) => {
+      // The DESCRIPTOR is typed first, because it is what says which struct is
+      // being built -- the type is not written down anywhere else.
+      let desc_ = self.statement(desc)
+      let target = descriptor_reftype(
+        ctx,
+        desc.info,
+        nullable=false,
+        expression_type(ctx, desc_.info),
+      )
+      let declared = match target {
+        Some({ typ: Type(n) | Exact(n), .. }) =>
+          lookup_struct_type(
+            ctx.type_context,
+            ctx.diagnostics,
+            n,
+            location=Some(loc),
+          )
+        _ => None
+      }
+      let checked = self.struct_fields(loc, declared, fields)
+      let ty = match target {
+        Some(rt) =>
+          match internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) {
+            Some(c) => c
+            None => @infer.Cell::make(@infer.InferredType::Error)
+          }
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      {
+        desc: StructDesc(desc_, checked),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    StructDefaultDesc(desc) => {
+      let desc_ = self.statement(desc)
+      let target = descriptor_reftype(
+        ctx,
+        desc.info,
+        nullable=false,
+        expression_type(ctx, desc_.info),
+      )
+      if target is Some({ typ: Type(n) | Exact(n), .. }) {
+        if lookup_struct_type(
+            ctx.type_context,
+            ctx.diagnostics,
+            n,
+            location=Some(loc),
+          )
+          is Some(declared) {
+          if declared.iter().any(f => !field_has_default(f.desc.1)) {
+            not_defaultable(ctx.diagnostics, loc)
+          }
+        }
+      }
+      let ty = match target {
+        Some(rt) =>
+          match internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) {
+            Some(c) => c
+            None => @infer.Cell::make(@infer.InferredType::Error)
+          }
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      {
+        desc: StructDefaultDesc(desc_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Casting through a descriptor ---
+    CastDesc(value, nullable, desc) => {
+      // Emission order: the value, then the descriptor on top of it.
+      let value_ = self.statement(value)
+      let desc_ = self.statement(desc)
+      let target = descriptor_reftype(
+        ctx,
+        desc.info,
+        nullable~,
+        expression_type(ctx, desc_.info),
+      )
+      let ty = match target {
+        Some(rt) => {
+          if internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) is Some(w) {
+            lint_ref_cast(
+              ctx,
+              loc,
+              is_test=false,
+              expression_type(ctx, value_.info).get(),
+              w.get(),
+              operand_location=Some(value.info),
+            )
+          }
+          match internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) {
+            Some(c) => c
+            None => @infer.Cell::make(@infer.InferredType::Error)
+          }
+        }
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      {
+        desc: CastDesc(value_, nullable, desc_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- Branching on a descriptor cast ---
+    BrOnCastDescEq(label, nullable, value, desc) =>
+      self.desc_branch(i, label, nullable, value, desc, on_success=true)
+    BrOnCastDescEqFail(label, nullable, value, desc) =>
+      self.desc_branch(i, label, nullable, value, desc, on_success=false)
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -4063,5 +4181,79 @@ fn Checker::is_resume_call(
   match meth.name {
     "resume" | "resume_throw" | "resume_throw_ref" => true
     _ => false
+  }
+}
+
+///|
+/// The two descriptor branches, which are mirrors of the plain cast branches.
+///
+/// `br_on_cast_desc_eq` branches when the value's descriptor IS the given one,
+/// carrying the described type; the `_fail` form branches when it is not,
+/// carrying the residual. The target type is recovered from the descriptor
+/// operand rather than written.
+fn Checker::desc_branch(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+  label : @ast.Ident,
+  nullable : Bool,
+  value : @ast.Instr[@basic.Location],
+  desc : @ast.Instr[@basic.Location],
+  on_success~ : Bool,
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let ctx = self.ctx
+  let loc = i.info
+  let value_ = self.statement(value)
+  let desc_ = self.statement(desc)
+  let target = descriptor_reftype(
+    ctx,
+    desc.info,
+    nullable~,
+    expression_type(ctx, desc_.info),
+  )
+  let value_ty = expression_type(ctx, value_.info)
+  let params = branch_target(ctx, label)
+  let bound = label_in_scope(ctx, label)
+  let (delivered, fallthrough) = match target {
+    None =>
+      (
+        @infer.Cell::make(@infer.InferredType::Error),
+        @infer.Cell::make(@infer.InferredType::Error),
+      )
+    Some(rt) => {
+      let cast_to = match
+        internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) {
+        Some(c) => c
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      let residual = match
+        conditional_cast_types(ctx, value.info, value_ty, rt) {
+        Some((_, r)) => r
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+      if on_success {
+        (cast_to, residual)
+      } else {
+        (residual, cast_to)
+      }
+    }
+  }
+  if bound {
+    check_subtypes(
+      ctx.type_context.subtyping_info(),
+      ctx.diagnostics,
+      value.info,
+      [delivered],
+      params,
+    )
+  }
+  {
+    desc: if on_success {
+      BrOnCastDescEq(label, nullable, value_, desc_)
+    } else {
+      BrOnCastDescEqFail(label, nullable, value_, desc_)
+    },
+    info: annotate([fallthrough], loc),
+    hints: i.hints,
+    expected: i.expected,
   }
 }

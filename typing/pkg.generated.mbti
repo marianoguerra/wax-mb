@@ -111,6 +111,8 @@ pub fn descriptor_not_struct(@diagnostic.Context, @basic.Location, described~ : 
 
 pub fn descriptor_outside_rec_group(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
 
+pub fn descriptor_reftype(@typing_env.ModuleContext, @basic.Location, nullable~ : Bool, @infer.Cell[@infer.InferredType]) -> @wasm_types.RefType[@ast.Ident]?
+
 pub fn diff_ref_type(@wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@ast.Ident]
 
 pub fn dispatch_duplicate_arm(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit

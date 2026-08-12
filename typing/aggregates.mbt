@@ -271,3 +271,41 @@ pub fn check_elem_subtype(
     }
   }
 }
+
+///|
+/// Recover the target reference type of a descriptor cast, branch or
+/// allocation from its DESCRIPTOR operand.
+///
+/// These instructions write only the descriptor -- `x as desc d`, not
+/// `x as &$X desc d` -- so the type being reached for is not written down. It
+/// is recovered here: the operand has type `&$Y`, `$Y` describes `$X`, and `$X`
+/// is what was meant.
+///
+/// Exactness carries through. An exact descriptor identifies exactly one
+/// described type, so the result is exact too.
+pub fn descriptor_reftype(
+  ctx : @typing_env.ModuleContext,
+  location : @basic.Location,
+  nullable~ : Bool,
+  descriptor : @infer.Cell[@infer.InferredType],
+) -> @wasm_types.RefType[@ast.Ident]? {
+  let target = match descriptor.get() {
+    Valtype({ typ: Ref({ typ: Type(y) | Exact(y) as yt, .. }), .. }) =>
+      match ctx.types.find_no_mark(y.name) {
+        Some((_, { describes: Some(x), .. })) => {
+          let exact = yt is Exact(_)
+          Some(
+            (
+              { nullable, typ: if exact { Exact(x) } else { Type(x) } } :
+              @wasm_types.RefType[@ast.Ident]),
+          )
+        }
+        _ => None
+      }
+    _ => None
+  }
+  if target is None {
+    type_without_descriptor(ctx.diagnostics, location)
+  }
+  target
+}

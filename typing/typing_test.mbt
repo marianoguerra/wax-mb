@@ -7632,3 +7632,124 @@ test "an on clause belongs to a resume" {
     content="An 'on' handler clause is only allowed on a 'resume', 'resume_throw' or 'resume_throw_ref' call.",
   )
 }
+
+///|
+/// A descriptor construction writes only its DESCRIPTOR -- `{desc d| ..}`, not
+/// the struct type -- so the type being built is recovered from it: the operand
+/// has type `&$Y`, `$Y` describes `$X`, and `$X` is what was meant.
+test "a descriptor construction recovers its type from the descriptor" {
+  fn ctx_with_pair() -> @typing_env.ModuleContext {
+    let ctx = @typing_env.ModuleContext::new(
+      @diagnostic.collector(),
+      @type_store.TypeStore::new(),
+      @feature.configure([(CustomDescriptors, true)]),
+    )
+    let _ = @typing.add_type(ctx.type_context, ctx.diagnostics, [
+      {
+        desc: (
+          id("obj"),
+          {
+            typ: Struct([
+              {
+                desc: (id("x"), { mut_: false, typ: Value(I32) }),
+                info: loc_at(0, 1),
+              },
+            ]),
+            supertype: None,
+            final_: true,
+            descriptor: Some(id("d")),
+            describes: None,
+          },
+        ),
+        info: loc_at(0, 3),
+      },
+      {
+        desc: (
+          id("d"),
+          {
+            typ: Struct([]),
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: Some(id("obj")),
+          },
+        ),
+        info: loc_at(4, 5),
+      },
+    ])
+    @typing.bind_local(
+      ctx,
+      id("dv"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: false, typ: Type(id("d")) }),
+      ),
+    )
+    @typing.bind_local(ctx, id("bad"), Some(@infer.i32_valtype))
+    ctx
+  }
+
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // The descriptor `d` describes `obj`, so this builds an `obj` -- and the
+  // field is checked against that struct's declaration.
+  let ctx = ctx_with_pair()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement(
+    instr(
+      StructDesc(instr(Get(id("dv")), 20), [
+        (id("x"), Some(instr(Int("1"), 30))),
+      ]),
+      10,
+    ),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(
+    checked.info.0.map(t => @infer.to_string(t)).join(","),
+    content="&obj",
+  )
+  inspect(checker.gaps().length(), content="0")
+
+  // A descriptor operand that describes nothing has no type to recover.
+  let ctx2 = ctx_with_pair()
+  let checker2 = @typing.Checker::new(ctx2, @typing.Operands::new())
+  let _ = checker2.statement(
+    instr(StructDesc(instr(Get(id("bad")), 20), []), 10),
+  )
+  inspect(
+    @message.to_plain_string(ctx2.diagnostics.collected()[0].message),
+    content="This descriptor instruction requires a type that has a descriptor.",
+  )
+
+  // A cast through the descriptor reaches the same described type.
+  let ctx3 = ctx_with_pair()
+  @typing.bind_local(
+    ctx3,
+    id("v"),
+    @typing.internalize_valtype(
+      ctx3.type_context,
+      ctx3.diagnostics,
+      Ref({ nullable: true, typ: Any }),
+    ),
+  )
+  let checker3 = @typing.Checker::new(ctx3, @typing.Operands::new())
+  let cast = checker3.statement(
+    instr(
+      CastDesc(instr(Get(id("v")), 20), false, instr(Get(id("dv")), 30)),
+      10,
+    ),
+  )
+  inspect(cast.info.0.map(t => @infer.to_string(t)).join(","), content="&obj")
+  inspect(checker3.gaps().length(), content="0")
+}
