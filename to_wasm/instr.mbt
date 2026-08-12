@@ -16,6 +16,12 @@ pub fn Lowering::instr(
 ) -> Unit raise LowerError {
   let loc = i.info.1
   match i.desc {
+    // A hole emits NOTHING. `_` means "the value already on the stack", put
+    // there by an earlier statement -- so the instruction that consumes it
+    // simply finds it, and there is nothing for the hole itself to push. The
+    // checker has already validated that the value is there and has the right
+    // type; that is the whole content of the hole machinery.
+    Hole => ()
     Nop => out.push(Nop)
     Unreachable => out.push(Unreachable)
     Int(s) =>
@@ -306,6 +312,19 @@ pub fn Lowering::instr(
       }
       let bt = self.block_type(typ, loc)
       out.push(TryTable(bt, handlers, self.body(label, block.desc)))
+    }
+    BrTable(labels, operand) => {
+      self.instr(out, operand)
+      // The written list is the cases and the DEFAULT last, which is how the
+      // syntax reads and how the format stores it.
+      guard labels.length() >= 1 else {
+        raise Unresolved("br_table targets", loc)
+      }
+      let targets : Array[Int] = []
+      for k in 0..<(labels.length() - 1) {
+        targets.push(self.depth(labels[k], loc))
+      }
+      out.push(BrTable(targets, self.depth(labels[labels.length() - 1], loc)))
     }
     Throw(tag, args) => {
       for a in args {
