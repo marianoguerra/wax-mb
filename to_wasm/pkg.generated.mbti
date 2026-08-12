@@ -111,6 +111,8 @@ pub struct Lowering {
   indices : Indices
   mut locals : Map[String, Int]
   mut local_types : Array[@wasm_types.ValType[Int]]
+  mut binding_slots : Map[Int, Int]
+  mut claimed : Map[String, Int]
   mut local_names : Map[Int, Bytes]
   mut label_names : Map[Int, Bytes]
   mut label_counter : Int

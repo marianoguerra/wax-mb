@@ -35,6 +35,8 @@ pub fn lower_module(
     indices,
     locals: Map([]),
     local_types: [],
+    binding_slots: Map([]),
+    claimed: Map([]),
     local_names: Map([]),
     label_names: Map([]),
     label_counter: 0,
@@ -254,6 +256,8 @@ fn Lowering::function_body(
 ) -> @wasm_bin.FunctionCode raise LowerError {
   self.locals = Map([])
   self.local_types = []
+  self.binding_slots = Map([])
+  self.claimed = Map([])
   self.local_names = Map([])
   self.label_names = Map([])
   self.label_counter = 0
@@ -278,7 +282,7 @@ fn Lowering::function_body(
   for k, p in sign.params {
     if p.desc.0 is Some(name) {
       self.locals[name.name] = k
-      note_name(self.local_names, k, name.name)
+      note_name(self.local_names, k, self.claim_name(name.name))
     }
   }
   // Then the declared locals, numbered after the parameters in the order they
@@ -330,8 +334,11 @@ fn Lowering::collect_locals(
             }
         }
         guard ty is Some(ty) else { raise Unresolved("local type", i.info.1) }
-        self.locals[name.name] = next
-        note_name(self.local_names, next, name.name)
+        // The slot is recorded against the BINDING, not the name: a shadowing
+        // `let` must not be in scope for its own initializer, and only the
+        // lowering knows when that moment has passed.
+        self.binding_slots[name.loc.start.cnum] = next
+        note_name(self.local_names, next, self.claim_name(name.name))
         self.local_types.push(ty)
         next = next + 1
       }
@@ -686,5 +693,31 @@ fn Lowering::declare_func_refs(
       type_: { nullable: false, typ: Func },
       init,
     })
+  }
+}
+
+///|
+/// Claim a wasm-level name for this function, renaming on a collision.
+///
+/// Wasm gives a function one flat namespace, and wax lets a `let` shadow. The
+/// second `x` therefore becomes `x_2`, the third `x_3`, and the count is kept
+/// against the BASE so the numbering continues rather than restarting -- which
+/// is what stops `x_2` itself from colliding with a written `x_2`.
+fn Lowering::claim_name(self : Lowering, base : String) -> String {
+  match self.claimed.get(base) {
+    None => {
+      self.claimed[base] = 1
+      base
+    }
+    Some(n) => {
+      let mut k = n + 1
+      while self.claimed.contains(base + "_" + k.to_string()) {
+        k = k + 1
+      }
+      let name = base + "_" + k.to_string()
+      self.claimed[name] = 1
+      self.claimed[base] = k
+      name
+    }
   }
 }

@@ -245,9 +245,23 @@ fn Lowering::hinted(
     // A declaration with NO initializer emits nothing at all: it reserves the
     // slot, and the slot is already reserved by the local collection pass.
     // Storing into it would take a value nobody pushed.
-    Let(_, None) => ()
+    Let(bindings, None) =>
+      // Nothing is emitted, but the names still come into scope: a later read
+      // of the binding has to find it.
+      for b in bindings {
+        if b.0 is Some(name) {
+          self.bind_local(name, loc)
+        }
+      }
     Let(bindings, Some(init)) => {
+      // The initializer is lowered BEFORE the names come into scope, so `let x
+      // = x + 1` reads the outer `x` -- which is what the checker scoped it to.
       self.instr(out, init)
+      for b in bindings {
+        if b.0 is Some(name) {
+          self.bind_local(name, loc)
+        }
+      }
       // Bound right to left: the values are on the stack with the LAST on top,
       // and each `local.set` takes the top one.
       for k = bindings.length() - 1; k >= 0; k = k - 1 {
@@ -1017,6 +1031,19 @@ fn Lowering::body(
   let out = self.instrs(instrs)
   let _ = self.labels.pop()
   out
+}
+
+///|
+/// Bring a `let` binding's name into scope, at the slot it was assigned.
+fn Lowering::bind_local(
+  self : Lowering,
+  name : @ast.Ident,
+  loc : @basic.Location,
+) -> Unit raise LowerError {
+  guard self.binding_slots.get(name.loc.start.cnum) is Some(slot) else {
+    raise Unresolved("local binding", loc)
+  }
+  self.locals[name.name] = slot
 }
 
 ///|

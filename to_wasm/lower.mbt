@@ -63,6 +63,16 @@ pub struct Lowering {
   /// order, so the map is built by walking the same way.
   mut locals : Map[String, Int]
   mut local_types : Array[@wasm_types.ValType[Int]]
+  /// The slot each `let` binding took, keyed by where its NAME was written.
+  ///
+  /// Slots are assigned in one pass up front, but a name comes into scope only
+  /// after its own initializer -- `let x = x + 1` reads the OUTER `x` -- so the
+  /// two cannot both be carried by the name-to-slot map.
+  mut binding_slots : Map[Int, Int]
+  /// The wasm-level names already claimed in this function, each with the
+  /// number its next duplicate takes. Wasm has one flat namespace per
+  /// function, so a shadowing `let` needs a name of its own.
+  mut claimed : Map[String, Int]
   /// Local slot to the name the source gave it, for the name section.
   mut local_names : Map[Int, Bytes]
   /// Block label names, keyed by the order the blocks OPEN in.
