@@ -1645,6 +1645,27 @@ pub fn Checker::statement(
         expected: i.expected,
       }
     }
+    Call(callee, args) if self.atomic_family(callee) is Some(_) => {
+      guard callee.desc is StructGet(recv, meth) else {
+        return self.poisoned(i)
+      }
+      guard recv.desc is Get(memname) else { return self.poisoned(i) }
+      guard self.atomic_family(callee) is Some(family) else {
+        return self.poisoned(i)
+      }
+      let (checked_args, results) = self.atomic_access(
+        loc, memname, meth, family, args,
+      )
+      {
+        desc: Call(
+          callee.map_info(_ => annotate([], callee.info)),
+          checked_args,
+        ),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
     Call(callee, args) if self.is_mem_access(callee) => {
       guard callee.desc is StructGet(recv, meth) else {
         return self.poisoned(i)
@@ -3071,4 +3092,194 @@ fn Checker::table_mgmt(
       (checked, [@infer.Cell::make(@infer.InferredType::Error)])
     }
   }
+}
+
+///|
+/// The atomic family a call belongs to, if any.
+fn Checker::atomic_family(
+  self : Checker,
+  callee : @ast.Instr[@basic.Location],
+) -> @atomics.Family? {
+  guard callee.desc is StructGet(recv, meth) else { return None }
+  guard recv.desc is Get(memname) else { return None }
+  match classify_method_call(self.ctx, memname, meth.name) {
+    Atomic(f) => Some(f)
+    _ => None
+  }
+}
+
+///|
+/// Type an atomic memory operation.
+///
+/// The address comes first, then the value operands, then the labelled
+/// immediates -- the same shape as an ordinary access, with one rule of its
+/// own: an atomic access requires EXACTLY its natural alignment. For an
+/// ordinary access the alignment is a promise the engine may ignore, so less
+/// than natural is merely pessimistic; an atomic access that is not aligned is
+/// not atomic, so anything but the exact value is rejected.
+fn Checker::atomic_access(
+  self : Checker,
+  location : @basic.Location,
+  memname : @ast.Ident,
+  meth : @ast.Ident,
+  family : @atomics.Family,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> (
+  Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  Array[@infer.Cell[@infer.InferredType]],
+) {
+  let ctx = self.ctx
+  let address_type = match ctx.memories.find_no_mark(memname.name) {
+    Some((_, at)) => at
+    None => @wasm_types.AddressType::I32
+  }
+  let n_values = match family {
+    Load(_) => 0
+    Store(_) | Notify => 1
+    Rmw(Cmpxchg, _) | Wait(_) => 2
+    Rmw(_, _) => 1
+  }
+  let nstack = 1 + n_values
+  let split = split_labelled_args(args)
+  let found = take_labels(ctx.diagnostics, ["offset", "align"], split.labelled)
+  let example = memname.name + "." + meth.name + "(..., offset: 16)"
+  let (_, align, offset) = mem_immediates(
+    ctx.diagnostics,
+    location,
+    example,
+    nstack,
+    has_lane=false,
+    found,
+    split.positional,
+  )
+  let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  let values : Array[@infer.Cell[@infer.InferredType]] = []
+  let value_locs : Array[@basic.Location] = []
+  for k, a in split.positional {
+    let c = self.statement(a)
+    let ty = expression_type(ctx, c.info)
+    if k == 0 {
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        a.info,
+        ty,
+        address_cell(address_type),
+      )
+    } else {
+      values.push(ty)
+      value_locs.push(a.info)
+    }
+    checked.push(c)
+  }
+  let i32c = () => @infer.valtype_cell(@infer.i32_valtype)
+  let i64c = () => @infer.valtype_cell(@infer.i64_valtype)
+  fn want(k : Int, cell : @infer.Cell[@infer.InferredType]) -> Unit {
+    if k < values.length() {
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        value_locs[k],
+        values[k],
+        cell,
+      )
+    }
+  }
+
+  // A narrow store or read-modify-write picks the i32/i64 family from its VALUE,
+  // so either is accepted -- pinned to the integer group, with a still-flexible
+  // literal defaulting to i32 as usual.
+  fn integral(k : Int) -> @infer.Cell[@infer.InferredType] {
+    guard k < values.length() else {
+      return @infer.Cell::make(@infer.InferredType::Error)
+    }
+    let ty = values[k]
+    match ty.get() {
+      // A hole on the polymorphic stack is pinned to the flexible `Int` rather
+      // than left unknown: the operation is concrete and has to be emitted, and
+      // an unknown result would drop a cast around it instead of taking its
+      // width. As `Int` it still defaults to i32 and can still be pinned wider.
+      Unknown => {
+        ty.set(Int)
+        ty
+      }
+      Error => ty
+      _ =>
+        check_int_bin_op(
+          ctx.diagnostics,
+          value_locs[k],
+          ty,
+          @infer.Cell::make(Int),
+        )
+    }
+  }
+
+  let results : Array[@infer.Cell[@infer.InferredType]] = match family {
+    Load(W8) => [@infer.Cell::make(Int8)]
+    Load(W16) => [@infer.Cell::make(Int16)]
+    Load(W32) => [i32c()]
+    Load(W64) => [i64c()]
+    Store(W64) => {
+      want(0, i64c())
+      []
+    }
+    Store(_) => {
+      let _ = integral(0)
+
+      []
+    }
+    Rmw(_, W64) => {
+      for k in 0..<values.length() {
+        want(k, i64c())
+      }
+      [i64c()]
+    }
+    Rmw(op, _) => {
+      let vty = integral(0)
+      // A compare-and-exchange's expected and replacement values must agree on
+      // the family, so their cells are merged as a binary operator's would be.
+      if op is Cmpxchg && values.length() >= 2 {
+        if !(vty.get() is (Unknown | Error)) &&
+          !(values[1].get() is (Unknown | Error)) {
+          let _ = check_int_bin_op(
+            ctx.diagnostics,
+            value_locs[1],
+            vty,
+            values[1],
+          )
+        }
+      }
+      [vty]
+    }
+    Wait(t) => {
+      want(
+        0,
+        match t {
+          I32 => i32c()
+          I64 => i64c()
+        },
+      )
+      for k = 1; k < values.length(); k = k + 1 {
+        want(k, i64c())
+      }
+      [i32c()]
+    }
+    Notify => {
+      for k in 0..<values.length() {
+        want(k, i32c())
+      }
+      [i32c()]
+    }
+  }
+  let natural = @atomics.family_bytes(family)
+  // Only the OFFSET is range-checked the ordinary way; the alignment has its
+  // own, stricter rule below.
+  check_memarg(ctx.diagnostics, address_type, natural, None, offset)
+  if align is Some(a) {
+    match int_literal_u64(a.desc) {
+      Some(v) if v == natural.to_uint64() => ()
+      _ => atomic_alignment(ctx.diagnostics, a.info, natural)
+    }
+  }
+  (checked, results)
 }

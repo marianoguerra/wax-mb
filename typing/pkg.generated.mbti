@@ -21,6 +21,8 @@ pub fn add_type(@typing_env.TypeContext, @diagnostic.Context, Array[@basic.Annot
 
 pub fn assign_target(@typing_env.ModuleContext, @ast.Ident, ResolvedVar, compound? : Bool) -> Unit
 
+pub fn atomic_alignment(@diagnostic.Context, @basic.Location, Int) -> Unit
+
 pub fn bad_memory_align(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn bind_local(@typing_env.ModuleContext, @ast.Ident, @infer.InferredValType?) -> Unit

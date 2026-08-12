@@ -6845,3 +6845,137 @@ test "a cross-memory copy takes its length at the narrower width" {
     content="This expression has type 'large number' but is expected to have type 'i32'.",
   )
 }
+
+///|
+/// An atomic access requires EXACTLY its natural alignment. For an ordinary
+/// access the alignment is a promise the engine may ignore, so less than
+/// natural is merely pessimistic -- but an atomic access that is not aligned is
+/// not atomic, so anything but the exact value is rejected.
+test "an atomic access demands exactly its natural alignment" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn access(
+    meth : String,
+    args : Array[@ast.Instr[@basic.Location]],
+  ) -> String {
+    let ctx = module_ctx()
+    ctx.memories.add(ctx.diagnostics, "mem", loc_at(0, 3), (0, I32))
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(
+      instr(
+        Call(
+          instr(
+            StructGet(instr(Get(id("mem")), 20), {
+              name: meth,
+              loc: loc_at(24, 36),
+            }),
+            20,
+          ),
+          args,
+        ),
+        10,
+      ),
+    )
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ") +
+    " | " +
+    checker.gaps().length().to_string()
+  }
+
+  fn labelled(name : String, v : String) -> @ast.Instr[@basic.Location] {
+    instr(Labelled({ name, loc: loc_at(40, 46) }, instr(Int(v), 48)), 40)
+  }
+
+  let addr = instr(Int("0"), 30)
+  // A 32-bit atomic load: four bytes, so alignment 4 exactly.
+  inspect(
+    access("atomic_load32", [addr, labelled("align", "4")]),
+    content="i32 |  | 0",
+  )
+  // Less than natural is fine for an ordinary access and NOT for this one.
+  inspect(
+    access("atomic_load32", [addr, labelled("align", "1")]),
+    content="i32 | The alignment of an atomic access must be its natural alignment 4. | 0",
+  )
+  inspect(
+    access("atomic_load32", [addr, labelled("align", "8")]),
+    content="i32 | The alignment of an atomic access must be its natural alignment 4. | 0",
+  )
+  // A narrow load remembers its width, as the ordinary one does.
+  inspect(access("atomic_load8", [addr]), content="i8 |  | 0")
+  // A wait answers whether it timed out, so an i32 whatever it waited on.
+  inspect(
+    access("atomic_wait32", [addr, instr(Int("0"), 34), instr(Int("1"), 38)]),
+    content="i32 |  | 0",
+  )
+}
+
+///|
+/// A narrow read-modify-write picks the i32/i64 family from its VALUE, so
+/// either is accepted -- and the value's cell IS the result, since the
+/// operation returns the old value at the same width.
+test "a narrow atomic rmw takes its width from its value" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn rmw(meth : String, value : @ast.InstrDesc[@basic.Location]) -> String {
+    let ctx = module_ctx()
+    ctx.memories.add(ctx.diagnostics, "mem", loc_at(0, 3), (0, I32))
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(
+      instr(
+        Call(
+          instr(
+            StructGet(instr(Get(id("mem")), 20), {
+              name: meth,
+              loc: loc_at(24, 36),
+            }),
+            20,
+          ),
+          [instr(Int("0"), 30), instr(value, 34)],
+        ),
+        10,
+      ),
+    )
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  // A flexible literal stays flexible and defaults to i32 like any other.
+  inspect(rmw("atomic_rmw_add32", Int("1")), content="int | ")
+  // A literal too big for i32 makes it the i64 family instead.
+  inspect(rmw("atomic_rmw_add32", Int("4294967296")), content="i64 | ")
+  // A float is not an integer operation at all.
+  inspect(
+    rmw("atomic_rmw_add32", Float("1.5")),
+    // The operand keeps its own type; the complaint is what says it is wrong.
+    content="float | This operator cannot be applied to operands of types 'float' and 'int'.",
+  )
+}

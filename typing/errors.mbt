@@ -1239,3 +1239,24 @@ pub fn invalid_management_call(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// An atomic access whose alignment is not exactly its natural one.
+///
+/// Unlike an ordinary access, where the alignment is a promise the engine may
+/// ignore, an atomic one must be exactly aligned to be atomic at all.
+pub fn atomic_alignment(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  natural : Int,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "The alignment of an atomic access must be its natural alignment",
+    )
+    .sep(@message.int(natural))
+    .seq(@message.text(".")),
+  )
+}
