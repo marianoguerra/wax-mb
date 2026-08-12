@@ -5249,6 +5249,38 @@ test "a string builds the canonical byte array" {
       ]),
       info: loc_at(0, 5),
     },
+    // A function that builds one. The canonical byte array is registered only
+    // when something uses it -- the store IS the type section, so registering
+    // it unconditionally would put a type in every module that never builds a
+    // string.
+    {
+      desc: Func(
+        name=id("f", at=10),
+        typ=None,
+        sign=Some({ params: [], results: [] }),
+        body=(
+          None,
+          [
+            {
+              desc: Let(
+                [(None, None)],
+                Some({
+                  desc: Str(None, b"hi"),
+                  info: loc_at(20, 24),
+                  hints: { branch: None, freq: None, targets: None },
+                  expected: None,
+                }),
+              ),
+              info: loc_at(20, 24),
+              hints: { branch: None, freq: None, targets: None },
+              expected: None,
+            },
+          ],
+        ),
+        attributes=[],
+      ),
+      info: loc_at(10, 11),
+    },
   ]
   @typing.declare_fields(ctx, module_)
   // Both names reach the same interned type.

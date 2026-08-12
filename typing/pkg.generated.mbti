@@ -572,6 +572,8 @@ pub fn unused_local(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn unused_result(@diagnostic.Context, @basic.Location) -> Unit
 
+pub fn[Info] uses_string_literal(Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Bool
+
 pub fn val_lub(@typing_env.TypeContext, @wasm_types.ValType[@ast.Ident], @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@ast.Ident]?
 
 pub fn valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.Id]?

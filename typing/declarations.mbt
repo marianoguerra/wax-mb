@@ -325,7 +325,12 @@ pub fn[Info] declare_fields(
   // source types, so a user type with the same shape is what it dedups ONTO
   // rather than the other way round -- which is how a string literal comes to
   // count as a use of that user type.
-  register_string_type(ctx)
+  // Only when something builds one: the store IS the type section, so a type
+  // nothing names would be a type the module carries for no reason -- and every
+  // index after it would shift.
+  if uses_string_literal(fields) {
+    register_string_type(ctx)
+  }
   index_structs_by_fields(ctx)
   let state = { memory_index: 0 }
   walk_fields(ctx, fields, field => {
@@ -434,6 +439,50 @@ pub fn index_structs_by_fields(ctx : @typing_env.ModuleContext) -> Unit {
 /// type declared as `array(mut i8)` interns to the same index and a string
 /// literal is a genuine use of it.
 pub let string_type_name : String = "<string>"
+
+///|
+/// Whether any instruction in the module is a string literal.
+///
+/// The canonical byte array is registered only when something builds one. An
+/// unconditional registration would put a type in the store that nothing names,
+/// and the store IS the type section -- so the module would carry a type it
+/// never uses and every index after it would shift.
+pub fn[Info] uses_string_literal(fields : @ast.Module[Info]) -> Bool {
+  let mut found = false
+  fn scan(instrs : Array[@ast.Instr[Info]]) -> Unit {
+    for i in instrs {
+      i.iter_instr(node => if node.desc is Str(_, _) { found = true })
+    }
+  }
+
+  fn walk(
+    fs : Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]],
+  ) -> Unit {
+    for f in fs {
+      match f.desc {
+        Func(body~, ..) => scan(body.1)
+        Global(def~, ..) => scan([def])
+        Table(init~, ..) => if init is Some(e) { scan([e]) }
+        Elem(init~, ..) => scan(init)
+        Memory(data~, ..) =>
+          for d in data {
+            scan([d.offset])
+          }
+        Data(mode~, ..) => if mode is Active(_, off) { scan([off]) }
+        Conditional(then_fields~, else_fields~, ..) => {
+          walk(then_fields.desc)
+          if else_fields is Some(e) {
+            walk(e.desc)
+          }
+        }
+        _ => ()
+      }
+    }
+  }
+
+  walk(fields)
+  found
+}
 
 ///|
 /// Register the canonical `mut i8` array that a bare string literal builds.
