@@ -1563,6 +1563,12 @@ pub fn Checker::statement(
       self.cont_construct(i, ns, name, args)
     }
 
+    // --- Wide arithmetic: `i64::add128(..)`, `i64::mul_wide_s(..)` ---
+    Call(callee, args) if self.wide_arith(callee) => {
+      guard callee.desc is Path(ns, name) else { return self.poisoned(i) }
+      self.wide_arith_call(i, callee, ns, name, args)
+    }
+
     // --- A SIMD operation written on a value: `x.add_i32x4(y)` ---
     // --- A free intrinsic: `v128::i8x16(..)`, `v128::bitselect(..)` ---
     Call(callee, args) if callee.desc is Path(_, _) => {

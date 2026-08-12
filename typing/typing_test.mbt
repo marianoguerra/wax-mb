@@ -8729,3 +8729,88 @@ test "a write hands its destination's type to the value" {
     content="Cannot infer the array type here; add an explicit type, as in '[T| ..]'.",
   )
 }
+
+///|
+/// A struct literal's FIELDS name the exact struct being built; an expected type
+/// may be a supertype of it that has none of them. So field inference takes
+/// precedence, and the context is the fallback for when the fields are
+/// ambiguous -- not the first answer.
+test "a struct literal's fields outrank the type expected of it" {
+  let ctx = module_ctx()
+  let tc = ctx.type_context
+  fn field(
+    f : String,
+    at : Int,
+  ) -> @basic.Annotated[
+    (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+    @basic.Location,
+  ] {
+    let ty : @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]] = {
+      mut_: true,
+      typ: Value(I32),
+    }
+    { desc: (id(f), ty), info: loc_at(at, at + 1) }
+  }
+
+  fn declare_struct(n : String, t : @ast.CompType, at : Int) -> Unit {
+    let _ = @typing.add_type(tc, ctx.diagnostics, [
+      {
+        desc: (
+          id(n),
+          {
+            typ: t,
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: None,
+          },
+        ),
+        info: loc_at(at, at + 1),
+      },
+    ])
+  }
+
+  // `base` has one field, `derived` has that one and another. A literal naming
+  // both pins `derived`, which `base` could never be.
+  fn value(at : Int) -> @ast.Instr[@basic.Location] {
+    {
+      desc: Int("1"),
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  declare_struct("base", Struct([field("a", 0)]), 0)
+  declare_struct("derived", Struct([field("a", 4), field("b", 5)]), 4)
+  // The field index is built once, after every type is registered -- so a
+  // literal's fields can be answered completely rather than by whatever
+  // happened to be declared above it.
+  @typing.index_structs_by_fields(ctx)
+  let literal : @ast.Instr[@basic.Location] = {
+    desc: Struct(None, [
+      (id("a", at=20), Some(value(22))),
+      (id("b", at=24), Some(value(26))),
+    ]),
+    info: loc_at(18, 19),
+    hints: { branch: None, freq: None, targets: None },
+    expected: None,
+  }
+  let want = @typing.internalize(
+    tc,
+    ctx.diagnostics,
+    Ref({ nullable: false, typ: Type(id("base")) }),
+  ).unwrap()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  // Checked against `&base` -- which has no `b` -- the fields still win, and
+  // the mismatch is reported against the whole literal rather than the field.
+  let c = checker.check(want, literal)
+  inspect(c.info.0.map(t => @infer.to_string(t)).join(","), content="&derived")
+  inspect(
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / "),
+    content="This expression has type '&derived' but is expected to have type '&base'.",
+  )
+}

@@ -651,3 +651,71 @@ fn Checker::cont_construct_recovery(
     expected: i.expected,
   }
 }
+
+///|
+/// Whether a qualified path names one of the `i64::` wide-arithmetic
+/// intrinsics.
+///
+/// They need an arm of their own rather than joining the SIMD free intrinsics,
+/// because they produce TWO values -- the low and high halves -- and every other
+/// free intrinsic produces one.
+fn Checker::wide_arith(
+  self : Checker,
+  callee : @ast.Instr[@basic.Location],
+) -> Bool {
+  ignore(self)
+  guard callee.desc is Path(ns, _) else { return false }
+  ns.name == "i64"
+}
+
+///|
+/// Type `i64::add128(a_lo, a_hi, b_lo, b_hi)` and its siblings.
+///
+/// `add128`/`sub128` take each 128-bit input as a low/high pair, so four
+/// operands; `mul_wide_s`/`mul_wide_u` take two. All of them are i64, and all of
+/// them return the result as a low/high pair.
+fn Checker::wide_arith_call(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+  callee : @ast.Instr[@basic.Location],
+  ns : @ast.Ident,
+  name : @ast.Ident,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let ctx = self.ctx
+  let i64c = () => @infer.valtype_cell(@infer.i64_valtype)
+  let checked = args.map(a => self.check(i64c(), a))
+  let arity = match name.name {
+    "add128" | "sub128" => Some(4)
+    "mul_wide_s" | "mul_wide_u" => Some(2)
+    _ => None
+  }
+  let results = match arity {
+    None => {
+      unknown_intrinsic(ctx.diagnostics, callee.info, ns.name, name.name)
+      // Recovered with TWO poison results -- the arity every wide-arithmetic
+      // intrinsic has -- so a typo does not also produce a value-count error.
+      [
+        @infer.Cell::make(@infer.InferredType::Error),
+        @infer.Cell::make(@infer.InferredType::Error),
+      ]
+    }
+    Some(n) => {
+      if checked.length() != n {
+        operand_count_mismatch(
+          ctx.diagnostics,
+          callee.info,
+          expected=n,
+          provided=checked.length(),
+        )
+      }
+      [i64c(), i64c()]
+    }
+  }
+  {
+    desc: Call(callee.map_info(_ => annotate([], callee.info)), checked),
+    info: annotate(results, i.info),
+    hints: i.hints,
+    expected: i.expected,
+  }
+}

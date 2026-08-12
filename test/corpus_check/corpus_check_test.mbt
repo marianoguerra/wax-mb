@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 103311 poisoned 0 files 1903 clean 1607",
+    content="nodes 163355 poisoned 0 files 1903 clean 1723",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -137,9 +137,9 @@ test "the checker annotates every node it reaches" {
     #|23 Expecting 1 returned value(s) from the stack, but there are 0.
     #|22 This cast always traps: the value can never have this type.
     #|17 This type test is always true: the value already has this type.
-    #|15 A global named 'object_tag' is already bound.
-    #|15 A global named 'g' is already bound.
-    #|12 There is no field named 'next'.
+    #|10 The type 'point' is not bound.
+    #|8 Expecting 1 value(s) from the stack, but there are 0.
+    #|8 The variable 'd1' is not bound.
   let n = if top.length() < 8 { top.length() } else { 8 }
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),

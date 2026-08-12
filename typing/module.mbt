@@ -30,12 +30,10 @@ pub fn check_fields(
   ],
 ] {
   // Only the imports are registered at this point, so this IS the scope a
-  // table initializer may see.
-  for name in ctx.globals.names() {
-    for g in ctx.globals.visible(name) {
-      ctx.import_globals.add(ctx.diagnostics, name, @basic.dummy_loc, g)
-    }
-  }
+  // table initializer may see. Copied rather than re-declared: a snapshot is not
+  // a second declaration, and adding the names again would report every one that
+  // is visible under more than one configuration as already bound.
+  ctx.globals.copy_entries_into(ctx.import_globals)
   let checker = Checker::new(ctx, ops)
   // Collected by POSITION, not by pass: the two phases below visit the fields
   // in the same order, so a counter in each lines them up -- and the typed

@@ -164,6 +164,20 @@ pub fn[A] Tbl::new(
 }
 
 ///|
+/// Copy this table's ENTRIES into another, without re-declaring anything.
+///
+/// A snapshot, not a second declaration: nothing is registered in the name
+/// space, so no clash is reported and the entries keep their own conditions.
+/// Re-adding them instead would say "already bound" for every name that is
+/// visible under more than one configuration -- and there is nothing wrong with
+/// those; that is what conditional compilation is for.
+pub fn[A] Tbl::copy_entries_into(self : Tbl[A], dst : Tbl[A]) -> Unit {
+  for name, l in self.entries {
+    dst.entries[name] = l.copy()
+  }
+}
+
+///|
 /// Declare a name under the current assumption, reporting a clash.
 ///
 /// Entries accumulate rather than replace, and the LAST is the most recent --

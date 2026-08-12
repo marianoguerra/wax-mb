@@ -55,12 +55,22 @@ pub fn exact_named_type(
 /// `None` when there is nothing to do -- the source named the type, or the node
 /// is not a construction at all. Only an OMITTED name is filled: a written one
 /// is what the author meant, and the context is not entitled to overrule it.
-fn pin_construction_name(
+fn Checker::pin_construction_name(
+  self : Checker,
   name : @ast.Ident,
   desc : @ast.InstrDesc[@basic.Location],
 ) -> @ast.InstrDesc[@basic.Location]? {
   match desc {
-    Struct(None, fields) => Some(Struct(Some(name), fields))
+    // Field inference takes PRECEDENCE over the expectation: the fields name
+    // the exact struct being constructed, where the expected type may be a
+    // supertype of it that has none of them. The context is the fallback for
+    // when the fields are ambiguous, not the first answer.
+    Struct(None, fields) =>
+      if infer_struct_by_fields(self.ctx, fields.map(f => f.0)) is Some(_) {
+        None
+      } else {
+        Some(Struct(Some(name), fields))
+      }
     StructDefault(None) => Some(StructDefault(Some(name)))
     Array(None, init, size) => Some(Array(Some(name), init, size))
     ArrayDefault(None, n) => Some(ArrayDefault(Some(name), n))
@@ -139,7 +149,7 @@ pub fn Checker::check(
       }
     _ => {
       let pinned = match exact_named_type(expected) {
-        Some(n) => pin_construction_name(n, i.desc)
+        Some(n) => self.pin_construction_name(n, i.desc)
         None => None
       }
       match pinned {
