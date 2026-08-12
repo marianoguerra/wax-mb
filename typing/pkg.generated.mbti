@@ -1,0 +1,64 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/typing"
+
+import {
+  "waxmb/wax/ast",
+  "waxmb/wax/basic",
+  "waxmb/wax/diagnostic",
+  "waxmb/wax/feature",
+  "waxmb/wax/type_store",
+  "waxmb/wax/typing_env",
+  "waxmb/wax/wasm_types",
+}
+
+// Values
+pub fn comptype(TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
+
+pub fn duplicated_field(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
+
+pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
+
+pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
+
+pub fn get_type_definition(TypeContext, @ast.Ident) -> @ast.SubType?
+
+pub fn heaptype(TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
+
+pub fn n_fieldtype(TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
+
+pub fn n_functype(TypeContext, @diagnostic.Context, @ast.FuncType) -> @type_store.FuncType[@type_store.RefIndex]?
+
+pub fn n_heaptype(TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.RefIndex]?
+
+pub fn n_reftype(TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.RefIndex]?
+
+pub fn n_storagetype(TypeContext, @diagnostic.Context, @wasm_types.StorageType[@ast.Ident]) -> @wasm_types.StorageType[@type_store.RefIndex]?
+
+pub fn n_valtype(TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.RefIndex]?
+
+pub fn reftype(TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
+
+pub fn require_feature(TypeContext, @diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
+
+pub fn resolve_type_name(TypeContext, @ast.Ident) -> @type_store.Id?
+
+pub fn resolve_type_ref(TypeContext, @ast.Ident) -> @type_store.RefIndex?
+
+pub fn valtype(TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.Id]?
+
+// Errors
+
+// Types and methods
+pub struct TypeContext {
+  store : @type_store.TypeStore
+  types : @typing_env.Tbl[(@type_store.RefIndex, @ast.SubType)]
+  features : @feature.Set
+  mut subtyping_cache : @type_store.SubtypingInfo?
+}
+pub fn TypeContext::invalidate(Self) -> Unit
+pub fn TypeContext::new(@type_store.TypeStore, @typing_env.Tbl[(@type_store.RefIndex, @ast.SubType)], @feature.Set) -> Self
+pub fn TypeContext::subtyping_info(Self) -> @type_store.SubtypingInfo
+
+// Type aliases
+
+// Traits

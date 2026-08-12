@@ -1,0 +1,16 @@
+import {
+  "waxmb/wax/basic",
+  "waxmb/wax/ast",
+  "waxmb/wax/wasm_types",
+  "waxmb/wax/type_store",
+  "waxmb/wax/typing_env",
+  "waxmb/wax/feature",
+  "waxmb/wax/diagnostic",
+  "waxmb/wax/message",
+}
+
+import {
+  "moonbitlang/core/test",
+  "waxmb/wax/cond",
+  "moonbitlang/core/ref",
+} for "test"
