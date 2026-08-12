@@ -37,6 +37,8 @@ pub fn heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapTy
 
 pub fn int_literal_lattice(String) -> @infer.InferredType
 
+pub fn is_defaultable(@wasm_types.ValType[@ast.Ident]) -> Bool
+
 pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
@@ -44,6 +46,10 @@ pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.Inf
 pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.Label]) -> Unit
 
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
+
+pub fn mark_initialized(@typing_env.ModuleContext, String) -> Unit
+
+pub fn memory_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
 pub fn n_fieldtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
 
@@ -67,6 +73,8 @@ pub fn report_leftovers(Stack, @diagnostic.Context, @basic.Location, (Stack) -> 
 
 pub fn report_missing_hole(Operands, @diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
 
+pub fn report_uninitialized(@typing_env.ModuleContext, @ast.Ident) -> Unit
+
 pub fn require_feature(@typing_env.TypeContext, @diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
 
 pub fn resolve_declared(@infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
@@ -75,13 +83,23 @@ pub fn resolve_type_name(@typing_env.TypeContext, @ast.Ident) -> @type_store.Id?
 
 pub fn resolve_type_ref(@typing_env.TypeContext, @ast.Ident) -> @type_store.RefIndex?
 
+pub fn resolve_variable(@typing_env.ModuleContext, @ast.Ident) -> ResolvedVar
+
+pub fn segment_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
+
 pub fn short_stack(@diagnostic.Context, StackKind, @basic.Location, Int, Int) -> Unit
 
 pub fn storage_subtype(@type_store.SubtypingInfo, @wasm_types.StorageType[@type_store.Id], @wasm_types.StorageType[@type_store.Id]) -> Bool
 
 pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], location? : @basic.Location?, pin? : Bool) -> Bool
 
+pub fn table_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
+
 pub fn type_mismatch(@diagnostic.Context, @basic.Location, Int, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
+
+pub fn[A] type_trailing_operand(@typing_env.ModuleContext, () -> A) -> (A, () -> Unit)
+
+pub fn uninitialized_local(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.Id]?
 
@@ -107,6 +125,14 @@ pub fn Operands::push(Self, @basic.Location?, @infer.Cell[@infer.InferredType]) 
 pub fn Operands::push_results(Self, @basic.Location, Array[@infer.Cell[@infer.InferredType]]) -> Unit
 pub fn Operands::set_unreachable(Self) -> Unit
 pub fn[A] Operands::with_empty(Self, () -> A) -> (A, Stack)
+
+pub(all) enum ResolvedVar {
+  Local(@infer.InferredValType?, @basic.Location)
+  Global(Bool, @infer.InferredValType?)
+  FuncRef(@type_store.Id, String, Bool)
+  Poisoned
+  Unbound
+}
 
 pub(all) enum Stack {
   Unreachable

@@ -375,3 +375,62 @@ pub fn ModuleContext::new(
     member_completions,
   }
 }
+
+///|
+/// A copy of which locals currently hold a value.
+pub fn ModuleContext::snapshot_initialized(
+  self : ModuleContext,
+) -> Map[String, Unit] {
+  let out : Map[String, Unit] = Map([])
+  for k, v in self.initialized_locals {
+    out[k] = v
+  }
+  out
+}
+
+///|
+/// Put back a snapshot, discarding whatever has been initialized since.
+pub fn ModuleContext::restore_initialized(
+  self : ModuleContext,
+  saved : Map[String, Unit],
+) -> Unit {
+  self.initialized_locals = saved
+}
+
+///|
+/// Add to the set, without disturbing what is already in it.
+pub fn ModuleContext::merge_initialized(
+  self : ModuleContext,
+  extra : Map[String, Unit],
+) -> Unit {
+  for k, v in extra {
+    self.initialized_locals[k] = v
+  }
+}
+
+///|
+/// Open a collector for uninitialized reads that are to be deferred rather than
+/// reported, and return it.
+pub fn ModuleContext::push_deferral(self : ModuleContext) -> Array[@ast.Ident] {
+  let collector : Array[@ast.Ident] = []
+  self.deferred_uninit.push(collector)
+  collector
+}
+
+///|
+/// Close the innermost collector.
+pub fn ModuleContext::pop_deferral(self : ModuleContext) -> Unit {
+  let _ = self.deferred_uninit.pop()
+}
+
+///|
+/// The innermost open collector, if any.
+pub fn ModuleContext::current_deferral(
+  self : ModuleContext,
+) -> Array[@ast.Ident]? {
+  if self.deferred_uninit.is_empty() {
+    None
+  } else {
+    Some(self.deferred_uninit[self.deferred_uninit.length() - 1])
+  }
+}

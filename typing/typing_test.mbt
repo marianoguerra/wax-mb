@@ -923,3 +923,175 @@ test "a literal's spelling and its use decide together" {
   )
   inspect(used_as("18446744073709551616", @infer.f64_valtype), content="f64")
 }
+
+///|
+fn module_ctx() -> @typing_env.ModuleContext {
+  @typing_env.ModuleContext::new(
+    @diagnostic.collector(),
+    @type_store.TypeStore::new(),
+    @feature.default(),
+  )
+}
+
+///|
+/// A real canonical index, which -- `Id` being opaque -- can only come from a
+/// store.
+fn some_id() -> @type_store.Id raise {
+  @type_store.TypeStore::new().add_rectype([
+    { final_: true, supertype: None, typ: Func({ params: [], results: [] }) },
+  ])
+}
+
+///|
+/// A bare name resolves in the language's order, and a local shadows
+/// everything. Globals, functions, memories and tables share one namespace, so
+/// a local is the only thing that can collide with them.
+test "a local shadows everything" {
+  let ctx = module_ctx()
+  ctx.globals.add("x", loc_at(0, 1), (false, None))
+  ctx.functions.add("f", loc_at(2, 3), Some((some_id(), "t", false)))
+  ctx.memories.add("m", loc_at(4, 5), (0, I32))
+  ctx.tables.add("t", loc_at(6, 7), (I32, { nullable: true, typ: Func }))
+  ctx.datas.add("d", loc_at(8, 9), ())
+  fn kind(n : String) -> String {
+    match @typing.resolve_variable(ctx, { name: n, loc: loc_at(20, 21) }) {
+      Local(_, _) => "local"
+      Global(_, _) => "global"
+      FuncRef(_, _, _) => "func"
+      Poisoned => "poisoned"
+      Unbound => "unbound"
+    }
+  }
+
+  inspect(kind("x"), content="global")
+  inspect(kind("f"), content="func")
+  inspect(kind("nope"), content="unbound")
+  inspect(
+    @typing.memory_receiver(ctx, { name: "m", loc: loc_at(0, 1) }),
+    content="true",
+  )
+  inspect(
+    @typing.table_receiver(ctx, { name: "t", loc: loc_at(0, 1) }),
+    content="true",
+  )
+  inspect(
+    @typing.segment_receiver(ctx, { name: "d", loc: loc_at(0, 1) }),
+    content="true",
+  )
+
+  // Now shadow each of them with a local.
+  ctx.locals["x"] = (None, loc_at(30, 31))
+  ctx.locals["m"] = (None, loc_at(30, 31))
+  ctx.locals["t"] = (None, loc_at(30, 31))
+  ctx.locals["d"] = (None, loc_at(30, 31))
+  inspect(kind("x"), content="local")
+  inspect(
+    @typing.memory_receiver(ctx, { name: "m", loc: loc_at(0, 1) }),
+    content="false",
+  )
+  inspect(
+    @typing.table_receiver(ctx, { name: "t", loc: loc_at(0, 1) }),
+    content="false",
+  )
+  inspect(
+    @typing.segment_receiver(ctx, { name: "d", loc: loc_at(0, 1) }),
+    content="false",
+  )
+}
+
+///|
+/// A function whose signature failed to resolve stays BOUND, so its uses read
+/// as poison rather than cascading into unbound-name reports.
+test "a poisoned function is bound, not unbound" {
+  let ctx = module_ctx()
+  ctx.functions.add("broken", loc_at(0, 1), None)
+  match @typing.resolve_variable(ctx, { name: "broken", loc: loc_at(5, 6) }) {
+    Poisoned => inspect("poisoned", content="poisoned")
+    Unbound => fail("a poisoned function must not read as unbound")
+    _ => fail("unexpected")
+  }
+}
+
+///|
+/// Only a non-nullable reference lacks a zero value, which is the entire reason
+/// initialization is tracked.
+test "what needs initializing" {
+  inspect(@typing.is_defaultable(I32), content="true")
+  inspect(@typing.is_defaultable(V128), content="true")
+  inspect(
+    @typing.is_defaultable(Ref({ nullable: true, typ: Any })),
+    content="true",
+  )
+  inspect(
+    @typing.is_defaultable(Ref({ nullable: false, typ: Any })),
+    content="false",
+  )
+}
+
+///|
+/// An operand written before the values it follows but EMITTED after them sees
+/// a state that is a subset of the true one. Three consequences, and each is
+/// what makes the analysis sound rather than merely plausible.
+test "a trailing operand defers what it cannot yet know" {
+  // A read that fails now but would succeed later is DEFERRED, not reported --
+  // and the replay finds it initialized by then.
+  let ctx = module_ctx()
+  let x : @ast.Ident = { name: "x", loc: loc_at(10, 11) }
+  let (_, replay) = @typing.type_trailing_operand(ctx, () => {
+    @typing.report_uninitialized(ctx, x)
+  })
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // An earlier operand initializes it before the trailing one's real slot.
+  @typing.mark_initialized(ctx, "x")
+  replay()
+  inspect(ctx.diagnostics.collected().length(), content="0")
+
+  // A read that is still uninitialized at the slot IS reported, then.
+  let ctx2 = module_ctx()
+  let (_, replay2) = @typing.type_trailing_operand(ctx2, () => {
+    @typing.report_uninitialized(ctx2, x)
+  })
+  inspect(ctx2.diagnostics.collected().length(), content="0")
+  replay2()
+  inspect(ctx2.diagnostics.collected().length(), content="1")
+  inspect(
+    @message.to_plain_string(ctx2.diagnostics.collected()[0].message),
+    content="The local variable 'x' has not been initialized.",
+  )
+}
+
+///|
+/// The operand's own writes are WITHHELD until its real slot, because an
+/// earlier operand runs first and must not see them.
+test "a trailing operand's writes are withheld" {
+  let ctx = module_ctx()
+  let (_, replay) = @typing.type_trailing_operand(ctx, () => {
+    @typing.mark_initialized(ctx, "y")
+  })
+  // Not visible yet: an earlier operand would run before this one.
+  inspect(ctx.initialized_locals.contains("y"), content="false")
+  replay()
+  // Applied at the emission slot.
+  inspect(ctx.initialized_locals.contains("y"), content="true")
+}
+
+///|
+/// A re-check that still fails under an OUTER deferral re-defers rather than
+/// reporting, because the outer operand has its own slot still to come.
+test "deferrals nest" {
+  let ctx = module_ctx()
+  let x : @ast.Ident = { name: "x", loc: loc_at(10, 11) }
+  let (_, outer_replay) = @typing.type_trailing_operand(ctx, () => {
+    let (_, inner_replay) = @typing.type_trailing_operand(ctx, () => {
+      @typing.report_uninitialized(ctx, x)
+    })
+    // The inner operand's own emission slot, which is still inside the outer
+    // operand's check -- so the outer deferral is open and the read is
+    // RE-deferred rather than reported.
+    inner_replay()
+  })
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // Only when the outer slot arrives does it surface.
+  outer_replay()
+  inspect(ctx.diagnostics.collected().length(), content="1")
+}

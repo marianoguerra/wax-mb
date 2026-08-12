@@ -198,3 +198,22 @@ pub fn non_empty_stack(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// A local read before it holds a value.
+///
+/// Only a non-nullable reference can be in this state: everything else has a
+/// zero value to start as.
+pub fn uninitialized_local(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The local variable")
+    .sep(@message.ident(name))
+    .sep(@message.text("has not been initialized.")),
+  )
+}

@@ -100,8 +100,14 @@ pub struct ModuleContext {
   pun_spans : Array[@basic.Location]?
   member_completions : Array[(@basic.Location, @members.MemberReceiver)]?
 }
+pub fn ModuleContext::current_deferral(Self) -> Array[@ast.Ident]?
 pub fn ModuleContext::enter_function(Self, return_types~ : Array[@infer.Cell[@infer.InferredType]], label_decls? : Array[@ast.Ident], assigned_locals? : Map[String, Unit]) -> Unit
+pub fn ModuleContext::merge_initialized(Self, Map[String, Unit]) -> Unit
 pub fn ModuleContext::new(@diagnostic.Context, @type_store.TypeStore, @feature.Set, warn_unused? : Bool, simplify? : Bool, suggest? : Bool, faithful? : Bool, resolve_links? : Array[Reference]?, pun_spans? : Array[@basic.Location]?, member_completions? : Array[(@basic.Location, @members.MemberReceiver)]?) -> Self
+pub fn ModuleContext::pop_deferral(Self) -> Unit
+pub fn ModuleContext::push_deferral(Self) -> Array[@ast.Ident]
+pub fn ModuleContext::restore_initialized(Self, Map[String, Unit]) -> Unit
+pub fn ModuleContext::snapshot_initialized(Self) -> Map[String, Unit]
 pub fn[A] ModuleContext::with_frame(Self, ControlFrame, () -> A) -> A
 pub fn[A] ModuleContext::with_initialized_snapshot(Self, () -> A) -> A
 
