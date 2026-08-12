@@ -954,3 +954,20 @@ pub fn not_defaultable(
     @message.text("This type has no default value for all its fields."),
   )
 }
+
+///|
+/// An array literal whose type cannot be worked out.
+pub fn cannot_infer_array_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "Cannot infer the array type here; add an explicit type, as in",
+    )
+    .sep(@message.code("[T| ..]"))
+    .seq(@message.text(".")),
+  )
+}

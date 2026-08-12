@@ -37,6 +37,8 @@ pub fn br_if_result_mismatch(@diagnostic.Context, @basic.Location, @basic.Locati
 
 pub fn branch_target(@typing_env.ModuleContext, @ast.Ident) -> Array[@infer.Cell[@infer.InferredType]]
 
+pub fn cannot_infer_array_type(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn cannot_infer_struct_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]

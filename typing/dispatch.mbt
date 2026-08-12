@@ -843,6 +843,91 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Constructing an array ---
+    Array(name, init, size) => {
+      // The element type is resolved BEFORE the value is typed, so a nested
+      // literal there can be inferred and drop its own name. The value is still
+      // typed first and the count second, which is the emission order.
+      let elt = self.element_of(loc, name)
+      let init_ = self.statement(init)
+      if elt is Some(cell) {
+        check_subtype(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          init.info,
+          expression_type(ctx, init_.info),
+          cell,
+        )
+      }
+      let size_ = self.statement(size)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        size.info,
+        expression_type(ctx, size_.info),
+        @infer.valtype_cell(@infer.i32_valtype),
+      )
+      let ty = self.allocated(loc, name)
+      self.ops.push(Some(loc), ty)
+      {
+        desc: Array(name, init_, size_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    ArrayDefault(name, size) => {
+      let size_ = self.statement(size)
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        size.info,
+        expression_type(ctx, size_.info),
+        @infer.valtype_cell(@infer.i32_valtype),
+      )
+      if name is Some(n) {
+        // Every element starts at its zero, so the element type must have one.
+        if lookup_array_type(ctx.type_context, ctx.diagnostics, n) is Some(f) {
+          if !field_has_default(f) {
+            not_defaultable(ctx.diagnostics, n.loc)
+          }
+        }
+      }
+      let ty = self.allocated(loc, name)
+      self.ops.push(Some(loc), ty)
+      {
+        desc: ArrayDefault(name, size_),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    ArrayFixed(name, elems) => {
+      let elt = self.element_of(loc, name)
+      let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+      for e in elems {
+        let c = self.statement(e)
+        if elt is Some(cell) {
+          check_subtype(
+            ctx.type_context.subtyping_info(),
+            ctx.diagnostics,
+            e.info,
+            expression_type(ctx, c.info),
+            cell,
+          )
+        }
+        checked.push(c)
+      }
+      let ty = self.allocated(loc, name)
+      self.ops.push(Some(loc), ty)
+      {
+        desc: ArrayFixed(name, checked),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -1387,5 +1472,49 @@ fn Checker::field_value(
         }),
       )
     }
+  }
+}
+
+///|
+/// The element type an array construction stores at, at the width a WRITE
+/// takes.
+///
+/// Resolved before the element values are typed, so a nested literal among them
+/// can be inferred from it and drop its own name. `None` when the array type is
+/// missing or does not resolve; the values are still typed, just unchecked.
+fn Checker::element_of(
+  self : Checker,
+  location : @basic.Location,
+  name : @ast.Ident?,
+) -> @infer.Cell[@infer.InferredType]? {
+  guard name is Some(n) else {
+    cannot_infer_array_type(self.ctx.diagnostics, location)
+    return None
+  }
+  guard lookup_array_type(self.ctx.type_context, self.ctx.diagnostics, n)
+    is Some(field) else {
+    return None
+  }
+  internalize(self.ctx.type_context, self.ctx.diagnostics, unpack_type(field))
+}
+
+///|
+/// The reference an allocation produces, or `Error` when its type is unusable.
+///
+/// A missing name was already reported by `element_of`, so this stays quiet:
+/// one construction with no type is one complaint.
+fn Checker::allocated(
+  self : Checker,
+  location : @basic.Location,
+  name : @ast.Ident?,
+) -> @infer.Cell[@infer.InferredType] {
+  ignore(location)
+  match name {
+    Some(n) =>
+      match construction_result(self.ctx, n) {
+        Some(c) => c
+        None => @infer.Cell::make(@infer.InferredType::Error)
+      }
+    None => @infer.Cell::make(@infer.InferredType::Error)
   }
 }

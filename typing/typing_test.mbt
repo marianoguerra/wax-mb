@@ -3448,14 +3448,16 @@ test "an unwritten arm annotates its children and says so" {
     }
   }
 
-  // `ArrayFixed` has no arm yet, but its elements are literals that do.
+  // `Suspend` has no arm yet -- it is stack switching, which lands late -- but
+  // its arguments are literals that do. When the dispatcher is complete this
+  // test becomes "there are no gaps at all".
   let checked = checker.statement(
-    instr(ArrayFixed(None, [instr(Int("1"), 0), instr(Int("2"), 2)]), 6),
+    instr(Suspend(id("tag"), [instr(Int("1"), 0), instr(Int("2"), 2)]), 6),
   )
   // The node itself carries no values -- which is the truth, not a guess.
   inspect(checked.info.0.length(), content="0")
   // Its children do.
-  guard! checked.desc is ArrayFixed(_, elems)
+  guard! checked.desc is Suspend(_, elems)
   inspect(
     elems.map(x => x.info.0.map(t => @infer.to_string(t)).join(",")).join(" | "),
     content="number | number",
@@ -3463,7 +3465,7 @@ test "an unwritten arm annotates its children and says so" {
   // And the gap is named.
   inspect(
     checker.gaps().map(g => g.0 + ":" + g.1.to_string()).join(","),
-    content="ArrayFixed:1",
+    content="Suspend:1",
   )
 }
 
@@ -4829,6 +4831,153 @@ test "a default construction needs every field to have a zero" {
   // Nullable references have a null to default to.
   inspect(defaults(true), content="")
   // Non-nullable ones do not -- and it is said once, though both fields fail.
+  inspect(
+    defaults(false),
+    content="This type has no default value for all its fields.",
+  )
+}
+
+///|
+/// The array constructions. The element type is resolved BEFORE the values are
+/// typed, so a nested literal among them can be inferred from it -- and so the
+/// values are pinned to the element type rather than to their own defaults.
+test "an array construction pins its elements to the element type" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn ctx_with(
+    elem : @wasm_types.StorageType[@ast.Ident],
+  ) -> @typing_env.ModuleContext {
+    let ctx = module_ctx()
+    let module_ : @ast.Module[@basic.Location] = [
+      {
+        desc: Type([
+          {
+            desc: (
+              id("arr"),
+              {
+                typ: Array({ mut_: true, typ: elem }),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(0, 5),
+          },
+        ]),
+        info: loc_at(0, 5),
+      },
+    ]
+    @typing.declare_fields(ctx, module_)
+    ctx
+  }
+
+  // `[arr| 1.5; 3]` -- the initializer is checked against f64, the count i32.
+  let ctx = ctx_with(Value(F64))
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let made = checker.statement(
+    instr(Array(Some(id("arr")), instr(Int("1"), 10), instr(Int("3"), 14)), 0),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(made.info.0.map(t => @infer.to_string(t)).join(","), content="&arr")
+  guard! made.desc is Array(_, init, size)
+  inspect(
+    init.info.0.map(t => @infer.to_string(t)).join(",") +
+    "/" +
+    size.info.0.map(t => @infer.to_string(t)).join(","),
+    content="f64/i32",
+  )
+  inspect(checker.gaps().length(), content="0")
+
+  // A fixed array pins every element the same way, and a packed element takes
+  // the plain i32 a write uses.
+  let ctx2 = ctx_with(Packed(I8))
+  let checker2 = @typing.Checker::new(ctx2, @typing.Operands::new())
+  let fixed = checker2.statement(
+    instr(
+      ArrayFixed(Some(id("arr")), [instr(Int("1"), 10), instr(Int("2"), 14)]),
+      0,
+    ),
+  )
+  inspect(ctx2.diagnostics.collected().length(), content="0")
+  guard! fixed.desc is ArrayFixed(_, elems)
+  inspect(
+    elems.map(e => e.info.0.map(t => @infer.to_string(t)).join(",")).join(" | "),
+    content="i32 | i32",
+  )
+
+  // With no type name there is nothing to check against, and it is said once.
+  let ctx3 = ctx_with(Value(F64))
+  let checker3 = @typing.Checker::new(ctx3, @typing.Operands::new())
+  let _ = checker3.statement(instr(ArrayFixed(None, [instr(Int("1"), 10)]), 0))
+  inspect(
+    ctx3.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / "),
+    content="Cannot infer the array type here; add an explicit type, as in '[T| ..]'.",
+  )
+}
+
+///|
+/// A `..default` array starts every element at its zero, so the element type
+/// must have one -- a non-nullable reference does not.
+test "a default array needs an element type with a zero" {
+  fn defaults(nullable : Bool) -> String {
+    let ctx = module_ctx()
+    let module_ : @ast.Module[@basic.Location] = [
+      {
+        desc: Type([
+          {
+            desc: (
+              id("arr"),
+              {
+                typ: Array({
+                  mut_: true,
+                  typ: Value(Ref({ nullable, typ: Any })),
+                }),
+                supertype: None,
+                final_: true,
+                descriptor: None,
+                describes: None,
+              },
+            ),
+            info: loc_at(0, 5),
+          },
+        ]),
+        info: loc_at(0, 5),
+      },
+    ]
+    @typing.declare_fields(ctx, module_)
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let _ = checker.statement({
+      desc: ArrayDefault(Some(id("arr")), {
+        desc: Int("4"),
+        info: loc_at(10, 11),
+        hints: { branch: None, freq: None, targets: None },
+        expected: None,
+      }),
+      info: loc_at(0, 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    })
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  inspect(defaults(true), content="")
   inspect(
     defaults(false),
     content="This type has no default value for all its fields.",
