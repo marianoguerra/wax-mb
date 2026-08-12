@@ -49,6 +49,8 @@ pub fn catch_target_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@
 
 pub fn check_elem_subtype(@typing_env.ModuleContext, @basic.Location, @wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> Unit
 
+pub fn check_fields(@typing_env.ModuleContext, Operands, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]]
+
 pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
 pub fn check_inline_type(@typing_env.TypeContext, @diagnostic.Context, @basic.Location, @ast.FuncType, @ast.FuncType?) -> Unit
@@ -58,6 +60,8 @@ pub fn check_int_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer
 pub fn check_lane_immediate(@diagnostic.Context, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]) -> Unit
 
 pub fn check_memarg(@diagnostic.Context, @wasm_types.AddressType, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?) -> Unit
+
+pub fn check_module(@diagnostic.Context, @type_store.TypeStore, @feature.Set, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], simplify? : Bool, warn_unused? : Bool) -> (@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]])
 
 pub fn check_num_concrete(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 

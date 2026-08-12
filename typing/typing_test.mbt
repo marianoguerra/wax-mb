@@ -7858,3 +7858,148 @@ test "conditional compilation types each branch under its own assumption" {
   )
   inspect(checker.gaps().length(), content="0")
 }
+
+///|
+/// The whole checker, end to end: declare every name, then check every field.
+///
+/// The two passes are its entire shape. Nothing can be checked until every name
+/// exists, because a function may call one defined below it -- and the ORDER
+/// within the second pass matters for a different reason, which the next test
+/// pins.
+test "a module is declared then checked" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // `type t = fn() -> i32`, `let g: f64 = 1.5`, `fn f: t { 1 }`.
+  let module_ : @ast.Module[@basic.Location] = [
+    {
+      desc: Type([
+        {
+          desc: (
+            id("t"),
+            {
+              typ: Func({ params: [], results: [I32] }),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(0, 1),
+        },
+      ]),
+      info: loc_at(0, 1),
+    },
+    {
+      desc: Global(
+        name=id("g"),
+        mut_=false,
+        typ=Some(F64),
+        def=instr(Int("1"), 10),
+        attributes=[],
+      ),
+      info: loc_at(10, 11),
+    },
+    {
+      desc: Func(
+        name=id("f"),
+        typ=Some(id("t")),
+        sign=None,
+        body=(None, [instr(Int("1"), 20)]),
+        attributes=[],
+      ),
+      info: loc_at(20, 21),
+    },
+  ]
+  let (ctx, typed) = @typing.check_module(
+    @diagnostic.collector(),
+    @type_store.TypeStore::new(),
+    @feature.default(),
+    module_,
+  )
+  inspect(
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / "),
+    content="",
+  )
+  inspect(typed.length(), content="3")
+  // The global's initializer was pinned to its annotation, not to its own
+  // default.
+  // Source order is preserved: type, global, function.
+  guard! typed[1].desc is Global(def~, ..)
+  inspect(def.info.0.map(t => @infer.to_string(t)).join(","), content="f64")
+  // And the function's body to the type it was declared with -- which was
+  // written ABOVE it and resolved during the declaration pass.
+  guard! typed[2].desc is Func(body~, ..)
+  inspect(
+    body.1[0].info.0.map(t => @infer.to_string(t)).join(","),
+    content="i32",
+  )
+}
+
+///|
+/// A global initializer sees the globals declared BEFORE it and not those
+/// after. That is why globals are registered as they are checked rather than up
+/// front, unlike every other name.
+test "a global initializer sees only what precedes it" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn global(
+    name : String,
+    init : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+    {
+      desc: Global(
+        name=id(name),
+        mut_=false,
+        typ=Some(I32),
+        def=instr(init, at),
+        attributes=[],
+      ),
+      info: loc_at(at, at + 1),
+    }
+  }
+
+  // `let a = 1; let b = a` -- reading backwards is fine.
+  let (ctx1, _) = @typing.check_module(
+    @diagnostic.collector(),
+    @type_store.TypeStore::new(),
+    @feature.default(),
+    [global("a", Int("1"), 0), global("b", Get(id("a")), 10)],
+  )
+  inspect(ctx1.diagnostics.collected().length(), content="0")
+
+  // `let b = a; let a = 1` -- reading FORWARDS is not: `a` does not exist yet.
+  let (ctx2, _) = @typing.check_module(
+    @diagnostic.collector(),
+    @type_store.TypeStore::new(),
+    @feature.default(),
+    [global("b", Get(id("a")), 0), global("a", Int("1"), 10)],
+  )
+  inspect(
+    @message.to_plain_string(ctx2.diagnostics.collected()[0].message),
+    content="The variable 'a' is not bound.",
+  )
+}
