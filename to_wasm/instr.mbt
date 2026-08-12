@@ -480,6 +480,42 @@ fn Lowering::hinted(
         None => raise Unresolved("select type", loc)
       }
     }
+    Str(_, bytes) => {
+      // A string literal is an ARRAY of its bytes, built one constant at a
+      // time. There is no shortcut through a data segment: `array.new_data`
+      // takes a segment the source named, and a literal names none.
+      let (t, f) = self.array_element_of(i, loc)
+      // An `i16` array holds code UNITS, so the bytes are decoded first; an
+      // `i8` array holds the bytes as they stand.
+      let units = if f.typ is Packed(I16) {
+        utf16_units(bytes, loc)
+      } else {
+        let out : Array[Int] = []
+        for k in 0..<bytes.length() {
+          out.push(bytes[k].to_int())
+        }
+        out
+      }
+      for u in units {
+        out.push(I32Const(u))
+      }
+      out.push(ArrayNewFixed(t, units.length()))
+    }
+    ArraySegment(_, seg, off, len) => {
+      self.instr(out, off)
+      self.instr(out, len)
+      let (t, _) = self.array_element_of(i, loc)
+      // An ELEMENT segment means `array.new_elem`; anything else is a data
+      // segment. The two spaces are separate, so the name decides.
+      match self.indices.elems.get(seg.name) {
+        Some(e) => out.push(ArrayNewElem(t, e))
+        None =>
+          match self.indices.datas.get(seg.name) {
+            Some(d) => out.push(ArrayNewData(t, d))
+            None => raise Unresolved("array segment", loc)
+          }
+      }
+    }
     Struct(_, fields) => {
       let (t, declared) = self.struct_fields_of(i, loc)
       guard fields.length() == declared.length() else {
@@ -903,4 +939,21 @@ fn Lowering::catch_handler(
     CatchAll(label) => CatchAll(self.depth(label, loc))
     CatchAllRef(label) => CatchAllRef(self.depth(label, loc))
   }
+}
+
+///|
+/// A byte string as UTF-16 code units.
+///
+/// An `i16` array holds code units rather than bytes, so a literal destined for
+/// one is decoded and re-encoded. An astral scalar becomes a surrogate PAIR,
+/// which is why the count can differ from the character count.
+fn utf16_units(b : Bytes, loc : @basic.Location) -> Array[Int] raise LowerError {
+  guard @unicode.utf8_text(b) is Some(text) else {
+    raise NotLowered("non-UTF-8 string in a code-unit array", loc)
+  }
+  let out : Array[Int] = []
+  for k in 0..<text.length() {
+    out.push(text[k].to_int())
+  }
+  out
 }

@@ -1060,7 +1060,15 @@ pub fn Checker::statement(
       // only when one is named explicitly.
       let typ : @ast.Ident = match name {
         Some(n) => n
-        None => { name: string_type_name, loc }
+        None => {
+          // Registered ON DEMAND, when a literal actually resolves to it. The
+          // store IS the type section, so registering it up front would put the
+          // canonical array in every module that mentions a string -- including
+          // the ones whose literals all name a type of their own. Interning
+          // appends, so an index already handed out does not move.
+          register_string_type(ctx)
+          { name: string_type_name, loc }
+        }
       }
       // A string that resolves to the canonical array is a use of every source
       // type that deduplicated onto it, even though it names none of them --

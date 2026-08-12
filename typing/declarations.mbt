@@ -325,12 +325,6 @@ pub fn[Info] declare_fields(
   // source types, so a user type with the same shape is what it dedups ONTO
   // rather than the other way round -- which is how a string literal comes to
   // count as a use of that user type.
-  // Only when something builds one: the store IS the type section, so a type
-  // nothing names would be a type the module carries for no reason -- and every
-  // index after it would shift.
-  if uses_string_literal(fields) {
-    register_string_type(ctx)
-  }
   index_structs_by_fields(ctx)
   let state = { memory_index: 0 }
   walk_fields(ctx, fields, field => {
@@ -487,6 +481,12 @@ pub fn[Info] uses_string_literal(fields : @ast.Module[Info]) -> Bool {
 ///|
 /// Register the canonical `mut i8` array that a bare string literal builds.
 pub fn register_string_type(ctx : @typing_env.ModuleContext) -> Unit {
+  // Once per module. Called on demand, from every nameless literal, so without
+  // this the second one would report the name as already bound -- which is a
+  // true statement about a declaration nobody wrote.
+  guard ctx.type_context.types.find_no_mark(string_type_name) is None else {
+    return
+  }
   let name : @ast.Ident = { name: string_type_name, loc: @basic.dummy_loc }
   let _ = add_type(ctx.type_context, ctx.diagnostics, [
     {

@@ -5282,7 +5282,16 @@ test "a string builds the canonical byte array" {
       info: loc_at(10, 11),
     },
   ]
-  @typing.declare_fields(ctx, module_)
+  // Checked, not merely declared: the canonical array is registered ON DEMAND,
+  // when a literal actually resolves to it, so nothing registers it until the
+  // function body is typed. The context the check BUILT is the one that has
+  // it -- the outer one here only supplies the diagnostics.
+  let (ctx, _) = @typing.check_module(
+    ctx.diagnostics,
+    @type_store.TypeStore::new(),
+    @feature.default(),
+    module_,
+  )
   // Both names reach the same interned type.
   inspect(
     @typing.resolve_type_name(ctx.type_context, ctx.diagnostics, id("bytes")) ==
@@ -5293,21 +5302,25 @@ test "a string builds the canonical byte array" {
     content="true",
   )
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let before = ctx.diagnostics.collected().length()
   let checked = checker.statement({
     desc: Str(None, b"hi"),
     info: loc_at(0, 4),
     hints: { branch: None, freq: None, targets: None },
     expected: None,
   })
-  inspect(ctx.diagnostics.collected().length(), content="0")
+  // Nothing NEW: the canonical array is already registered by the time a second
+  // literal asks for it, which is what makes registering on demand safe.
+  inspect(ctx.diagnostics.collected().length() - before, content="0")
   inspect(
     checked.info.0.map(t => @infer.to_string(t)).join(","),
     // Rendered by its SHAPE: the generated `<string>` name means nothing to a
     // reader, so `anon_comptype` shows the array instead.
     content="[mut i8]",
   )
-  // Recorded as a canonical reference -- a use nobody wrote a name for.
-  inspect(ctx.canonical_type_references.length(), content="1")
+  // Recorded as a canonical reference -- a use nobody wrote a name for. Two of
+  // them: the module's own literal, and the one typed just above.
+  inspect(ctx.canonical_type_references.length(), content="2")
   inspect(checker.gaps().length(), content="0")
 }
 
