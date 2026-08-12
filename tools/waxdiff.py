@@ -12,10 +12,16 @@ both implementations over a corpus and compares three things:
                              parser, AST, trivia, printer -- with no type
                              checker involved.
 
-  Oracle 2  wasm equivalence our printed output, fed back through the REFERENCE
-                             back end, must produce a byte-identical .wasm. This
-                             proves the AST preserved everything semantically
-                             relevant without our needing a code generator.
+  Oracle 2  wasm equivalence our output must produce a byte-identical .wasm.
+                             Two routes, `--oracle2-route`: `via-reference`
+                             prints with our formatter and compiles THAT with
+                             the reference back end, which proves the AST
+                             preserved everything semantically relevant without
+                             our needing a code generator; `native` compares our
+                             own `-f wasm` bytes against the same golden hashes,
+                             which is stronger and hermetic. A disagreement
+                             between the routes localizes a bug to the code
+                             generator rather than to the printer.
 
   Oracle 3  error parity     same diagnostics at the same spans with the same
                              exit code. Spans/offsets/severity are gated;
@@ -112,12 +118,17 @@ def _capped(argv: list[str]) -> list[str]:
 
 
 def run(
-    argv: list[str], cwd: Path | None = None, timeout: int = 60, cap: bool = True
+    argv: list[str],
+    cwd: Path | None = None,
+    timeout: int = 60,
+    cap: bool = True,
+    stdin: bytes | None = None,
 ) -> Run:
     try:
         p = subprocess.run(
             _capped(argv) if cap else argv,
             cwd=cwd,
+            input=stdin,
             capture_output=True,
             timeout=timeout,
             check=False,
@@ -671,20 +682,137 @@ def _check_idempotent(impl: list[str], rel: str, once: bytes, out: Outcome) -> b
     return True
 
 
+# Oracle 2 has two routes to a .wasm, and both are worth keeping.
+#
+# `via-reference` is the original: we cannot emit wasm, so we print the file with
+# our formatter and hand THAT to the reference's back end. It proves the AST
+# preserved everything semantically relevant without our needing a code
+# generator, and it needs the reference binary.
+#
+# `native` compares OUR OWN emitted binary against the same golden hash. It is a
+# strictly stronger claim -- the via-reference route launders any AST detail the
+# printer happens to reproduce faithfully -- and, because the 1592 wasm_sha256
+# values are committed and were compiled from the ORIGINAL source, it needs no
+# reference binary at all. So unlike its sibling it can run in `just diff` and in
+# CI.
+#
+# Keeping both is the point: a disagreement between the routes localizes a bug to
+# the code generator rather than to the printer.
+VIA_REFERENCE = "via-reference"
+NATIVE = "native"
+
+_HAS_WASM_TOOLS = shutil.which("wasm-tools") is not None
+
+
+def _wasm_tools(*args: str, stdin: bytes | None = None) -> Run:
+    return run(["wasm-tools", *args], stdin=stdin, cap=False)
+
+
+def _ladder(rel: str, got: bytes, want_sha: str, out: Outcome) -> bool:
+    """Grade our bytes against the golden hash, in three tiers.
+
+    T2 -- sha256 against test/golden/index.json -- is the gate, and the only tier
+    that decides pass or fail. T0 and T1 exist so that an INCOMPLETE encoder
+    yields graded signal instead of 1592 identical "binary differs" lines: they
+    say whether the bytes are a valid module at all, and whether they are
+    semantically equal modulo the custom sections we do not emit yet.
+
+    This mirrors what oracle 3 already does with gated versus reported fields:
+    the build fails on the objective claim, everything else is recorded as drift
+    and burned down deliberately.
+    """
+    if sha256(got) == want_sha:
+        out.passed += 1
+        return True
+
+    out.failed += 1
+    detail = [f"binary differs (want {want_sha[:12]}, got {sha256(got)[:12]})"]
+    if not _HAS_WASM_TOOLS:
+        detail.append("T0/T1: skipped, wasm-tools not found")
+        out.failures.append(Failure(rel, "wasm", "\n".join(detail)))
+        return False
+
+    # T0 -- is it a wasm module at all?
+    valid = _wasm_tools("validate", "-", stdin=got)
+    if valid.code != 0:
+        detail.append("T0 invalid: " + valid.err.decode("utf-8", "replace")[:400])
+        out.failures.append(Failure(rel, "wasm", "\n".join(detail)))
+        out.drift.append(f"## {rel}\n\nT0 invalid\n")
+        return False
+    detail.append("T0 valid")
+
+    # T1 -- equal modulo the custom sections?
+    #
+    # This one needs the reference, because only the golden HASH of its binary is
+    # committed, not the binary. T1 is diagnostic rather than gated, so when the
+    # reference is absent we simply say so rather than failing differently.
+    if not REFERENCE.exists():
+        detail.append("T1: skipped, reference binary absent")
+        out.failures.append(Failure(rel, "wasm", "\n".join(detail)))
+        return False
+    ref = wax(str(CORPUS / rel), "-f", "wasm", "-o", "-")
+    if ref.code != 0:
+        detail.append(f"T1: skipped, reference exited {ref.code}")
+        out.failures.append(Failure(rel, "wasm", "\n".join(detail)))
+        return False
+    ours, theirs = _stripped_wat(got), _stripped_wat(ref.out)
+    if ours is None or theirs is None:
+        detail.append("T1: skipped, strip/print failed")
+    elif ours == theirs:
+        # The whole difference is custom sections -- the name section, the
+        # branch-hint metadata, target_features. Worth its own bucket: it is a
+        # known, bounded gap rather than a wrong instruction.
+        detail.append("T1 equal (differs only in custom sections)")
+        out.drift.append(f"## {rel}\n\nT1 equal: custom sections only\n")
+    else:
+        detail.append("T1 differs:\n" + _text_diff(theirs, ours))
+    out.failures.append(Failure(rel, "wasm", "\n".join(detail)))
+    return False
+
+
+def _stripped_wat(binary: bytes) -> bytes | None:
+    """WAT text with every custom section removed, for T1.
+
+    `strip -o -` writes nothing, so the strip step has to go through a real file.
+    `--all` is deliberate: it takes the `name` section too, which is exactly the
+    difference we want T1 to see past.
+    """
+    with tempfile.NamedTemporaryFile(suffix=".wasm", delete=False) as f:
+        f.write(binary)
+        src = f.name
+    dst = src + ".stripped"
+    try:
+        if _wasm_tools("strip", "--all", src, "-o", dst).code != 0:
+            return None
+        printed = _wasm_tools("print", dst)
+        return printed.out if printed.code == 0 else None
+    finally:
+        os.unlink(src)
+        if os.path.exists(dst):
+            os.unlink(dst)
+
+
 def check_oracle2(
     impl: list[str], rel: str, path: Path, meta: dict, out: Outcome, policy: dict
 ) -> None:
-    """Wasm equivalence, routed through the reference back end.
-
-    We have no code generator, so we cannot emit wasm directly. Instead we print
-    the file with our formatter and hand THAT to the reference's back end: if our
-    AST lost or garbled anything semantically relevant, the resulting binary
-    differs from the one the reference produced from the original source.
-    """
+    """Wasm equivalence: our output must produce the reference's binary."""
     want_sha = meta.get("wasm_sha256")
     if policy["buckets"][meta["bucket"]]["oracle2"] == "skip" or not want_sha:
         out.skipped += 1
         return
+    if policy.get("oracle2_route", VIA_REFERENCE) == NATIVE:
+        built = impl_run(impl, str(path), "-f", "wasm", "-o", "-")
+        if built.code != 0:
+            out.failed += 1
+            out.failures.append(
+                Failure(rel, "wasm",
+                        f"our back end exited {built.code}: "
+                        + built.err.decode("utf-8", "replace")[:400])
+            )
+            return
+        _ladder(rel, built.out, want_sha, out)
+        return
+
     printed = impl_run(impl, str(path), "-f", "wax")
     if printed.code != 0:
         out.failed += 1
@@ -837,6 +965,7 @@ def cmd_run(args) -> int:
     index = load_index()
     impl = args.impl.split()
     policy = load_policy(args.scope)
+    policy["oracle2_route"] = args.oracle2_route
     oracles = args.oracle or [1, 2, 3]
 
     if args.self_test:
@@ -865,7 +994,12 @@ def cmd_run(args) -> int:
         for bucket, modes in policy["buckets"].items():
             if isinstance(modes, dict) and modes.get("oracle3") == "no-errors":
                 modes["oracle3"] = "skip"
-    if 2 in oracles:
+        # The reference has a back end, so it is a valid stand-in on either
+        # route; native is the one that actually exercises `-f wasm`.
+        policy["oracle2_route"] = NATIVE
+    # Only the via-reference route needs the binary. The native route compares
+    # against the committed hashes, which is what lets it run in CI.
+    if 2 in oracles and policy["oracle2_route"] == VIA_REFERENCE:
         need_reference()
     REPORT.mkdir(parents=True, exist_ok=True)
 
@@ -918,7 +1052,7 @@ def cmd_run(args) -> int:
         for o in oracles:
             for f in results[o].failures[: args.max_report]:
                 fh.write(f"## {f.file} — {f.oracle}\n\n```\n{f.detail}\n```\n\n")
-    drift = [d for o in oracles for d in results[o].drift]
+    drift = results[3].drift if 3 in oracles else []
     (REPORT / "message-drift.md").write_text(
         "# Diagnostic message drift (non-blocking)\n\n"
         "Spans and severity are gated; wording is not, yet. Each entry is a\n"
@@ -929,6 +1063,28 @@ def cmd_run(args) -> int:
     )
     if drift:
         print(f"  message drift: {len(drift)} (see test/report/message-drift.md)")
+
+    # Oracle 2's drift is the ladder's T0/T1 verdicts, and it is graded
+    # separately for the same reason it is written to its own file: on the native
+    # route it is the burn-down list, and mixing it into the message drift would
+    # bury both.
+    wasm_drift = results[2].drift if 2 in oracles else []
+    (REPORT / "wasm-drift.md").write_text(
+        "# Wasm ladder (non-blocking)\n\n"
+        "T2 -- sha256 against the goldens -- is the gate and is reported above.\n"
+        "These are the T0/T1 verdicts for the files that missed it: whether the\n"
+        "bytes validate, and whether they match the reference once every custom\n"
+        "section is stripped from both sides.\n\n"
+        + "\n\n".join(wasm_drift[: args.max_report])
+        + "\n",
+        encoding="utf-8",
+    )
+    if wasm_drift:
+        t1 = sum(1 for d in wasm_drift if "T1 equal" in d)
+        print(
+            f"  wasm ladder: {len(wasm_drift)} noted, {t1} differing only in "
+            "custom sections (see test/report/wasm-drift.md)"
+        )
     if failed_total:
         print(f"\n  {failed_total} failure(s); see test/report/failures.md")
         return 1
@@ -1202,9 +1358,12 @@ def cmd_adopt(args) -> int:
 
 
 def cmd_fuzz(args) -> int:
+    # Fuzzing needs the reference on either route: the mutant has no golden, so
+    # the reference is what says what the answer should be (see `grade`).
     need_reference()
     impl = args.impl.split()
     policy = load_policy(args.scope)
+    policy["oracle2_route"] = args.oracle2_route
     oracles = args.oracle or [1, 2, 3]
     seed = args.seed if args.seed is not None else random.randrange(1 << 30)
     rng = random.Random(seed)
@@ -1535,6 +1694,12 @@ def main() -> int:
     )
     c.add_argument("--filter", help="only seed from files whose path contains this")
     c.add_argument("--oracle", type=int, action="append", choices=[1, 2, 3])
+    c.add_argument(
+        "--oracle2-route",
+        choices=[VIA_REFERENCE, NATIVE],
+        default=VIA_REFERENCE,
+        help="see `run --oracle2-route`",
+    )
     c.add_argument("--scope", choices=["front-end", "full"], default=None)
     c.set_defaults(fn=cmd_fuzz)
 
@@ -1572,8 +1737,18 @@ def main() -> int:
         type=int,
         action="append",
         choices=[1, 2, 3],
-        help="run only these oracles (repeatable). Oracle 2 needs the reference "
-        "binary; 1 and 3 compare against committed goldens only.",
+        help="run only these oracles (repeatable). Oracle 2 on the default "
+        "via-reference route needs the reference binary; 1, 3 and oracle 2 "
+        "--oracle2-route native compare against committed goldens only.",
+    )
+    c.add_argument(
+        "--oracle2-route",
+        choices=[VIA_REFERENCE, NATIVE],
+        default=VIA_REFERENCE,
+        help="how oracle 2 reaches a .wasm. 'via-reference' (default) prints "
+        "with our formatter and compiles that with the reference back end. "
+        "'native' compares our own `-f wasm` output against the same golden "
+        "hashes -- a stronger claim, and hermetic, but it needs the back end.",
     )
     c.add_argument("--filter", help="only files whose path contains this substring")
     c.add_argument(

@@ -139,6 +139,18 @@ diff: build
 diff-all: build
     {{waxdiff}} run --impl {{impl}}
 
+# The same golden hashes, reached the other way: OUR `-f wasm` bytes rather than
+# the reference's recompilation of our reprint. A stronger claim, and hermetic --
+# the 1592 wasm_sha256 values are committed -- so once the back end lands this
+# belongs in `diff` and in CI. Until then it reports the back end as missing,
+# which is the honest answer. Misses are graded on a ladder (validate, then
+# stripped-WAT equality, then sha256) into test/report/wasm-drift.md.
+#
+# Oracle 2 against our own back end. (needs wasm-tools for the ladder detail)
+[group('diff')]
+diff-native: build
+    {{waxdiff}} run --oracle 2 --oracle2-route native --impl {{impl}}
+
 # The inner loop when something is failing:
 #
 #     just diff-only cram/match
