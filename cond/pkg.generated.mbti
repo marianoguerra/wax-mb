@@ -11,6 +11,8 @@ import {
 // Values
 pub fn and_(T, T) -> T
 
+pub fn canonical_key(T) -> String
+
 pub fn equal(T, T) -> Bool
 
 pub let false_ : T

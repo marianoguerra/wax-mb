@@ -235,8 +235,92 @@ pub fn equal(a : T, b : T) -> Bool {
 /// Semantically equal formulas must hash alike, and without a canonical form
 /// there is nothing cheap to hash that respects that -- so this is a constant.
 /// Correct, and degenerate: a hash table keyed on formulas degrades to a list.
-/// Nothing in the checker keys on one; if something ever does, that is the
-/// moment to canonicalize rather than to weaken this.
+///
+/// The exploration driver does need to dedup assumptions, and asks the weaker
+/// structural question instead -- see `canonical_key`, which is cheap and whose
+/// asymmetry is safe for exactly that use.
 pub fn hash(_ : T) -> Int {
   0
+}
+
+///|
+/// A canonical STRUCTURAL key, for deduplicating formulas in a table.
+///
+/// `equal` is semantic and `hash` is therefore a constant, which is correct but
+/// useless as a hash key. The exploration driver needs to ask "have I seen this
+/// assumption before?" thousands of times, and answering it semantically would
+/// be a satisfiability query per comparison.
+///
+/// So this is the weaker question, asked cheaply: two formulas share a key when
+/// they are the same up to the commutativity, associativity and idempotence of
+/// `and` and `or`, which is what actually varies between assumptions built in
+/// different branch orders. Equal keys imply equivalence; different keys do not
+/// imply inequivalence.
+///
+/// That asymmetry is safe for a dedup set and only there: missing a duplicate
+/// costs one more configuration explored, never a wrong answer. It would not be
+/// safe for anything that treats "not seen" as "not implied".
+pub fn canonical_key(f : T) -> String {
+  render_key(f.node)
+}
+
+///|
+fn render_key(n : Node) -> String {
+  match n {
+    True => "T"
+    False => "F"
+    Lit(a, v) => (if v { "+" } else { "-" }) + atom_key(a)
+    And(xs) => "&(" + sorted_children(xs, true) + ")"
+    Or(xs) => "|(" + sorted_children(xs, false) + ")"
+  }
+}
+
+///|
+/// Flatten nested nodes of the same connective, render, sort and drop
+/// duplicates -- the three laws that make two assumptions the same assumption.
+fn sorted_children(xs : Array[Node], conjunction : Bool) -> String {
+  let parts : Array[String] = []
+  fn walk(n : Node) -> Unit {
+    match n {
+      And(ys) =>
+        if conjunction {
+          for y in ys {
+            walk(y)
+          }
+        } else {
+          parts.push(render_key(n))
+        }
+      Or(ys) =>
+        if !conjunction {
+          for y in ys {
+            walk(y)
+          }
+        } else {
+          parts.push(render_key(n))
+        }
+      _ => parts.push(render_key(n))
+    }
+  }
+
+  for x in xs {
+    walk(x)
+  }
+  parts.sort()
+  let unique : Array[String] = []
+  for p in parts {
+    if unique.is_empty() || unique[unique.length() - 1] != p {
+      unique.push(p)
+    }
+  }
+  unique.join(",")
+}
+
+///|
+fn atom_key(a : Atom) -> String {
+  match a {
+    Bool(v) => "b\{v}"
+    Bound(v, limit, inclusive) =>
+      "v\{v}\{if inclusive { "<=" } else { "<" }}\{limit.major}.\{limit.minor}.\{limit.patch}"
+    Const(v, s) => "s\{v}=" + @utf8.decode_lossy(s[:])
+  }
 }

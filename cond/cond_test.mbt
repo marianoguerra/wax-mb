@@ -238,3 +238,41 @@ test "explain" {
   let t = env.of_cond(ctx, loc(), Cmp(Eq, var_("t"), str_("wasm")))
   inspect(say(t), content="$t = \"wasm\"")
 }
+
+///|
+/// The structural key exists so the exploration driver can dedup assumptions
+/// cheaply. It has to see past the order branches happened to be taken in, and
+/// it must never claim two different assumptions are the same.
+test "the canonical key sees past and/or reordering" {
+  let env = @cond.Env::new()
+  let ctx = @diagnostic.collector()
+  fn f(c : @wasm_types.Cond) -> String {
+    @cond.canonical_key(env.of_cond(ctx, loc(), c))
+  }
+
+  // The same conjunction built in either order.
+  inspect(
+    f(And([var_("a"), var_("b")])) == f(And([var_("b"), var_("a")])),
+    content="true",
+  )
+  // Nested conjunctions flatten.
+  inspect(
+    f(And([var_("a"), And([var_("b"), var_("c")])])) ==
+    f(And([And([var_("a"), var_("b")]), var_("c")])),
+    content="true",
+  )
+  // A repeated conjunct is the same assumption.
+  inspect(
+    f(And([var_("a"), var_("a"), var_("b")])) == f(And([var_("a"), var_("b")])),
+    content="true",
+  )
+  // Different assumptions keep different keys.
+  inspect(f(var_("a")) == f(var_("b")), content="false")
+  inspect(f(var_("a")) == f(Not(var_("a"))), content="false")
+  inspect(
+    f(And([var_("a"), var_("b")])) == f(Or([var_("a"), var_("b")])),
+    content="false",
+  )
+  // And a conjunction is not its own conjunct.
+  inspect(f(And([var_("a"), var_("b")])) == f(var_("a")), content="false")
+}
