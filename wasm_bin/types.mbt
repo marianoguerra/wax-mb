@@ -228,8 +228,10 @@ pub(all) enum Instruction {
   ElemDrop(Int) // element segment index
 
   // Atomic instructions (0xFE prefix)
-  // subopcode: wasm threads/atomics subopcode
-  // memarg: (memidx, align, offset)
+  /// The 0xFE sub-opcode FIRST, then the memarg: memory index, alignment
+  /// exponent, offset. The sub-opcode leads because that is the order the
+  /// bytes go out in, and naming it second invited reading the memory index
+  /// as the opcode.
   Atomic(Int, Int, Int, Int64)
   /// `atomic.fence`, which unlike every other atomic has no memory operand.
   AtomicFence

@@ -330,7 +330,7 @@ fn Lowering::hinted(
             for a in operands {
               self.instr(out, a)
             }
-            out.push(Atomic(mem, @atomics.opcode(op), align, offset))
+            out.push(Atomic(@atomics.opcode(op), mem, align, offset))
             return
           }
         }
@@ -794,11 +794,28 @@ fn Lowering::hinted(
         self.fused_load(out, operand, typ, signage, loc) {
         return
       }
+      if target is Signed(typ~, signage~, ..) &&
+        self.fused_atomic_load(out, operand, typ, signage, loc) {
+        return
+      }
       // A PACKED field or element reads the same way: the width is written on
       // the declaration and the sign on the cast, and the binary has one
       // instruction for the pair.
       if target is Signed(signage~, ..) &&
         self.fused_packed_read(out, operand, signage, loc) {
+        return
+      }
+      // A NULL cast to a reference type is simply that type's null. Emitting
+      // a bottom null and then a `ref.cast` would not even validate: the bottom
+      // of the `any` hierarchy is not in the `func` one, so the cast has no
+      // common ground to stand on. A non-null target still needs the cast --
+      // that is the trap the source is asking for.
+      if operand.desc is Null && target is Value(Ref(r)) {
+        let want = self.reftype_index(r, loc)
+        out.push(RefNull(want.typ))
+        if !want.nullable {
+          out.push(RefCast(want))
+        }
         return
       }
       // `(x as i32) as i64_s` where `x` is an i64 is ONE instruction. There is
@@ -1125,6 +1142,54 @@ fn Lowering::fused_load(
     }
   }
   out.push(ld)
+  true
+}
+
+///|
+/// A NARROW ATOMIC LOAD and its zero-extending cast, as one instruction.
+///
+/// The same fusion the plain loads get, for the same reason: wax writes the
+/// width on the method and the extension on the cast, and the binary has a
+/// single opcode for the pair. Only the UNSIGNED direction exists -- there is
+/// no sign-extending atomic load -- so a signed cast falls through to the
+/// generic path, which is right: it really is two operations.
+fn Lowering::fused_atomic_load(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  operand : @ast.Instr[@typing_env.InferredAnnotation],
+  typ : @ast.NumType,
+  signage : @wasm_types.Signage,
+  loc : @basic.Location,
+) -> Bool raise LowerError {
+  guard signage is Unsigned else { return false }
+  guard operand.desc is Call(callee, args) else { return false }
+  guard callee.desc is StructGet(recv, meth) else { return false }
+  guard recv.desc is Get(memname) else { return false }
+  guard self.indices.memories.get(memname.name) is Some(mem) else {
+    return false
+  }
+  guard @atomics.of_method_name(meth.name) is Some(Load(width)) else {
+    return false
+  }
+  let op : @atomics.Op = match (width, typ) {
+    (W8, I32) => Load(I32, Some(N8))
+    (W8, I64) => Load(I64, Some(N8))
+    (W16, I32) => Load(I32, Some(N16))
+    (W16, I64) => Load(I64, Some(N16))
+    (W32, I64) => Load(I64, Some(N32))
+    _ => return false
+  }
+  let (align, offset) = self.memarg_natural(
+    log2_exact(@atomics.family_bytes(Load(width)).to_int64(), loc),
+    args,
+    loc,
+  )
+  for a in args {
+    if !(a.desc is Labelled(_, _)) {
+      self.instr(out, a)
+    }
+  }
+  out.push(Atomic(@atomics.opcode(op), mem, align, offset))
   true
 }
 
