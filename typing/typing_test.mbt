@@ -2930,3 +2930,193 @@ test "an annotation is dropped only when it can be recovered" {
     content="true",
   )
 }
+
+///|
+/// Asking a type name for the wrong kind of definition is a mistake worth
+/// naming precisely, rather than a mismatch several steps later.
+test "an aggregate lookup names the kind it wanted" {
+  let ctx = module_ctx()
+  let tc = ctx.type_context
+  fn declare_type(n : String, t : @ast.CompType, at : Int) -> Unit {
+    let _ = @typing.add_type(tc, ctx.diagnostics, [
+      {
+        desc: (
+          id(n),
+          {
+            typ: t,
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: None,
+          },
+        ),
+        info: loc_at(at, at + 1),
+      },
+    ])
+  }
+
+  declare_type("f", Func({ params: [], results: [] }), 0)
+  declare_type(
+    "s",
+    Struct([
+      { desc: (id("x"), { mut_: false, typ: Value(I32) }), info: loc_at(2, 3) },
+      { desc: (id("y"), { mut_: true, typ: Packed(I8) }), info: loc_at(4, 5) },
+    ]),
+    2,
+  )
+  declare_type("a", Array({ mut_: false, typ: Value(F64) }), 6)
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // Each lookup finds its own kind.
+  inspect(
+    @typing.lookup_func_type(tc, ctx.diagnostics, id("f")) is Some(_),
+    content="true",
+  )
+  inspect(
+    @typing.lookup_struct_type(tc, ctx.diagnostics, id("s")) is Some(_),
+    content="true",
+  )
+  inspect(
+    @typing.lookup_array_type(tc, ctx.diagnostics, id("a")) is Some(_),
+    content="true",
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // And says so when handed another.
+  inspect(
+    @typing.lookup_struct_type(tc, ctx.diagnostics, id("a")) is None,
+    content="true",
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="Expected struct type.",
+  )
+  inspect(
+    @typing.lookup_array_type(tc, ctx.diagnostics, id("f")) is None,
+    content="true",
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[1].message),
+    content="Expected array type.",
+  )
+  // A name nothing binds is reported by the lookup, not passed on silently.
+  inspect(
+    @typing.lookup_struct_type(tc, ctx.diagnostics, id("nope")) is None,
+    content="true",
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[2].message),
+    content="The type 'nope' is not bound.",
+  )
+}
+
+///|
+/// A packed field is not read at the width it is stored at: `i8` and `i16` come
+/// off as i32, remembering how narrow they were so the lowering can pick the
+/// signed or unsigned accessor. A write takes a plain i32, with nothing to
+/// remember.
+test "a packed field reads wider than it is stored" {
+  let ctx = module_ctx()
+  let tc = ctx.type_context
+  fn read(
+    f : @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]],
+  ) -> String {
+    match @typing.field_read_type(tc, ctx.diagnostics, f) {
+      Some(c) => @infer.to_string(c)
+      None => "unresolved"
+    }
+  }
+
+  inspect(read({ mut_: false, typ: Packed(I8) }), content="i8")
+  inspect(read({ mut_: false, typ: Packed(I16) }), content="i16")
+  inspect(read({ mut_: false, typ: Value(F64) }), content="f64")
+  // Written as a plain i32 either way.
+  inspect(
+    @typing.unpack_type({ mut_: false, typ: Packed(I8) }) is I32,
+    content="true",
+  )
+  inspect(
+    @typing.unpack_type({ mut_: false, typ: Value(F64) }) is F64,
+    content="true",
+  )
+}
+
+///|
+/// A `..default` construction may leave out any field with a default. Numbers
+/// default to zero; a reference only has one if it is nullable, because there
+/// is no null to default a non-null reference to.
+test "only a nullable reference field has a default" {
+  fn has(t : @wasm_types.StorageType[@ast.Ident]) -> Bool {
+    @typing.field_has_default({ mut_: false, typ: t })
+  }
+
+  inspect(has(Packed(I8)), content="true")
+  inspect(has(Value(I32)), content="true")
+  inspect(has(Value(V128)), content="true")
+  inspect(has(Value(Ref({ nullable: true, typ: Any }))), content="true")
+  inspect(has(Value(Ref({ nullable: false, typ: Any }))), content="false")
+}
+
+///|
+/// A struct literal may omit its type name when the field set names exactly one
+/// struct. Two structs sharing a field set make it ambiguous, and then the
+/// literal has to say which it means.
+test "a field set names a struct only when it names one uniquely" {
+  let ctx = module_ctx()
+  fn struct_(
+    n : String,
+    fields : Array[String],
+    at : Int,
+  ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
+    {
+      desc: Type([
+        {
+          desc: (
+            id(n),
+            {
+              typ: Struct(
+                fields.map(f => {
+                  (
+                    {
+                      desc: (id(f), { mut_: false, typ: Value(I32) }),
+                      info: loc_at(at, at + 1),
+                    } :
+                    @basic.Annotated[
+                      (
+                        @ast.Ident,
+                        @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]],
+                      ),
+                      @basic.Location,
+                    ])
+                }),
+              ),
+              supertype: None,
+              final_: true,
+              descriptor: None,
+              describes: None,
+            },
+          ),
+          info: loc_at(at, at + 1),
+        },
+      ]),
+      info: loc_at(at, at + 1),
+    }
+  }
+
+  @typing.declare_fields(ctx, [
+    struct_("point", ["x", "y"], 0),
+    struct_("colour", ["r", "g", "b"], 10),
+    struct_("also_rgb", ["r", "g", "b"], 20),
+  ])
+  fn named(fields : Array[String]) -> String {
+    match @typing.infer_struct_by_fields(ctx, fields.map(f => id(f))) {
+      Some(n) => n.name
+      None => "ambiguous or unknown"
+    }
+  }
+
+  inspect(named(["x", "y"]), content="point")
+  // Order does not matter: the key is the field SET.
+  inspect(named(["y", "x"]), content="point")
+  // Two structs share this one.
+  inspect(named(["r", "g", "b"]), content="ambiguous or unknown")
+  inspect(named(["nothing"]), content="ambiguous or unknown")
+}

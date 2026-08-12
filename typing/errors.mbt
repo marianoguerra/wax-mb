@@ -627,3 +627,21 @@ pub fn br_if_result_mismatch(
     related=[typed_branch_label(loc, ty), typed_branch_label(location, result)],
   )
 }
+
+///|
+/// A name used where a struct type is required.
+pub fn expected_struct_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(location, Error, @message.text("Expected struct type."))
+}
+
+///|
+/// A name used where an array type is required.
+pub fn expected_array_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(location, Error, @message.text("Expected array type."))
+}

@@ -89,13 +89,21 @@ pub fn exact_reparse_matches(@wasm_types.ValType[@type_store.Id], @infer.Cell[@i
 
 pub fn expand_splices(@typing_env.TypeContext, @diagnostic.Context, Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]
 
+pub fn expected_array_type(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn expected_func_type(@diagnostic.Context, @basic.Location) -> Unit
+
+pub fn expected_struct_type(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn expression_type(@typing_env.ModuleContext, (Array[@infer.Cell[@infer.InferredType]], @basic.Location)) -> @infer.Cell[@infer.InferredType]
 
 pub fn expression_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], expected_at? : @basic.Location?) -> Unit
 
 pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
+
+pub fn field_has_default(@wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> Bool
+
+pub fn field_read_type(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @infer.Cell[@infer.InferredType]?
 
 pub fn field_set_key(Array[String]) -> String
 
@@ -104,6 +112,8 @@ pub fn field_subtype(@type_store.SubtypingInfo, @wasm_types.MutType[@wasm_types.
 pub fn finalize_inferred(@typing_env.ModuleContext, @ast.FuncType, @infer.Cell[@infer.InferredType]?, needed? : Bool, exacts? : Array[(@basic.Location?, @infer.Cell[@infer.InferredType])], natural? : Array[@infer.InferredType], location? : @basic.Location?) -> (Array[@infer.Cell[@infer.InferredType]], @ast.FuncType)
 
 pub fn[A] find(@typing_env.Tbl[A], @diagnostic.Context, @ast.Ident) -> A?
+
+pub fn find_field(Array[@basic.Annotated[(@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]), @basic.Location]], String) -> (Int, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]])?
 
 pub fn flatten_operands(Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Array[(@infer.Cell[@infer.InferredType], @basic.Location)]
 
@@ -130,6 +140,8 @@ pub fn index_structs_by_fields(@typing_env.ModuleContext) -> Unit
 pub fn infer_block_applies(@typing_env.ModuleContext, @ast.FuncType) -> Bool
 
 pub fn infer_result(@typing_env.ModuleContext, @basic.Location, @infer.Collecting, (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
+
+pub fn infer_struct_by_fields(@typing_env.ModuleContext, Array[@ast.Ident]) -> @ast.Ident?
 
 pub fn inline_comptype(@typing_env.ModuleContext, @ast.Ident) -> @ast.CompType?
 
@@ -164,6 +176,12 @@ pub fn loc_first_char(@basic.Location) -> @basic.Location
 pub fn loc_last_char(@basic.Location) -> @basic.Location
 
 pub fn local_suggestions(@typing_env.ModuleContext, String) -> Array[String]
+
+pub fn lookup_array_type(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]?
+
+pub fn lookup_func_type(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @ast.FuncType?
+
+pub fn lookup_struct_type(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> Array[@basic.Annotated[(@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]), @basic.Location]]?
 
 pub fn mark_initialized(@typing_env.ModuleContext, String) -> Unit
 
@@ -262,6 +280,8 @@ pub fn typed_branch_label(@basic.Location, @infer.Cell[@infer.InferredType]) -> 
 pub fn unbound_name(@diagnostic.Context, @basic.Location, String, String, suggestions? : Array[String]) -> Unit
 
 pub fn uninitialized_local(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn unpack_type(@wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.ValType[@ast.Ident]
 
 pub fn valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.Id]?
 

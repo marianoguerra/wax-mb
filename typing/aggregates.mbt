@@ -1,0 +1,167 @@
+// Looking up what a struct or array access operates on.
+//
+// Ported from wax/src/lib-wax/typing.ml.
+//
+// A type NAME resolves to a definition of some kind, and an aggregate operation
+// needs one of a particular kind. Asking for the wrong kind is a mistake worth
+// naming precisely -- "expected struct type" rather than a mismatch several
+// steps later -- which is why each kind gets its own lookup rather than one
+// that returns the definition and leaves the caller to match on it.
+//
+// An unbound name is reported by the lookup itself. Returning `None` silently
+// would let a literal naming a type that does not exist be accepted here and
+// lowered to `unreachable`, which is exactly what checking exists to pre-empt.
+
+///|
+/// The function type a name refers to.
+pub fn lookup_func_type(
+  ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
+  name : @ast.Ident,
+  location? : @basic.Location? = None,
+) -> @ast.FuncType? {
+  guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
+    return None
+  }
+  match def.typ {
+    Func(ft) => Some(ft)
+    _ => {
+      expected_func_type(diagnostics, location.unwrap_or(name.loc))
+      None
+    }
+  }
+}
+
+///|
+/// The fields a struct type declares.
+pub fn lookup_struct_type(
+  ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
+  name : @ast.Ident,
+  location? : @basic.Location? = None,
+) -> Array[
+  @basic.Annotated[
+    (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+    @basic.Location,
+  ],
+]? {
+  guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
+    return None
+  }
+  match def.typ {
+    Struct(fields) => Some(fields)
+    _ => {
+      expected_struct_type(diagnostics, location.unwrap_or(name.loc))
+      None
+    }
+  }
+}
+
+///|
+/// The element type an array type declares.
+pub fn lookup_array_type(
+  ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
+  name : @ast.Ident,
+  location? : @basic.Location? = None,
+) -> @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]? {
+  guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
+    return None
+  }
+  match def.typ {
+    Array(field) => Some(field)
+    _ => {
+      expected_array_type(diagnostics, location.unwrap_or(name.loc))
+      None
+    }
+  }
+}
+
+///|
+/// The unique struct type with exactly these field names, if there is one.
+///
+/// This is what lets `{ x: 1, y: 2 }` be written without naming its type. The
+/// index is built once, after every type is registered, so the answer is
+/// complete; `None` means either no struct has that field set or several do,
+/// and in both cases the literal has to name what it means.
+pub fn infer_struct_by_fields(
+  ctx : @typing_env.ModuleContext,
+  fields : Array[@ast.Ident],
+) -> @ast.Ident? {
+  let key = field_set_key(fields.map(f => f.name))
+  match ctx.structs_by_fields.get(key) {
+    Some(Some(name)) => Some(name)
+    _ => None
+  }
+}
+
+///|
+/// The type a field READ produces.
+///
+/// A packed field is not read at its stored width: `i8` and `i16` come off as
+/// i32, and which sign extension applies is the reader's choice. `Int8` and
+/// `Int16` carry that -- they are i32 values that remember how narrow they
+/// were, so the lowering can pick `struct.get_s` against `struct.get_u`.
+pub fn field_read_type(
+  ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
+  f : @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]],
+) -> @infer.Cell[@infer.InferredType]? {
+  match f.typ {
+    Value(typ) => internalize(ctx, diagnostics, typ)
+    Packed(I8) => Some(@infer.Cell::make(Int8))
+    Packed(I16) => Some(@infer.Cell::make(Int16))
+  }
+}
+
+///|
+/// The value type a field is WRITTEN at.
+///
+/// The other half of the packed story: a write takes a plain i32 and the
+/// narrowing is implicit, so unlike a read there is nothing to remember.
+pub fn unpack_type(
+  f : @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]],
+) -> @wasm_types.ValType[@ast.Ident] {
+  match f.typ {
+    Value(v) => v
+    Packed(_) => I32
+  }
+}
+
+///|
+/// Whether a field has a default value, so a `..default` construction can leave
+/// it out.
+///
+/// Everything numeric does -- zero. A reference does only if it is nullable:
+/// there is no null to default a non-null reference to, so it must be given.
+pub fn field_has_default(
+  ty : @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]],
+) -> Bool {
+  match ty.typ {
+    Packed(_) => true
+    Value(I32 | I64 | F32 | F64 | V128) => true
+    Value(Ref(r)) => r.nullable
+  }
+}
+
+///|
+/// Find a field by name in a struct's declared fields, with its index.
+///
+/// The index is what the lowering emits; the name is what the reader wrote.
+/// Returning both is why this exists rather than a plain search.
+pub fn find_field(
+  fields : Array[
+    @basic.Annotated[
+      (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
+      @basic.Location,
+    ],
+  ],
+  name : String,
+) -> (Int, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]])? {
+  for i, f in fields {
+    if f.desc.0.name == name {
+      return Some((i, f.desc.1))
+    }
+  }
+  None
+}
