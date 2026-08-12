@@ -46,6 +46,8 @@ fn ctx_with(
       {
         final_: true,
         supertype: None,
+        descriptor: None,
+        describes: None,
         typ: Func({
           params: Array::makei(i, _ => @wasm_types.ValType::I32),
           results: [],
@@ -939,7 +941,13 @@ fn module_ctx() -> @typing_env.ModuleContext {
 /// store.
 fn some_id() -> @type_store.Id raise {
   @type_store.TypeStore::new().add_rectype([
-    { final_: true, supertype: None, typ: Func({ params: [], results: [] }) },
+    {
+      final_: true,
+      supertype: None,
+      descriptor: None,
+      describes: None,
+      typ: Func({ params: [], results: [] }),
+    },
   ])
 }
 
@@ -1454,7 +1462,13 @@ test "an unresolvable type declares no local" {
 test "internalize keeps the name and the index" {
   let ctx = module_ctx()
   let store_id = ctx.type_context.store.add_rectype([
-    { final_: true, supertype: None, typ: Func({ params: [], results: [] }) },
+    {
+      final_: true,
+      supertype: None,
+      descriptor: None,
+      describes: None,
+      typ: Func({ params: [], results: [] }),
+    },
   ])
   let empty : @ast.SubType = {
     typ: Func({ params: [], results: [] }),

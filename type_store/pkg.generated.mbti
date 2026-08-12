@@ -47,6 +47,8 @@ pub(all) enum RefIndex {
 pub(all) struct SubType[Idx] {
   final_ : Bool
   supertype : Idx?
+  descriptor : Idx?
+  describes : Idx?
   typ : CompType[Idx]
 } derive(Eq, Hash, @debug.Debug)
 pub fn[A, B] SubType::map(Self[A], (A) -> B) -> Self[B]

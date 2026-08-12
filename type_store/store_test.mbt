@@ -11,7 +11,15 @@ fn func_group(
   params : Array[@wasm_types.ValType[@type_store.RefIndex]],
   results : Array[@wasm_types.ValType[@type_store.RefIndex]],
 ) -> @type_store.RecType[@type_store.RefIndex] {
-  [{ final_: true, supertype: None, typ: Func({ params, results }) }]
+  [
+    {
+      final_: true,
+      supertype: None,
+      descriptor: None,
+      describes: None,
+      typ: Func({ params, results }),
+    },
+  ]
 }
 
 ///|
@@ -23,6 +31,8 @@ fn struct_of(
   {
     final_,
     supertype,
+    descriptor: None,
+    describes: None,
     typ: Struct(fields.map(v => { mut_: false, typ: Value(v) })),
   }
 }
@@ -198,6 +208,8 @@ test "concrete types, and exact" {
     {
       final_: true,
       supertype: Some(Def(st)),
+      descriptor: None,
+      describes: None,
       typ: Struct([
         { mut_: false, typ: Value(I32) },
         { mut_: false, typ: Value(I64) },

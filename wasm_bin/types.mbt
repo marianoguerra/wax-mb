@@ -82,13 +82,25 @@ pub(all) enum CompositeType {
   Func(FuncType)
   Struct(StructType)
   Array(ArrayType)
+  /// A continuation over the function type at this index -- the stack-switching
+  /// proposal's `(cont $ft)`. Upstream had the switching INSTRUCTIONS nowhere
+  /// and the type nowhere either; the instructions arrived first, but a module
+  /// that uses them has to be able to define what they act on.
+  Cont(Int)
 } derive(Eq, Debug)
 
 ///|
 /// A defined type, with its supertypes and whether it may be subtyped further.
+///
+/// `descriptor` and `describes` are the custom-descriptors proposal's two
+/// clauses, and they come in pairs: `descriptor` names the type of this
+/// struct's runtime descriptor, `describes` names the struct this one is the
+/// descriptor OF. A type may carry either, both, or neither.
 pub(all) struct SubType {
   final_ : Bool
   supertypes : Array[Int]
+  descriptor : Int?
+  describes : Int?
   composite : CompositeType
 } derive(Eq, Debug)
 
@@ -112,7 +124,7 @@ pub(all) struct RecGroup {
 ///|
 /// A subtype that is final and inherits from nothing -- the common case.
 pub fn SubType::simple(composite : CompositeType) -> SubType {
-  { final_: true, supertypes: [], composite }
+  { final_: true, supertypes: [], descriptor: None, describes: None, composite }
 }
 
 ///|

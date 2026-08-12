@@ -66,10 +66,6 @@ pub(all) struct FuncType[Idx] {
 
 ///|
 /// What a defined type defines.
-///
-/// `Cont` is here and not in `wasm_bin`'s `CompositeType` because the binary
-/// encoder does not need it yet and the checker does: a continuation type names
-/// the function type it continues.
 pub(all) enum CompType[Idx] {
   Func(FuncType[Idx])
   Struct(Array[@wasm_types.FieldType[Idx]])
@@ -80,9 +76,26 @@ pub(all) enum CompType[Idx] {
 ///|
 /// A defined type: what it defines, whether it may be subtyped further, and the
 /// one supertype it declares.
+///
+/// `descriptor` and `describes` are the custom-descriptors proposal's two
+/// clauses -- the type of this struct's runtime descriptor, and the struct this
+/// one is the descriptor of. They are part of the type's IDENTITY, so they are
+/// here and not alongside: two structs with the same fields but different
+/// descriptors are different types, and interning has to see the difference.
+///
+/// The reference DIVERGES here, and knowingly: its `subtype_eq` discards both
+/// clauses, so two otherwise identical structs dedup whatever their descriptors
+/// -- but its hash is a truncated structural one that may still separate them,
+/// which leaves the outcome depending on where the truncation falls. Rather
+/// than reproduce a hash-dependent answer we take the proposal's, which is also
+/// the one the two clauses are for. If a corpus file ever turns this into a
+/// byte difference it will show as a type-section drift, and this is the note
+/// that explains it.
 pub(all) struct SubType[Idx] {
   final_ : Bool
   supertype : Idx?
+  descriptor : Idx?
+  describes : Idx?
   typ : CompType[Idx]
 } derive(Eq, Hash, Debug)
 
@@ -171,5 +184,11 @@ pub fn[A, B] SubType::map(self : SubType[A], f : (A) -> B) -> SubType[B] {
     Array(ft) => Array(map_fieldtype(ft, f))
     Cont(i) => Cont(f(i))
   }
-  { final_: self.final_, supertype: self.supertype.map(f), typ }
+  {
+    final_: self.final_,
+    supertype: self.supertype.map(f),
+    descriptor: self.descriptor.map(f),
+    describes: self.describes.map(f),
+    typ,
+  }
 }

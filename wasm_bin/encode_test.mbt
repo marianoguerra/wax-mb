@@ -584,3 +584,92 @@ test "an unhinted module has no metadata sections" {
     content="false",
   )
 }
+
+///|
+/// A continuation type: the stack-switching proposal's `(cont $ft)`.
+///
+/// The instructions landed before the type did, which was backwards -- a module
+/// that uses `cont.new` has to be able to say what it makes a continuation of.
+/// The function type it names goes out as a HEAP type, not a bare index, so a
+/// concrete index takes the signed form.
+test "a continuation type names its function type" {
+  let m = @wasm_bin.Module::empty()
+  m.types.push(@wasm_bin.SubType::func([], []))
+  m.types.push(@wasm_bin.SubType::simple(Cont(0)))
+  m.rec_groups.push({ start: 0, len: 1, explicit: false })
+  m.rec_groups.push({ start: 1, len: 1, explicit: false })
+  inspect(
+    hex(@wasm_bin.encode(m)),
+    content=header + "0106" + "02" + "600000" + "5d00",
+  )
+}
+
+///|
+/// The custom-descriptors clauses wrap the composite type: `describes` (0x4C)
+/// then `descriptor` (0x4D), both INSIDE the `sub` form rather than beside it.
+///
+/// Which is why a final, supertype-less struct that carries a descriptor still
+/// takes the short form -- no `sub` prefix, just 0x4D and the index ahead of
+/// the struct.
+test "the descriptor clauses wrap the composite type" {
+  let m = @wasm_bin.Module::empty()
+  let empty_struct = ({ fields: [] } : @wasm_bin.StructType)
+  // $obj describes nothing and has $desc as its descriptor; $desc describes
+  // $obj. They must name each other, which is why they are one rec group.
+  m.types.push({
+    final_: true,
+    supertypes: [],
+    descriptor: Some(1),
+    describes: None,
+    composite: Struct(empty_struct),
+  })
+  m.types.push({
+    final_: true,
+    supertypes: [],
+    descriptor: None,
+    describes: Some(0),
+    composite: Struct(empty_struct),
+  })
+  m.rec_groups.push({ start: 0, len: 2, explicit: true })
+  inspect(
+    hex(@wasm_bin.encode(m)),
+    content=header +
+      "010b" +
+      "01" +
+      "4e02" +
+      // $obj: descriptor $desc, then the struct
+      "4d01" +
+      "5f00" +
+      // $desc: describes $obj, then the struct
+      "4c00" +
+      "5f00",
+  )
+  // A non-final type keeps the `sub` prefix, and the clauses would stay inside
+  // it -- after the supertype vector, before the composite type. The base is
+  // non-final too, since nothing can extend a final type.
+  let n = @wasm_bin.Module::empty()
+  let open_struct = (
+    {
+      final_: false,
+      supertypes: [],
+      descriptor: None,
+      describes: None,
+      composite: CompositeType::Struct(empty_struct),
+    } : @wasm_bin.SubType)
+  n.types.push(open_struct)
+  n.types.push({ ..open_struct, supertypes: [0] })
+  n.rec_groups.push({ start: 0, len: 1, explicit: false })
+  n.rec_groups.push({ start: 1, len: 1, explicit: false })
+  inspect(
+    hex(@wasm_bin.encode(n)),
+    content=header +
+      "010a" +
+      "02" +
+      "50" +
+      "00" +
+      "5f00" +
+      "50" +
+      "0100" +
+      "5f00",
+  )
+}

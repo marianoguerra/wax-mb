@@ -39,6 +39,7 @@ pub(all) enum CompositeType {
   Func(FuncType)
   Struct(StructType)
   Array(ArrayType)
+  Cont(Int)
 } derive(Eq, @debug.Debug)
 
 pub(all) struct Data {
@@ -686,6 +687,8 @@ pub(all) struct StructType {
 pub(all) struct SubType {
   final_ : Bool
   supertypes : Array[Int]
+  descriptor : Int?
+  describes : Int?
   composite : CompositeType
 } derive(Eq, @debug.Debug)
 pub fn SubType::func(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]) -> Self

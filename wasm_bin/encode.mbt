@@ -296,15 +296,45 @@ fn encode_composite_type(w : BinaryWriter, ct : CompositeType) -> Unit {
       w.write_byte(0x5E)
       encode_field_type(w, at.element)
     }
+    // The continuation's function type goes out as a HEAP type, not a bare
+    // index -- so a concrete index is the signed form, as everywhere else a
+    // heap type appears.
+    Cont(idx) => {
+      w.write_byte(0x5D)
+      encode_heaptype(w, Type(idx))
+    }
   }
+}
+
+///|
+/// The composite type, wrapped in whichever custom-descriptors clauses it
+/// carries.
+///
+/// `describes` (0x4C) comes before `descriptor` (0x4D), and both come before
+/// the composite type they qualify. The order is not ours to choose: it is what
+/// a decoder reads.
+fn encode_described_comptype(w : BinaryWriter, st : SubType) -> Unit {
+  if st.describes is Some(idx) {
+    w.write_byte(0x4C)
+    w.write_u32(idx)
+  }
+  if st.descriptor is Some(idx) {
+    w.write_byte(0x4D)
+    w.write_u32(idx)
+  }
+  encode_composite_type(w, st.composite)
 }
 
 ///|
 /// A defined type. Final with no supertype is the common case and has a
 /// shorthand: the composite type on its own, with no `sub` prefix at all.
+///
+/// The shorthand does NOT depend on the descriptor clauses, which sit inside
+/// it: a final, supertype-less struct with a descriptor still takes the short
+/// form, with 0x4D and the index between the two.
 fn encode_subtype(w : BinaryWriter, st : SubType) -> Unit {
   if st.final_ && st.supertypes.is_empty() {
-    encode_composite_type(w, st.composite)
+    encode_described_comptype(w, st)
     return
   }
   w.write_byte(if st.final_ { 0x4F } else { 0x50 })
@@ -312,7 +342,7 @@ fn encode_subtype(w : BinaryWriter, st : SubType) -> Unit {
   for idx in st.supertypes {
     w.write_u32(idx)
   }
-  encode_composite_type(w, st.composite)
+  encode_described_comptype(w, st)
 }
 
 ///|
