@@ -5766,3 +5766,89 @@ test "a while is checked as the loop it becomes" {
     content="cond=float step=no body=1 | This expression has type 'float' but is expected to have type 'i32'. | 0",
   )
 }
+
+///|
+/// A `dispatch` is checked as the block ladder it becomes: the index must be an
+/// i32, every `br_table` target must resolve, and each arm body must be
+/// well-typed -- all of which the lowered form asks for on its own.
+test "a dispatch is checked as the block ladder it becomes" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let ctx = module_ctx()
+  @typing.bind_local(ctx, id("k"), Some(@infer.i32_valtype))
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement(
+    instr(
+      Dispatch(
+        index=instr(Get(id("k")), 20),
+        cases=[id("a"), id("b")],
+        default=id("d"),
+        arms=[
+          (id("a"), { desc: [instr(Nop, 30)], info: loc_at(30, 31) }),
+          (id("b"), { desc: [instr(Nop, 40)], info: loc_at(40, 41) }),
+          (id("d"), { desc: [instr(Nop, 50)], info: loc_at(50, 51) }),
+        ],
+      ),
+      10,
+    ),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(checker.gaps().length(), content="0")
+  // Peeled back to a dispatch, with the index typed and every arm body kept in
+  // source order.
+  guard! checked.desc is Dispatch(index~, arms~, ..)
+  inspect(index.info.0.map(t => @infer.to_string(t)).join(","), content="i32")
+  inspect(
+    arms.map(a => a.0.name + ":" + a.1.desc.length().to_string()).join(","),
+    content="a:1,b:1,d:1",
+  )
+}
+
+///|
+/// Two arms sharing a label would build ONE block in the lowering and lose the
+/// other body entirely, so it is caught before that can happen.
+test "a dispatch may not name one arm twice" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let ctx = module_ctx()
+  @typing.bind_local(ctx, id("k"), Some(@infer.i32_valtype))
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let _ = checker.statement(
+    instr(
+      Dispatch(
+        index=instr(Get(id("k")), 20),
+        cases=[id("a")],
+        default=id("a"),
+        arms=[
+          (id("a"), { desc: [], info: loc_at(30, 31) }),
+          (id("a"), { desc: [], info: loc_at(40, 41) }),
+        ],
+      ),
+      10,
+    ),
+  )
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="This dispatch has several cases named 'a'.",
+  )
+}

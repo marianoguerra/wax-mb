@@ -1375,6 +1375,49 @@ pub fn Checker::statement(
       }
     }
 
+    // --- A dispatch, checked as the block ladder it becomes ---
+    Dispatch(index~, cases~, default~, arms~) => {
+      // The arm labels become distinct block labels in the lowering and key the
+      // arm bodies, so two arms sharing a label would build one block and lose
+      // the other's body entirely.
+      let seen : Map[String, @basic.Location] = Map([])
+      for a in arms {
+        match seen.get(a.0.name) {
+          Some(prev) =>
+            dispatch_duplicate_arm(ctx.diagnostics, a.0.loc, prev, a.0.name)
+          None => seen[a.0.name] = a.0.loc
+        }
+      }
+      let lowered = @ast.lower_dispatch(loc, index~, cases~, default~, arms~)
+      let typed = self.body(loc, None, [], [], [], lowered)
+      match peel_dispatch(typed, arms.length()) {
+        Some((index_, bodies)) => {
+          let rebuilt : Array[
+            (
+              @ast.Ident,
+              @basic.Annotated[
+                Array[@ast.Instr[@typing_env.InferredAnnotation]],
+                @basic.Location,
+              ],
+            ),
+          ] = []
+          for k, a in arms {
+            rebuilt.push((a.0, { desc: bodies[k], info: a.1.info }))
+          }
+          {
+            desc: Dispatch(index=index_, cases~, default~, arms=rebuilt),
+            info: annotate([], loc),
+            hints: i.hints,
+            expected: i.expected,
+          }
+        }
+        None => {
+          self.tally("Dispatch")
+          self.placeholder(i)
+        }
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -2124,4 +2167,45 @@ pub fn Checker::statements(
     out.push(c)
   }
   out
+}
+
+///|
+/// Peel a checked `dispatch` lowering back to its index and arm bodies.
+///
+/// The lowering nests one block per arm, each holding the block for the
+/// PREVIOUS arm followed by that previous arm's body, with the `br_table` at
+/// the centre. So descending from the outside walks the arms in reverse, and
+/// the last arm's body is the trailing code after the outermost block rather
+/// than inside anything.
+pub fn peel_dispatch(
+  typed : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  arm_count : Int,
+) -> (
+  @ast.Instr[@typing_env.InferredAnnotation],
+  Array[Array[@ast.Instr[@typing_env.InferredAnnotation]]],
+)? {
+  if arm_count == 0 {
+    guard typed.length() == 1 else { return None }
+    guard typed[0].desc is BrTable(_, index) else { return None }
+    return Some((index, []))
+  }
+  guard typed.length() >= 1 else { return None }
+  // Everything after the outermost block is the LAST arm's body.
+  let bodies : Array[Array[@ast.Instr[@typing_env.InferredAnnotation]]] = Array::make(
+    arm_count,
+    [],
+  )
+  bodies[arm_count - 1] = typed[1:].to_owned()
+  let mut node = typed[0]
+  for k = arm_count - 1; k > 0; k = k - 1 {
+    guard node.desc is Block(block~, ..) else { return None }
+    guard block.desc.length() >= 1 else { return None }
+    bodies[k - 1] = block.desc[1:].to_owned()
+    node = block.desc[0]
+  }
+  // The innermost block holds the `br_table`, and with it the typed index.
+  guard node.desc is Block(block~, ..) else { return None }
+  guard block.desc.length() == 1 else { return None }
+  guard block.desc[0].desc is BrTable(_, index) else { return None }
+  Some((index, bodies))
 }

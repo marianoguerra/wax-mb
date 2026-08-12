@@ -1109,3 +1109,24 @@ pub fn catch_target_mismatch(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// Two dispatch arms sharing a label.
+///
+/// The labels become distinct blocks in the lowering and key the arm bodies, so
+/// two arms with one label would build a single block and lose the other body.
+pub fn dispatch_duplicate_arm(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  prev_loc : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This dispatch has several cases named")
+    .sep(@message.ident(name))
+    .seq(@message.text(".")),
+    related=[{ loc: prev_loc, message: @message.text("other arm here") }],
+  )
+}
