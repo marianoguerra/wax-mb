@@ -1418,6 +1418,72 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Branching on a reference being null, or not ---
+    BrOnNull(label, operand) => {
+      let operand_ = self.statement(operand)
+      let (ref_ty, below) = self.split_on_last(operand.info, operand_.info.0)
+      // The FALL-THROUGH value is the non-null form: the branch was not taken,
+      // so the reference is known not to be null.
+      let non_null = self.non_null_of(operand.info, ref_ty)
+      let delivered = if label_in_scope(ctx, label) {
+        deliver_to_branch_target(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          operand.info,
+          below,
+          branch_target(ctx, label),
+        )
+      } else {
+        below
+      }
+      let result = delivered.copy()
+      result.push(non_null)
+      {
+        desc: BrOnNull(label, operand_),
+        info: annotate(result, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+    BrOnNonNull(label, operand) => {
+      let operand_ = self.statement(operand)
+      let params = branch_target(ctx, label)
+      let bound = label_in_scope(ctx, label)
+      let (ref_ty, below) = self.split_on_last(operand.info, operand_.info.0)
+      if bound && !(ref_ty.get() is (Unknown | Error | UnknownRef)) {
+        // The BRANCH carries the non-null reference, so that is what the target
+        // is checked against -- the mirror of `br_on_null`, where the non-null
+        // form is what falls through instead.
+        let delivered = below.copy()
+        delivered.push(self.non_null_of(operand.info, ref_ty))
+        check_subtypes(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          operand.info,
+          delivered,
+          params,
+        )
+      }
+      // The fall-through keeps everything BUT the reference, which went to the
+      // target. A target with no parameters is malformed and was reported
+      // above; taking nothing then is what keeps this from indexing past it.
+      let result = if bound {
+        if params.length() > 0 {
+          params[0:params.length() - 1].to_owned()
+        } else {
+          []
+        }
+      } else {
+        below
+      }
+      {
+        desc: BrOnNonNull(label, operand_),
+        info: annotate(result, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -2208,4 +2274,36 @@ pub fn peel_dispatch(
   guard block.desc.length() == 1 else { return None }
   guard block.desc[0].desc is BrTable(_, index) else { return None }
   Some((index, bodies))
+}
+
+///|
+/// The non-null form of a reference, for the path where it is known not to be
+/// null.
+///
+/// A polymorphic value or a bare `null` yields the bottom reference. That is a
+/// well-defined answer rather than a contradiction: `br_on_null` on a bare null
+/// always branches, so the fall-through is unreachable and any reference type
+/// satisfies it.
+fn Checker::non_null_of(
+  self : Checker,
+  location : @basic.Location,
+  ty : @infer.Cell[@infer.InferredType],
+) -> @infer.Cell[@infer.InferredType] {
+  match ty.get() {
+    Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype }) => {
+      let v : @infer.InferredValType = {
+        typ: Ref({ nullable: false, typ: r.typ }),
+        internal: Ref({ nullable: false, typ: ir.typ }),
+        anon_comptype,
+      }
+      @infer.Cell::make(@infer.InferredType::Valtype(v))
+    }
+    Unknown | UnknownRef | Null =>
+      @infer.Cell::make(@infer.InferredType::UnknownRef)
+    Error => @infer.Cell::make(@infer.InferredType::Error)
+    _ => {
+      expected_ref(self.ctx.diagnostics, location)
+      @infer.Cell::make(@infer.InferredType::Error)
+    }
+  }
 }

@@ -5852,3 +5852,93 @@ test "a dispatch may not name one arm twice" {
     content="This dispatch has several cases named 'a'.",
   )
 }
+
+///|
+/// `br_on_null` and `br_on_non_null` are mirrors. One branches when the
+/// reference IS null and falls through with the non-null form; the other
+/// branches when it is NOT and carries the non-null form to the target.
+test "the null branches put the non-null form on opposite paths" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // `br_on_null` inside a void block: the fall-through carries `&any`, the
+  // non-null form of the `&?any` operand.
+  let ctx = module_ctx()
+  @typing.bind_local(
+    ctx,
+    id("v"),
+    @typing.internalize_valtype(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: true, typ: Any }),
+    ),
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let mut seen = ""
+  let _ = checker.statement(
+    instr(
+      Block(label=Some(id("out")), typ={ params: [], results: [] }, block={
+        desc: [
+          instr(BrOnNull(id("out"), instr(Get(id("v")), 30)), 20),
+          instr(Nop, 40),
+        ],
+        info: loc_at(20, 21),
+      }),
+      10,
+    ),
+  )
+  // The `br_on_null` left one value -- the non-null reference -- which the
+  // block's void exit then reports as a leftover. That IS the fall-through
+  // value, and seeing it is the point.
+  seen = ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  inspect(seen, content="This value remains on the stack.")
+  inspect(checker.gaps().length(), content="0")
+}
+
+///|
+/// A `br_on_null` on a bare `null` always branches, so its fall-through is
+/// unreachable -- and the bottom reference, which satisfies any consumer, is
+/// the well-defined answer rather than a contradiction.
+test "a br_on_null on a bare null falls through to the bottom reference" {
+  let ctx = module_ctx()
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  let checked = checker.statement({
+    desc: Block(label=Some(id("out")), typ={ params: [], results: [] }, block={
+      desc: [
+        {
+          desc: BrOnNull(id("out"), {
+            desc: Null,
+            info: loc_at(30, 31),
+            hints: { branch: None, freq: None, targets: None },
+            expected: None,
+          }),
+          info: loc_at(20, 21),
+          hints: { branch: None, freq: None, targets: None },
+          expected: None,
+        },
+      ],
+      info: loc_at(20, 21),
+    }),
+    info: loc_at(10, 11),
+    hints: { branch: None, freq: None, targets: None },
+    expected: None,
+  })
+  guard! checked.desc is Block(block~, ..)
+  inspect(
+    block.desc[0].info.0.map(t => @infer.to_string(t)).join(","),
+    content="&_",
+  )
+  inspect(checker.gaps().length(), content="0")
+}
