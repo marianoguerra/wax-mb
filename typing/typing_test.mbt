@@ -3362,3 +3362,66 @@ test "a bad offset and a bad alignment are both reported" {
     content="The memory offset should be less than 0x100000000. / The memory alignment is larger than the natural alignment 4.",
   )
 }
+
+///|
+/// A lane index's bound comes from the OPCODE, not from the operand. A `v128`
+/// is sixteen bytes however it is being read, so the same value on the stack
+/// admits sixteen lanes under one shape and two under another.
+test "a lane bound comes from the shape, not the value" {
+  fn bound(imm : @simd.Imm) -> String {
+    match @typing.lane_bound(imm) {
+      Some(n) => n.to_string()
+      None => "no immediate"
+    }
+  }
+
+  inspect(bound(Lane(I8x16)), content="16")
+  inspect(bound(Lane(I16x8)), content="8")
+  inspect(bound(Lane(I32x4)), content="4")
+  inspect(bound(Lane(F64x2)), content="2")
+  // A shuffle names lanes across TWO vectors at once.
+  inspect(bound(Shuffle), content="32")
+  inspect(bound(NoImm), content="no immediate")
+  // A memory access derives its bound from the width it moves: one byte into
+  // one of sixteen byte lanes, eight bytes into one of two.
+  inspect(@typing.mem_lane_bound(1), content="16")
+  inspect(@typing.mem_lane_bound(8), content="2")
+}
+
+///|
+/// A lane index has to be a constant integer -- there is no opcode for a
+/// computed lane, so a non-literal is not a slower lane selection, it is not
+/// one at all.
+test "a lane index must be a literal in range" {
+  fn complain(bound : Int, lane : @ast.InstrDesc[@basic.Location]) -> String {
+    let d = @diagnostic.collector()
+    @typing.check_lane_immediate(d, bound, { desc: lane, info: loc_at(0, 2) })
+    if d.collected().is_empty() {
+      "accepted"
+    } else {
+      @message.to_plain_string(d.collected()[0].message)
+    }
+  }
+
+  inspect(complain(16, Int("0")), content="accepted")
+  inspect(complain(16, Int("15")), content="accepted")
+  inspect(
+    complain(16, Int("16")),
+    content="The lane index should be less than 16.",
+  )
+  inspect(
+    complain(2, Int("2")),
+    content="The lane index should be less than 2.",
+  )
+  // Rejected here rather than left to overflow: it would otherwise reach the
+  // code generator, which parses it and crashes.
+  inspect(
+    complain(16, Int("18446744073709551616")),
+    content="The lane index should be less than 16.",
+  )
+  // Not a literal at all.
+  inspect(
+    complain(16, Get({ name: "n", loc: loc_at(0, 1) })),
+    content="Only integer literals are allowed here.",
+  )
+}

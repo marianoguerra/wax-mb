@@ -710,3 +710,49 @@ pub fn bad_memory_align(
     @message.text("The memory alignment should be a power of two."),
   )
 }
+
+///|
+/// A lane index outside the shape's lanes.
+pub fn invalid_lane_index(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  max_lane : Int,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The lane index should be less than")
+    .sep(@message.int(max_lane))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// A lane index that is not a literal.
+pub fn integer_literal_required(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Only integer literals are allowed here."),
+  )
+}
+
+///|
+/// A lane-taking memory access written without its `lane:` immediate.
+pub fn missing_lane_immediate(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This memory access needs a")
+    .sep(@message.code("lane:"))
+    .sep(@message.text("immediate (e.g."))
+    .sep(@message.code("lane: 0"))
+    .seq(@message.text(").")),
+  )
+}

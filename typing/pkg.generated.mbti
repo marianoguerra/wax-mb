@@ -10,6 +10,7 @@ import {
   "waxmb/wax/diagnostic",
   "waxmb/wax/feature",
   "waxmb/wax/infer",
+  "waxmb/wax/simd",
   "waxmb/wax/type_store",
   "waxmb/wax/typing_env",
   "waxmb/wax/wasm_types",
@@ -39,6 +40,8 @@ pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@inf
 pub fn check_inline_type(@typing_env.TypeContext, @diagnostic.Context, @basic.Location, @ast.FuncType, @ast.FuncType?) -> Unit
 
 pub fn check_int_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
+
+pub fn check_lane_immediate(@diagnostic.Context, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]) -> Unit
 
 pub fn check_memarg(@diagnostic.Context, @wasm_types.AddressType, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?) -> Unit
 
@@ -162,9 +165,13 @@ pub fn int_literal_lattice(String) -> @infer.InferredType
 
 pub fn int_literal_u64(@ast.InstrDesc[@basic.Location]) -> UInt64?
 
+pub fn integer_literal_required(@diagnostic.Context, @basic.Location) -> Unit
+
 pub fn internalize(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident], inline? : @ast.CompType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn internalize_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @infer.InferredValType?
+
+pub fn invalid_lane_index(@diagnostic.Context, @basic.Location, Int) -> Unit
 
 pub fn is_defaultable(@wasm_types.ValType[@ast.Ident]) -> Bool
 
@@ -179,6 +186,8 @@ pub fn join_collected(@diagnostic.Context, @basic.Location, Array[(@basic.Locati
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn label_in_scope(@typing_env.ModuleContext, @ast.Ident) -> Bool
+
+pub fn lane_bound(@simd.Imm) -> Int?
 
 pub fn leave_function_scope(@typing_env.ModuleContext) -> Unit
 
@@ -206,6 +215,8 @@ pub let max_align : UInt64
 
 pub let max_offset_i32_exclusive : UInt64
 
+pub fn mem_lane_bound(Int) -> Int
+
 pub fn mem_load_result(String) -> @infer.InferredType?
 
 pub fn mem_natural_align(String) -> Int
@@ -221,6 +232,8 @@ pub fn memory_offset_too_large(@diagnostic.Context, @basic.Location, UInt64) -> 
 pub fn memory_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
 pub fn missing_else_ok(@type_store.SubtypingInfo, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]]) -> Bool
+
+pub fn missing_lane_immediate(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn n_fieldtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
 

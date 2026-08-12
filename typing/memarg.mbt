@@ -90,3 +90,53 @@ pub fn check_memarg(
       }
   }
 }
+
+///|
+/// How many lanes an immediate may name.
+///
+/// The bound comes from the OPCODE, not from the operand. A `v128` is sixteen
+/// bytes however it is being read, so `i8x16.extract_lane` admits 0..15 and
+/// `f64x2.extract_lane` only 0..1 -- and the value on the stack is the same
+/// v128 in both cases. A shuffle names two vectors' lanes at once, hence 32.
+pub fn lane_bound(imm : @simd.Imm) -> Int? {
+  match imm {
+    NoImm => None
+    Lane(shape) => Some(shape.lane_count())
+    Shuffle => Some(32)
+  }
+}
+
+///|
+/// Validate a lane immediate against its bound.
+///
+/// A lane index has to be a constant integer: there is no opcode for a computed
+/// lane, so a non-literal is not a slower lane selection, it is not one at all.
+///
+/// Compared UNSIGNED, and a literal too large even for u64 is rejected here
+/// rather than left to overflow: it would otherwise slip through to the code
+/// generator, which parses it and crashes. The reference has the same guard in
+/// both of its lane checks, for exactly that reason.
+pub fn check_lane_immediate(
+  diagnostics : @diagnostic.Context,
+  bound : Int,
+  lane : @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location],
+) -> Unit {
+  guard lane.desc is Int(_) else {
+    integer_literal_required(diagnostics, lane.info)
+    return
+  }
+  match int_literal_u64(lane.desc) {
+    Some(l) if l < bound.to_uint64() => ()
+    _ => invalid_lane_index(diagnostics, lane.info, bound)
+  }
+}
+
+///|
+/// The lane bound of a memory access that takes one.
+///
+/// Derived from the access width rather than from a shape: a `load8_lane` reads
+/// one byte into one of sixteen byte lanes, a `load64_lane` eight bytes into
+/// one of two.
+pub fn mem_lane_bound(natural_align : Int) -> Int {
+  16 / natural_align
+}
