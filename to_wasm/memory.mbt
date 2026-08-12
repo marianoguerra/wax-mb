@@ -32,8 +32,20 @@ pub fn Lowering::memarg(
   args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
   loc : @basic.Location,
 ) -> (Int, Int64) raise LowerError {
+  self.memarg_natural(natural_align(meth.name), args, loc)
+}
+
+///|
+/// The same, for an access whose natural alignment is not read off a scalar
+/// method name -- the vector accesses, whose widths the SIMD registry knows.
+pub fn Lowering::memarg_natural(
+  self : Lowering,
+  natural : Int,
+  args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  loc : @basic.Location,
+) -> (Int, Int64) raise LowerError {
   ignore(self)
-  let mut align = natural_align(meth.name)
+  let mut align = natural
   let mut offset = 0L
   for a in args {
     guard a.desc is Labelled(label, value) else { continue }

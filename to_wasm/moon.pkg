@@ -9,6 +9,7 @@ import {
   "moonbitlang/core/string",
   "moonbitlang/core/debug",
   "waxmb/wax/unicode",
+  "waxmb/wax/simd",
 }
 
 import {

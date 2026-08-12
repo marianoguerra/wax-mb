@@ -270,6 +270,55 @@ fn Lowering::hinted(
           }
         }
       }
+      // The SIMD memory accesses: `m.loadv128(p)`, `m.load8_lane(p, v, lane:
+      // 3)`. Their widths -- and so their natural alignments -- come from the
+      // registry rather than from the name, and a lane access takes a
+      // mandatory `lane:` immediate alongside the memarg.
+      if callee.desc is StructGet(recv, meth) && recv.desc is Get(memname) {
+        if self.indices.memories.get(memname.name) is Some(mem) {
+          if @simd.mem_method(meth.name) is Some(op) {
+            let (align, offset) = self.memarg_natural(
+              log2_exact(op.nat_align.to_int64(), loc),
+              args,
+              loc,
+            )
+            let lane = if op.lane { labelled_lane(args, loc) } else { 0 }
+            for a in args {
+              if !(a.desc is Labelled(_, _)) {
+                self.instr(out, a)
+              }
+            }
+            out.push((op.build)(mem, align, offset, lane))
+            return
+          }
+        }
+      }
+      // A SIMD vector operation, written as a method on the first operand:
+      // `v.add_i32x4(w)`, `v.extract_lane_s_i8x16(lane)`. The lane shape is in
+      // the NAME, so the registry knows the whole instruction; what varies is
+      // how many leading arguments are lane immediates rather than operands.
+      if callee.desc is StructGet(recv, meth) {
+        if @simd.classify(meth.name) is Some(op) {
+          let nimm = match op.imm {
+            NoImm => 0
+            Lane(_) => 1
+            Shuffle => 16
+          }
+          let lanes = []
+          for k in 0..<nimm {
+            guard k < args.length() else {
+              raise Unresolved("lane immediate", loc)
+            }
+            lanes.push(lane_immediate(args[k], loc))
+          }
+          self.instr(out, recv)
+          for a in args[nimm:] {
+            self.instr(out, a)
+          }
+          out.push((op.build)(lanes))
+          return
+        }
+      }
       // The no-argument instruction methods: `x.clz()`, `arr.length()`. Their
       // opcode comes from the RECEIVER's type, which is the only thing that
       // distinguishes `i32.clz` from `i64.clz`.
@@ -279,7 +328,10 @@ fn Lowering::hinted(
           out.push(op)
           return
         }
-        if meth.name == "length" && node_type_index(recv) is Some(_) {
+        // `array.len` takes NO immediate, so unlike its bulk-method siblings
+        // it does not need a concrete element type: the abstract `array` heap
+        // type and the bottom reference are receivers too.
+        if meth.name == "length" && receiver_is_array(recv) {
           self.instr(out, recv)
           out.push(ArrayLen)
           return
@@ -957,6 +1009,43 @@ fn Lowering::table_of(
   // resolved it in too.
   guard !self.locals.contains(name.name) else { return None }
   self.indices.tables.get(name.name)
+}
+
+///|
+/// The integer literal a lane immediate is written as. Typing has already
+/// rejected anything else, so a non-literal here is a lowering bug.
+fn lane_immediate(
+  a : @ast.Instr[@typing_env.InferredAnnotation],
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  let value = if a.desc is Labelled(_, v) { v } else { a }
+  guard value.desc is Int(s) else { raise Unresolved("lane immediate", loc) }
+  parse_i64(s, loc).to_int()
+}
+
+///|
+/// The mandatory `lane:` immediate of a vector lane access.
+fn labelled_lane(
+  args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  for a in args {
+    if a.desc is Labelled(label, _) && label.name == "lane" {
+      return lane_immediate(a, loc)
+    }
+  }
+  raise Unresolved("lane immediate", loc)
+}
+
+///|
+/// Whether a receiver is something `array.len` accepts: a concrete array type,
+/// the abstract `array` heap type, or the bottom reference that is below it.
+/// The bulk methods need a real element type and are checked separately.
+fn receiver_is_array(recv : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
+  if node_type_index(recv) is Some(_) {
+    return true
+  }
+  node_valtype(recv) is Some(Ref({ typ: Array | None_, .. }))
 }
 
 ///|

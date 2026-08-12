@@ -112,6 +112,7 @@ pub fn Lowering::array_element_of(Self, @ast.Instr[(Array[@infer.Cell[@infer.Inf
 pub fn Lowering::depth_of(Self, String) -> Int?
 pub fn Lowering::instr(Self, Array[@wasm_bin.Instruction], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Unit raise LowerError
 pub fn Lowering::memarg(Self, @ast.Ident, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @basic.Location) -> (Int, Int64) raise LowerError
+pub fn Lowering::memarg_natural(Self, Int, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @basic.Location) -> (Int, Int64) raise LowerError
 pub fn Lowering::module_name(Self, @wasm_bin.Module, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
 pub fn Lowering::struct_fields_of(Self, @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location) -> (Int, Array[@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]]) raise LowerError
 pub fn Lowering::target_features(Self, @wasm_bin.Module, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
