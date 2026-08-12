@@ -8,6 +8,7 @@ import {
   "waxmb/wax/diagnostic",
   "waxmb/wax/message",
   "waxmb/wax/infer",
+  "waxmb/wax/number",
   "moonbitlang/core/ref",
 }
 

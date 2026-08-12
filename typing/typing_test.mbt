@@ -850,3 +850,76 @@ test "unreachable and poisoned scopes report nothing" {
     inspect(d.collected().length(), content="0")
   }
 }
+
+///|
+/// A literal's spelling says only what it CANNOT be. This is the first thing in
+/// the checker that produces an annotation, and it produces the least committed
+/// one available -- everything else is decided by how the literal is used.
+test "the literal lattice" {
+  fn int_(s : String) -> String {
+    @infer.to_string(@infer.Cell::make(@typing.int_literal_lattice(s)))
+  }
+
+  fn float_(s : String) -> String {
+    @infer.to_string(@infer.Cell::make(@typing.float_literal_lattice(s)))
+  }
+
+  // An ordinary integer commits to nothing: it could be any of the four.
+  inspect(int_("0"), content="number")
+  inspect(int_("1"), content="number")
+  inspect(int_("4294967295"), content="number")
+  inspect(int_("0xffffffff"), content="number")
+  // Past the 32-bit range it cannot be i32, so it defaults to i64 rather than
+  // to i32 -- which is the whole difference between LargeInt and Number.
+  inspect(int_("4294967296"), content="large number")
+  inspect(int_("18446744073709551615"), content="large number")
+  // Too big for u64 it cannot be any integer at all, so it falls to the float
+  // lattice -- which makes an integer use a clean type error rather than an
+  // overflow in the encoder. It is still FLEXIBLE, because 2^64 sits well
+  // inside an f32; only a magnitude f32 cannot hold pins to f64.
+  inspect(int_("18446744073709551616"), content="float")
+  inspect(int_("1000000000000000000000000"), content="float")
+  inspect(int_("1" + "0".repeat(40)), content="f64")
+
+  // A float that fits an f32 stays flexible; its use picks the width.
+  inspect(float_("1.0"), content="float")
+  inspect(float_("0.5"), content="float")
+  inspect(float_("3.4e38"), content="float")
+  // One that does not fit is pinned to f64 at once, because there is no choice
+  // left: f32 would overflow it to infinity.
+  inspect(float_("3.5e38"), content="f64")
+  inspect(float_("1e300"), content="f64")
+  // inf and nan are spelled, not overflowed, so they remain flexible.
+  inspect(float_("inf"), content="float")
+  inspect(float_("nan"), content="float")
+}
+
+///|
+/// The lattice and the two inference steps compose: a literal's spelling rules
+/// widths out, and its use picks among what is left.
+test "a literal's spelling and its use decide together" {
+  let info = @type_store.TypeStore::new().subtyping_info()
+  fn used_as(literal : String, as_ : @infer.InferredValType) -> String {
+    let cell = @infer.Cell::make(@typing.int_literal_lattice(literal))
+    if @typing.subtype(info, cell, @infer.valtype_cell(as_)) {
+      @infer.to_string(cell)
+    } else {
+      "rejected"
+    }
+  }
+
+  // A small literal takes whichever width its use wants.
+  inspect(used_as("1", @infer.i32_valtype), content="i32")
+  inspect(used_as("1", @infer.i64_valtype), content="i64")
+  inspect(used_as("1", @infer.f64_valtype), content="f64")
+  // A large one refuses i32 however it is used, and takes the rest.
+  inspect(used_as("4294967296", @infer.i32_valtype), content="rejected")
+  inspect(used_as("4294967296", @infer.i64_valtype), content="i64")
+  inspect(used_as("4294967296", @infer.f64_valtype), content="f64")
+  // One too big for any integer refuses both integer widths.
+  inspect(
+    used_as("18446744073709551616", @infer.i64_valtype),
+    content="rejected",
+  )
+  inspect(used_as("18446744073709551616", @infer.f64_valtype), content="f64")
+}

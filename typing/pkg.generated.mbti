@@ -29,9 +29,13 @@ pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) 
 
 pub fn field_subtype(@type_store.SubtypingInfo, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]], @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) -> Bool
 
+pub fn float_literal_lattice(String) -> @infer.InferredType
+
 pub fn get_type_definition(@typing_env.TypeContext, @ast.Ident) -> @ast.SubType?
 
 pub fn heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
+
+pub fn int_literal_lattice(String) -> @infer.InferredType
 
 pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 
