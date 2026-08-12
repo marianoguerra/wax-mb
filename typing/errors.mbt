@@ -260,3 +260,33 @@ pub fn unbound_name(
     hint=did_you_mean(suggestions),
   )
 }
+
+///|
+/// A write to something that cannot be written.
+pub fn immutable(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  what : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This")
+    .sep(@message.text(what))
+    .sep(@message.text("is immutable and cannot be assigned.")),
+  )
+}
+
+///|
+/// A write to something that is not a variable at all -- a function, say.
+pub fn not_assignable(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.ident(name).sep(@message.text("cannot be assigned.")),
+  )
+}

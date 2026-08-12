@@ -292,3 +292,102 @@ fn cell_of(ty : @infer.InferredValType?) -> @infer.Cell[@infer.InferredType] {
     None => @infer.Cell::make(Error)
   }
 }
+
+///|
+/// Names worth suggesting for an unbound TEE target.
+///
+/// Narrower again than an assignment's: only a local can be tee'd, because the
+/// value has to stay on the stack afterwards and only a local supports that.
+pub fn local_suggestions(
+  ctx : @typing_env.ModuleContext,
+  name : String,
+) -> Array[String] {
+  let candidates : Array[String] = []
+  for k, _ in ctx.locals {
+    candidates.push(k)
+  }
+  @spell.suggest(candidates.iter(), name)
+}
+
+///|
+/// Record and report what an assignment target turned out to be.
+///
+/// Called AFTER the value has been checked, which matters: the local is marked
+/// initialized only then, so `x = x + 1` still sees `x`'s pre-assignment state
+/// while its right-hand side is being checked.
+///
+/// `compound` says the source wrote `x op= e`. That form desugars to `x = x op
+/// e`, and the desugared READ already reported an unbound name at this very
+/// span -- so reporting the write as well would say the same thing twice.
+pub fn assign_target(
+  ctx : @typing_env.ModuleContext,
+  idx : @ast.Ident,
+  resolved : ResolvedVar,
+  compound? : Bool = false,
+) -> Unit {
+  match resolved {
+    Local(_, _) => mark_initialized(ctx, idx.name)
+    Global(mut_, _) =>
+      if !mut_ {
+        immutable(ctx.diagnostics, idx.loc, "global")
+      } else {
+        // The only place a global is written, so also the only place a mutable
+        // one can be recorded as actually assigned -- which is what the
+        // unnecessary-mut warning reads.
+        ctx.assigned_globals[idx.name] = ()
+      }
+    FuncRef(_, _, _) => not_assignable(ctx.diagnostics, idx.loc, idx.name)
+    // Already reported at the definition.
+    Poisoned => ()
+    Unbound =>
+      if !compound {
+        unbound_name(
+          ctx.diagnostics,
+          idx.loc,
+          "variable",
+          idx.name,
+          suggestions=set_suggestions(ctx, idx.name),
+        )
+      }
+  }
+}
+
+///|
+/// The type a tee delivers, and the reporting that goes with it.
+///
+/// Only a local is tee-able. Everything else recovers with the OPERAND's own
+/// type rather than an unknown, because an unknown cannot be checked against
+/// anything and would turn one error into a second one downstream.
+pub fn tee_target(
+  ctx : @typing_env.ModuleContext,
+  idx : @ast.Ident,
+  resolved : ResolvedVar,
+  operand : @infer.Cell[@infer.InferredType],
+) -> @infer.Cell[@infer.InferredType] {
+  match resolved {
+    Local(Some(ity), _) => {
+      mark_initialized(ctx, idx.name)
+      @infer.valtype_cell(ity)
+    }
+    // A poison local: no check to make, but it does now hold a value.
+    Local(None, _) => {
+      mark_initialized(ctx, idx.name)
+      operand
+    }
+    Global(_, _) | FuncRef(_, _, _) => {
+      not_assignable(ctx.diagnostics, idx.loc, idx.name)
+      operand
+    }
+    Poisoned => operand
+    Unbound => {
+      unbound_name(
+        ctx.diagnostics,
+        idx.loc,
+        "variable",
+        idx.name,
+        suggestions=local_suggestions(ctx, idx.name),
+      )
+      operand
+    }
+  }
+}

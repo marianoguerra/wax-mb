@@ -15,6 +15,8 @@ import {
 }
 
 // Values
+pub fn assign_target(@typing_env.ModuleContext, @ast.Ident, ResolvedVar, compound? : Bool) -> Unit
+
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
 
 pub fn diff_ref_type(@wasm_types.RefType[@ast.Ident], @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@ast.Ident]
@@ -37,6 +39,8 @@ pub fn get_type_definition(@typing_env.TypeContext, @ast.Ident) -> @ast.SubType?
 
 pub fn heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
 
+pub fn immutable(@diagnostic.Context, @basic.Location, String) -> Unit
+
 pub fn inline_comptype(@typing_env.ModuleContext, @ast.Ident) -> @ast.CompType?
 
 pub fn int_literal_lattice(String) -> @infer.InferredType
@@ -50,6 +54,8 @@ pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.Inf
 pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.Label]) -> Unit
 
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
+
+pub fn local_suggestions(@typing_env.ModuleContext, String) -> Array[String]
 
 pub fn mark_initialized(@typing_env.ModuleContext, String) -> Unit
 
@@ -68,6 +74,8 @@ pub fn n_storagetype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.S
 pub fn n_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.RefIndex]?
 
 pub fn non_empty_stack(@diagnostic.Context, @basic.Location, String) -> Unit
+
+pub fn not_assignable(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn reftype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
 
@@ -100,6 +108,8 @@ pub fn storage_subtype(@type_store.SubtypingInfo, @wasm_types.StorageType[@type_
 pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], location? : @basic.Location?, pin? : Bool) -> Bool
 
 pub fn table_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
+
+pub fn tee_target(@typing_env.ModuleContext, @ast.Ident, ResolvedVar, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
 pub fn type_get(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.InferredType]
 

@@ -1203,3 +1203,140 @@ test "reading before initializing" {
   let _ = @typing.type_get(ctx2, { name: "r", loc: loc_at(20, 21) })
   inspect(ctx2.diagnostics.collected().length(), content="0")
 }
+
+///|
+/// What an assignment target turns out to be, and what each kind costs.
+test "assignment targets" {
+  fn attempt_c(
+    setup : (@typing_env.ModuleContext) -> Unit,
+    name : String,
+    compound : Bool,
+  ) -> String {
+    let ctx = module_ctx()
+    setup(ctx)
+    let idx : @ast.Ident = { name, loc: loc_at(20, 21) }
+    let resolved = @typing.resolve_variable(ctx, idx)
+    @typing.assign_target(ctx, idx, resolved, compound~)
+    ctx.diagnostics
+    .collected()
+    .map(e => @message.to_plain_string(e.message))
+    .join(" | ")
+  }
+
+  fn attempt(
+    setup : (@typing_env.ModuleContext) -> Unit,
+    name : String,
+  ) -> String {
+    attempt_c(setup, name, false)
+  }
+
+  // A local: no complaint, and it now holds a value.
+  inspect(
+    attempt(
+      ctx => ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(0, 1)),
+      "x",
+    ),
+    content="",
+  )
+  // A mutable global: allowed.
+  inspect(
+    attempt(ctx => ctx.globals.add("g", loc_at(0, 1), (true, None)), "g"),
+    content="",
+  )
+  // An immutable one: not.
+  inspect(
+    attempt(ctx => ctx.globals.add("g", loc_at(0, 1), (false, None)), "g"),
+    content="This global is immutable and cannot be assigned.",
+  )
+  // A function is not a variable.
+  let real_id = some_id()
+  inspect(
+    attempt(
+      ctx => ctx.functions.add("f", loc_at(0, 1), Some((real_id, "t", false))),
+      "f",
+    ),
+    content="'f' cannot be assigned.",
+  )
+  // A function whose signature failed to resolve is POISONED rather than a
+  // function reference, and says nothing further -- it was reported at its
+  // definition.
+  inspect(
+    attempt(ctx => ctx.functions.add("f", loc_at(0, 1), None), "f"),
+    content="",
+  )
+  // An unbound name reports, with the assignment-flavoured suggestions.
+  inspect(attempt(_ => (), "nope"), content="The variable 'nope' is not bound.")
+  // Except under a compound assignment, where the desugared read already said
+  // it at this very span.
+  inspect(attempt_c(_ => (), "nope", true), content="")
+}
+
+///|
+/// A mutable global is recorded as assigned only where it is actually written,
+/// which is what the unnecessary-mut warning reads.
+test "writing a mutable global records it" {
+  let ctx = module_ctx()
+  ctx.globals.add("used", loc_at(0, 1), (true, None))
+  ctx.globals.add("never", loc_at(2, 3), (true, None))
+  let idx : @ast.Ident = { name: "used", loc: loc_at(20, 21) }
+  @typing.assign_target(ctx, idx, @typing.resolve_variable(ctx, idx))
+  inspect(ctx.assigned_globals.contains("used"), content="true")
+  inspect(ctx.assigned_globals.contains("never"), content="false")
+}
+
+///|
+/// Only a local is tee-able. Everything else recovers with the OPERAND's own
+/// type rather than an unknown -- an unknown cannot be checked against
+/// anything, and would turn one error into a second one downstream.
+test "tee targets" {
+  fn tee(setup : (@typing_env.ModuleContext) -> Unit, name : String) -> String {
+    let ctx = module_ctx()
+    setup(ctx)
+    let idx : @ast.Ident = { name, loc: loc_at(20, 21) }
+    let operand = @infer.valtype_cell(@infer.f64_valtype)
+    let resolved = @typing.resolve_variable(ctx, idx)
+    let result = @typing.tee_target(ctx, idx, resolved, operand)
+    let msgs = ctx.diagnostics
+      .collected()
+      .map(e => @message.to_plain_string(e.message))
+      .join(" | ")
+    "\{@infer.to_string(result)}\{if msgs == "" { "" } else { "  -- " + msgs }}"
+  }
+
+  // A local delivers the LOCAL's type, not the operand's.
+  inspect(
+    tee(ctx => ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(0, 1)), "x"),
+    content="i32",
+  )
+  // A poison local has no type to deliver, so the operand's stands.
+  inspect(
+    tee(ctx => ctx.locals["x"] = (None, loc_at(0, 1)), "x"),
+    content="f64",
+  )
+  // A global cannot be tee'd, and recovery keeps the operand's type.
+  inspect(
+    tee(ctx => ctx.globals.add("g", loc_at(0, 1), (true, None)), "g"),
+    content="f64  -- 'g' cannot be assigned.",
+  )
+  // Unbound: reported, and again the operand's type carries on.
+  inspect(
+    tee(_ => (), "nope"),
+    content="f64  -- The variable 'nope' is not bound.",
+  )
+}
+
+///|
+/// A tee marks the local initialized, so a later read of it is fine.
+test "a tee initializes its target" {
+  let ctx = module_ctx()
+  ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(0, 1))
+  let idx : @ast.Ident = { name: "x", loc: loc_at(20, 21) }
+  let _ = @typing.tee_target(
+    ctx,
+    idx,
+    @typing.resolve_variable(ctx, idx),
+    @infer.valtype_cell(@infer.i32_valtype),
+  )
+  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(30, 31) })
+  inspect(ctx.diagnostics.collected().length(), content="0")
+}
