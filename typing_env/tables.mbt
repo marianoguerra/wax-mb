@@ -31,10 +31,15 @@ pub(all) enum Origin {
 } derive(Eq, Debug)
 
 ///|
-/// One declaration of a name: what it is called internally, where it was
-/// declared, and the assumption it was declared under.
+/// One declaration of a name: what kind of thing it declared, where, and under
+/// what assumption.
+///
+/// `kind` is the declaring table's kind -- "function", "global", "memory" --
+/// and not the name, which is the key this is stored under. It is here because
+/// a clash reports what the name is already taken BY, and the two declarations
+/// need not be of the same kind: memories and tables share one name space.
 pub(all) struct Declaration {
-  name : String
+  kind : String
   loc : @basic.Location
   cond : @cond.T
 }
@@ -60,6 +65,70 @@ pub fn Namespace::new(
   links? : ResolveSink = None,
 ) -> Namespace {
   { cond, entries: Map([]), links }
+}
+
+///|
+/// The declaration of `name` that this one would clash with, if any.
+///
+/// A clash needs both assumptions to be able to hold AT ONCE: two declarations
+/// in mutually exclusive `#[if]` branches are not two declarations of anything,
+/// since no configuration has both.
+///
+/// Searched newest first, so the one reported as "previously bound here" is the
+/// nearest -- the one the reader most likely just wrote past.
+fn Namespace::conflict(self : Namespace, name : String) -> Declaration? {
+  let here = self.cond.val
+  guard self.entries.get(name) is Some(l) else { return None }
+  for i = l.length() - 1; i >= 0; i = i - 1 {
+    if @cond.is_satisfiable(@cond.and_(here, l[i].cond)) {
+      return Some(l[i])
+    }
+  }
+  None
+}
+
+///|
+/// Record a declaration, reporting a clash with an existing one.
+///
+/// The declaration is recorded EITHER WAY. Dropping it would leave every later
+/// use of the name reading as unbound, turning one duplicate into a report per
+/// use -- the same cascade the poison entries elsewhere exist to prevent.
+pub fn Namespace::register(
+  self : Namespace,
+  diagnostics : @diagnostic.Context,
+  kind : String,
+  name : String,
+  loc : @basic.Location,
+) -> Unit {
+  if self.conflict(name) is Some(prev) {
+    name_already_bound(diagnostics, loc, prev.loc, prev.kind, name)
+  }
+  let entry = { kind, loc, cond: self.cond.val }
+  match self.entries.get(name) {
+    Some(l) => l.push(entry)
+    None => self.entries[name] = [entry]
+  }
+}
+
+///|
+/// Whether `name` is already taken here, reporting it if so.
+///
+/// The question and the report are one operation because every caller asks in
+/// order to skip a second registration, and a caller that skipped silently
+/// would drop the declaration without saying why.
+pub fn Namespace::exists(
+  self : Namespace,
+  diagnostics : @diagnostic.Context,
+  name : String,
+  loc : @basic.Location,
+) -> Bool {
+  match self.conflict(name) {
+    Some(prev) => {
+      name_already_bound(diagnostics, loc, prev.loc, prev.kind, name)
+      true
+    }
+    None => false
+  }
 }
 
 ///|
@@ -95,21 +164,68 @@ pub fn[A] Tbl::new(
 }
 
 ///|
-/// Declare a name under the current assumption.
+/// Declare a name under the current assumption, reporting a clash.
+///
+/// Entries accumulate rather than replace, and the LAST is the most recent --
+/// which is the one `resolve`, `override` and `remove` all mean by "the
+/// current declaration".
 pub fn[A] Tbl::add(
   self : Tbl[A],
+  diagnostics : @diagnostic.Context,
   name : String,
   loc : @basic.Location,
   value : A,
 ) -> Unit {
+  self.names.register(diagnostics, self.kind, name, loc)
   let cond = self.names.cond.val
-  match self.names.entries.get(name) {
-    Some(l) => l.push({ name, loc, cond })
-    None => self.names.entries[name] = [{ name, loc, cond }]
-  }
   match self.entries.get(name) {
     Some(l) => l.push((cond, value))
     None => self.entries[name] = [(cond, value)]
+  }
+}
+
+///|
+/// Whether this name is already bound in the shared name space, reporting it.
+pub fn[A] Tbl::exists(
+  self : Tbl[A],
+  diagnostics : @diagnostic.Context,
+  name : String,
+  loc : @basic.Location,
+) -> Bool {
+  self.names.exists(diagnostics, name, loc)
+}
+
+///|
+/// Replace the value of the most recent declaration of `name`.
+///
+/// For the two-step registration a recursion group needs: its members are
+/// declared with placeholder indices so that they can refer to each other, then
+/// given their real ones once the group is interned. The name space is
+/// untouched -- the declaration is the same one, only its value has settled.
+pub fn[A] Tbl::override_(self : Tbl[A], name : String, value : A) -> Unit {
+  let cond = self.names.cond.val
+  match self.entries.get(name) {
+    Some(l) if !l.is_empty() => l[l.length() - 1] = (cond, value)
+    _ => self.entries[name] = [(cond, value)]
+  }
+}
+
+///|
+/// Drop the most recent declaration of `name`, keeping any older one.
+///
+/// The other half of the two-step registration: a group that fails to resolve
+/// takes its placeholder names back out, so they do not resolve to a type that
+/// was never interned.
+///
+/// The NAME SPACE keeps its entry, deliberately: the name was still written
+/// here, so a second declaration of it is still a duplicate and still says so.
+pub fn[A] Tbl::remove(self : Tbl[A], name : String) -> Unit {
+  match self.entries.get(name) {
+    Some(l) if l.length() > 1 => {
+      let _ = l.pop()
+    }
+    Some(_) => self.entries.remove(name)
+    None => ()
   }
 }
 
@@ -130,34 +246,62 @@ pub fn[A] Tbl::visible(self : Tbl[A], name : String) -> Array[A] {
 }
 
 ///|
-/// Look up a name, recording the reference and marking it used.
+/// The declaration of `name` in force here, without recording anything.
 ///
-/// Prefers a declaration whose assumption the current one ENTAILS -- that is
-/// the branch actually being checked -- and falls back to any declaration
-/// merely consistent with it, which is what keeps a name declared in a sibling
-/// branch from reading as unbound.
+/// Prefers one whose assumption the current one ENTAILS -- that is the branch
+/// actually being checked -- then any merely consistent with it, which keeps a
+/// name declared in a sibling branch from reading as unbound. Failing both it
+/// takes the most recent, so a name that was written somewhere resolves to
+/// something rather than to nothing.
+///
+/// Each search runs newest first: a later declaration shadows an earlier one.
+pub fn[A] Tbl::select(self : Tbl[A], name : String) -> A? {
+  let here = self.names.cond.val
+  guard self.entries.get(name) is Some(l) else { return None }
+  guard !l.is_empty() else { return None }
+  fn pick(p : (@cond.T) -> Bool) -> A? {
+    for i = l.length() - 1; i >= 0; i = i - 1 {
+      if p(l[i].0) {
+        return Some(l[i].1)
+      }
+    }
+    None
+  }
+
+  match pick(c => @cond.logical_implies(here, c)) {
+    Some(v) => Some(v)
+    None =>
+      match pick(c => @cond.is_satisfiable(@cond.and_(here, c))) {
+        Some(v) => Some(v)
+        None => Some(l[l.length() - 1].1)
+      }
+  }
+}
+
+///|
+/// Look up a name for a use, marking it referenced and linking it to its
+/// definitions.
+///
+/// Only ever called for a REFERENCE; a declaration goes through `add`. That is
+/// what lets the mark be trusted by the unused-declaration lint.
 pub fn[A] Tbl::resolve(
   self : Tbl[A],
   name : String,
   use_ : @basic.Location,
 ) -> A? {
-  let here = self.names.cond.val
-  guard self.entries.get(name) is Some(l) else { return None }
+  guard self.select(name) is Some(value) else { return None }
   self.mark_used(name)
-  let entailed = l.filter(e => @cond.logical_implies(here, e.0))
-  let candidates = if !entailed.is_empty() {
-    entailed
-  } else {
-    l.filter(e => @cond.is_satisfiable(@cond.and_(here, e.0)))
-  }
-  guard !candidates.is_empty() else { return None }
-  let value = candidates[0].1
-  let definitions = match self.names.entries.get(name) {
-    None => []
-    Some(decls) =>
-      decls
-      .filter(d => @cond.is_satisfiable(@cond.and_(here, d.cond)))
-      .map(d => d.loc)
+  let here = self.names.cond.val
+  // Every definition the name could mean here, newest first. Several only ever
+  // across conditional branches, where the editor cannot pick between them and
+  // offering both is the honest answer.
+  let definitions : Array[@basic.Location] = []
+  if self.names.entries.get(name) is Some(decls) {
+    for i = decls.length() - 1; i >= 0; i = i - 1 {
+      if @cond.is_satisfiable(@cond.and_(here, decls[i].cond)) {
+        definitions.push(decls[i].loc)
+      }
+    }
   }
   record_reference(
     self.names.links,
@@ -169,9 +313,28 @@ pub fn[A] Tbl::resolve(
 }
 
 ///|
-/// Note that a name was looked up, and from where.
-fn[A] Tbl::mark_used(self : Tbl[A], name : String) -> Unit {
-  let origin = self.current.val
+/// Look up a name WITHOUT counting it as a reference.
+///
+/// For the checker's own internal lookups -- a function resolving its own
+/// declared type while being checked -- which are not references anyone wrote.
+/// Counting them would keep every declaration alive and silence the
+/// unused-declaration lint entirely.
+pub fn[A] Tbl::find_no_mark(self : Tbl[A], name : String) -> A? {
+  self.select(name)
+}
+
+///|
+/// Record a reference to `name` from `origin`, for a use that names no
+/// declaration syntactically.
+///
+/// A string literal builds the canonical `mut i8` array without writing a type
+/// name, yet every source definition that deduplicated onto that array really
+/// is used by it.
+pub fn[A] Tbl::mark_reference(
+  self : Tbl[A],
+  name : String,
+  origin : Origin,
+) -> Unit {
   if origin is Ignored {
     return
   }
@@ -179,6 +342,24 @@ fn[A] Tbl::mark_used(self : Tbl[A], name : String) -> Unit {
     Some(l) => if !l.contains(origin) { l.push(origin) }
     None => self.used[name] = [origin]
   }
+}
+
+///|
+/// Every declaration in this table, name and value, in no particular order.
+pub fn[A] Tbl::iter_entries(self : Tbl[A]) -> Array[(String, A)] {
+  let out : Array[(String, A)] = []
+  for name, l in self.entries {
+    for e in l {
+      out.push((name, e.1))
+    }
+  }
+  out
+}
+
+///|
+/// Note that a name was looked up, and from where.
+fn[A] Tbl::mark_used(self : Tbl[A], name : String) -> Unit {
+  self.mark_reference(name, self.current.val)
 }
 
 ///|

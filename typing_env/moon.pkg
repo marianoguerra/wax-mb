@@ -5,6 +5,7 @@ import {
   "waxmb/wax/members",
   "waxmb/wax/cond",
   "waxmb/wax/diagnostic",
+  "waxmb/wax/message",
   "waxmb/wax/wasm_types",
   "waxmb/wax/type_store",
   "waxmb/wax/feature",

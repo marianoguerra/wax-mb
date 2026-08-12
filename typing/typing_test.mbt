@@ -26,6 +26,7 @@ fn ctx_with(
   features? : @feature.Set = @feature.default(),
 ) -> @typing_env.TypeContext raise {
   let store = @type_store.TypeStore::new()
+  let diagnostics = @diagnostic.collector()
   let cond = @ref.new(@cond.true_)
   let ns = @typing_env.Namespace::new(cond)
   let origin = @ref.new(@typing_env.Origin::Root)
@@ -52,7 +53,7 @@ fn ctx_with(
       },
     ]
     let idx = store.add_rectype(group)
-    tbl.add(n, loc_at(0, 1), (Def(idx), empty))
+    tbl.add(diagnostics, n, loc_at(0, 1), (Def(idx), empty))
   }
   @typing_env.TypeContext::new(store, tbl, features)
 }
@@ -948,11 +949,21 @@ fn some_id() -> @type_store.Id raise {
 /// a local is the only thing that can collide with them.
 test "a local shadows everything" {
   let ctx = module_ctx()
-  ctx.globals.add("x", loc_at(0, 1), (false, None))
-  ctx.functions.add("f", loc_at(2, 3), Some((some_id(), "t", false)))
-  ctx.memories.add("m", loc_at(4, 5), (0, I32))
-  ctx.tables.add("t", loc_at(6, 7), (I32, { nullable: true, typ: Func }))
-  ctx.datas.add("d", loc_at(8, 9), ())
+  ctx.globals.add(ctx.diagnostics, "x", loc_at(0, 1), (false, None))
+  ctx.functions.add(
+    ctx.diagnostics,
+    "f",
+    loc_at(2, 3),
+    Some((some_id(), "t", false)),
+  )
+  ctx.memories.add(ctx.diagnostics, "m", loc_at(4, 5), (0, I32))
+  ctx.tables.add(
+    ctx.diagnostics,
+    "t",
+    loc_at(6, 7),
+    (I32, { nullable: true, typ: Func }),
+  )
+  ctx.datas.add(ctx.diagnostics, "d", loc_at(8, 9), ())
   fn kind(n : String) -> String {
     match @typing.resolve_variable(ctx, { name: n, loc: loc_at(20, 21) }) {
       Local(_, _) => "local"
@@ -1004,7 +1015,7 @@ test "a local shadows everything" {
 /// as poison rather than cascading into unbound-name reports.
 test "a poisoned function is bound, not unbound" {
   let ctx = module_ctx()
-  ctx.functions.add("broken", loc_at(0, 1), None)
+  ctx.functions.add(ctx.diagnostics, "broken", loc_at(0, 1), None)
   match @typing.resolve_variable(ctx, { name: "broken", loc: loc_at(5, 6) }) {
     Poisoned => inspect("poisoned", content="poisoned")
     Unbound => fail("a poisoned function must not read as unbound")
@@ -1104,7 +1115,12 @@ test "reading a name" {
   let ctx = module_ctx()
   ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(2, 3))
   @typing.mark_initialized(ctx, "x")
-  ctx.globals.add("g", loc_at(4, 5), (false, Some(@infer.f64_valtype)))
+  ctx.globals.add(
+    ctx.diagnostics,
+    "g",
+    loc_at(4, 5),
+    (false, Some(@infer.f64_valtype)),
+  )
   // A poison local: its initializer failed, and was reported there.
   ctx.locals["bad"] = (None, loc_at(6, 7))
   @typing.mark_initialized(ctx, "bad")
@@ -1132,8 +1148,8 @@ test "reading a name" {
 test "did you mean" {
   let ctx = module_ctx()
   ctx.locals["counter"] = (Some(@infer.i32_valtype), loc_at(2, 3))
-  ctx.globals.add("threshold", loc_at(4, 5), (false, None))
-  ctx.functions.add("compute", loc_at(6, 7), None)
+  ctx.globals.add(ctx.diagnostics, "threshold", loc_at(4, 5), (false, None))
+  ctx.functions.add(ctx.diagnostics, "compute", loc_at(6, 7), None)
   let _ = @typing.type_get(ctx, { name: "countr", loc: loc_at(20, 21) })
   guard! ctx.diagnostics.collected()[0].hint is Some(h)
   inspect(@message.to_plain_string(h), content="Did you mean 'counter'?")
@@ -1149,9 +1165,9 @@ test "did you mean" {
 /// one would send the reader somewhere that cannot work.
 test "assignment suggestions are narrower than read suggestions" {
   let ctx = module_ctx()
-  ctx.globals.add("total", loc_at(0, 1), (true, None))
-  ctx.globals.add("limit", loc_at(2, 3), (false, None))
-  ctx.functions.add("compute", loc_at(4, 5), None)
+  ctx.globals.add(ctx.diagnostics, "total", loc_at(0, 1), (true, None))
+  ctx.globals.add(ctx.diagnostics, "limit", loc_at(2, 3), (false, None))
+  ctx.functions.add(ctx.diagnostics, "compute", loc_at(4, 5), None)
   // A read could have meant any of them.
   inspect(@typing.get_suggestions(ctx, "totl").join(","), content="total")
   inspect(@typing.get_suggestions(ctx, "limt").join(","), content="limit")
@@ -1240,19 +1256,32 @@ test "assignment targets" {
   )
   // A mutable global: allowed.
   inspect(
-    attempt(ctx => ctx.globals.add("g", loc_at(0, 1), (true, None)), "g"),
+    attempt(
+      ctx => ctx.globals.add(ctx.diagnostics, "g", loc_at(0, 1), (true, None)),
+      "g",
+    ),
     content="",
   )
   // An immutable one: not.
   inspect(
-    attempt(ctx => ctx.globals.add("g", loc_at(0, 1), (false, None)), "g"),
+    attempt(
+      ctx => ctx.globals.add(ctx.diagnostics, "g", loc_at(0, 1), (false, None)),
+      "g",
+    ),
     content="This global is immutable and cannot be assigned.",
   )
   // A function is not a variable.
   let real_id = some_id()
   inspect(
     attempt(
-      ctx => ctx.functions.add("f", loc_at(0, 1), Some((real_id, "t", false))),
+      ctx => {
+        ctx.functions.add(
+          ctx.diagnostics,
+          "f",
+          loc_at(0, 1),
+          Some((real_id, "t", false)),
+        )
+      },
       "f",
     ),
     content="'f' cannot be assigned.",
@@ -1261,7 +1290,10 @@ test "assignment targets" {
   // function reference, and says nothing further -- it was reported at its
   // definition.
   inspect(
-    attempt(ctx => ctx.functions.add("f", loc_at(0, 1), None), "f"),
+    attempt(
+      ctx => ctx.functions.add(ctx.diagnostics, "f", loc_at(0, 1), None),
+      "f",
+    ),
     content="",
   )
   // An unbound name reports, with the assignment-flavoured suggestions.
@@ -1276,8 +1308,8 @@ test "assignment targets" {
 /// which is what the unnecessary-mut warning reads.
 test "writing a mutable global records it" {
   let ctx = module_ctx()
-  ctx.globals.add("used", loc_at(0, 1), (true, None))
-  ctx.globals.add("never", loc_at(2, 3), (true, None))
+  ctx.globals.add(ctx.diagnostics, "used", loc_at(0, 1), (true, None))
+  ctx.globals.add(ctx.diagnostics, "never", loc_at(2, 3), (true, None))
   let idx : @ast.Ident = { name: "used", loc: loc_at(20, 21) }
   @typing.assign_target(ctx, idx, @typing.resolve_variable(ctx, idx))
   inspect(ctx.assigned_globals.contains("used"), content="true")
@@ -1315,7 +1347,10 @@ test "tee targets" {
   )
   // A global cannot be tee'd, and recovery keeps the operand's type.
   inspect(
-    tee(ctx => ctx.globals.add("g", loc_at(0, 1), (true, None)), "g"),
+    tee(
+      ctx => ctx.globals.add(ctx.diagnostics, "g", loc_at(0, 1), (true, None)),
+      "g",
+    ),
     content="f64  -- 'g' cannot be assigned.",
   )
   // Unbound: reported, and again the operand's type carries on.
@@ -1428,7 +1463,7 @@ test "internalize keeps the name and the index" {
     descriptor: None,
     describes: None,
   }
-  ctx.types.add("node", loc_at(0, 4), (Def(store_id), empty))
+  ctx.types.add(ctx.diagnostics, "node", loc_at(0, 4), (Def(store_id), empty))
   let named : @wasm_types.ValType[@ast.Ident] = Ref({
     nullable: true,
     typ: Type({ name: "node", loc: loc_at(10, 14) }),

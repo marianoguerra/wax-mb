@@ -24,6 +24,8 @@ pub fn[Info] expression_type_opt((Array[@infer.Cell[@infer.InferredType]], Info)
 
 pub fn is_source(@basic.Location) -> Bool
 
+pub fn name_already_bound(@diagnostic.Context, @basic.Location, @basic.Location, String, String) -> Unit
+
 pub fn record_members(Array[(@basic.Location, @members.MemberReceiver)]?, @basic.Location, @members.MemberReceiver) -> Unit
 
 pub fn record_pun(Array[@basic.Location]?, @basic.Location) -> Unit
@@ -50,7 +52,7 @@ pub struct ControlFrame {
 pub fn ControlFrame::new(Array[@infer.Cell[@infer.InferredType]], label? : @ast.Ident?) -> Self
 
 pub(all) struct Declaration {
-  name : String
+  kind : String
   loc : @basic.Location
   cond : @cond.T
 }
@@ -116,7 +118,9 @@ pub struct Namespace {
   entries : Map[String, Array[Declaration]]
   links : Array[Reference]?
 }
+pub fn Namespace::exists(Self, @diagnostic.Context, String, @basic.Location) -> Bool
 pub fn Namespace::new(@ref.Ref[@cond.T], links? : Array[Reference]?) -> Self
+pub fn Namespace::register(Self, @diagnostic.Context, String, String, @basic.Location) -> Unit
 
 pub(all) enum Origin {
   Root
@@ -139,12 +143,19 @@ pub struct Tbl[A] {
   current : @ref.Ref[Origin]
   hover : (A) -> HoverTarget?
 }
-pub fn[A] Tbl::add(Self[A], String, @basic.Location, A) -> Unit
+pub fn[A] Tbl::add(Self[A], @diagnostic.Context, String, @basic.Location, A) -> Unit
+pub fn[A] Tbl::exists(Self[A], @diagnostic.Context, String, @basic.Location) -> Bool
+pub fn[A] Tbl::find_no_mark(Self[A], String) -> A?
+pub fn[A] Tbl::iter_entries(Self[A]) -> Array[(String, A)]
 pub fn[A] Tbl::iter_references(Self[A]) -> Array[(String, Array[Origin])]
+pub fn[A] Tbl::mark_reference(Self[A], String, Origin) -> Unit
 pub fn[A] Tbl::names(Self[A]) -> Array[String]
 pub fn[A] Tbl::new(String, Namespace, @ref.Ref[Origin], hover? : (A) -> HoverTarget?) -> Self[A]
+pub fn[A] Tbl::override_(Self[A], String, A) -> Unit
 pub fn[A] Tbl::referrers(Self[A], String) -> Array[Origin]
+pub fn[A] Tbl::remove(Self[A], String) -> Unit
 pub fn[A] Tbl::resolve(Self[A], String, @basic.Location) -> A?
+pub fn[A] Tbl::select(Self[A], String) -> A?
 pub fn[A] Tbl::visible(Self[A], String) -> Array[A]
 
 pub struct TypeContext {
