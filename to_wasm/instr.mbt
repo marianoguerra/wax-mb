@@ -268,6 +268,75 @@ pub fn Lowering::instr(
         None => raise Unresolved("select type", loc)
       }
     }
+    Struct(_, fields) => {
+      let (t, declared) = self.struct_fields_of(i, loc)
+      guard fields.length() == declared.length() else {
+        raise Unresolved("struct field count", loc)
+      }
+      // The checker rebuilt the fields in DECLARED order, which is the order
+      // `struct.new` takes them in -- so they are emitted as they stand.
+      for f in fields {
+        guard f.1 is Some(v) else {
+          raise Unresolved("struct field value", loc)
+        }
+        self.instr(out, v)
+      }
+      out.push(StructNew(t))
+    }
+    StructDefault(_) => {
+      let (t, _) = self.struct_fields_of(i, loc)
+      out.push(StructNewDefault(t))
+    }
+    StructGet(recv, field) => {
+      self.instr(out, recv)
+      let (t, declared) = self.struct_fields_of(recv, loc)
+      guard self.field_index(t, declared, field.name) is Some((k, f)) else {
+        raise Unresolved("struct field", loc)
+      }
+      // A packed field read is unsigned unless a sign cast follows and fuses;
+      // this is the bare form, so it is the unsigned one.
+      out.push(if is_packed(f) { StructGetU(t, k) } else { StructGet(t, k) })
+    }
+    StructSet(recv, field, value) => {
+      self.instr(out, recv)
+      self.instr(out, value)
+      let (t, declared) = self.struct_fields_of(recv, loc)
+      guard self.field_index(t, declared, field.name) is Some((k, _)) else {
+        raise Unresolved("struct field", loc)
+      }
+      out.push(StructSet(t, k))
+    }
+    Array(_, init, size) => {
+      self.instr(out, init)
+      self.instr(out, size)
+      let (t, _) = self.array_element_of(i, loc)
+      out.push(ArrayNew(t))
+    }
+    ArrayDefault(_, size) => {
+      self.instr(out, size)
+      let (t, _) = self.array_element_of(i, loc)
+      out.push(ArrayNewDefault(t))
+    }
+    ArrayFixed(_, elems) => {
+      for e in elems {
+        self.instr(out, e)
+      }
+      let (t, _) = self.array_element_of(i, loc)
+      out.push(ArrayNewFixed(t, elems.length()))
+    }
+    ArrayGet(recv, index) => {
+      self.instr(out, recv)
+      self.instr(out, index)
+      let (t, f) = self.array_element_of(recv, loc)
+      out.push(if is_packed(f) { ArrayGetU(t) } else { ArrayGet(t) })
+    }
+    ArraySet(recv, index, value) => {
+      self.instr(out, recv)
+      self.instr(out, index)
+      self.instr(out, value)
+      let (t, _) = self.array_element_of(recv, loc)
+      out.push(ArraySet(t))
+    }
     _ => raise NotLowered(construct_name(i.desc), loc)
   }
 }
@@ -388,4 +457,26 @@ fn Lowering::fused_load(
   }
   out.push(ld)
   true
+}
+
+///|
+/// A field's position in a struct's declared fields, with the field itself.
+///
+/// The position comes from the SOURCE declaration, because the store erases
+/// field names -- wasm has none -- and the two lists are the same fields in the
+/// same order.
+fn Lowering::field_index(
+  self : Lowering,
+  t : Int,
+  declared : Array[@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]],
+  name : String,
+) -> (Int, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]])? {
+  guard self.source_types.get(t) is Some(sub) else { return None }
+  guard sub.typ is Struct(fields) else { return None }
+  for k, f in fields {
+    if f.desc.0.name == name && k < declared.length() {
+      return Some((k, declared[k]))
+    }
+  }
+  None
 }

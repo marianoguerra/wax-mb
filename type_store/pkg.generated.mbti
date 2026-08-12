@@ -37,6 +37,7 @@ pub struct Id {
   index : Int
 } derive(Eq, Hash, @debug.Debug)
 pub fn Id::add(Self, Int) -> Self
+pub fn Id::of_index(Int) -> Self
 pub fn Id::to_int_for_tests_only(Self) -> Int
 
 pub(all) enum RefIndex {

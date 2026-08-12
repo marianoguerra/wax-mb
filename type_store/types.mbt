@@ -32,6 +32,18 @@ pub struct Id {
 } derive(Eq, Hash, Debug)
 
 ///|
+/// The canonical index a code generator refers to a type by.
+///
+/// The store hands indices out in order from zero, so an index and an `Id` are
+/// the same number seen from two sides -- but only this package may say so, and
+/// only for a consumer that already works in indices because the binary format
+/// does. Everything else must treat `Id` as opaque, which is what keeps the
+/// interning honest.
+pub fn Id::of_index(index : Int) -> Id {
+  { index, }
+}
+
+///|
 /// The canonical index `n` positions after this one -- e.g. the `n`-th member
 /// of a rec group whose first member is this.
 pub fn Id::add(self : Id, n : Int) -> Id {

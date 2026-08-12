@@ -53,6 +53,27 @@ pub struct Lowering {
   /// The labels in scope, innermost last. A `br` names one; the binary counts
   /// outward from the innermost, so the depth is the distance from the end.
   mut labels : Array[String?]
+  /// Type index back to the SOURCE definition.
+  ///
+  /// The store erases field names, because wasm has none -- so a `s.x` needs
+  /// the declaration the author wrote to know which slot `x` is. This is the
+  /// only place the two views of a type are joined, and it is built once.
+  source_types : Map[Int, @ast.SubType]
+}
+
+///|
+/// Index every source type definition by the index it interned to.
+pub fn source_type_index(
+  ctx : @typing_env.ModuleContext,
+) -> Map[Int, @ast.SubType] {
+  let out : Map[Int, @ast.SubType] = Map([])
+  for entry in ctx.type_context.types.iter_entries() {
+    let (_, (idx, sub)) = entry
+    if idx is Def(id) {
+      out[id.to_int_for_tests_only()] = sub
+    }
+  }
+  out
 }
 
 ///|

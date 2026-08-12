@@ -36,6 +36,7 @@ pub fn lower_module(
     locals: Map([]),
     local_types: [],
     labels: [],
+    source_types: source_type_index(ctx),
   }
   for field in typed {
     low.field(m, field)
