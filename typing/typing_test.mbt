@@ -1095,3 +1095,111 @@ test "deferrals nest" {
   outer_replay()
   inspect(ctx.diagnostics.collected().length(), content="1")
 }
+
+///|
+/// Reading a bare name. Every failure recovers as an error value rather than
+/// stopping -- and each does so for a different reason, which is the point:
+/// one mistake should produce one diagnostic.
+test "reading a name" {
+  let ctx = module_ctx()
+  ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(2, 3))
+  @typing.mark_initialized(ctx, "x")
+  ctx.globals.add("g", loc_at(4, 5), (false, Some(@infer.f64_valtype)))
+  // A poison local: its initializer failed, and was reported there.
+  ctx.locals["bad"] = (None, loc_at(6, 7))
+  @typing.mark_initialized(ctx, "bad")
+  fn read(n : String) -> String {
+    @infer.to_string(@typing.type_get(ctx, { name: n, loc: loc_at(20, 21) }))
+  }
+
+  inspect(read("x"), content="i32")
+  inspect(read("g"), content="f64")
+  // A poison local reads as an error, silently.
+  inspect(read("bad"), content="any")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  // An unbound name reports once, and recovers.
+  inspect(read("nope"), content="any")
+  inspect(ctx.diagnostics.collected().length(), content="1")
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="The variable 'nope' is not bound.",
+  )
+}
+
+///|
+/// A misspelling gets a suggestion, from everything a bare name could have
+/// meant.
+test "did you mean" {
+  let ctx = module_ctx()
+  ctx.locals["counter"] = (Some(@infer.i32_valtype), loc_at(2, 3))
+  ctx.globals.add("threshold", loc_at(4, 5), (false, None))
+  ctx.functions.add("compute", loc_at(6, 7), None)
+  let _ = @typing.type_get(ctx, { name: "countr", loc: loc_at(20, 21) })
+  guard! ctx.diagnostics.collected()[0].hint is Some(h)
+  inspect(@message.to_plain_string(h), content="Did you mean 'counter'?")
+  // Nothing close enough draws no hint at all.
+  let ctx2 = module_ctx()
+  ctx2.locals["counter"] = (Some(@infer.i32_valtype), loc_at(2, 3))
+  let _ = @typing.type_get(ctx2, { name: "zzzzzz", loc: loc_at(20, 21) })
+  inspect(ctx2.diagnostics.collected()[0].hint is None, content="true")
+}
+
+///|
+/// An assignment can only target a MUTABLE global, so suggesting an immutable
+/// one would send the reader somewhere that cannot work.
+test "assignment suggestions are narrower than read suggestions" {
+  let ctx = module_ctx()
+  ctx.globals.add("total", loc_at(0, 1), (true, None))
+  ctx.globals.add("limit", loc_at(2, 3), (false, None))
+  ctx.functions.add("compute", loc_at(4, 5), None)
+  // A read could have meant any of them.
+  inspect(@typing.get_suggestions(ctx, "totl").join(","), content="total")
+  inspect(@typing.get_suggestions(ctx, "limt").join(","), content="limit")
+  inspect(@typing.get_suggestions(ctx, "computa").join(","), content="compute")
+  // An assignment could only have meant the mutable one.
+  inspect(@typing.set_suggestions(ctx, "totl").join(","), content="total")
+  inspect(@typing.set_suggestions(ctx, "limt").join(","), content="")
+  inspect(@typing.set_suggestions(ctx, "computa").join(","), content="")
+}
+
+///|
+/// Reading a local records the BINDING's offset, not the name -- so a
+/// shadowing inner local does not mask an outer one as read.
+test "reads are recorded by binding, not by name" {
+  let ctx = module_ctx()
+  ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(2, 3))
+  @typing.mark_initialized(ctx, "x")
+  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(20, 21) })
+  inspect(ctx.read_locals.map(o => o.to_string()).join(","), content="2")
+  // A shadowing local of the same name is a different binding.
+  ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(9, 10))
+  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(22, 23) })
+  inspect(ctx.read_locals.map(o => o.to_string()).join(","), content="2,9")
+}
+
+///|
+/// Reading an uninitialized local reports, and the type is still delivered so
+/// the rest of the expression can be checked.
+test "reading before initializing" {
+  let ctx = module_ctx()
+  ctx.locals["r"] = (
+    Some({
+      typ: Ref({ nullable: false, typ: Any }),
+      internal: Ref({ nullable: false, typ: Any }),
+      anon_comptype: None,
+    }),
+    loc_at(2, 3),
+  )
+  let cell = @typing.type_get(ctx, { name: "r", loc: loc_at(20, 21) })
+  inspect(@infer.to_string(cell), content="&any")
+  inspect(
+    @message.to_plain_string(ctx.diagnostics.collected()[0].message),
+    content="The local variable 'r' has not been initialized.",
+  )
+  // Once assigned, no complaint.
+  let ctx2 = module_ctx()
+  ctx2.locals["r"] = (Some(@infer.i32_valtype), loc_at(2, 3))
+  @typing.mark_initialized(ctx2, "r")
+  let _ = @typing.type_get(ctx2, { name: "r", loc: loc_at(20, 21) })
+  inspect(ctx2.diagnostics.collected().length(), content="0")
+}

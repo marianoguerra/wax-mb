@@ -141,6 +141,7 @@ pub struct Tbl[A] {
 }
 pub fn[A] Tbl::add(Self[A], String, @basic.Location, A) -> Unit
 pub fn[A] Tbl::iter_references(Self[A]) -> Array[(String, Array[Origin])]
+pub fn[A] Tbl::names(Self[A]) -> Array[String]
 pub fn[A] Tbl::new(String, Namespace, @ref.Ref[Origin], hover? : (A) -> HoverTarget?) -> Self[A]
 pub fn[A] Tbl::referrers(Self[A], String) -> Array[Origin]
 pub fn[A] Tbl::resolve(Self[A], String, @basic.Location) -> A?

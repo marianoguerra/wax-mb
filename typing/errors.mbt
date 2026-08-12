@@ -217,3 +217,46 @@ pub fn uninitialized_local(
     .sep(@message.text("has not been initialized.")),
   )
 }
+
+///|
+/// The "did you mean" hint, or nothing when there is nothing close enough.
+fn did_you_mean(suggestions : Array[String]) -> @message.Message? {
+  if suggestions.is_empty() {
+    return None
+  }
+  Some(
+    @message.text("Did you mean")
+    .sep(@message.enumerate(suggestions.map(@message.ident), conj="or"))
+    .seq(@message.text("?")),
+  )
+}
+
+///|
+/// A name nothing binds.
+///
+/// Suppressed in error-recovery mode. Checking a best-effort AST past syntax
+/// errors, a name is often unbound only because the construct that would bind
+/// it was dropped at a sync boundary -- recovery drops spans rather than
+/// leaving a placeholder -- so the report is a cascade from a syntax error the
+/// caller has already told the reader about. The use still recovers as an
+/// error, so nothing downstream cascades either.
+pub fn unbound_name(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  kind : String,
+  name : String,
+  suggestions? : Array[String] = [],
+) -> Unit {
+  if ctx.in_recovery() {
+    return
+  }
+  ctx.report(
+    location,
+    Error,
+    @message.text("The")
+    .sep(@message.text(kind))
+    .sep(@message.ident(name))
+    .sep(@message.text("is not bound.")),
+    hint=did_you_mean(suggestions),
+  )
+}

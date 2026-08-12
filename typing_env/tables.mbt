@@ -197,3 +197,18 @@ pub fn[A] Tbl::iter_references(self : Tbl[A]) -> Array[(String, Array[Origin])] 
   out.sort_by((a, b) => if a.0 < b.0 { -1 } else if a.0 > b.0 { 1 } else { 0 })
   out
 }
+
+///|
+/// Every name declared in this table, for the "did you mean" suggestions.
+///
+/// All of them, not only the ones visible under the current assumption: a name
+/// declared in another `#[if]` branch is still a plausible thing the author
+/// meant to write, and suggesting it is more useful than staying silent.
+pub fn[A] Tbl::names(self : Tbl[A]) -> Array[String] {
+  let out : Array[String] = []
+  for name, _ in self.entries {
+    out.push(name)
+  }
+  out.sort()
+  out
+}

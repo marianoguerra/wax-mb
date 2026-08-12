@@ -31,9 +31,13 @@ pub fn field_subtype(@type_store.SubtypingInfo, @wasm_types.MutType[@wasm_types.
 
 pub fn float_literal_lattice(String) -> @infer.InferredType
 
+pub fn get_suggestions(@typing_env.ModuleContext, String) -> Array[String]
+
 pub fn get_type_definition(@typing_env.TypeContext, @ast.Ident) -> @ast.SubType?
 
 pub fn heaptype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.HeapType[@ast.Ident]) -> @wasm_types.HeapType[@type_store.Id]?
+
+pub fn inline_comptype(@typing_env.ModuleContext, @ast.Ident) -> @ast.CompType?
 
 pub fn int_literal_lattice(String) -> @infer.InferredType
 
@@ -87,6 +91,8 @@ pub fn resolve_variable(@typing_env.ModuleContext, @ast.Ident) -> ResolvedVar
 
 pub fn segment_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
+pub fn set_suggestions(@typing_env.ModuleContext, String) -> Array[String]
+
 pub fn short_stack(@diagnostic.Context, StackKind, @basic.Location, Int, Int) -> Unit
 
 pub fn storage_subtype(@type_store.SubtypingInfo, @wasm_types.StorageType[@type_store.Id], @wasm_types.StorageType[@type_store.Id]) -> Bool
@@ -95,9 +101,13 @@ pub fn subtype(@type_store.SubtypingInfo, @infer.Cell[@infer.InferredType], @inf
 
 pub fn table_receiver(@typing_env.ModuleContext, @ast.Ident) -> Bool
 
+pub fn type_get(@typing_env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.InferredType]
+
 pub fn type_mismatch(@diagnostic.Context, @basic.Location, Int, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn[A] type_trailing_operand(@typing_env.ModuleContext, () -> A) -> (A, () -> Unit)
+
+pub fn unbound_name(@diagnostic.Context, @basic.Location, String, String, suggestions? : Array[String]) -> Unit
 
 pub fn uninitialized_local(@diagnostic.Context, @basic.Location, String) -> Unit
 

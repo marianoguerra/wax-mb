@@ -161,3 +161,134 @@ pub fn[A] type_trailing_operand(
   }
   (result, replay)
 }
+
+///|
+/// Names close enough to be worth suggesting for an unbound READ.
+///
+/// Everything a bare name could have meant: locals, globals, functions.
+pub fn get_suggestions(
+  ctx : @typing_env.ModuleContext,
+  name : String,
+) -> Array[String] {
+  let candidates : Array[String] = []
+  for k, _ in ctx.locals {
+    candidates.push(k)
+  }
+  for k in ctx.globals.names() {
+    candidates.push(k)
+  }
+  for k in ctx.functions.names() {
+    candidates.push(k)
+  }
+  @spell.suggest(candidates.iter(), name)
+}
+
+///|
+/// Names worth suggesting for an unbound ASSIGNMENT.
+///
+/// A narrower set than for a read: only a MUTABLE global can be assigned, so
+/// suggesting an immutable one would send the reader somewhere that cannot
+/// work.
+pub fn set_suggestions(
+  ctx : @typing_env.ModuleContext,
+  name : String,
+) -> Array[String] {
+  let candidates : Array[String] = []
+  for k, _ in ctx.locals {
+    candidates.push(k)
+  }
+  for k in ctx.globals.names() {
+    for g in ctx.globals.visible(k) {
+      if g.0 {
+        candidates.push(k)
+        break
+      }
+    }
+  }
+  @spell.suggest(candidates.iter(), name)
+}
+
+///|
+/// The composite type an anonymous reference names.
+///
+/// A synthesized reference type -- a string's byte array, an inline function
+/// type used as a cast target -- has a generated name beginning with `<`. The
+/// name keeps lookups working, but a diagnostic renders the structure instead,
+/// because the name means nothing to the reader.
+pub fn inline_comptype(
+  ctx : @typing_env.ModuleContext,
+  name : @ast.Ident,
+) -> @ast.CompType? {
+  if name.name.has_prefix("<") {
+    ctx.type_context.types.resolve(name.name, name.loc).map(r => r.1.typ)
+  } else {
+    None
+  }
+}
+
+///|
+/// Type a read of a bare name.
+///
+/// Every failure recovers as an error value rather than stopping, and each does
+/// so for a slightly different reason: an unbound name has just been reported,
+/// a poisoned function was reported at its definition, and a poison local's
+/// initializer was reported where it failed. In all three the point is the
+/// same -- one mistake should produce one diagnostic.
+pub fn type_get(
+  ctx : @typing_env.ModuleContext,
+  idx : @ast.Ident,
+) -> @infer.Cell[@infer.InferredType] {
+  match resolve_variable(ctx, idx) {
+    Local(ty, def) => {
+      // Keyed by the BINDING's offset rather than the name, so a shadowing
+      // inner local does not mask an outer one as read.
+      ctx.read_locals.push(def.start.cnum)
+      if !ctx.initialized_locals.contains(idx.name) {
+        report_uninitialized(ctx, idx)
+      }
+      cell_of(ty)
+    }
+    Global(_, ty) => cell_of(ty)
+    FuncRef(id, type_name, exact) => {
+      let name : @ast.Ident = { name: type_name, loc: @basic.dummy_loc }
+      let typ : @wasm_types.HeapType[@ast.Ident] = if exact {
+        Exact(name)
+      } else {
+        Type(name)
+      }
+      let internal : @wasm_types.HeapType[@type_store.Id] = if exact {
+        Exact(id)
+      } else {
+        Type(id)
+      }
+      @infer.Cell::make(
+        Valtype({
+          typ: Ref({ nullable: false, typ }),
+          internal: Ref({ nullable: false, typ: internal }),
+          anon_comptype: inline_comptype(ctx, name),
+        }),
+      )
+    }
+    // Already reported at the definition; the poison keeps the use quiet.
+    Poisoned => @infer.Cell::make(Error)
+    Unbound => {
+      unbound_name(
+        ctx.diagnostics,
+        idx.loc,
+        "variable",
+        idx.name,
+        suggestions=get_suggestions(ctx, idx.name),
+      )
+      @infer.Cell::make(Error)
+    }
+  }
+}
+
+///|
+/// A resolved type, or the poison of one that failed to resolve.
+fn cell_of(ty : @infer.InferredValType?) -> @infer.Cell[@infer.InferredType] {
+  match ty {
+    Some(v) => @infer.Cell::make(Valtype(v))
+    None => @infer.Cell::make(Error)
+  }
+}
