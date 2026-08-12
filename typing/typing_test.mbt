@@ -2816,3 +2816,117 @@ test "a flexible literal passed through keeps the annotation" {
   )
   inspect(cs2.needed, content="false")
 }
+
+///|
+/// With the annotation omitted, inference has to supply one -- and the written
+/// output cannot say "number", so a flexible type commits to its default width.
+test "an omitted result commits to a width" {
+  let ctx = module_ctx()
+  fn settle(t : @infer.InferredType) -> String {
+    let (cells, typ) = @typing.finalize_inferred(
+      ctx,
+      { params: [], results: [] },
+      Some(@infer.Cell::make(t)),
+    )
+    // The cell and the written annotation must agree -- one is what the rest of
+    // the checker sees, the other what the output says.
+    if typ.results.length() != 1 {
+      return "no result"
+    }
+    @infer.to_string(cells[0])
+  }
+
+  inspect(settle(@typing.int_literal_lattice("1")), content="i32")
+  inspect(settle(@typing.int_literal_lattice("4294967296")), content="i64")
+  inspect(settle(@typing.float_literal_lattice("1.5")), content="f64")
+  // Nothing reached the exit: the block produces nothing, and the annotation
+  // stays empty rather than inventing a type.
+  let (cells, typ) = @typing.finalize_inferred(
+    ctx,
+    { params: [], results: [] },
+    None,
+  )
+  inspect(cells.length(), content="0")
+  inspect(typ.results.length(), content="0")
+}
+
+///|
+/// Dropping a redundant annotation is only safe when the text that remains
+/// RE-INFERS to the same type. Each condition guards a way that could fail.
+test "an annotation is dropped only when it can be recovered" {
+  fn simplifying() -> @typing_env.ModuleContext {
+    @typing_env.ModuleContext::new(
+      @diagnostic.collector(),
+      @type_store.TypeStore::new(),
+      @feature.default(),
+      simplify=true,
+    )
+  }
+
+  let annotated : @ast.FuncType = { params: [], results: [I32] }
+  // Local functions cannot carry defaulted labels, so every knob is passed.
+  fn dropped(
+    ctx : @typing_env.ModuleContext,
+    inferred : @infer.InferredType,
+    needed : Bool,
+    natural : Array[@infer.InferredType],
+    exacts : Array[(@basic.Location?, @infer.Cell[@infer.InferredType])],
+  ) -> Bool {
+    let (_, typ) = @typing.finalize_inferred(
+      ctx,
+      annotated,
+      Some(@infer.Cell::make(inferred)),
+      needed~,
+      natural~,
+      exacts~,
+    )
+    typ.results.is_empty()
+  }
+
+  // The plain case: an i32 block annotated i32, converting from wasm.
+  inspect(
+    dropped(simplifying(), Valtype(@infer.i32_valtype), false, [], []),
+    content="true",
+  )
+  // Not converting from wasm: hand-written annotations are kept as written.
+  inspect(
+    dropped(module_ctx(), Valtype(@infer.i32_valtype), false, [], []),
+    content="false",
+  )
+  // Something relies on the annotation in a way the join cannot re-derive.
+  inspect(
+    dropped(simplifying(), Valtype(@infer.i32_valtype), true, [], []),
+    content="false",
+  )
+  // The inferred type disagrees with what is written.
+  inspect(
+    dropped(simplifying(), Valtype(@infer.f64_valtype), false, [], []),
+    content="false",
+  )
+  // An exit is a flexible literal that would re-default to i64: delete the
+  // annotation and a re-parse gives the block a different type.
+  inspect(
+    dropped(
+      simplifying(),
+      Valtype(@infer.i32_valtype),
+      false,
+      [@typing.int_literal_lattice("4294967296")],
+      [],
+    ),
+    content="false",
+  )
+  // A pass-through value that re-defaults to something other than the result.
+  inspect(
+    dropped(simplifying(), Valtype(@infer.i32_valtype), false, [], [
+      (None, @infer.valtype_cell(@infer.f64_valtype)),
+    ]),
+    content="false",
+  )
+  // One that re-defaults to exactly the result is no obstacle.
+  inspect(
+    dropped(simplifying(), Valtype(@infer.i32_valtype), false, [], [
+      (None, @infer.valtype_cell(@infer.i32_valtype)),
+    ]),
+    content="true",
+  )
+}

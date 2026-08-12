@@ -55,6 +55,8 @@ pub fn collect_exit(Operands, @infer.Collecting, @diagnostic.Context, @basic.Loc
 
 pub fn collect_into(@typing_env.ModuleContext, Operands, @basic.Location, @ast.Ident?, @infer.Collecting, @infer.Cell[@infer.InferredType], () -> Unit) -> Unit
 
+pub fn collected_natural(Array[(@basic.Location?, @infer.Cell[@infer.InferredType])]) -> Array[@infer.InferredType]
+
 pub fn comptype(@typing_env.TypeContext, @diagnostic.Context, @ast.CompType) -> @type_store.CompType[@type_store.RefIndex]?
 
 pub fn[Info] declare_fields(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Unit
@@ -81,6 +83,10 @@ pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Locatio
 
 pub fn enter_function_scope(@typing_env.ModuleContext, @ast.Ident, @ast.FuncType?, Array[@ast.Attribute], label_decls? : Array[@ast.Ident], assigned_locals? : Map[String, Unit]) -> Array[@infer.Cell[@infer.InferredType]]
 
+pub fn exact_reparse_internal(@infer.Cell[@infer.InferredType]) -> @wasm_types.ValType[@type_store.Id]?
+
+pub fn exact_reparse_matches(@wasm_types.ValType[@type_store.Id], @infer.Cell[@infer.InferredType]) -> Bool
+
 pub fn expand_splices(@typing_env.TypeContext, @diagnostic.Context, Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]
 
 pub fn expected_func_type(@diagnostic.Context, @basic.Location) -> Unit
@@ -95,9 +101,13 @@ pub fn field_set_key(Array[String]) -> String
 
 pub fn field_subtype(@type_store.SubtypingInfo, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]], @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) -> Bool
 
+pub fn finalize_inferred(@typing_env.ModuleContext, @ast.FuncType, @infer.Cell[@infer.InferredType]?, needed? : Bool, exacts? : Array[(@basic.Location?, @infer.Cell[@infer.InferredType])], natural? : Array[@infer.InferredType], location? : @basic.Location?) -> (Array[@infer.Cell[@infer.InferredType]], @ast.FuncType)
+
 pub fn[A] find(@typing_env.Tbl[A], @diagnostic.Context, @ast.Ident) -> A?
 
 pub fn flatten_operands(Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Array[(@infer.Cell[@infer.InferredType], @basic.Location)]
+
+pub fn flexible_default_internal(@infer.InferredType) -> @wasm_types.ValType[@type_store.Id]?
 
 pub fn float_literal_lattice(String) -> @infer.InferredType
 
@@ -177,6 +187,8 @@ pub fn n_subtype(@typing_env.TypeContext, @diagnostic.Context, Int, @ast.SubType
 
 pub fn n_valtype(@typing_env.TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.RefIndex]?
 
+pub fn natural_width_forces_annotation(Array[@infer.InferredType], @infer.Cell[@infer.InferredType]?) -> Bool
+
 pub fn non_empty_stack(@diagnostic.Context, @basic.Location, String) -> Unit
 
 pub fn not_an_expression(@diagnostic.Context, @basic.Location, Int) -> Unit
@@ -210,6 +222,8 @@ pub fn reserved_type_name(@diagnostic.Context, @basic.Location, String) -> Unit
 pub let reserved_type_names : Array[String]
 
 pub fn resolve_declared(@infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
+
+pub fn resolve_omitted_valtype(@typing_env.TypeContext, @diagnostic.Context, @infer.Cell[@infer.InferredType]) -> @infer.InferredValType?
 
 pub fn resolve_type_name(@typing_env.TypeContext, @diagnostic.Context, @ast.Ident) -> @type_store.Id?
 
