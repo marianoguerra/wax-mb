@@ -153,3 +153,48 @@ pub fn expression_type_mismatch(
     related~,
   )
 }
+
+///|
+/// Values left on the stack, each with a caret on it.
+///
+/// A caret per value rather than one on the enclosing construct, which may be
+/// the whole function: the reader needs to know WHICH values, and a span around
+/// all of them says nothing.
+pub fn leftover_values(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  related : Array[@diagnostic.Label],
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      if related.is_empty() {
+        "This value remains on the stack."
+      } else {
+        "These values remain on the stack."
+      },
+    ),
+    related~,
+  )
+}
+
+///|
+/// Values left on the stack, none of which can be pointed at.
+///
+/// They are still real values -- they just carry an error-recovery placeholder
+/// location rather than a source span -- so name the construct and list what is
+/// there instead of saying nothing.
+pub fn non_empty_stack(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  rendered : String,
+) -> Unit {
+  ctx.report(
+    { start: location.end, end: location.end },
+    Error,
+    @message.text("Some values remain on the stack:")
+    .seq(@message.text(rendered))
+    .seq(@message.text(".")),
+  )
+}

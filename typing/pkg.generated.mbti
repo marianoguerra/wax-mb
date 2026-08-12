@@ -37,6 +37,8 @@ pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
 
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
+pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.Label]) -> Unit
+
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
 
 pub fn n_fieldtype(TypeContext, @diagnostic.Context, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]) -> @wasm_types.MutType[@wasm_types.StorageType[@type_store.RefIndex]]?
@@ -51,7 +53,13 @@ pub fn n_storagetype(TypeContext, @diagnostic.Context, @wasm_types.StorageType[@
 
 pub fn n_valtype(TypeContext, @diagnostic.Context, @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@type_store.RefIndex]?
 
+pub fn non_empty_stack(@diagnostic.Context, @basic.Location, String) -> Unit
+
 pub fn reftype(TypeContext, @diagnostic.Context, @wasm_types.RefType[@ast.Ident]) -> @wasm_types.RefType[@type_store.Id]?
+
+pub fn render_stack(Stack) -> String
+
+pub fn report_leftovers(Stack, @diagnostic.Context, @basic.Location, (Stack) -> String) -> Unit
 
 pub fn report_missing_hole(Operands, @diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
 

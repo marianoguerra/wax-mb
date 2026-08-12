@@ -305,3 +305,60 @@ fn loc_first_char(loc : @basic.Location) -> @basic.Location {
 fn loc_last_char(loc : @basic.Location) -> @basic.Location {
   { start: loc.end, end: loc.end }
 }
+
+///|
+/// Report whatever is still on the stack when a scope ends.
+///
+/// The suppression rule is the one the poison states exist for: a leftover of
+/// type `Error` means an error has already been reported, so the stack is
+/// unreliable and complaining about it would be a cascade. `Empty`,
+/// `Unreachable` and `Poisoned` all mean there is nothing genuine left.
+pub fn report_leftovers(
+  st : Stack,
+  diagnostics : @diagnostic.Context,
+  location : @basic.Location,
+  render : (Stack) -> String,
+) -> Unit {
+  guard st is Cons(_, _, _) else { return }
+  let (locs, has_error) = leftovers(st)
+  if has_error {
+    return
+  }
+  if locs.is_empty() {
+    // Real values, none of them locatable.
+    non_empty_stack(diagnostics, location, render(st))
+    return
+  }
+  // The topmost carries the caret; the rest are related labels with no text of
+  // their own, since the message above already says what they are.
+  let related = locs[1:]
+    .iter()
+    .map(loc => ({ loc, message: @message.concat([]) } : @diagnostic.Label))
+    .collect()
+  leftover_values(diagnostics, locs[0], related)
+}
+
+///|
+/// The stack rendered for a diagnostic, topmost last.
+pub fn render_stack(st : Stack) -> String {
+  let parts : Array[String] = []
+  for cur = st {
+    match cur {
+      Cons(_, cell, rest) => {
+        parts.push(@infer.to_string(cell))
+        continue rest
+      }
+      Unreachable => {
+        parts.push("unreachable")
+        break
+      }
+      Poisoned => {
+        parts.push("poisoned")
+        break
+      }
+      Empty => break
+    }
+  }
+  parts.rev_in_place()
+  " " + parts.join(" ")
+}

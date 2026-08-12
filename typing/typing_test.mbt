@@ -757,3 +757,96 @@ test "an underflow is reported at the hole" {
   )
   inspect(d.collected().length(), content="1")
 }
+
+///|
+/// What is left on the stack when a scope ends, and when saying so would be a
+/// cascade rather than a finding.
+test "leftover values" {
+  fn report(build : (@typing.Operands) -> Unit) -> String {
+    let ops = @typing.Operands::new()
+    let (_, inner) = ops.with_empty(() => build(ops))
+    let d = @diagnostic.collector()
+    @typing.report_leftovers(inner, d, loc_at(0, 20), @typing.render_stack)
+    d
+    .collected()
+    .map(e => {
+      let rel = e.related.map(r => r.loc.start.cnum.to_string()).join(",")
+      "\{e.loc.start.cnum}: \{@message.to_plain_string(e.message)}" +
+      (if rel == "" { "" } else { " (also \{rel})" })
+    })
+    .join("\n")
+  }
+
+  // Nothing left: nothing to say.
+  inspect(report(_ => ()), content="")
+  // One locatable value: a caret on it, and the singular.
+  inspect(
+    report(ops => {
+      ops.push(Some(loc_at(5, 6)), @infer.valtype_cell(@infer.i32_valtype))
+    }),
+    content="5: This value remains on the stack.",
+  )
+  // Several: the topmost carries the caret, the rest are related labels, and
+  // the message goes plural.
+  inspect(
+    report(ops => {
+      ops.push(Some(loc_at(5, 6)), @infer.valtype_cell(@infer.i32_valtype))
+      ops.push(Some(loc_at(9, 10)), @infer.valtype_cell(@infer.i64_valtype))
+    }),
+    content="5: These values remain on the stack. (also 9)",
+  )
+  // Values with no usable location are still real values -- name the construct
+  // and list what is there, rather than saying nothing.
+  inspect(
+    report(ops => ops.push(None, @infer.valtype_cell(@infer.i32_valtype))),
+    content="20: Some values remain on the stack: i32.",
+  )
+}
+
+///|
+/// The poison rules from the stack pay off here. A leftover of type `Error`
+/// means something has already been reported, so the stack is unreliable and
+/// complaining about it would be a cascade.
+test "an already-reported error suppresses the leftover report" {
+  let ops = @typing.Operands::new()
+  let (_, inner) = ops.with_empty(() => {
+    ops.push(Some(loc_at(5, 6)), @infer.valtype_cell(@infer.i32_valtype))
+    // A second value that a later check poisons -- which is how this arises,
+    // since `push` never stacks an error directly.
+    let cell = @infer.Cell::make(@infer.InferredType::Unknown)
+    ops.push(Some(loc_at(9, 10)), cell)
+    cell.set(Error)
+  })
+  let d = @diagnostic.collector()
+  @typing.report_leftovers(inner, d, loc_at(0, 20), @typing.render_stack)
+  inspect(d.collected().length(), content="0")
+}
+
+///|
+/// Dead code and a poisoned stack are both "nothing genuine left".
+test "unreachable and poisoned scopes report nothing" {
+  for
+    build in [
+      (ops : @typing.Operands) => ops.set_unreachable(),
+      (ops : @typing.Operands) => {
+        // An underflow poisons.
+        let d = @diagnostic.collector()
+        let info = @type_store.TypeStore::new().subtyping_info()
+        ops.pop(
+          info,
+          d,
+          Input,
+          loc_at(0, 1),
+          0,
+          1,
+          @infer.valtype_cell(@infer.i32_valtype),
+        )
+      },
+    ] {
+    let ops = @typing.Operands::new()
+    let (_, inner) = ops.with_empty(() => build(ops))
+    let d = @diagnostic.collector()
+    @typing.report_leftovers(inner, d, loc_at(0, 20), @typing.render_stack)
+    inspect(d.collected().length(), content="0")
+  }
+}
