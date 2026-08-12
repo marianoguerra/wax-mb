@@ -1,0 +1,17 @@
+import {
+}
+
+import {
+  "waxmb/wax/grammar",
+  "waxmb/wax/ast",
+  "waxmb/wax/basic",
+  "waxmb/wax/typing",
+  "waxmb/wax/typing_env",
+  "waxmb/wax/type_store",
+  "waxmb/wax/feature",
+  "waxmb/wax/diagnostic",
+  "waxmb/wax/message",
+  "moonbitlang/x/fs",
+  "moonbitlang/core/json",
+  "moonbitlang/core/test",
+} for "test"
