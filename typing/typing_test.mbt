@@ -8814,3 +8814,81 @@ test "a struct literal's fields outrank the type expected of it" {
     content="This expression has type '&derived' but is expected to have type '&base'.",
   )
 }
+
+///|
+/// A stack-switching instruction's value operands take their types from the
+/// CONSTRUCT, not from themselves: `resume` from the continuation's parameters,
+/// `resume_throw` from the tag it raises. So they are resolved before the
+/// operands are typed -- which is what lets an operand that needs a type from
+/// somewhere, such as a block whose result was omitted, get one.
+test "a resume's operands take their types from the continuation" {
+  let ctx = module_ctx()
+  let tc = ctx.type_context
+  fn declare_type(n : String, t : @ast.CompType, at : Int) -> Unit {
+    let _ = @typing.add_type(tc, ctx.diagnostics, [
+      {
+        desc: (
+          id(n),
+          {
+            typ: t,
+            supertype: None,
+            final_: true,
+            descriptor: None,
+            describes: None,
+          },
+        ),
+        info: loc_at(at, at + 1),
+      },
+    ])
+  }
+
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  // `type sig = fn(i64); type k = cont sig;` -- resuming `k` hands it an i64.
+  declare_type(
+    "sig",
+    Func({ params: [{ desc: (None, I64), info: loc_at(0, 1) }], results: [] }),
+    0,
+  )
+  declare_type("k", Cont(id("sig")), 2)
+  @typing.declare_local(
+    ctx,
+    id("c"),
+    Ref({ nullable: true, typ: Type(id("k")) }),
+  )
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  // `resume k (1, c)` -- the 1 is a bare literal, and only the continuation's
+  // signature says how wide it is.
+  let c = checker.statement(
+    instr(
+      Resume(id("k", at=10), [], [
+        instr(Int("1"), 20),
+        instr(Get(id("c", at=22)), 22),
+      ]),
+      10,
+    ),
+  )
+  inspect(
+    (match c.desc {
+      Resume(_, _, args) =>
+        @infer.to_string(@typing.expression_type(ctx, args[0].info))
+      _ => "?"
+    }) +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / "),
+    content="i64 | ",
+  )
+}

@@ -1861,7 +1861,10 @@ pub fn Checker::statement(
 
     // --- Resuming a continuation ---
     Resume(ct, handlers, args) => {
-      let checked = args.map(a => self.expression(a))
+      // The operands' types come from the continuation's signature, so they are
+      // resolved before the operands are typed -- the same reason the method
+      // form types its receiver first.
+      let checked = self.resume_operands(ct, "resume", None, args)
       let results = self.type_resume(
         loc,
         ct,
@@ -1878,7 +1881,7 @@ pub fn Checker::statement(
       }
     }
     ResumeThrow(ct, tag, handlers, args) => {
-      let checked = args.map(a => self.expression(a))
+      let checked = self.resume_operands(ct, "resume_throw", Some(tag), args)
       // The operands are the TAG's parameters, not the continuation's: the
       // resume throws into the continuation rather than passing values to it.
       let results = self.type_resume(
@@ -1897,7 +1900,7 @@ pub fn Checker::statement(
       }
     }
     ResumeThrowRef(ct, handlers, args) => {
-      let checked = args.map(a => self.expression(a))
+      let checked = self.resume_operands(ct, "resume_throw_ref", None, args)
       let results = self.type_resume(
         loc,
         ct,
@@ -1916,7 +1919,7 @@ pub fn Checker::statement(
 
     // --- Switching directly to another continuation ---
     Switch(ct, tag, args) => {
-      let checked = args.map(a => self.expression(a))
+      let checked = self.resume_operands(ct, "switch", Some(tag), args)
       let results = self.type_switch(loc, ct, tag, checked)
       {
         desc: Switch(ct, tag, checked),

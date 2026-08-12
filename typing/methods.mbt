@@ -158,13 +158,27 @@ fn Checker::cont_method_call(
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   let ctx = self.ctx
   let (tag, rest) = self.cont_method_tag(meth, args)
-  let args_ = rest.map(a => self.expression(a))
+  // The RECEIVER is typed first, out of emission order: its continuation
+  // signature is what says what the value operands should be, and an operand
+  // that needs that -- a block whose result was omitted, a construction with no
+  // name -- cannot be typed usefully before it is known.
   let recv_ = self.expression(recv)
+  let ct = cont_receiver_type(ctx, recv_)
+  let want = match ct {
+    Some(c) => self.resume_operand_types(c, meth.name, tag)
+    None => None
+  }
+  let args_ = rest.mapi((k, a) => {
+    match want {
+      Some(w) if k < w.length() => self.check(w[k], a)
+      _ => self.expression(a)
+    }
+  })
   // The operands as the instruction takes them: payload first, continuation on
   // top.
   let operands = args_.copy()
   operands.push(recv_)
-  let results = match cont_receiver_type(ctx, recv_) {
+  let results = match ct {
     None => []
     Some(ct) =>
       match meth.name {
@@ -718,4 +732,88 @@ fn Checker::wide_arith_call(
     hints: i.hints,
     expected: i.expected,
   }
+}
+
+///|
+/// The types a stack-switching method's VALUE operands should have.
+///
+/// Each form takes them from somewhere different, and none of them from the
+/// operands themselves: `resume` from the continuation's parameters, `switch`
+/// from all but its last (the slot the current continuation goes in),
+/// `resume_throw` from the tag it raises, and `resume_throw_ref` from the one
+/// exception reference it takes.
+///
+/// `None` when the source is not resolvable -- the operands are then typed as
+/// written, and whatever is wrong with them is reported where they are checked.
+fn Checker::resume_operand_types(
+  self : Checker,
+  ct : @ast.Ident,
+  meth : String,
+  tag : @ast.Ident?,
+) -> Array[@infer.Cell[@infer.InferredType]]? {
+  let ctx = self.ctx
+  fn cont_params() -> Array[@wasm_types.ValType[@ast.Ident]]? {
+    guard lookup_cont_inner(ctx.type_context, ctx.diagnostics, ct)
+      is Some(inner) else {
+      return None
+    }
+    guard lookup_func_type(ctx.type_context, ctx.diagnostics, inner) is Some(sg) else {
+      return None
+    }
+    Some(sg.params.map(p => p.desc.1))
+  }
+
+  fn cells(
+    ts : Array[@wasm_types.ValType[@ast.Ident]],
+  ) -> Array[@infer.Cell[@infer.InferredType]]? {
+    let out : Array[@infer.Cell[@infer.InferredType]] = []
+    for t in ts {
+      guard internalize(ctx.type_context, ctx.diagnostics, t) is Some(c) else {
+        return None
+      }
+      out.push(c)
+    }
+    Some(out)
+  }
+
+  match meth {
+    "resume_throw_ref" => cells([Ref({ nullable: true, typ: Exn })])
+    "resume_throw" => {
+      guard tag is Some(t) else { return None }
+      guard find(ctx.tags, ctx.diagnostics, t) is Some(ft) else { return None }
+      cells(ft.params.map(p => p.desc.1))
+    }
+    "resume" => cont_params().bind(cells)
+    "switch" =>
+      cont_params().bind(ps => {
+        // The last parameter is the slot the CURRENT continuation is passed
+        // in, so it is not written as an operand.
+        let n = if ps.length() > 0 { ps.length() - 1 } else { 0 }
+        cells(ps[0:n].to_owned())
+      })
+    _ => None
+  }
+}
+
+///|
+/// Type a stack-switching instruction's value operands against the types the
+/// construct says they should have.
+///
+/// The trailing continuation operand is not among them -- the raw forms name
+/// their continuation TYPE rather than passing it as a value, so the operand
+/// list here is only the payload.
+fn Checker::resume_operands(
+  self : Checker,
+  ct : @ast.Ident,
+  meth : String,
+  tag : @ast.Ident?,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
+  let want = self.resume_operand_types(ct, meth, tag)
+  args.mapi((k, a) => {
+    match want {
+      Some(w) if k < w.length() => self.check(w[k], a)
+      _ => self.expression(a)
+    }
+  })
 }
