@@ -8146,3 +8146,86 @@ test "an indexed read picks table or array by its receiver" {
   // Shadowed, the same spelling indexes a value -- which an i32 is not.
   inspect(read(true), content="any | Expected array.")
 }
+
+///|
+/// A `v128::i8x16(..)` constant takes one literal per lane, and each must FIT
+/// its lane width -- accepting BOTH the signed and unsigned range, since the
+/// constant is a bit pattern and both spellings name the same byte.
+test "a vector constant bounds each lane by its width" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  fn konst(
+    shape : String,
+    lanes : Array[@ast.InstrDesc[@basic.Location]],
+  ) -> String {
+    let ctx = module_ctx()
+    let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+    let c = checker.statement(
+      instr(
+        Call(
+          instr(
+            Path({ name: "v128", loc: loc_at(20, 24) }, {
+              name: shape,
+              loc: loc_at(26, 32),
+            }),
+            20,
+          ),
+          lanes.mapi((k, l) => instr(l, 40 + k)),
+        ),
+        10,
+      ),
+    )
+    c.info.0.map(t => @infer.to_string(t)).join(",") +
+    " | " +
+    ctx.diagnostics
+    .collected()
+    .map(d => @message.to_plain_string(d.message))
+    .join(" / ")
+  }
+
+  fn sixteen(v : String) -> Array[@ast.InstrDesc[@basic.Location]] {
+    Array::makei(16, _ => @ast.InstrDesc::Int(v))
+  }
+
+  // Sixteen byte lanes, each in range.
+  inspect(konst("i8x16", sixteen("255")), content="v128 | ")
+  // 256 does not fit a byte, under either reading.
+  let over = sixteen("255")
+  over[0] = Int("256")
+  inspect(
+    konst("i8x16", over),
+    content="v128 | The lane value does not fit in 8 bits.",
+  )
+  // The wrong number of lanes.
+  inspect(
+    konst("i8x16", [Int("1")]),
+    content="v128 | This instruction expects 16 operand(s) but 1 was/were provided.",
+  )
+  // A float literal is not an integer lane, whatever its value.
+  let floaty = sixteen("1")
+  floaty[0] = Float("1.5")
+  inspect(
+    konst("i8x16", floaty),
+    content="v128 | The lane value does not fit in 8 bits.",
+  )
+  // A float SHAPE takes any numeric literal.
+  inspect(
+    konst("f32x4", [Float("1.5"), Int("2"), Float("3.5"), Int("4")]),
+    content="v128 | ",
+  )
+  // A name that is no intrinsic at all.
+  inspect(
+    konst("nope", []),
+    content="any | There is no 'v128::nope' intrinsic.",
+  )
+}

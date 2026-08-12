@@ -306,13 +306,22 @@ pub fn ModuleContext::new(
 ) -> ModuleContext {
   let cond = @ref.new(@cond.true_)
   let origin = @ref.new(Origin::Root)
+  // Functions, globals, memories and tables share ONE name space -- a bare name
+  // in an expression could mean any of them, so they must not collide. Types,
+  // data segments, element segments and tags each get their own: a type is
+  // named where a type is expected and never where a value is, so a `type t`
+  // beside a `table t` is two different names that happen to look alike.
   let ns = Namespace::new(cond, links=resolve_links)
+  let type_ns = Namespace::new(cond, links=resolve_links)
+  let data_ns = Namespace::new(cond, links=resolve_links)
+  let elem_ns = Namespace::new(cond, links=resolve_links)
+  let tag_ns = Namespace::new(cond, links=resolve_links)
   // A hover on a type name shows what it is defined as; one on a bare global
   // shows its type. Everything else is not a name a hover has anything to say
   // about, and takes the default.
   let types : Tbl[(@type_store.RefIndex, @ast.SubType)] = Tbl::new(
     "type",
-    ns,
+    type_ns,
     origin,
     hover=r => Some(TypeDef(r.1)),
   )
@@ -323,16 +332,16 @@ pub fn ModuleContext::new(
     g.1.map(v => HoverTarget::ValueType(v))
   })
   let functions : Tbl[FunctionEntry] = Tbl::new("function", ns, origin)
-  let tags : Tbl[@ast.FuncType] = Tbl::new("tag", ns, origin)
+  let tags : Tbl[@ast.FuncType] = Tbl::new("tag", tag_ns, origin)
   let memories : Tbl[(Int, @wasm_types.AddressType)] = Tbl::new(
     "memory", ns, origin,
   )
-  let datas : Tbl[Unit] = Tbl::new("data segment", ns, origin)
+  let datas : Tbl[Unit] = Tbl::new("data segment", data_ns, origin)
   let tables : Tbl[(@wasm_types.AddressType, @wasm_types.RefType[@ast.Ident])] = Tbl::new(
     "table", ns, origin,
   )
   let elems : Tbl[@wasm_types.RefType[@ast.Ident]] = Tbl::new(
-    "element segment", ns, origin,
+    "element segment", elem_ns, origin,
   )
   {
     diagnostics,

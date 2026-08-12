@@ -1681,6 +1681,19 @@ pub fn Checker::statement(
       }
     }
     // --- A SIMD operation written on a value: `x.add_i32x4(y)` ---
+    // --- A free intrinsic: `v128::i8x16(..)`, `v128::bitselect(..)` ---
+    Call(callee, args) if callee.desc is Path(_, _) => {
+      guard callee.desc is Path(ns, name) else { return self.poisoned(i) }
+      let checked = args.map(a => self.statement(a))
+      let ty = self.free_intrinsic(callee.info, ns, name, args, checked)
+      {
+        desc: Call(callee.map_info(_ => annotate([], callee.info)), checked),
+        info: annotate([ty], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- A no-argument instruction method: `x.sqrt()`, `arr.length()` ---
     Call(callee, args) if self.is_unary_intrinsic(callee, args) => {
       guard callee.desc is StructGet(recv, meth) else {
@@ -4486,5 +4499,128 @@ fn Checker::unary_intrinsic(
       invalid_method_receiver(ctx.diagnostics, meth.loc, ty)
       err()
     }
+  }
+}
+
+///|
+/// Type a free intrinsic call -- one written as a qualified name rather than on
+/// a receiver.
+///
+/// The vector constants are the interesting half: `v128::i8x16(...)` takes one
+/// literal per lane, and each must FIT its lane width. That check earns its
+/// keep twice over -- it rejects a malformed constant, and it stops an
+/// out-of-range literal reaching the encoder, which would parse it and fail
+/// there instead.
+fn Checker::free_intrinsic(
+  self : Checker,
+  location : @basic.Location,
+  ns : @ast.Ident,
+  name : @ast.Ident,
+  args : Array[@ast.Instr[@basic.Location]],
+  checked : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+) -> @infer.Cell[@infer.InferredType] {
+  let ctx = self.ctx
+  let full = @simd.free_full(name.name)
+  guard @simd.is_free_intrinsic(full) else {
+    unknown_intrinsic(ctx.diagnostics, location, ns.name, name.name)
+    return @infer.Cell::make(@infer.InferredType::Error)
+  }
+  let v128 = simd_cell(TV128)
+  match @simd.const_shape_of_name(full) {
+    Some(shape) => {
+      let arity = @simd.const_arity(shape)
+      if args.length() != arity {
+        operand_count_mismatch(
+          ctx.diagnostics,
+          location,
+          expected=arity,
+          provided=args.length(),
+        )
+      }
+      // A float shape accepts any numeric literal; an integer shape bounds each
+      // lane by its width.
+      let bits = match shape {
+        I8x16 => Some(8)
+        I16x8 => Some(16)
+        I32x4 => Some(32)
+        I64x2 => Some(64)
+        F32x4 | F64x2 => None
+      }
+      for a in args {
+        check_lane_literal(ctx, bits, a)
+      }
+      v128
+    }
+    // The only non-constant free intrinsic is `bitselect`, which takes exactly
+    // three vectors. Its arity is checked here for the same reason the
+    // constants' is: an under- or over-application rejected now beats an
+    // unrelated stack complaint during lowering.
+    None => {
+      if args.length() != 3 {
+        operand_count_mismatch(
+          ctx.diagnostics,
+          location,
+          expected=3,
+          provided=args.length(),
+        )
+      }
+      for k, a in args {
+        check_subtype(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          a.info,
+          expression_type(ctx, checked[k].info),
+          simd_cell(TV128),
+        )
+      }
+      v128
+    }
+  }
+}
+
+///|
+/// Check one lane of a vector constant.
+///
+/// An integer lane accepts BOTH the signed and unsigned range of its width --
+/// an i8 lane is -128 to 255 -- because the constant is a bit pattern and both
+/// spellings name the same byte.
+fn check_lane_literal(
+  ctx : @typing_env.ModuleContext,
+  bits : Int?,
+  a : @ast.Instr[@basic.Location],
+) -> Unit {
+  // A leading `-` is a separate negation in the AST, so the magnitude and the
+  // sign arrive apart.
+  let (negated, lit) = match a.desc {
+    UnOpI(op, inner) if op.desc is Neg => (true, inner.desc)
+    _ => (false, a.desc)
+  }
+  match (bits, lit) {
+    (Some(b), Int(_)) =>
+      if !lane_fits(b, negated, lit) {
+        lane_value_out_of_range(ctx.diagnostics, a.info, b)
+      }
+    // A float literal is not a valid integer lane, whatever its value.
+    (Some(b), Float(_)) => lane_value_out_of_range(ctx.diagnostics, a.info, b)
+    (None, Int(_) | Float(_)) => ()
+    _ => number_literal_required(ctx.diagnostics, a.info)
+  }
+}
+
+///|
+/// Whether an integer lane literal fits its width.
+fn lane_fits(
+  bits : Int,
+  negated : Bool,
+  lit : @ast.InstrDesc[@basic.Location],
+) -> Bool {
+  guard int_literal_u64(lit) is Some(v) else { return false }
+  if negated {
+    // A magnitude of at most 2^(b-1): the most negative value of the width.
+    v <= 1UL << (bits - 1)
+  } else if bits == 64 {
+    true
+  } else {
+    v <= (1UL << bits) - 1UL
   }
 }

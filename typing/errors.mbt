@@ -1312,3 +1312,49 @@ pub fn invalid_method_receiver(
     .seq(@message.text(".")),
   )
 }
+
+///|
+/// A qualified name that names no intrinsic.
+pub fn unknown_intrinsic(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  ns : String,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("There is no")
+    .sep(@message.code(ns + "::" + name))
+    .sep(@message.text("intrinsic.")),
+  )
+}
+
+///|
+/// A vector-constant lane that does not fit the shape's width.
+pub fn lane_value_out_of_range(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  bits : Int,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The lane value does not fit in")
+    .sep(@message.int(bits))
+    .sep(@message.text("bits.")),
+  )
+}
+
+///|
+/// A vector-constant lane that is not a numeric literal.
+pub fn number_literal_required(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Only number literals are allowed here."),
+  )
+}
