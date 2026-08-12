@@ -1222,6 +1222,141 @@ pub fn Checker::statement(
       }
     }
 
+    // --- A structured try, with one handler per tag ---
+    Try(label~, typ~, block~, catches~, catch_all~) => {
+      guard self.signature_of(typ) is Some((params, results)) else {
+        return self.poisoned(i)
+      }
+      self.ops.pop_args(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        Input,
+        loc,
+        params,
+      )
+      let body = self.body(loc, label, params, results, results, block.desc)
+      let handled : Array[
+        (
+          @ast.Ident,
+          @basic.Annotated[
+            Array[@ast.Instr[@typing_env.InferredAnnotation]],
+            @basic.Location,
+          ],
+        ),
+      ] = []
+      for c in catches {
+        let (tag, arm) = c
+        // Each handler is a block of its own, entered on the tag's payload and
+        // producing the try's results, with the try's label in scope so a `br`
+        // to it exits carrying the value.
+        guard self.tag_payload(tag) is Some(entry) else { continue }
+        // The HANDLER's own span, not the try's: its parameters are pushed
+        // there, and anchoring a leftover at the try's opening would be both
+        // misleading and indistinguishable from the try's own report.
+        let checked = self.body(
+          arm.info,
+          label,
+          entry,
+          results,
+          results,
+          arm.desc,
+        )
+        handled.push((tag, { desc: checked, info: arm.info }))
+      }
+      let all = match catch_all {
+        Some(arm) => {
+          let checked = self.body(
+            arm.info,
+            label,
+            [],
+            results,
+            results,
+            arm.desc,
+          )
+          Some(
+            (
+              { desc: checked, info: arm.info } :
+              @basic.Annotated[
+                Array[@ast.Instr[@typing_env.InferredAnnotation]],
+                @basic.Location,
+              ]),
+          )
+        }
+        None => None
+      }
+      self.ops.push_results(loc, results)
+      {
+        desc: Try(
+          label~,
+          typ~,
+          block={ desc: body, info: block.info },
+          catches=handled,
+          catch_all=all,
+        ),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
+    // --- A structured try whose arms fall through into each other ---
+    TryCatch(label~, typ~, block~, arms~) => {
+      // Unlike the raw table, this form takes no parameters: it is a source
+      // construct, and expression position has no stack to take them from.
+      if !typ.params.is_empty() {
+        parameterized_block_expression(ctx.diagnostics, loc)
+      }
+      guard self.signature_of(typ) is Some((_, results)) else {
+        return self.poisoned(i)
+      }
+      let body = self.body(loc, label, [], results, results, block.desc)
+      // Arm k is entered on its tag's payload and must COMPLETE with arm k+1's
+      // entry stack -- the last arm's completion being the try's results. That
+      // chaining is the whole shape of this construct, and it is why the
+      // entries are computed for all the arms before any body is checked.
+      let entries = arms.map(a => self.arm_entry(a))
+      let checked : Array[@ast.TryCatchArm[@typing_env.InferredAnnotation]] = []
+      for k, arm in arms {
+        let exits = if k + 1 < entries.length() {
+          entries[k + 1]
+        } else {
+          Some(results)
+        }
+        // A type in the chain that did not resolve was already reported; the
+        // body is typed as a plain result-producing block rather than cascading.
+        let (params, exit_types) = match (entries[k], exits) {
+          (Some(p), Some(e)) => (p, e)
+          _ => ([], results)
+        }
+        let arm_body = self.body(
+          loc,
+          label,
+          params,
+          exit_types,
+          results,
+          arm.arm_body.desc,
+        )
+        checked.push({
+          arm_tag: arm.arm_tag,
+          arm_ref: arm.arm_ref,
+          arm_types: arm.arm_types,
+          arm_body: { desc: arm_body, info: arm.arm_body.info },
+        })
+      }
+      self.ops.push_results(loc, results)
+      {
+        desc: TryCatch(
+          label~,
+          typ~,
+          block={ desc: body, info: block.info },
+          arms=checked,
+        ),
+        info: annotate(results, loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- Everything else: not written yet ---
     _ => {
       self.tally(constructor_name(i.desc))
@@ -1846,4 +1981,61 @@ fn Checker::inline_functype(
     Some(_) => Some(id)
     None => None
   }
+}
+
+///|
+/// A tag's payload as cells: what a handler for it is entered on.
+///
+/// `None` when the tag or one of its parameter types does not resolve; the
+/// failure was reported, and inventing a payload would only cascade.
+fn Checker::tag_payload(
+  self : Checker,
+  tag : @ast.Ident,
+) -> Array[@infer.Cell[@infer.InferredType]]? {
+  let ctx = self.ctx
+  guard find(ctx.tags, ctx.diagnostics, tag) is Some(ft) else { return None }
+  // A tag describes what is thrown, and a throw does not return.
+  if !ft.results.is_empty() {
+    tag_with_results(ctx.diagnostics, tag.loc)
+  }
+  let out : Array[@infer.Cell[@infer.InferredType]] = []
+  for p in ft.params {
+    guard internalize(ctx.type_context, ctx.diagnostics, p.desc.1) is Some(c) else {
+      return None
+    }
+    out.push(c)
+  }
+  Some(out)
+}
+
+///|
+/// The entry stack of one `try`/`catch` arm: the tag's payload, plus the
+/// non-null `&exn` when the arm asked to bind it.
+///
+/// A catch-all arm names no tag and is entered on nothing -- except the
+/// exception itself, if it asked for it.
+fn Checker::arm_entry(
+  self : Checker,
+  arm : @ast.TryCatchArm[@basic.Location],
+) -> Array[@infer.Cell[@infer.InferredType]]? {
+  let payload = match arm.arm_tag {
+    Some(tag) =>
+      match self.tag_payload(tag) {
+        Some(p) => p
+        None => return None
+      }
+    None => []
+  }
+  guard arm.arm_ref else { return Some(payload) }
+  guard internalize(
+      self.ctx.type_context,
+      self.ctx.diagnostics,
+      Ref({ nullable: false, typ: Exn }),
+    )
+    is Some(e) else {
+    return None
+  }
+  let all = payload.copy()
+  all.push(e)
+  Some(all)
 }

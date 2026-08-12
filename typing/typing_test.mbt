@@ -5563,3 +5563,124 @@ test "a catch delivers its payload to the label it names" {
     content="Catching this exception provides a value of type 'i32' but the handler's branch target expects 'f64'.",
   )
 }
+
+///|
+/// A structured `try` gives each tag its own handler, entered on that tag's
+/// payload and producing the try's results. The try's label is in scope in
+/// every handler, so a `br` to it exits carrying the value.
+test "a try handler is entered on its tag's payload" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let ctx = module_ctx()
+  ctx.tags.add(ctx.diagnostics, "oops", loc_at(0, 4), {
+    params: [{ desc: (None, F64), info: loc_at(0, 1) }],
+    results: [],
+  })
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  // `try { 1 } catch oops { <the f64 payload> }` producing an f64.
+  let checked = checker.statement(
+    instr(
+      Try(
+        label=Some(id("t")),
+        typ={ params: [], results: [F64] },
+        block={ desc: [instr(Float("1.5"), 20)], info: loc_at(20, 21) },
+        catches=[(id("oops"), { desc: [], info: loc_at(40, 41) })],
+        catch_all=None,
+      ),
+      10,
+    ),
+  )
+  // The handler is entered on the payload and falls straight through with it,
+  // which is exactly the try's result -- so nothing to complain about.
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(checked.info.0.map(t => @infer.to_string(t)).join(","), content="f64")
+  inspect(checker.gaps().length(), content="0")
+}
+
+///|
+/// A `try`/`catch` chain's arms fall through into EACH OTHER: arm k completes
+/// with arm k+1's entry stack, and the last completes with the try's results.
+/// That chaining is the whole shape of the construct.
+test "a try-catch arm completes into the next arm's entry" {
+  fn instr(
+    d : @ast.InstrDesc[@basic.Location],
+    at : Int,
+  ) -> @ast.Instr[@basic.Location] {
+    {
+      desc: d,
+      info: loc_at(at, at + 1),
+      hints: { branch: None, freq: None, targets: None },
+      expected: None,
+    }
+  }
+
+  let ctx = module_ctx()
+  ctx.tags.add(ctx.diagnostics, "a", loc_at(0, 1), {
+    params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+    results: [],
+  })
+  ctx.tags.add(ctx.diagnostics, "b", loc_at(2, 3), {
+    params: [{ desc: (None, I32), info: loc_at(2, 3) }],
+    results: [],
+  })
+  let checker = @typing.Checker::new(ctx, @typing.Operands::new())
+  // Arm `a` is entered on an i32 and must complete with arm `b`'s entry, which
+  // is also an i32 -- so falling straight through is right.
+  let checked = checker.statement(
+    instr(
+      TryCatch(
+        label=Some(id("t")),
+        typ={ params: [], results: [I32] },
+        block={ desc: [instr(Int("1"), 20)], info: loc_at(20, 21) },
+        arms=[
+          {
+            arm_tag: Some(id("a")),
+            arm_ref: false,
+            arm_types: [],
+            arm_body: { desc: [], info: loc_at(40, 41) },
+          },
+          {
+            arm_tag: Some(id("b")),
+            arm_ref: false,
+            arm_types: [],
+            arm_body: { desc: [], info: loc_at(50, 51) },
+          },
+        ],
+      ),
+      10,
+    ),
+  )
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  inspect(checked.info.0.map(t => @infer.to_string(t)).join(","), content="i32")
+  inspect(checker.gaps().length(), content="0")
+
+  // A parameterized one is rejected: expression position has no stack to take
+  // parameters from.
+  let ctx2 = module_ctx()
+  let checker2 = @typing.Checker::new(ctx2, @typing.Operands::new())
+  let _ = checker2.statement(
+    instr(
+      TryCatch(
+        label=None,
+        typ={ params: [{ desc: (None, I32), info: loc_at(0, 1) }], results: [] },
+        block={ desc: [], info: loc_at(20, 21) },
+        arms=[],
+      ),
+      10,
+    ),
+  )
+  inspect(
+    @message.to_plain_string(ctx2.diagnostics.collected()[0].message),
+    content="A block, loop or if used as an expression cannot take parameters.",
+  )
+}
