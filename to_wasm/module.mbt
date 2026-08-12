@@ -36,6 +36,8 @@ pub fn lower_module(
     locals: Map([]),
     local_types: [],
     local_names: Map([]),
+    label_names: Map([]),
+    label_counter: 0,
     labels: [],
     source_types: source_type_index(ctx),
     functypes: functype_index(store),
@@ -104,6 +106,9 @@ fn Lowering::field(
       // The local names belong to the function that just closed over them.
       if !self.local_names.is_empty() {
         m.names.locals[fi] = self.local_names
+      }
+      if !self.label_names.is_empty() {
+        m.names.labels[fi] = self.label_names
       }
       self.export_of(m, attributes, Func(self.func_index(name, loc)), name)
     }
@@ -231,6 +236,8 @@ fn Lowering::function_body(
   self.locals = Map([])
   self.local_types = []
   self.local_names = Map([])
+  self.label_names = Map([])
+  self.label_counter = 0
   self.labels = []
   let sub = self.store.subtyping_info().get_subtype(type_id)
   guard sub.typ is Func(ft) else { raise Unresolved("function type", loc) }
@@ -320,6 +327,9 @@ fn Lowering::lower_body(
   instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
 ) -> Array[@wasm_bin.Instruction] raise LowerError {
   let body : Array[@wasm_bin.Instruction] = []
+  // The function's own frame is pushed for DEPTH but takes no label index: the
+  // name section numbers the blocks a body contains, and the body is not one of
+  // them.
   self.labels.push(label.map(l => l.name))
   for s in instrs {
     self.instr(body, s)

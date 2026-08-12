@@ -561,13 +561,27 @@ fn Lowering::body(
   label : @ast.Ident?,
   instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
 ) -> Array[@wasm_bin.Instruction] raise LowerError {
-  self.labels.push(label.map(l => l.name))
+  self.open_label(label)
   let out : Array[@wasm_bin.Instruction] = []
   for s in instrs {
     self.instr(out, s)
   }
   let _ = self.labels.pop()
   out
+}
+
+///|
+/// Enter a block, recording its label's name.
+///
+/// Labels are numbered for the name section in the order the blocks OPEN, which
+/// is not the order a `br` counts them in -- depth is relative to where the
+/// branch stands, while a name belongs to the block itself.
+fn Lowering::open_label(self : Lowering, label : @ast.Ident?) -> Unit {
+  self.labels.push(label.map(l => l.name))
+  if label is Some(l) {
+    note_name(self.label_names, self.label_counter, l.name)
+  }
+  self.label_counter = self.label_counter + 1
 }
 
 ///|

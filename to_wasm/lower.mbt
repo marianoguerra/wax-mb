@@ -52,6 +52,13 @@ pub struct Lowering {
   mut local_types : Array[@wasm_types.ValType[Int]]
   /// Local slot to the name the source gave it, for the name section.
   mut local_names : Map[Int, Bytes]
+  /// Block label names, keyed by the order the blocks OPEN in.
+  ///
+  /// The name section numbers labels per function in that order, which is not
+  /// the order a `br` counts them in -- depth is relative to where the branch
+  /// stands, while a name belongs to the block itself.
+  mut label_names : Map[Int, Bytes]
+  mut label_counter : Int
   /// The labels in scope, innermost last. A `br` names one; the binary counts
   /// outward from the innermost, so the depth is the distance from the end.
   mut labels : Array[String?]

@@ -101,6 +101,8 @@ pub struct Lowering {
   mut locals : Map[String, Int]
   mut local_types : Array[@wasm_types.ValType[Int]]
   mut local_names : Map[Int, Bytes]
+  mut label_names : Map[Int, Bytes]
+  mut label_counter : Int
   mut labels : Array[String?]
   source_types : Map[Int, @ast.SubType]
   functypes : Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
