@@ -1,0 +1,15 @@
+import {
+  "waxmb/wax/basic",
+  "waxmb/wax/ast",
+  "waxmb/wax/infer",
+  "waxmb/wax/members",
+  "waxmb/wax/cond",
+  "waxmb/wax/diagnostic",
+  "waxmb/wax/wasm_types",
+  "moonbitlang/core/ref",
+}
+
+import {
+  "moonbitlang/core/test",
+  "waxmb/wax/wasm_types",
+} for "test"

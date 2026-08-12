@@ -1,0 +1,97 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/typing_env"
+
+import {
+  "moonbitlang/core/debug",
+  "moonbitlang/core/ref",
+  "waxmb/wax/ast",
+  "waxmb/wax/basic",
+  "waxmb/wax/cond",
+  "waxmb/wax/diagnostic",
+  "waxmb/wax/infer",
+  "waxmb/wax/members",
+  "waxmb/wax/wasm_types",
+}
+
+// Values
+pub fn blank_comments(String) -> String
+
+pub fn deletion_edit(@basic.Location) -> @diagnostic.Edit
+
+pub fn[Info] expression_type_opt((Array[@infer.Cell[@infer.InferredType]], Info)) -> @infer.Cell[@infer.InferredType]?
+
+pub fn is_source(@basic.Location) -> Bool
+
+pub fn record_members(Array[(@basic.Location, @members.MemberReceiver)]?, @basic.Location, @members.MemberReceiver) -> Unit
+
+pub fn record_pun(Array[@basic.Location]?, @basic.Location) -> Unit
+
+pub fn record_reference(Array[Reference]?, @basic.Location, Array[@basic.Location], hover? : HoverTarget?) -> Unit
+
+pub fn ref_none_valtype(nullable~ : Bool) -> @infer.InferredValType
+
+pub fn same_span(@basic.Location, @basic.Location) -> Bool
+
+pub fn source_slice(String?, @basic.Location) -> String?
+
+pub fn span(@basic.Position, @basic.Position) -> @basic.Location
+
+pub fn standalone_valtype(@infer.Cell[@infer.InferredType]) -> @infer.InferredValType?
+
+// Errors
+
+// Types and methods
+pub(all) struct Declaration {
+  name : String
+  loc : @basic.Location
+  cond : @cond.T
+}
+
+pub(all) enum HoverTarget {
+  ValueType(@infer.InferredValType)
+  TypeDef(@ast.SubType)
+}
+
+pub struct Namespace {
+  cond : @ref.Ref[@cond.T]
+  entries : Map[String, Array[Declaration]]
+  links : Array[Reference]?
+}
+pub fn Namespace::new(@ref.Ref[@cond.T], links? : Array[Reference]?) -> Self
+
+pub(all) enum Origin {
+  Root
+  FromFunction(String)
+  FromType(String)
+  Ignored
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Reference {
+  use_ : @basic.Location
+  definitions : Array[@basic.Location]
+  hover : HoverTarget?
+}
+
+pub struct Tbl[A] {
+  kind : String
+  names : Namespace
+  entries : Map[String, Array[(@cond.T, A)]]
+  used : Map[String, Array[Origin]]
+  current : @ref.Ref[Origin]
+  hover : (A) -> HoverTarget?
+}
+pub fn[A] Tbl::add(Self[A], String, @basic.Location, A) -> Unit
+pub fn[A] Tbl::iter_references(Self[A]) -> Array[(String, Array[Origin])]
+pub fn[A] Tbl::new(String, Namespace, @ref.Ref[Origin], hover? : (A) -> HoverTarget?) -> Self[A]
+pub fn[A] Tbl::referrers(Self[A], String) -> Array[Origin]
+pub fn[A] Tbl::resolve(Self[A], String, @basic.Location) -> A?
+pub fn[A] Tbl::visible(Self[A], String) -> Array[A]
+
+// Type aliases
+pub type InferredAnnotation = (Array[@infer.Cell[@infer.InferredType]], @basic.Location)
+
+pub type ResolveSink = Array[Reference]?
+
+pub type TypedAnnotation = (Array[@wasm_types.StorageType[@ast.Ident]?], @basic.Location)
+
+// Traits
