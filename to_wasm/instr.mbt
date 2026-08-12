@@ -182,14 +182,32 @@ fn Lowering::hinted(
                 self.instr(out, a)
                 out.push(I64Sub)
               }
-            Some(F32) => {
-              self.instr(out, a)
-              out.push(F32Neg)
-            }
-            Some(F64) => {
-              self.instr(out, a)
-              out.push(F64Neg)
-            }
+            // A negated float LITERAL folds too, and it has to: `-nan:0x..`
+            // is a bit pattern, and reaching it by negating the positive one
+            // flips a bit the source named explicitly. Every float negation
+            // fits, so unlike the integers there is nothing to check.
+            Some(F32) =>
+              if a.desc is (Int(_) | Float(_)) {
+                out.push(
+                  F32Const(
+                    Float::from_double(
+                      parse_float_bits(literal_text(i, loc), false, loc),
+                    ),
+                  ),
+                )
+              } else {
+                self.instr(out, a)
+                out.push(F32Neg)
+              }
+            Some(F64) =>
+              if a.desc is (Int(_) | Float(_)) {
+                out.push(
+                  F64Const(parse_float_bits(literal_text(i, loc), true, loc)),
+                )
+              } else {
+                self.instr(out, a)
+                out.push(F64Neg)
+              }
             _ => raise Unresolved("negation type", loc)
           }
         // `!x` is `x == 0` on an integer and `ref.is_null` on a reference --
