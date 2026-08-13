@@ -194,31 +194,33 @@ fn formatted(
 fn run(argv : Array[String]) -> Status {
   let opts = match parse_args(argv) {
     Err((status, msg)) => {
-      @io.eprintln("wax-mb: " + msg)
+      @io.eprintln(prog() + msg)
       return status
     }
     Ok(o) => o
   }
   if opts.files.is_empty() {
-    @io.eprintln("wax-mb: no input file")
+    @io.eprintln(prog() + "no input file")
     return Usage
   }
   // Only the Wax front end exists, so anything else is a usage error rather
   // than a silent no-op that would make a differential comparison meaningless.
   if opts.input_format != "wax" {
     @io.eprintln(
-      "wax-mb: input format '\{opts.input_format}' is not implemented (only 'wax')",
+      prog() +
+      "input format '\{opts.input_format}' is not implemented (only 'wax')",
     )
     return Usage
   }
   if opts.command is Convert && not_implemented_format(opts.output_format) {
     @io.eprintln(
-      "wax-mb: output format '\{opts.output_format}' is not implemented (only 'wax' and 'wasm')",
+      prog() +
+      "output format '\{opts.output_format}' is not implemented (only 'wax' and 'wasm')",
     )
     return Usage
   }
   if opts.command is Convert && opts.files.length() > 1 {
-    @io.eprintln("wax-mb: convert takes a single input file")
+    @io.eprintln(prog() + "convert takes a single input file")
     return Usage
   }
   let mut rejected = false
@@ -226,7 +228,7 @@ fn run(argv : Array[String]) -> Status {
   for path in opts.files {
     let src = @fs.read_file_to_string(path) catch {
       _ => {
-        @io.eprintln("wax-mb: cannot read \{path}")
+        @io.eprintln(prog() + "cannot read \{path}")
         return Usage
       }
     }
@@ -252,7 +254,7 @@ fn run(argv : Array[String]) -> Status {
         }
         match compile_text(path, src, m, opts, trivia) {
           Err(msg) => {
-            @io.eprintln("wax-mb: " + msg)
+            @io.eprintln(prog() + msg)
             return Rejected
           }
           Ok(text) =>
@@ -261,7 +263,7 @@ fn run(argv : Array[String]) -> Status {
               Some(out) =>
                 @fs.write_bytes_to_file(out, @utf8.encode(text)) catch {
                   _ => {
-                    @io.eprintln("wax-mb: cannot write \{out}")
+                    @io.eprintln(prog() + "cannot write \{out}")
                     return Usage
                   }
                 }
@@ -276,7 +278,7 @@ fn run(argv : Array[String]) -> Status {
         }
         match compile(path, src, m, opts) {
           Err(msg) => {
-            @io.eprintln("wax-mb: " + msg)
+            @io.eprintln(prog() + msg)
             return Rejected
           }
           Ok(bytes) =>
@@ -288,7 +290,7 @@ fn run(argv : Array[String]) -> Status {
               Some(out) =>
                 @fs.write_bytes_to_file(out, bytes) catch {
                   _ => {
-                    @io.eprintln("wax-mb: cannot write \{out}")
+                    @io.eprintln(prog() + "cannot write \{out}")
                     return Usage
                   }
                 }
@@ -303,7 +305,7 @@ fn run(argv : Array[String]) -> Status {
             let text = formatted(m, trivia, opts, false)
             @fs.write_bytes_to_file(out, @utf8.encode(text)) catch {
               _ => {
-                @io.eprintln("wax-mb: cannot write \{out}")
+                @io.eprintln(prog() + "cannot write \{out}")
                 return Usage
               }
             }
@@ -322,7 +324,7 @@ fn run(argv : Array[String]) -> Status {
           if text != src {
             @fs.write_bytes_to_file(path, @utf8.encode(text)) catch {
               _ => {
-                @io.eprintln("wax-mb: cannot write \{path}")
+                @io.eprintln(prog() + "cannot write \{path}")
                 return Usage
               }
             }
@@ -347,7 +349,10 @@ fn run(argv : Array[String]) -> Status {
 ///|
 fn main {
   let argv = @env.args()
-  // argv[0] is the program name.
+  // argv[0] is the program name, and this program reports under it.
+  if argv.length() > 0 {
+    set_prog_name(argv[0])
+  }
   let args = if argv.length() > 1 { argv[1:].to_owned() } else { [] }
   let status = run(args)
   if status != Ok {

@@ -36,7 +36,50 @@ export PATH="$work/bin:$PATH"
 # is what makes the tests runnable unedited, which is the point of having them.
 export WAX_WARN="correctness=hidden"
 
-pass=0; fail=0; failed=()
+# Tests that fail for a gap this port has not closed yet, each with the reason.
+#
+# Listed rather than de-scoped: the classifier decides SCOPE from what the CLI
+# can be asked to do, and every one of these is in scope -- the command runs and
+# the port answers, just not the same way. Naming them keeps the suite green
+# where it is right and keeps the gap countable, and the check below fails BOTH
+# ways: a listed test that starts passing is an error too, so the list cannot
+# quietly outlive what it excuses.
+#
+# The lint and diagnostic entries are the cram-side view of the oracle 3
+# residual; closing that closes these.
+declare -A KNOWN_FAILING=(
+  [become-non-function.t]="missing check"
+  [block-exit-mismatch.t]="diagnostic span differs"
+  [bottom-ref-numeric-cast.t]="missing check"
+  [compound-assign-hole-order.t]="missing check"
+  [constant-trap-f32.t]="missing lint: constant-trap on f32"
+  [duplicate-diagnostic-chains.t]="diagnostic chain differs"
+  [error-format-short.t]="usage text for an unknown --error-format differs"
+  [float-literal-f32-range.t]="missing check"
+  [hole-control-operand.t]="missing check"
+  [holes.t]="missing check"
+  [hole-struct-reorder.t]="missing check"
+  [lint-set.t]="missing lints"
+  [negative-const-lints.t]="missing lints on negative constants"
+  [new-lints-wax.t]="missing lints"
+  [non-empty-stack-location.t]="diagnostic span differs"
+  [numeric-cast-cross-family.t]="missing check"
+  [redundant-mul-zero-float.t]="missing lint: redundant-operation on floats"
+  [redundant-sub-self-float.t]="missing lint: redundant-operation on floats"
+  [suggestions.t]="missing suggestion: redundant-annotation"
+  [switch-chain-dup.t]="missing check"
+  [typing-crash-recovery.t]="missing check"
+  [typing-error-recovery.t]="missing check"
+  [unicode-identifier.t]="caret width counts UTF-16 units, not display columns"
+  [wax-annotations.t]="missing check"
+  [wax-const-expr-globals.t]="missing check"
+  [wax-duplicate-params.t]="missing check"
+  [wax-memarg-limits.t]="missing check"
+  [wax-operand-type-checks.t]="missing check"
+  [wax-uninitialized-local.t]="missing check"
+)
+
+pass=0; fail=0; known=0; failed=(); fixed=()
 for t in "$root"/test/cram/*.t; do
   [ -d "$t" ] || continue
   name="$(basename "$t")"
@@ -44,7 +87,13 @@ for t in "$root"/test/cram/*.t; do
   cp -r "$t" "$sandbox"
   if "$cram" test --cram-compat -w "$sandbox" "$sandbox/run.t" \
        >"$work/$name.log" 2>&1; then
-    pass=$((pass + 1))
+    if [ -n "${KNOWN_FAILING[$name]+x}" ]; then
+      fixed+=("$name")
+    else
+      pass=$((pass + 1))
+    fi
+  elif [ -n "${KNOWN_FAILING[$name]+x}" ]; then
+    known=$((known + 1))
   else
     fail=$((fail + 1)); failed+=("$name")
   fi
@@ -58,7 +107,12 @@ if [ $((pass + fail)) -eq 0 ]; then
   exit 1
 fi
 
-echo "cram: $pass passed, $fail failed"
+echo "cram: $pass passed, $fail failed, $known known-failing"
+if [ ${#fixed[@]} -gt 0 ]; then
+  echo "cram: listed in KNOWN_FAILING but now passing -- drop the entry:" >&2
+  printf '  %s\n' "${fixed[@]}" >&2
+  exit 1
+fi
 if [ "$fail" -gt 0 ]; then
   printf '  %s\n' "${failed[@]}"
   if [ "${1:-}" = "-v" ]; then

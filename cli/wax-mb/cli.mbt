@@ -32,6 +32,33 @@ pub(all) enum Status {
 } derive(Eq, Debug)
 
 ///|
+/// The name this program was invoked as, for the `NAME: message` prefix its
+/// own errors carry.
+///
+/// Taken from argv[0] rather than fixed: the reference's own cram tests run it
+/// as `wax`, and a program that calls itself something other than what the
+/// user typed is reporting about a program the user did not run.
+let prog_name : Ref[String] = @ref.new("wax-mb")
+
+///|
+/// Set the name from argv[0]. Anything without a path is used as it stands.
+pub fn set_prog_name(argv0 : String) -> Unit {
+  let cut = match argv0.rev_find("/") {
+    Some(i) => argv0[i + 1:].to_owned()
+    None => argv0
+  }
+  if cut != "" {
+    prog_name.val = cut
+  }
+}
+
+///|
+/// `NAME: ` -- the prefix this program's own errors carry.
+pub fn prog() -> String {
+  prog_name.val + ": "
+}
+
+///|
 pub fn Status::code(self : Status) -> Int {
   match self {
     Ok => 0
@@ -288,10 +315,10 @@ fn env_policy() -> @warning.Policy {
   }
   for spec in specs {
     match @warning.parse_spec(spec) {
-      Err(msg) => @io.eprintln("wax-mb: WAX_WARN: " + msg)
+      Err(msg) => @io.eprintln(prog() + "WAX_WARN: " + msg)
       Ok((target, level)) =>
         match policy.set(target, level) {
-          Err(msg) => @io.eprintln("wax-mb: WAX_WARN: " + msg)
+          Err(msg) => @io.eprintln(prog() + "WAX_WARN: " + msg)
           Ok(p) => policy = p
         }
     }
