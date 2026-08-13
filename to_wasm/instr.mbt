@@ -835,8 +835,8 @@ fn Lowering::hinted(
       // A PACKED field or element reads the same way: the width is written on
       // the declaration and the sign on the cast, and the binary has one
       // instruction for the pair.
-      if target is Signed(signage~, ..) &&
-        self.fused_packed_read(out, operand, signage, loc) {
+      if target is Signed(typ~, signage~, ..) &&
+        self.fused_packed_read(out, operand, typ, signage, loc) {
         return
       }
       // A NULL cast to a reference type is simply that type's null. Emitting
@@ -1724,9 +1724,20 @@ fn Lowering::fused_packed_read(
   self : Lowering,
   out : Array[@wasm_bin.Instruction],
   operand : @ast.Instr[@typing_env.InferredAnnotation],
+  typ : @ast.NumType,
   signage : @wasm_types.Signage,
   loc : @basic.Location,
 ) -> Bool raise LowerError {
+  // A packed read yields an i32 and nothing else: there is no `array.get` or
+  // `struct.get` that produces an i64. So `as i64_u` is the fused read AND a
+  // widening, and dropping the widening leaves an i32 where an i64 is wanted.
+  fn widen(out : Array[@wasm_bin.Instruction]) -> Unit {
+    if typ is I64 {
+      out.push(if signage is Signed { I64ExtendI32S } else { I64ExtendI32U })
+    }
+  }
+
+  guard typ is (I32 | I64) else { return false }
   match operand.desc {
     ArrayGet(recv, index) => {
       guard self.table_of(recv) is None else { return false }
@@ -1735,6 +1746,7 @@ fn Lowering::fused_packed_read(
       self.instr(out, recv)
       self.instr(out, index)
       out.push(if signage is Signed { ArrayGetS(t) } else { ArrayGetU(t) })
+      widen(out)
       true
     }
     StructGet(recv, field) => {
@@ -1751,6 +1763,7 @@ fn Lowering::fused_packed_read(
           StructGetU(t, k)
         },
       )
+      widen(out)
       true
     }
     _ => false
