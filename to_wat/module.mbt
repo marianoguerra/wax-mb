@@ -10,19 +10,19 @@ pub fn print_module(
   m : @wasm_bin.Module,
   trivia? : @trivia.Context? = None,
 ) -> String raise WatError {
-  let fields : Array[Sexp] = []
+  // Each field with where it was written: the comments written against it are
+  // found by that, and so is the conditional branch it stood in.
+  let written : Array[(Sexp, @basic.Location)] = []
   for k, f in m.text.field_order {
     let one = field(m, f)
-    // The field carries where it was written, so the comments written against
-    // it can be found. Fields the source did not write carry nothing.
-    fields.push(
-      if k < m.text.field_locs.length() {
-        At(m.text.field_locs[k], one)
-      } else {
-        one
-      },
-    )
+    let loc = if k < m.text.field_locs.length() {
+      m.text.field_locs[k]
+    } else {
+      @basic.dummy_loc
+    }
+    written.push((if loc.is_dummy() { one } else { At(loc, one) }, loc))
   }
+  let fields = regroup(m, written)
   // A type nothing declared is NOT written. The section holds every signature
   // the lowering interned -- a block's, an import's, a `call_indirect`'s --
   // and the text format spells all of those inline where they are used. Only a
@@ -42,9 +42,6 @@ pub fn print_module(
       fields.push(elem_field(m, k))
     }
   }
-  if m.start is Some(f) {
-    fields.push(List([Atom("start"), Atom(name_or(m.names.functions, f))]))
-  }
   // A NAMED module keeps its wrapper, and then its fields are one level deeper
   // -- which is what makes them pack rather than each claim its own block.
   match m.names.module_ {
@@ -59,6 +56,113 @@ pub fn print_module(
     }
     None => render(VBlock(fields), trivia~) + "\n"
   }
+}
+
+///|
+/// Put the fields back under the conditionals they were written in.
+///
+/// The checker flattens a conditional away, so both branches' fields are
+/// already in the module and side by side; only where each STOOD says which
+/// branch it came from. Grouping by containment is what puts them back, and it
+/// nests without any extra bookkeeping.
+fn regroup(
+  m : @wasm_bin.Module,
+  items : Array[(Sexp, @basic.Location)],
+) -> Array[Sexp] {
+  let at = @ref.new(0)
+  fn covers(outer : @basic.Location, inner : @basic.Location) -> Bool {
+    inner.start.cnum >= outer.start.cnum && inner.end.cnum <= outer.end.cnum
+  }
+
+  // The outermost conditional that lies inside this range and holds this
+  // field. Outermost, because the inner ones are found on the way down.
+  // `skip` is the conditional whose branch this range IS. Without it a group
+  // whose field and branch share a span -- `#[if(x)] { .. }`, where the two
+  // are written as one thing -- finds itself again inside its own branch and
+  // the walk never ends.
+  fn enclosing(
+    loc : @basic.Location,
+    lo : @basic.Location,
+    skip : Int,
+  ) -> Int? {
+    let mut best : Int? = None
+    for k, c in m.text.conditionals {
+      guard k != skip else { continue }
+      guard covers(lo, c.loc) && c.loc.start.cnum > lo.start.cnum - 1 else {
+        continue
+      }
+      let inside = covers(c.then_, loc) ||
+        (c.else_ is Some(e) && covers(e, loc))
+      guard inside else { continue }
+      best = match best {
+        Some(b) =>
+          if c.loc.start.cnum < m.text.conditionals[b].loc.start.cnum {
+            Some(k)
+          } else {
+            Some(b)
+          }
+        None => Some(k)
+      }
+    }
+    best
+  }
+
+  fn walk(range : @basic.Location, skip : Int) -> Array[Sexp] {
+    let out : Array[Sexp] = []
+    while at.val < items.length() && items[at.val].1.start.cnum < range.end.cnum {
+      let (sexp, loc) = items[at.val]
+      match enclosing(loc, range, skip) {
+        None => {
+          out.push(sexp)
+          at.val = at.val + 1
+        }
+        Some(k) => {
+          let c = m.text.conditionals[k]
+          let before = at.val
+          let then_ = walk(c.then_, k)
+          let else_ = match c.else_ {
+            Some(e) => walk(e, k)
+            None => []
+          }
+          // If the branches took nothing, this field is not in either after
+          // all, and looking again would ask the same question forever.
+          if at.val == before {
+            out.push(sexp)
+            at.val = at.val + 1
+          } else {
+            out.push(cond_field(c, then_, else_))
+          }
+        }
+      }
+    }
+    out
+  }
+
+  if m.text.conditionals.is_empty() {
+    return items.map(i => i.0)
+  }
+  walk(
+    {
+      start: { ..@basic.dummy_pos, cnum: -1 },
+      end: { ..@basic.dummy_pos, cnum: 0x7FFFFFFF },
+    },
+    -1,
+  )
+}
+
+///|
+/// `(@if $cond (@then ...) (@else ...))`.
+fn cond_field(
+  c : @wasm_bin.CondGroup,
+  then_ : Array[Sexp],
+  else_ : Array[Sexp],
+) -> Sexp {
+  let l : Array[Sexp] = [block([Atom("@if"), Atom(c.cond)])]
+  l.push(List([Atom("@then"), ..then_]))
+  if c.else_ is Some(_) {
+    l.push(List([Atom("@else"), ..else_]))
+  }
+  At(c.loc, List(l))
 }
 
 ///|
@@ -77,6 +181,7 @@ fn field(m : @wasm_bin.Module, f : @wasm_bin.FieldRef) -> Sexp raise WatError {
       List(l)
     }
     FFeature(name) => List([Atom("@feature"), Atom(quoted(name))])
+    FStart(f) => List([Atom("start"), Atom(name_or(m.names.functions, f))])
     FImport(k) => import_field(m, k)
     FFunc(k) => function_field(m, k, m.codes[k])
     FTable(k) => table_field(m, k)

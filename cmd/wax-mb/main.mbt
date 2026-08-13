@@ -184,6 +184,14 @@ fn compile(
   if render_diagnostics(src, opts, diagnostics.collected()) {
     return Err("\{path}: rejected")
   }
+  // A module with an unresolved conditional has no single binary form -- which
+  // is what a conditional is for. The TEXT form keeps it, so the refusal is
+  // here rather than in the lowering the two share.
+  if @to_wasm.has_conditional(m) {
+    return Err(
+      "\{path}: conditional annotations cannot be emitted to the WebAssembly binary format",
+    )
+  }
   let module_ = @to_wasm.lower_module(ctx, store, m, typed) catch {
     e => return Err("\{path}: \{e}")
   }

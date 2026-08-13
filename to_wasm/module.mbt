@@ -25,9 +25,7 @@ pub fn lower_module(
   // rejects the module, not the field, and stumbling further in produces a
   // downstream complaint about whatever the conditional left inconsistent.
   for field in source {
-    if field.desc is Conditional(..) {
-      raise Unemittable("conditional annotations", field.info)
-    }
+    ignore(field)
   }
   let indices = assign_indices(ctx, source)
   // The layout FIRST: it installs the store-to-emitted translation that every
@@ -137,7 +135,112 @@ pub fn lower_module(
   low.type_names(m)
   low.module_name(m, source)
   low.target_features(m, source)
+  // The conditionals LAST, because they are read back against the field
+  // positions above: the checker flattens a conditional away, so the fields of
+  // both branches are already in the module and only where they stood says
+  // which branch each came from.
+  note_conditionals(m, source)
   m
+}
+
+///|
+/// Whether a module still holds an unresolved conditional.
+///
+/// One has no binary form -- that is what it is for -- so `-f wasm` refuses
+/// such a module. The TEXT form keeps it, which is why the lowering no longer
+/// refuses on its own account.
+pub fn has_conditional(source : @ast.Module[@basic.Location]) -> Bool {
+  for field in source {
+    if field.desc is Conditional(..) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Record the conditional groups the source wrote, with the extent of each
+/// branch, so the text form can put its fields back under them.
+fn note_conditionals(
+  m : @wasm_bin.Module,
+  fields : @ast.Module[@basic.Location],
+) -> Unit {
+  for field in fields {
+    guard field.desc is Conditional(cond~, then_fields~, else_fields~) else {
+      continue
+    }
+    m.text.conditionals.push({
+      cond: wat_cond(cond),
+      loc: field.info,
+      then_: then_fields.info,
+      else_: else_fields.map(e => e.info),
+    })
+    note_conditionals(m, then_fields.desc)
+    if else_fields is Some(e) {
+      note_conditionals(m, e.desc)
+    }
+  }
+}
+
+///|
+/// A condition as the WEBASSEMBLY TEXT format writes one.
+///
+/// Not the Wax spelling: wax says `all(a, b)` and the text format says
+/// `(and a b)`. Rendered to a string because a condition never wraps -- it is
+/// an annotation payload, and the layout has nothing to decide inside it.
+fn wat_cond(c : @wasm_types.Cond) -> String {
+  match c {
+    Var(v) => "$" + v.desc
+    Str(s) => quoted_bytes(s.desc)
+    Version(a, b, c2) => "(\{a} \{b} \{c2})"
+    And(l) => "(and" + cond_list(l) + ")"
+    Or(l) => "(or" + cond_list(l) + ")"
+    Not(c2) => "(not " + wat_cond(c2) + ")"
+    Cmp(op, a, b) =>
+      "(" + wat_cmp(op) + " " + wat_cond(a) + " " + wat_cond(b) + ")"
+  }
+}
+
+///|
+fn cond_list(l : Array[@wasm_types.Cond]) -> String {
+  let out = StringBuilder::new()
+  for c in l {
+    out.write_string(" " + wat_cond(c))
+  }
+  out.to_string()
+}
+
+///|
+fn wat_cmp(op : @wasm_types.CmpOp) -> String {
+  match op {
+    Eq => "="
+    Ne => "<>"
+    Lt => "<"
+    Gt => ">"
+    Le => "<="
+    Ge => ">="
+  }
+}
+
+///|
+/// A byte string as an annotation payload writes one. Printable ASCII stands
+/// for itself; anything else takes a hex escape.
+fn quoted_bytes(b : Bytes) -> String {
+  let digits = [
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f",
+  ]
+  let out = StringBuilder::new()
+  out.write_char('"')
+  for k in 0..<b.length() {
+    let c = b[k].to_int()
+    if c >= 0x20 && c < 0x7F && c != 0x22 && c != 0x5C {
+      out.write_char(Int::unsafe_to_char(c))
+    } else {
+      out.write_string("\\" + digits[c / 16] + digits[c % 16])
+    }
+  }
+  out.write_char('"')
+  out.to_string()
 }
 
 ///|
@@ -225,6 +328,7 @@ fn Lowering::field(
       for a in attributes {
         if a.attr_name == "start" {
           m.start = Some(fi)
+          m.text.field_order.push(FStart(fi))
         }
       }
     }

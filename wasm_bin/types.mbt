@@ -1188,6 +1188,23 @@ pub(all) struct TextView {
   /// out; a function is the same. The binary keeps only the index, which is
   /// the same either way, so which was written has to be recorded.
   named_decl_types : Map[ParamOwner, Bool]
+  /// The conditional groups the source wrote.
+  ///
+  /// A conditional has no binary form -- that is the whole point of it, and
+  /// `-f wasm` refuses a module that still has one. The text keeps it, so the
+  /// condition and the extent of each branch are recorded here and the fields
+  /// are grouped back under them by where they stood.
+  conditionals : Array[CondGroup]
+} derive(Debug)
+
+///|
+/// One `#[if(..)]` group: the condition as the TEXT format writes it, and
+/// where each branch stood in the source.
+pub(all) struct CondGroup {
+  cond : String
+  loc : @basic.Location
+  then_ : @basic.Location
+  else_ : @basic.Location?
 } derive(Debug)
 
 ///|
@@ -1198,6 +1215,7 @@ pub fn TextView::empty() -> TextView {
     field_locs: [],
     decl_param_names: Map([]),
     named_decl_types: Map([]),
+    conditionals: [],
   }
 }
 
@@ -1220,6 +1238,9 @@ pub(all) enum FieldRef {
   FFeature(Bytes)
   FImport(Int)
   FFunc(Int)
+  /// `(start $f)`. Written where the `#[start]` attribute was, because that is
+  /// what a conditional around it guards.
+  FStart(Int)
   FTable(Int)
   FMemory(Int)
   FGlobal(Int)
