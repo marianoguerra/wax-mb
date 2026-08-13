@@ -1545,9 +1545,13 @@ CRAM_OK_FLAGS = {
     "--all-errors",
 }
 
-# Formats the port handles. `-f wat`, `-f wasm` and `-i wasm` all need the back
-# end or the decompiler, neither of which exists yet.
-CRAM_OK_FORMATS = {"wax"}
+# Formats the port handles, and they are not the same in both directions.
+#
+# OUTPUT is done: `-f wax`, `-f wat` and `-f wasm` all work. INPUT is still wax
+# only -- reading wat needs the wasm parser and reading wasm needs the
+# decompiler, and neither exists yet.
+CRAM_OK_OUT_FORMATS = {"wax", "wat", "wasm"}
+CRAM_OK_IN_FORMATS = {"wax"}
 
 
 def _cram_commands(text: str) -> list[str]:
@@ -1613,13 +1617,11 @@ def _cram_wax_reason(seg: str) -> str | None:
         env.append(words.pop(0))
     if not words or words[0] != "wax":
         return None
-    if any(e.startswith("WAX_WARN=") for e in env):
-        return "sets WAX_WARN, so it exercises a lint, which needs the type checker"
-
     valued = {"-f", "--output-format", "--format", "-i", "--input-format",
               "-o", "--output", "--error-format", "--color", "-W", "--warn",
               "-D", "--define", "-X", "--feature", "--debug"}
-    formats = {"-f", "--output-format", "--format", "-i", "--input-format"}
+    out_formats = {"-f", "--output-format", "--format"}
+    in_formats = {"-i", "--input-format"}
     positionals: list[str] = []
     i = 1
     while i < len(words):
@@ -1629,14 +1631,14 @@ def _cram_wax_reason(seg: str) -> str | None:
             i += 1
             continue
         name, eq, inline = w.partition("=")
-        if name in ("-W", "--warn"):
-            return "exercises a lint, which needs the type checker"
         if name not in CRAM_OK_FLAGS:
             return f"uses {name!r}, which wax-mb does not implement"
         if name in valued:
             val = inline if eq else (words[i + 1] if i + 1 < len(words) else "")
-            if name in formats and val not in CRAM_OK_FORMATS:
-                return f"converts to/from {val!r}; only wax is implemented"
+            if name in out_formats and val not in CRAM_OK_OUT_FORMATS:
+                return f"writes {val!r}, which wax-mb does not implement"
+            if name in in_formats and val not in CRAM_OK_IN_FORMATS:
+                return f"reads {val!r} input; only wax input is implemented"
             i += 1 if eq else 2
         else:
             i += 1
@@ -1651,52 +1653,9 @@ def _cram_wax_reason(seg: str) -> str | None:
     for w in positionals:
         if "." in w and not w.endswith(".wax"):
             # With no -i, the format is inferred from the extension, so a .wat
-            # or .wasm argument needs the decompiler or the binary reader.
-            return f"reads {w.rsplit('.', 1)[1]!r} input; only wax is implemented"
+            # or .wasm argument needs the wasm parser or the decompiler.
+            return f"reads {w.rsplit('.', 1)[1]!r} input; only wax input is implemented"
     return None
-
-
-def _cram_needs_typer(d: Path, text: str) -> str | None:
-    """Whether the test depends on the type checker.
-
-    Decided by the REFERENCE rather than by reading the expectations, and on a
-    MATERIALIZED copy of the test: most fixtures are written by a heredoc in
-    the test itself, so they do not exist until the setup commands have run.
-
-    The rule is precise. For each `wax` command, run the reference on the same
-    inputs twice: once as a plain reprint (`-f wax`, which does not validate)
-    and once as the command asks. A file that reprints cleanly but is rejected
-    anyway failed in the type checker, and this port would exit 0 where the
-    test expects 128.
-    """
-    if "Warning:" in text or "Suggestion:" in text:
-        return "expects a warning or suggestion, which needs the type checker"
-    with tempfile.TemporaryDirectory() as tmp:
-        sandbox = Path(tmp) / d.name
-        shutil.copytree(d, sandbox)
-        for cmd in _cram_commands(text):
-            if not any(seg.split()[:1] == ["wax"] for seg in
-                       re.split(r"\|\||&&|[|;]", cmd) if seg.split()):
-                # A setup command (a heredoc, a mkdir): run it, so the fixtures
-                # it writes exist for the commands that follow.
-                subprocess.run(cmd, shell=True, cwd=sandbox,
-                               capture_output=True, timeout=60)
-                continue
-            args = cmd.split()
-            inputs = [w for w in args[1:]
-                      if not w.startswith("-") and w.endswith(".wax")]
-            real = subprocess.run([str(REFERENCE), *args[1:]], cwd=sandbox,
-                                  capture_output=True, timeout=60)
-            if real.returncode == 0:
-                continue
-            for f in inputs:
-                parsed = subprocess.run([str(REFERENCE), f, "-f", "wax"],
-                                        cwd=sandbox, capture_output=True,
-                                        timeout=60)
-                if parsed.returncode == 0:
-                    return f"`{f}` parses but is rejected later, so the test needs the type checker"
-    return None
-
 
 def cmd_classify_cram(args) -> int:
     """Copy the in-scope cram tests into test/cram/, and list the rest.
@@ -1718,10 +1677,6 @@ def cmd_classify_cram(args) -> int:
             # Reaches outside its own directory -- typically into the wax
             # checkout's docs -- so it cannot run from a copied-out sandbox.
             reasons.append("reads paths outside its own directory")
-        if not reasons:
-            r = _cram_needs_typer(d, text)
-            if r:
-                reasons = [r]
         if reasons:
             excluded.append((d.name, sorted(set(reasons))[0]))
         else:
