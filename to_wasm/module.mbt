@@ -520,6 +520,16 @@ fn Lowering::import_(
     Tag(..) => Tag(self.tag_index(decl.id, loc))
   }
   self.export_of(m, decl.attributes, export_desc, decl.id)
+  // An IMPORTED function can be the start function too: `#[start]` names the
+  // function that runs at instantiation, and nothing says it has to be one this
+  // module defines.
+  if decl.kind is Func(..) {
+    for a in decl.attributes {
+      if a.attr_name == "start" {
+        m.start = Some(self.func_index(decl.id, loc))
+      }
+    }
+  }
 }
 
 ///|
