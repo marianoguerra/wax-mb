@@ -43,6 +43,43 @@ pub fn Lowering::instr(
 }
 
 ///|
+/// Lower into an array of its own, keeping the spans it produced.
+///
+/// Some nodes have to see what they emitted before deciding what to emit --
+/// a tail call replaces the call it ends with, a hinted instruction wraps it
+/// -- and that needs a scratch array. The spans come back numbered from zero,
+/// so the caller moves them to where the instructions land.
+fn Lowering::detached(
+  self : Lowering,
+  build : (Array[@wasm_bin.Instruction]) -> Unit raise LowerError,
+) -> (Array[@wasm_bin.Instruction], Array[@wasm_bin.Span]) raise LowerError {
+  let outer = self.spans
+  self.spans = []
+  let scratch : Array[@wasm_bin.Instruction] = []
+  build(scratch)
+  let spans = self.spans
+  self.spans = outer
+  (scratch, spans)
+}
+
+///|
+/// Record spans lowered elsewhere, at the offset their instructions landed at.
+fn Lowering::rebase(
+  self : Lowering,
+  spans : Array[@wasm_bin.Span],
+  base : Int,
+) -> Unit {
+  for sp in spans {
+    self.spans.push({
+      ..sp,
+      start: sp.start + base,
+      head: sp.head + base,
+      end: sp.end + base,
+    })
+  }
+}
+
+///|
 /// Read a name, recording the one-instruction span it takes.
 fn Lowering::read_span(
   self : Lowering,
@@ -72,12 +109,7 @@ fn Lowering::instr_span(
     // to where the instructions actually land. Left unmoved they point into
     // whatever else is in this body, and the printer folds by them.
     let base = out.length()
-    let outer = self.spans
-    self.spans = []
-    let inner : Array[@wasm_bin.Instruction] = []
-    self.hinted(inner, i)
-    let inner_spans = self.spans
-    self.spans = outer
+    let (inner, inner_spans) = self.detached(scratch => self.hinted(scratch, i))
     guard inner.length() >= 1 else { return }
     // The hint belongs to the LAST instruction emitted, which is the one the
     // node is: everything before it computed the operands.
@@ -85,14 +117,7 @@ fn Lowering::instr_span(
       out.push(inner[k])
     }
     out.push(Hinted(self.lower_hints(i.hints), inner[inner.length() - 1]))
-    for sp in inner_spans {
-      self.spans.push({
-        ..sp,
-        start: sp.start + base,
-        head: sp.head + base,
-        end: sp.end + base,
-      })
-    }
+    self.rebase(inner_spans, base)
     return
   }
   self.hinted(out, i)
@@ -385,7 +410,14 @@ fn Lowering::hinted(
     // questions the plain forms answer, and answering them twice is how the
     // two spellings drift apart.
     TailCall(callee, args) => {
-      let inner = self.instrs([{ ..i, desc: Call(callee, args) }])
+      // Lowered into an array of its own so the trailing call can be replaced,
+      // which numbers its spans from zero -- so they are moved to where the
+      // instructions land rather than left behind as a nested body that
+      // belongs to nothing.
+      let base = out.length()
+      let (inner, inner_spans) = self.detached(scratch => {
+        self.instr(scratch, { ..i, desc: Call(callee, args) })
+      })
       guard inner.length() >= 1 else { return }
       let last = inner[inner.length() - 1]
       let tail : @wasm_bin.Instruction? = match last {
@@ -406,6 +438,7 @@ fn Lowering::hinted(
           out.push(Return)
         }
       }
+      self.rebase(inner_spans, base)
     }
     Call(callee, args) => {
       // The special forms come FIRST and emit their own operands, because they
