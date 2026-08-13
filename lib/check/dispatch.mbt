@@ -3135,38 +3135,6 @@ fn Checker::tag_payload(
 }
 
 ///|
-/// The entry stack of one `try`/`catch` arm: the tag's payload, plus the
-/// non-null `&exn` when the arm asked to bind it.
-///
-/// A catch-all arm names no tag and is entered on nothing -- except the
-/// exception itself, if it asked for it.
-fn Checker::arm_entry(
-  self : Checker,
-  arm : @ast.TryCatchArm[@basic.Location],
-) -> Array[@infer.Cell[@infer.InferredType]]? {
-  let payload = match arm.arm_tag {
-    Some(tag) =>
-      match self.tag_payload(tag) {
-        Some(p) => p
-        None => return None
-      }
-    None => []
-  }
-  guard arm.arm_ref else { return Some(payload) }
-  guard internalize(
-      self.ctx.type_context,
-      self.ctx.diagnostics,
-      Ref({ nullable: false, typ: Exn }),
-    )
-    is Some(e) else {
-    return None
-  }
-  let all = payload.copy()
-  all.push(e)
-  Some(all)
-}
-
-///|
 /// Peel a checked `while` lowering back to its condition, step and body.
 ///
 /// Deterministic: the shape is the one `lower_while` produced a moment ago.

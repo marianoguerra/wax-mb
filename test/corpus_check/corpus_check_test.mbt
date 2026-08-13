@@ -140,9 +140,9 @@ test "the checker annotates every node it reaches" {
       #|33 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
       #|22 This cast always traps: the value can never have this type.
       #|17 This type test is always true: the value already has this type.
-      #|8 Expecting 1 value(s) from the stack, but there are 0.
       #|7 This expression occurs before a hole '_'.
       #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.
+      #|6 Expecting 1 value(s) from the stack, but there are 0.
       #|5 This value remains on the stack.
       #|4 This expression has type 'i64' but is expected to have type 'i32'.
     ),

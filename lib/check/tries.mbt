@@ -127,23 +127,43 @@ fn Checker::trycatch_node(
   arms : Array[@ast.TryCatchArm[@basic.Location]],
   results : Array[@infer.Cell[@infer.InferredType]],
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let ctx = self.ctx
   let body = self.body(i.info, label, [], results, results, block.desc)
-  let entries = arms.map(a => self.arm_entry(a))
+  // The arm entry stacks in SOURCE form, worked out ONCE: they are both what
+  // each arm's block delivers and what the node records for the re-lowering,
+  // and the tag lookup that produces them reports an unbound tag.
+  let entries = arms.map(a => self.arm_entry_types(a))
+  fn internalized(
+    e : Array[@ast.ValType],
+  ) -> Array[@infer.Cell[@infer.InferredType]]? {
+    let out : Array[@infer.Cell[@infer.InferredType]] = []
+    for t in e {
+      guard internalize(ctx.type_context, ctx.diagnostics, t) is Some(c) else {
+        return None
+      }
+      out.push(c)
+    }
+    Some(out)
+  }
+
   let checked : Array[@ast.TryCatchArm[@typing_env.InferredAnnotation]] = []
   for k, arm in arms {
     let exits = if k + 1 < entries.length() {
-      entries[k + 1]
+      internalized(entries[k + 1])
     } else {
       Some(results)
     }
     // A type in the chain that did not resolve was already reported; the body
     // is typed as a plain result-producing block rather than cascading.
-    let (params, exit_types) = match (entries[k], exits) {
+    let (params, exit_types) = match (internalized(entries[k]), exits) {
       (Some(p), Some(e)) => (p, e)
       _ => ([], results)
     }
+    // Anchored at the ARM, not at the enclosing try: an arm is a block of its
+    // own, and reporting it at the try puts its complaint exactly where the
+    // try body's already sits -- the same line printed twice.
     let arm_body = self.body(
-      i.info,
+      arm.arm_body.info,
       label,
       params,
       exit_types,
@@ -153,7 +173,7 @@ fn Checker::trycatch_node(
     checked.push({
       arm_tag: arm.arm_tag,
       arm_ref: arm.arm_ref,
-      arm_types: self.arm_entry_types(arm),
+      arm_types: entries[k],
       arm_body: { desc: arm_body, info: arm.arm_body.info },
     })
   }
@@ -183,7 +203,15 @@ fn Checker::arm_entry_types(
 ) -> Array[@ast.ValType] {
   let out : Array[@ast.ValType] = []
   if arm.arm_tag is Some(tag) {
-    if self.ctx.tags.find_no_mark(tag.name) is Some(ft) {
+    // An unbound tag is reported HERE, and the arm still enters on whatever it
+    // asked to bind: a `&` arm gets its `&exn` however the tag turned out, and
+    // dropping it would leave the body underflowing on top of the real
+    // mistake.
+    if find(self.ctx.tags, self.ctx.diagnostics, tag) is Some(ft) {
+      // A tag describes what is thrown, and a throw does not return.
+      if !ft.results.is_empty() {
+        tag_with_results(self.ctx.diagnostics, tag.loc)
+      }
       for p in ft.params {
         out.push(p.desc.1)
       }
