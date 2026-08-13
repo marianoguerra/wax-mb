@@ -1125,6 +1125,12 @@ pub(all) struct Module {
   /// Only the binary encoder's input is authoritative for the bytes; this is a
   /// view for the text form, and is empty when nothing recorded it.
   field_order : Array[FieldRef]
+  /// The tags whose type the SOURCE named, by tag index.
+  ///
+  /// `tag t: ft;` writes `(type $ft)` and `tag t(i32);` spells the signature
+  /// out. The binary keeps only the index, which is the same either way, so
+  /// which was written has to be recorded.
+  named_tag_types : Map[Int, Bool]
   /// The `name` custom section.
   names : Names
   /// The `target_features` custom section: (prefix byte, feature name) pairs,
@@ -1159,6 +1165,7 @@ pub fn Module::empty() -> Module {
     types: [],
     rec_groups: [],
     field_order: [],
+    named_tag_types: Map([]),
     imports: [],
     funcs: [],
     tables: [],

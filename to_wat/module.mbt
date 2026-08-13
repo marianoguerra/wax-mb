@@ -330,15 +330,19 @@ fn blocktype(
       }
       out
     }
-    // A block that CONSUMES values names a signature. When that signature was
-    // written down it is named; when the lowering interned it for this block
-    // alone there is nothing to name, so it is spelled out here -- the same
-    // choice an import's type makes.
+    // Only a block that CONSUMES values needs to name a signature: the inline
+    // form has room for results and none for parameters. One that merely
+    // returns several is written out, named type or not -- naming it whenever
+    // it had a name was measured and is worse.
     TypeIndex(k) =>
-      if m.names.types.contains(k) {
-        [List([Atom("type"), Atom(name_or(m.names.types, k))])]
-      } else {
-        typeuse(m, k)
+      match m.types[k].composite {
+        Func(ft) =>
+          if ft.params.is_empty() {
+            typeuse(m, k)
+          } else {
+            [List([Atom("type"), Atom(name_or(m.names.types, k))])]
+          }
+        _ => [List([Atom("type"), Atom(name_or(m.names.types, k))])]
       }
     InlineType(_, _) => raise NotPrinted("a block type with parameters")
   }

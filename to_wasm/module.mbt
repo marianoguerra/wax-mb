@@ -298,6 +298,9 @@ fn Lowering::field(
     }
     Tag(name~, typ~, attributes~, ..) => {
       note_name(m.names.tags, self.tag_index(name, loc), name.name)
+      if typ is Some(_) {
+        m.named_tag_types[self.tag_index(name, loc)] = true
+      }
       // A tag that NAMES its type means that declaration, not whichever
       // like-shaped one the signature search happens to reach first.
       m.field_order.push(FTag(m.tags.length()))
@@ -701,8 +704,12 @@ fn Lowering::import_(
       note_name(m.names.memories, self.memory_index(decl.id, loc), decl.id.name)
     Table(..) =>
       note_name(m.names.tables, self.table_index(decl.id, loc), decl.id.name)
-    Tag(..) =>
+    Tag(typ~, ..) => {
       note_name(m.names.tags, self.tag_index(decl.id, loc), decl.id.name)
+      if typ is Some(_) {
+        m.named_tag_types[self.tag_index(decl.id, loc)] = true
+      }
+    }
   }
   // An import may be re-exported, and then it is exported under the name THIS
   // module gave it rather than the one it was imported as.

@@ -277,7 +277,12 @@ fn tabletype(m : @wasm_bin.Module, t : @wasm_bin.TableType) -> Array[Sexp] {
 ///
 /// The signature is a group of its own, the same way a defined function's is:
 /// it moves to the next line whole rather than splitting across the name.
-fn typeuse(m : @wasm_bin.Module, k : Int) -> Array[Sexp] {
+fn typeuse(m : @wasm_bin.Module, k : Int, named? : Bool = false) -> Array[Sexp] {
+  // The source named the type, so the text names it: the signature it stands
+  // for is written where the type was declared.
+  if named {
+    return [List([Atom("type"), Atom(name_or(m.names.types, k))])]
+  }
   // Whether this is written `(type $n)` or spelled out depends on which the
   // SOURCE wrote, and the binary does not record that. Preferring `(type $n)`
   // whenever the type has a name was measured and is worse -- 916 exact to
@@ -461,7 +466,13 @@ fn import_parts(
         [Atom(globaltype(m, g))],
         Global(n),
       )
-    Tag(t) => ("tag", opt_id(m.names.tags, n), typeuse(m, t), Tag(n))
+    Tag(t) =>
+      (
+        "tag",
+        opt_id(m.names.tags, n),
+        typeuse(m, t, named=m.named_tag_types.contains(n)),
+        Tag(n),
+      )
     Memory(mt) =>
       ("memory", opt_id(m.names.memories, n), limits(mt.limits), Memory(n))
     Table(tt) =>
@@ -499,7 +510,7 @@ fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   for e in export_clauses(m, Tag(at)) {
     head.push(e)
   }
-  for x in typeuse(m, m.tags[k].type_idx) {
+  for x in typeuse(m, m.tags[k].type_idx, named=m.named_tag_types.contains(at)) {
     head.push(x)
   }
   List([block(head)])
