@@ -116,7 +116,18 @@ fn fold_body(
       // where the next RECORDED node begins -- taking it to the end of the
       // body instead swallows every statement that follows into an operand
       // chain, and taking it as a single instruction splits a fusion.
-      None => (at, at, next_start(spans, at, body.length()))
+      //
+      // The run cannot END in an instruction that takes nothing: a constant
+      // is not the head of anything, and `(i32.const 1 (local.get $x))` is
+      // not something the format can mean. Those trailing instructions are
+      // nodes of their own, reached on the next turn of this loop.
+      None => {
+        let mut e = next_start(spans, at, body.length())
+        while e > at + 1 && takes_nothing(body[e - 1]) {
+          e = e - 1
+        }
+        (at, at, e)
+      }
     }
     bounds.push(b)
     at = b.2
@@ -149,6 +160,37 @@ fn fold_body(
     }
   }
   out
+}
+
+///|
+/// Whether an instruction consumes no operands at all.
+///
+/// This is the one arity fact the printer uses, and it is used only where
+/// nothing was recorded: a fallback has no information, and this keeps it
+/// from inventing a nesting that cannot exist. Deliberately partial -- an
+/// instruction missing from here is merely handled as before.
+fn takes_nothing(i : @wasm_bin.Instruction) -> Bool {
+  match i {
+    I32Const(_)
+    | I64Const(_)
+    | F32Const(_)
+    | F64Const(_)
+    | V128Const(_)
+    | LocalGet(_)
+    | GlobalGet(_)
+    | RefNull(_)
+    | RefFunc(_)
+    | MemorySize(_)
+    | TableSize(_)
+    | DataDrop(_)
+    | ElemDrop(_)
+    | AtomicFence
+    | Nop
+    | Unreachable => true
+    // The wrappers are transparent: what they wrap is what runs.
+    Spelled(_, inner) | Hinted(_, inner) => takes_nothing(inner)
+    _ => false
+  }
 }
 
 ///|
