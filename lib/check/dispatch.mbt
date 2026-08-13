@@ -3749,6 +3749,24 @@ fn Checker::mem_mgmt(
     None
   }
   let rest = if leading is Some(_) { args[1:].to_owned() } else { args }
+  // The forms this call can take, recognised BEFORE the arguments are typed:
+  // a shape that matches nothing IS not a call, so what was written in the
+  // parentheses is not an operand list and reporting on it would complain
+  // about a call that does not exist. The reference's `bad` recovery, which
+  // hands back no arguments at all.
+  guard (meth.name, leading is Some(_), rest.length())
+    is (("size", false, 0)
+    | ("grow", false, 1)
+    | ("fill", false, 3)
+    | ("copy", false, 3)
+    | ("copy", true, 3)
+    | ("init", true, 3)) else {
+    invalid_management_call(ctx.diagnostics, location, meth.name)
+    // Recovered with a VALUE rather than nothing: `size` and `grow` produce
+    // one, and claiming none would cascade into a spurious value-count
+    // complaint wherever the call was used as an expression.
+    return ([], [@infer.Cell::make(@infer.InferredType::Error)])
+  }
   let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
   if leading is Some(n) {
     checked.push(args[0].map_info(_ => annotate([], args[0].info)))
@@ -3808,13 +3826,9 @@ fn Checker::mem_mgmt(
       want(2, i32c())
       (checked, [])
     }
-    _ => {
-      invalid_management_call(ctx.diagnostics, location, meth.name)
-      // Recovered with a VALUE rather than nothing: `size` and `grow` produce
-      // one, and claiming none would cascade into a spurious value-count
-      // complaint wherever the call was used as an expression.
-      (checked, [@infer.Cell::make(@infer.InferredType::Error)])
-    }
+    // Unreachable: the guard above admitted only the forms listed here. Kept
+    // because the match is over a tuple the compiler cannot see is exhausted.
+    _ => (checked, [@infer.Cell::make(@infer.InferredType::Error)])
   }
 }
 
@@ -3844,6 +3858,21 @@ fn Checker::table_mgmt(
     None
   }
   let rest = if leading is Some(_) { args[1:].to_owned() } else { args }
+  // The forms this call can take, recognised BEFORE the arguments are typed:
+  // a shape that matches nothing IS not a call, so what was written in the
+  // parentheses is not an operand list and reporting on it would complain
+  // about a call that does not exist. The reference's `bad` recovery, which
+  // hands back no arguments at all.
+  guard (meth.name, leading is Some(_), rest.length())
+    is (("size", false, 0)
+    | ("grow", false, 2)
+    | ("fill", false, 3)
+    | ("copy", false, 3)
+    | ("copy", true, 3)
+    | ("init", true, 3)) else {
+    invalid_management_call(ctx.diagnostics, location, meth.name)
+    return ([], [@infer.Cell::make(@infer.InferredType::Error)])
+  }
   let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
   if leading is Some(n) {
     checked.push(args[0].map_info(_ => annotate([], args[0].info)))
@@ -3918,10 +3947,8 @@ fn Checker::table_mgmt(
       want(2, i32c())
       (checked, [])
     }
-    _ => {
-      invalid_management_call(ctx.diagnostics, location, meth.name)
-      (checked, [@infer.Cell::make(@infer.InferredType::Error)])
-    }
+    // Unreachable, as above.
+    _ => (checked, [@infer.Cell::make(@infer.InferredType::Error)])
   }
 }
 

@@ -144,7 +144,7 @@ test "the checker annotates every node it reaches" {
       #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.
       #|6 Expecting 1 value(s) from the stack, but there are 0.
       #|5 This value remains on the stack.
-      #|4 This expression has type 'i64' but is expected to have type 'i32'.
+      #|4 The element type '&?extern' is not compatible with the expected element type '&?func'.
     ),
   )
 }
