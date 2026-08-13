@@ -203,6 +203,60 @@ fn Lowering::flush_start(
 }
 
 ///|
+/// Whether an emitted function type has the shape this signature wrote.
+///
+/// Only the ARITY is compared: that is what tells two conditional branches'
+/// declarations apart, and a deeper comparison would have to re-resolve every
+/// written type through the layout to say anything more.
+fn Lowering::functype_matches(
+  self : Lowering,
+  emitted : Int,
+  sign : @ast.FuncType,
+) -> Bool {
+  guard self.layout.types.get(emitted) is Some(t) else { return true }
+  guard t.composite is Func(ft) else { return true }
+  ft.params.length() == sign.params.length() &&
+  ft.results.length() == sign.results.length()
+}
+
+///|
+/// How many imports of this kind are already there, which is the index the
+/// next one takes.
+fn imports_so_far(m : @wasm_bin.Module, want : Int) -> Int {
+  let mut n = 0
+  for i in m.imports {
+    // A COMPACT group is one entry standing for a run of imports, so the count
+    // advances by what the entry stands for rather than by one.
+    match i.group {
+      None => if import_kind(i.desc) == want { n = n + 1 }
+      Some(Heterogeneous(items)) =>
+        for it in items {
+          if import_kind(it.1) == want {
+            n = n + 1
+          }
+        }
+      Some(Homogeneous(names)) =>
+        if import_kind(i.desc) == want {
+          n = n + names.length()
+        }
+    }
+  }
+  n
+}
+
+///|
+/// Which index space an import takes a slot in.
+fn import_kind(d : @wasm_bin.ImportDesc) -> Int {
+  match d {
+    Func(_, _) => 0
+    Table(_) => 1
+    Memory(_) => 2
+    Global(_) => 3
+    Tag(_) => 4
+  }
+}
+
+///|
 /// The attributes a field carries, wherever it carries them.
 fn field_attributes(
   f : @ast.ModuleField[@basic.Location],
@@ -382,7 +436,7 @@ fn Lowering::field(
       // unnamed and the first would be named twice. A definition's index is
       // its position after the imports, which is what it always was; asking
       // the table for it was a longer way to the same number everywhere else.
-      let fi = self.indices.imported_funcs + m.funcs.length() - 1
+      let fi = imports_so_far(m, 0) + m.funcs.length() - 1
       note_name(m.names.functions, fi, name.name)
       note_typeuse(m, OwnerFunc(fi), typ, sign)
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
@@ -431,7 +485,7 @@ fn Lowering::field(
           }
       }
       let (init, init_spans) = self.const_expr(def)
-      let gi = self.indices.imported_globals + m.globals.length()
+      let gi = imports_so_far(m, 3) + m.globals.length()
       note_name(m.names.globals, gi, name.name)
       m.globals.push({ type_: { mut_, typ: ty }, init, init_spans })
       m.text.field_order.push(FGlobal(m.globals.length() - 1))
@@ -861,18 +915,6 @@ fn Lowering::func_index(
 }
 
 ///|
-fn Lowering::global_index(
-  self : Lowering,
-  name : @ast.Ident,
-  loc : @basic.Location,
-) -> Int raise LowerError {
-  match self.indices.globals.get(name.name) {
-    Some(i) => i
-    None => raise Unresolved("global index", loc)
-  }
-}
-
-///|
 /// One imported declaration.
 ///
 /// The import section is where an index space STARTS, so an import that is not
@@ -895,11 +937,22 @@ fn Lowering::import_(
     }
   }
   let desc : @wasm_bin.ImportDesc = match decl.kind {
-    Func(exact~, ..) => {
+    Func(exact~, sign~, ..) => {
       guard self.ctx.functions.find_no_mark(decl.id.name) is Some(Some(entry)) else {
         raise Unresolved("imported function signature", loc)
       }
-      Func(emitted_type_index(entry.0.to_int_for_tests_only()), exact)
+      let interned = emitted_type_index(entry.0.to_int_for_tests_only())
+      // The checker's table is keyed by NAME alone, so two branches of a
+      // conditional that import one name share an entry and one of them gets
+      // the other's signature. Only then is the written one preferred: taking
+      // it always changes which imports a compact group can share a descriptor
+      // with, and that is encoded.
+      let ti = match sign {
+        Some(fsig) if !self.functype_matches(interned, fsig) =>
+          self.functype_of(fsig, loc)
+        _ => interned
+      }
+      Func(ti, exact)
     }
     Global(mut_~, typ~) => Global({ mut_, typ: self.valtype_index(typ, loc) })
     Memory(address_type~, limits~, page_size_log2~, shared~) => {
@@ -923,33 +976,33 @@ fn Lowering::import_(
         },
       )
   }
+  // The index this import TAKES, which is its position among the imports of
+  // its own kind. Not what its name resolves to: two branches of a conditional
+  // may import one name, and the name table has a single answer for both.
+  let at = imports_so_far(m, import_kind(desc))
   m.imports.push({ mod_name: module_, name, desc, group: None })
   match decl.kind {
     Func(typ~, sign~, ..) => {
-      let fi = self.func_index(decl.id, loc)
-      note_name(m.names.functions, fi, decl.id.name)
-      note_param_names(m, OwnerFunc(fi), sign)
-      note_typeuse(m, OwnerFunc(fi), typ, sign)
+      note_name(m.names.functions, at, decl.id.name)
+      note_param_names(m, OwnerFunc(at), sign)
+      note_typeuse(m, OwnerFunc(at), typ, sign)
     }
-    Global(..) =>
-      note_name(m.names.globals, self.global_index(decl.id, loc), decl.id.name)
-    Memory(..) =>
-      note_name(m.names.memories, self.memory_index(decl.id, loc), decl.id.name)
-    Table(..) =>
-      note_name(m.names.tables, self.table_index(decl.id, loc), decl.id.name)
+    Global(..) => note_name(m.names.globals, at, decl.id.name)
+    Memory(..) => note_name(m.names.memories, at, decl.id.name)
+    Table(..) => note_name(m.names.tables, at, decl.id.name)
     Tag(typ~, sign~) => {
-      note_name(m.names.tags, self.tag_index(decl.id, loc), decl.id.name)
-      note_typeuse(m, OwnerTag(self.tag_index(decl.id, loc)), typ, sign)
-      note_param_names(m, OwnerTag(self.tag_index(decl.id, loc)), sign)
+      note_name(m.names.tags, at, decl.id.name)
+      note_typeuse(m, OwnerTag(at), typ, sign)
+      note_param_names(m, OwnerTag(at), sign)
     }
   }
   // An import may be re-exported, and then it is exported under the name THIS
   // module gave it rather than the one it was imported as.
   let export_desc : @wasm_bin.ExportDesc = match decl.kind {
-    Func(..) => Func(self.func_index(decl.id, loc))
-    Global(..) => Global(self.global_index(decl.id, loc))
-    Memory(..) => Memory(self.memory_index(decl.id, loc))
-    Table(..) => Table(self.table_index(decl.id, loc))
+    Func(..) => Func(at)
+    Global(..) => Global(at)
+    Memory(..) => Memory(at)
+    Table(..) => Table(at)
     Tag(..) => Tag(self.tag_index(decl.id, loc))
   }
   self.export_of(m, decl.attributes, export_desc, decl.id)
