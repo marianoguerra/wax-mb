@@ -1476,10 +1476,16 @@ pub fn Checker::statement(
       }
       let (ref_ty, below) = self.split_on_last(operand.info, operand_.info.0)
       // The mirror: the BRANCH carries the residual (the cast failed), and the
-      // fall-through carries the target (it succeeded).
+      // fall-through carries the target (it succeeded). The operand is re-typed
+      // to the source for the same reason as in the non-failing form -- the
+      // instruction names both types, and a source narrower than the target is
+      // not a well-formed pair.
       let residual = match
         conditional_cast_types(ctx, operand.info, ref_ty, target) {
-        Some((_, r)) => r
+        Some((source, r)) => {
+          ref_ty.set(source.get())
+          r
+        }
         None => @infer.Cell::make(@infer.InferredType::Error)
       }
       let params = branch_target(ctx, label)
