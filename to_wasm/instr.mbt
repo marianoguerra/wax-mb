@@ -1755,11 +1755,16 @@ fn Lowering::type_index_of(
   name : @ast.Ident,
   loc : @basic.Location,
 ) -> Int raise LowerError {
+  // By NAME first. Two declarations of one shape share a store entry but not an
+  // emitted index, and a reference that names one of them means that one.
+  if self.layout.by_name.get(name.name) is Some(emitted) {
+    return emitted
+  }
   guard self.ctx.type_context.types.find_no_mark(name.name) is Some((idx, _)) else {
     raise Unresolved("type name", loc)
   }
   match idx {
-    Def(id) => id.to_int_for_tests_only()
+    Def(id) => emitted_type_index(id.to_int_for_tests_only())
     Rec(_) => raise Unresolved("rec-group type reference", loc)
   }
 }

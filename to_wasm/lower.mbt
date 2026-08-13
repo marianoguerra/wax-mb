@@ -58,6 +58,9 @@ pub struct Lowering {
   ctx : @typing_env.ModuleContext
   store : @type_store.TypeStore
   indices : Indices
+  /// Where each type lands in the emitted type section, which is not where the
+  /// store put it.
+  layout : TypeLayout
   /// Local name to index, rebuilt per function: parameters first, in order,
   /// then each `let` as it is declared. Wasm numbers them in exactly that
   /// order, so the map is built by walking the same way.
@@ -121,6 +124,7 @@ pub struct Lowering {
 /// Index every function type in the store by its shape.
 pub fn functype_index(
   store : @type_store.TypeStore,
+  layout : TypeLayout,
 ) -> Map[
   (Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]),
   Int,
@@ -129,21 +133,20 @@ pub fn functype_index(
     (Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]),
     Int,
   ] = Map([])
-  let mut i = 0
-  for group in store.get_all_rectypes() {
-    for sub in group {
-      if sub.typ is Func(ft) {
-        let key = (
-          ft.params.map(v => lower_valtype(v)),
-          ft.results.map(v => lower_valtype(v)),
-        )
-        // The FIRST index wins: interning means one shape has one index, and a
-        // later duplicate would be the same type anyway.
-        if !out.contains(key) {
-          out[key] = i
-        }
+  // Walked in EMITTED order, because that is the order a block looking for a
+  // matching signature searches: the first entry of that shape in the section
+  // is the one its type immediate names.
+  let info = store.subtyping_info()
+  for emitted, si in layout.store_of {
+    let sub = info.get_subtype(@type_store.Id::of_index(si))
+    if sub.typ is Func(ft) {
+      let key = (
+        ft.params.map(v => lower_valtype(v)),
+        ft.results.map(v => lower_valtype(v)),
+      )
+      if !out.contains(key) {
+        out[key] = emitted
       }
-      i = i + 1
     }
   }
   out
@@ -158,7 +161,7 @@ pub fn source_type_index(
   for entry in ctx.type_context.types.iter_entries() {
     let (_, (idx, sub)) = entry
     if idx is Def(id) {
-      out[id.to_int_for_tests_only()] = sub
+      out[emitted_type_index(id.to_int_for_tests_only())] = sub
     }
   }
   out

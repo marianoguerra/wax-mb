@@ -72,10 +72,13 @@ fn index_id(
   i : Int,
   loc : @basic.Location,
 ) -> @type_store.Id raise LowerError {
-  guard i >= 0 && i < store.last_index() else {
+  // The other direction: an EMITTED index back to the store entry it came
+  // from, for the reads that want a definition rather than a number.
+  let si = store_type_index(i)
+  guard si >= 0 && si < store.last_index() else {
     raise Unresolved("type index", loc)
   }
-  @type_store.Id::of_index(i)
+  @type_store.Id::of_index(si)
 }
 
 ///|

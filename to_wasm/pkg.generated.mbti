@@ -20,11 +20,13 @@ pub fn binop_instruction(@ast.BinOp, @wasm_types.ValType[Int]) -> @wasm_bin.Inst
 
 pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> String
 
+pub fn emitted_type_index(Int) -> Int
+
 pub fn fresh_name(Array[String], String, Int) -> String
 
 pub fn function_priority(Array[@ast.Attribute]) -> @wasm_bin.Priority?
 
-pub fn functype_index(@type_store.TypeStore) -> Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
+pub fn functype_index(@type_store.TypeStore, TypeLayout) -> Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
 
 pub fn hierarchy_conversion(@wasm_types.HeapType[Int], @wasm_types.HeapType[Int]) -> @wasm_bin.Instruction?
 
@@ -78,7 +80,9 @@ pub fn source_type_index(@typing_env.ModuleContext) -> Map[Int, @ast.SubType]
 
 pub fn store_instruction(String, Int, Int, Int64, @wasm_types.ValType[Int]?) -> @wasm_bin.Instruction?
 
-pub fn type_section(@type_store.TypeStore) -> (Array[@wasm_bin.SubType], Array[@wasm_bin.RecGroup])
+pub fn store_type_index(Int) -> Int
+
+pub fn type_layout(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @type_store.TypeStore) -> TypeLayout
 
 pub fn unary_instruction(String, @wasm_types.ValType[Int]?) -> @wasm_bin.Instruction?
 
@@ -111,6 +115,7 @@ pub struct Lowering {
   ctx : @typing_env.ModuleContext
   store : @type_store.TypeStore
   indices : Indices
+  layout : TypeLayout
   mut locals : Map[String, Int]
   mut local_types : Array[@wasm_types.ValType[Int]]
   mut binding_slots : Map[Int, Int]
@@ -145,6 +150,14 @@ pub fn Space::assign(Self, String) -> Int
 pub fn Space::get(Self, String) -> Int?
 pub fn Space::length(Self) -> Int
 pub fn Space::new() -> Self
+
+pub struct TypeLayout {
+  by_name : Map[String, Int]
+  by_store : Map[Int, Int]
+  store_of : Array[Int]
+  types : Array[@wasm_bin.SubType]
+  groups : Array[@wasm_bin.RecGroup]
+}
 
 // Type aliases
 

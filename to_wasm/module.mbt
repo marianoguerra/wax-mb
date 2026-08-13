@@ -21,18 +21,22 @@ pub fn lower_module(
   ],
 ) -> @wasm_bin.Module raise LowerError {
   let indices = assign_indices(ctx, source)
-  let (types, rec_groups) = type_section(store)
+  // The layout FIRST: it installs the store-to-emitted translation that every
+  // type reference below is read through, including the ones inside the
+  // annotations the checker left.
+  let layout = type_layout(ctx, source, store)
   let m = @wasm_bin.Module::empty()
-  for t in types {
+  for t in layout.types {
     m.types.push(t)
   }
-  for g in rec_groups {
+  for g in layout.groups {
     m.rec_groups.push(g)
   }
   let low : Lowering = {
     ctx,
     store,
     indices,
+    layout,
     locals: Map([]),
     local_types: [],
     binding_slots: Map([]),
@@ -46,7 +50,7 @@ pub fn lower_module(
     in_body: false,
     labels: [],
     source_types: source_type_index(ctx),
-    functypes: functype_index(store),
+    functypes: functype_index(store, layout),
   }
   // Imports come from the SOURCE, because the checker resolves them into its
   // tables and drops them from the typed output -- and they are exactly what
@@ -105,7 +109,7 @@ fn Lowering::field(
       guard self.ctx.functions.find_no_mark(name.name) is Some(Some(entry)) else {
         raise Unresolved("function signature", loc)
       }
-      m.funcs.push(entry.0.to_int_for_tests_only())
+      m.funcs.push(emitted_type_index(entry.0.to_int_for_tests_only()))
       let fi = self.func_index(name, loc)
       note_name(m.names.functions, fi, name.name)
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
@@ -454,7 +458,7 @@ fn Lowering::import_(
       guard self.ctx.functions.find_no_mark(decl.id.name) is Some(Some(entry)) else {
         raise Unresolved("imported function signature", loc)
       }
-      Func(entry.0.to_int_for_tests_only())
+      Func(emitted_type_index(entry.0.to_int_for_tests_only()))
     }
     Global(mut_~, typ~) => Global({ mut_, typ: self.valtype_index(typ, loc) })
     Memory(address_type~, limits~, page_size_log2~, shared~) => {
@@ -586,13 +590,7 @@ fn Lowering::reftype_index(
 ) -> @wasm_types.RefType[Int] raise LowerError {
   let typ = match r.typ {
     Type(n) | Exact(n) => {
-      guard self.ctx.type_context.types.find_no_mark(n.name) is Some((idx, _)) else {
-        raise Unresolved("type name", loc)
-      }
-      let i = match idx {
-        Def(id) => id.to_int_for_tests_only()
-        Rec(_) => raise Unresolved("rec-group type reference", loc)
-      }
+      let i = self.type_index_of(n, loc)
       if r.typ is Exact(_) {
         @wasm_types.HeapType::Exact(i)
       } else {

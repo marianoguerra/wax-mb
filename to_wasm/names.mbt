@@ -36,7 +36,13 @@ pub fn Lowering::type_names(self : Lowering, m : @wasm_bin.Module) -> Unit {
   for entry in self.ctx.type_context.types.iter_entries() {
     let (name, (idx, sub)) = entry
     guard idx is Def(id) else { continue }
-    let i = id.to_int_for_tests_only()
+    // A declared name names ITS OWN emitted entry, not the store entry it
+    // shares with a like-shaped sibling -- which is the whole reason the two
+    // indices are different numbers.
+    let i = match self.layout.by_name.get(name) {
+      Some(emitted) => emitted
+      None => emitted_type_index(id.to_int_for_tests_only())
+    }
     if !is_synthetic(name) && !m.names.types.contains(i) {
       m.names.types[i] = utf8_of(name)
     }
