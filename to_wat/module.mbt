@@ -374,10 +374,7 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
 
 ///|
 /// What a block produces, when it produces anything.
-fn blocktype(
-  bt : @wasm_bin.BlockType,
-  m : @wasm_bin.Module,
-) -> Array[Sexp] raise WatError {
+fn blocktype(bt : @wasm_bin.BlockType, m : @wasm_bin.Module) -> Array[Sexp] {
   match bt {
     Empty => []
     Value(t) => [List([Atom("result"), Atom(valtype(t, m.names.types))])]
@@ -388,21 +385,26 @@ fn blocktype(
       }
       out
     }
-    // Only a block that CONSUMES values needs to name a signature: the inline
-    // form has room for results and none for parameters. One that merely
-    // returns several is written out, named type or not -- naming it whenever
-    // it had a name was measured and is worse.
-    TypeIndex(k) =>
-      match m.types[k].composite {
-        Func(ft) =>
-          if ft.params.is_empty() {
-            typeuse(m, k)
-          } else {
-            [List([Atom("type"), Atom(name_or(m.names.types, k))])]
-          }
-        _ => [List([Atom("type"), Atom(name_or(m.names.types, k))])]
+    // A block's signature is spelled OUT, parameters and all: the text format
+    // lets a block carry a whole function type inline, so there is never a
+    // need to name one. Naming it whenever the type HAD a name was measured
+    // and is worse, and so was naming it as soon as the block consumed
+    // anything.
+    TypeIndex(k) => typeuse(m, k)
+    InlineType(params, results) => {
+      let out : Array[Sexp] = []
+      let p : Array[Sexp] = [Atom("param")]
+      for t in params {
+        p.push(Atom(valtype(t, m.names.types)))
       }
-    InlineType(_, _) => raise NotPrinted("a block type with parameters")
+      out.push(List(p))
+      let r : Array[Sexp] = [Atom("result")]
+      for t in results {
+        r.push(Atom(valtype(t, m.names.types)))
+      }
+      out.push(List(r))
+      out
+    }
   }
 }
 
