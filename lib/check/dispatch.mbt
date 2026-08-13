@@ -1014,18 +1014,29 @@ pub fn Checker::statement(
     Cast(operand, target) => {
       let operand_ = self.expression(operand)
       let natural = expression_type(ctx, operand_.info)
+      // Set when the cast names no instruction, so its result is poisoned
+      // below. A chain anchors every "cannot be cast" at the same leftmost
+      // operand, so without the poison one unlowerable value reports once per
+      // cast in the chain.
+      let mut cast_failed = false
       let ty = match target {
         // `e as t` for a value type: the result IS the target, and a reference
         // target is worth linting -- it can be impossible or pointless before
         // it is ever run.
         Value(v) => {
           let want = internalize(ctx.type_context, ctx.diagnostics, v)
+          // The operand's type as it stands BEFORE the cast settles it to the
+          // target: what the lint below has to judge, and what the "cannot be
+          // cast" report names.
+          let natural_before = natural.get()
           // A continuation carries no RTT, so there is no `ref.cast` into one:
           // `e as &k` with a continuation target is a compile-time ASCRIPTION,
           // and is accepted exactly when it lowers to no instruction at all.
           // Not the castability test below, which admits runtime downcasts.
-          if v is Ref(target) && is_cont_heaptype(ctx.type_context, target.typ) {
-            // ASKED, not applied:  settles inference cells as a side
+          let cont_target = v is Ref(t) &&
+            is_cont_heaptype(ctx.type_context, t.typ)
+          if cont_target {
+            // ASKED, not applied: `subtype` settles inference cells as a side
             // effect, and this is a question about the operand's type, not a
             // constraint on it. Pinning here changed the bytes of two files
             // whose operand is polymorphic dead code.
@@ -1036,16 +1047,26 @@ pub fn Checker::statement(
           }
           // Settle a still-flexible operand at the type the cast names, BEFORE
           // the result type is decided: a literal has no width of its own, and
-          // the cast is what says which one it takes.
-          if want is Some(w) && w.get() is Valtype(target) {
-            ground_value_cast(natural, target.internal)
+          // the cast is what says which one it takes. The same act answers
+          // whether the cast lowers to anything at all.
+          if !cont_target && want is Some(w) && w.get() is Valtype(target) {
+            if !value_cast(ctx, natural, target) {
+              invalid_cast(
+                ctx.diagnostics,
+                operand.info,
+                @infer.Cell::make(natural_before),
+              )
+              cast_failed = true
+            }
           }
-          if want is Some(w) {
+          // A continuation target's "redundant" upcast is the intended use --
+          // it is an ascription, and saying so of every one would be noise.
+          if !cont_target && want is Some(w) {
             lint_ref_cast(
               ctx,
               loc,
               is_test=false,
-              natural.get(),
+              natural_before,
               w.get(),
               operand_location=Some(operand.info),
             )
@@ -1074,7 +1095,10 @@ pub fn Checker::statement(
         // `e as i32_s` and friends: a numeric conversion, whose result is the
         // named numeric type and nothing else.
         Signed(typ~, ..) => {
-          ground_signed_cast(natural, typ)
+          if !signed_cast(ctx, natural, typ) {
+            invalid_cast(ctx.diagnostics, operand.info, natural)
+            cast_failed = true
+          }
           @infer.valtype_cell(
             match typ {
               I32 => @infer.i32_valtype
@@ -1084,6 +1108,11 @@ pub fn Checker::statement(
             },
           )
         }
+      }
+      // `Error` is castable to anything, so a failed cast's result absorbs the
+      // rest of the chain instead of repeating the same complaint.
+      if cast_failed || natural.get() is Error {
+        ty.set(Error)
       }
       {
         desc: Cast(operand_, target),
