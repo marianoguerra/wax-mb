@@ -1235,6 +1235,9 @@ pub fn TextView::empty() -> TextView {
 pub(all) enum ParamOwner {
   OwnerFunc(Int)
   OwnerTag(Int)
+  /// A declared `type t = fn(x: i32)`, by type index. Its parameter names are
+  /// no more encodable than an import's.
+  OwnerType(Int)
 } derive(Eq, Hash, Debug)
 
 ///|

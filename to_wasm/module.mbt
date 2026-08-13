@@ -65,6 +65,7 @@ pub fn lower_module(
     entry_locs: Map([]),
     keep_conditionals,
     body_conditionals: [],
+    pending_start: None,
     spans: [],
     nested_spans: [],
     binding_slots: Map([]),
@@ -112,6 +113,7 @@ pub fn lower_module(
           low.import_(m, module_.desc, decl.desc, field.info)
           m.text.field_order.push(FImport(m.imports.length() - 1))
           order_at.push(field.info)
+          low.flush_start(m, order_at, field.info)
         }
         ImportGroup(module_~, decls~) => {
           // The order is recorded AFTER the group is compacted, because
@@ -126,6 +128,7 @@ pub fn lower_module(
             m.text.field_order.push(FImport(k))
             order_at.push(field.info)
           }
+          low.flush_start(m, order_at, field.info)
         }
         _ => ()
       }
@@ -168,6 +171,35 @@ pub fn lower_module(
   // which branch each came from.
   note_conditionals(m, source)
   m
+}
+
+///|
+/// Write the `(start ..)` an import named, after the import itself.
+///
+/// An import is written before the start it names, and `import_` cannot push
+/// the field entry itself: the import's own entry is pushed by its caller,
+/// once the index it took is known.
+fn Lowering::flush_start(
+  self : Lowering,
+  m : @wasm_bin.Module,
+  order_at : Array[@basic.Location],
+  loc : @basic.Location,
+) -> Unit {
+  guard self.pending_start is Some((fi, a)) else { return }
+  self.pending_start = None
+  if a.attr_guard is Some(g) {
+    m.text.conditionals.push({
+      cond: wat_cond(g.desc),
+      loc: a.attr_span,
+      then_: a.attr_span,
+      else_: None,
+    })
+    m.text.field_order.push(FStart(fi))
+    order_at.push(a.attr_span)
+    return
+  }
+  m.text.field_order.push(FStart(fi))
+  order_at.push(loc)
 }
 
 ///|
@@ -552,7 +584,13 @@ fn Lowering::field(
     Type(decls) => {
       let placed : Array[Int] = []
       for d in decls {
-        placed.push(self.type_index_of(d.desc.0, d.info))
+        let ti = self.type_index_of(d.desc.0, d.info)
+        placed.push(ti)
+        // A declared function type may NAME its parameters, and the type
+        // section has nowhere to put a name.
+        if d.desc.1.typ is Func(ft) {
+          note_param_names(m, OwnerType(ti), Some(ft))
+        }
       }
       m.text.field_order.push(FTypes(placed))
     }
@@ -924,7 +962,11 @@ fn Lowering::import_(
   if decl.kind is Func(..) {
     for a in decl.attributes {
       if a.attr_name == "start" {
-        m.start = Some(self.func_index(decl.id, loc))
+        let fi = self.func_index(decl.id, loc)
+        m.start = Some(fi)
+        // The FIELD entry is pushed by the caller, after the import's own --
+        // an import is written before the start it names.
+        self.pending_start = Some((fi, a))
       }
     }
   }

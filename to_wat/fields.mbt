@@ -206,7 +206,8 @@ fn comptype(
   match c {
     Func(ft) => {
       let l : Array[Sexp] = [Atom("func")]
-      for x in functype(m, ft) {
+      let names = m.text.decl_param_names.get(OwnerType(of_)).unwrap_or(Map([]))
+      for x in functype(m, ft, names~) {
         l.push(x)
       }
       List(l)

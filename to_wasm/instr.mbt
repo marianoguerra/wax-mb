@@ -264,7 +264,11 @@ fn Lowering::hinted(
             // subtraction, and the checker has already told them apart.
             Some(I32) =>
               if a.desc is Int(s) {
-                out.push(I32Const(-parse_i64(s, loc).to_int()))
+                // The MINUS is part of the spelling: `-0` and `0` are the same
+                // i32 and two different things to read.
+                out.push(
+                  Spelled("-" + s, I32Const(-parse_i64(s, loc).to_int())),
+                )
               } else {
                 out.push(I32Const(0))
                 self.instr(out, a)
@@ -272,7 +276,7 @@ fn Lowering::hinted(
               }
             Some(I64) =>
               if a.desc is Int(s) {
-                out.push(I64Const(-parse_i64(s, loc)))
+                out.push(Spelled("-" + s, I64Const(-parse_i64(s, loc))))
               } else {
                 out.push(I64Const(0))
                 self.instr(out, a)

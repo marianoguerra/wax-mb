@@ -90,6 +90,8 @@ pub struct Lowering {
   /// lowered side by side and told apart afterwards by where they were
   /// written -- which is not a module anyone could run, and is never encoded.
   keep_conditionals : Bool
+  /// A `#[start]` an import named, waiting for the import's own field entry.
+  mut pending_start : (Int, @ast.Attribute)?
   /// The `#[if(..)]` groups written inside the body being lowered.
   mut body_conditionals : Array[@wasm_bin.CondGroup]
   mut spans : Array[@wasm_bin.Span]
