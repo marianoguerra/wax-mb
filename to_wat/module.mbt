@@ -209,6 +209,18 @@ priv struct Ctx {
 /// A structural instruction is written the same way, except that what follows
 /// the head is the code it guards rather than values it consumes.
 fn folded(node : Node, ctx : Ctx) -> Sexp raise WatError {
+  let out = folded_bare(node, ctx)
+  // Where the source wrote it, so a comment against it can be found. A node
+  // no span covered was not written anywhere in particular.
+  if node.loc.is_dummy() {
+    out
+  } else {
+    At(node.loc, out)
+  }
+}
+
+///|
+fn folded_bare(node : Node, ctx : Ctx) -> Sexp raise WatError {
   // A hinted instruction prints its annotations BEFORE itself, outside the
   // parentheses of the group it heads -- the hint is about the instruction,
   // not an operand of it. The wrapper is transparent so the annotation and

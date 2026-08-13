@@ -22,6 +22,9 @@ pub(all) struct Node {
   head : @wasm_bin.Instruction
   operands : Array[Node]
   bodies : Array[Array[Node]]
+  /// Where the source wrote this node, so the comments written against it can
+  /// be found. Dummy for a node no span covered.
+  loc : @basic.Location
 }
 
 ///|
@@ -61,8 +64,8 @@ fn enclosed(i : @wasm_bin.Instruction) -> Array[Array[@wasm_bin.Instruction]] {
 /// finds its own.
 pub fn fold(
   body : Array[@wasm_bin.Instruction],
-  spans : Array[(Int, Int, Int)],
-  nested? : Array[Array[(Int, Int, Int)]] = [],
+  spans : Array[@wasm_bin.Span],
+  nested? : Array[Array[@wasm_bin.Span]] = [],
 ) -> Array[Node] {
   let cursor = @ref.new(nested.length())
   fold_body(body, spans, nested, cursor)
@@ -76,10 +79,10 @@ pub fn fold(
 /// reading one out of it would make the last element a head that consumes the
 /// rest -- `(local.get $b (local.get $a))` for what is two statements. Dropping
 /// those spans leaves the children, which are what the text writes.
-fn folding_spans(spans : Array[(Int, Int, Int)]) -> Array[(Int, Int, Int)] {
-  let out : Array[(Int, Int, Int)] = []
+fn folding_spans(spans : Array[@wasm_bin.Span]) -> Array[@wasm_bin.Span] {
+  let out : Array[@wasm_bin.Span] = []
   for s in spans {
-    if s.1 < s.2 {
+    if s.head < s.end {
       out.push(s)
     }
   }
@@ -89,17 +92,17 @@ fn folding_spans(spans : Array[(Int, Int, Int)]) -> Array[(Int, Int, Int)] {
 ///|
 fn fold_body(
   body : Array[@wasm_bin.Instruction],
-  all_spans : Array[(Int, Int, Int)],
-  nested : Array[Array[(Int, Int, Int)]],
+  all_spans : Array[@wasm_bin.Span],
+  nested : Array[Array[@wasm_bin.Span]],
   cursor : Ref[Int],
 ) -> Array[Node] {
   let spans = folding_spans(all_spans)
-  fn widest(from : Int, limit : Int) -> (Int, Int, Int)? {
-    let mut best : (Int, Int, Int)? = None
+  fn widest(from : Int, limit : Int) -> @wasm_bin.Span? {
+    let mut best : @wasm_bin.Span? = None
     for s in spans {
-      if s.0 == from && s.2 <= limit {
+      if s.start == from && s.end <= limit {
         best = match best {
-          Some(b) => if s.2 > b.2 { Some(s) } else { Some(b) }
+          Some(b) => if s.end > b.end { Some(s) } else { Some(b) }
           None => Some(s)
         }
       }
@@ -109,7 +112,7 @@ fn fold_body(
 
   // The boundaries first, left to right; the nodes are built from them right to
   // left, because that is the order the nested bodies were recorded in.
-  let bounds : Array[(Int, Int, Int)] = []
+  let bounds : Array[@wasm_bin.Span] = []
   let mut at = 0
   while at < body.length() {
     let b = match widest(at, body.length()) {
@@ -129,19 +132,21 @@ fn fold_body(
         while e > at + 1 && takes_nothing(body[e - 1]) {
           e = e - 1
         }
-        (at, at, e)
+        { start: at, head: at, end: e, loc: @basic.dummy_loc }
       }
     }
     bounds.push(b)
-    at = b.2
+    at = b.end
   }
   let out : Array[Node] = Array::make(bounds.length(), {
     head: @wasm_bin.Instruction::Nop,
     operands: [],
     bodies: [],
+    loc: @basic.dummy_loc,
   })
   for k = bounds.length() - 1; k >= 0; k = k - 1 {
-    let (start, _, end) = bounds[k]
+    let start = bounds[k].start
+    let end = bounds[k].end
     let head = body[end - 1]
     // The enclosed bodies are taken in reverse too, so that the LAST one
     // written is the last one recorded.
@@ -160,6 +165,7 @@ fn fold_body(
       head,
       operands: fold_body_range(body, all_spans, start, end - 1, nested, cursor),
       bodies,
+      loc: bounds[k].loc,
     }
   }
   out
@@ -198,11 +204,11 @@ fn takes_nothing(i : @wasm_bin.Instruction) -> Bool {
 
 ///|
 /// Where the next recorded node begins after `at`.
-fn next_start(spans : Array[(Int, Int, Int)], at : Int, limit : Int) -> Int {
+fn next_start(spans : Array[@wasm_bin.Span], at : Int, limit : Int) -> Int {
   let mut best = limit
   for s in spans {
-    if s.0 > at && s.0 < best {
-      best = s.0
+    if s.start > at && s.start < best {
+      best = s.start
     }
   }
   best
@@ -215,10 +221,10 @@ fn next_start(spans : Array[(Int, Int, Int)], at : Int, limit : Int) -> Int {
 /// not, because they are matched by ORDER rather than by position.
 fn fold_body_range(
   body : Array[@wasm_bin.Instruction],
-  spans : Array[(Int, Int, Int)],
+  spans : Array[@wasm_bin.Span],
   from : Int,
   limit : Int,
-  nested : Array[Array[(Int, Int, Int)]],
+  nested : Array[Array[@wasm_bin.Span]],
   cursor : Ref[Int],
 ) -> Array[Node] {
   guard from < limit else { return [] }
@@ -226,10 +232,15 @@ fn fold_body_range(
   for k in from..<limit {
     slice.push(body[k])
   }
-  let shifted : Array[(Int, Int, Int)] = []
+  let shifted : Array[@wasm_bin.Span] = []
   for s in spans {
-    if s.0 >= from && s.2 <= limit {
-      shifted.push((s.0 - from, s.1 - from, s.2 - from))
+    if s.start >= from && s.end <= limit {
+      shifted.push({
+        ..s,
+        start: s.start - from,
+        head: s.head - from,
+        end: s.end - from,
+      })
     }
   }
   // An operand CAN enclose a body: `(br $l (block ...))` is one instruction

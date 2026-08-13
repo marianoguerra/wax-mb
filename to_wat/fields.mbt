@@ -686,7 +686,7 @@ fn imported_count(m : @wasm_bin.Module, of_ : String) -> Int {
 fn const_expr(
   m : @wasm_bin.Module,
   body : Array[@wasm_bin.Instruction],
-  spans? : Array[(Int, Int, Int)] = [],
+  spans? : Array[@wasm_bin.Span] = [],
 ) -> Array[Sexp] raise WatError {
   let ctx = { m, locals: Map([]), labels: Map([]), opened: 0, scope: [] }
   let out : Array[Sexp] = []

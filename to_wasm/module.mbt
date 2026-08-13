@@ -323,7 +323,7 @@ fn Lowering::field(
       self.export_of(m, attributes, Tag(self.tag_index(name, loc)), name)
     }
     Elem(name~, reftype~, mode~, init~, ..) => {
-      let mut offset_spans : Array[(Int, Int, Int)] = []
+      let mut offset_spans : Array[@wasm_bin.Span] = []
       let mode_ = match mode {
         EPassive => @wasm_bin.ElemMode::Passive
         EActive(tab, offset) => {
@@ -335,7 +335,7 @@ fn Lowering::field(
       // Each element is its own constant expression, which is what lets a
       // segment mix `ref.func` and `ref.null`.
       let inits : Array[Array[@wasm_bin.Instruction]] = []
-      let init_spans : Array[Array[(Int, Int, Int)]] = []
+      let init_spans : Array[Array[@wasm_bin.Span]] = []
       for e in init {
         let (out, spans) = self.const_expr(e)
         inits.push(out)
@@ -352,7 +352,7 @@ fn Lowering::field(
       })
     }
     Data(name~, mode~, init~, ..) => {
-      let mut offset_spans : Array[(Int, Int, Int)] = []
+      let mut offset_spans : Array[@wasm_bin.Span] = []
       let mode_ = match mode {
         Passive => @wasm_bin.DataMode::Passive
         Active(mem, offset) => {
@@ -587,7 +587,7 @@ fn Lowering::lower_body(
 fn Lowering::const_expr(
   self : Lowering,
   e : @ast.Instr[@typing_env.InferredAnnotation],
-) -> (Array[@wasm_bin.Instruction], Array[(Int, Int, Int)]) raise LowerError {
+) -> (Array[@wasm_bin.Instruction], Array[@wasm_bin.Span]) raise LowerError {
   let outer = self.spans
   self.spans = []
   let out : Array[@wasm_bin.Instruction] = []
@@ -1030,7 +1030,9 @@ fn Lowering::declare_func_refs(
       type_: { nullable: false, typ: Func },
       init,
       // One `ref.func` each, so each folds to itself.
-      init_spans: init.map(_ => [(0, 0, 1)]),
+      init_spans: init.map(_ => {
+        [{ start: 0, head: 0, end: 1, loc: @basic.dummy_loc }]
+      }),
       offset_spans: [],
     })
   }

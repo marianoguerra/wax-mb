@@ -29,11 +29,16 @@ pub fn Lowering::instr(
   if out.length() > span_start {
     let mut head_start = span_start
     for k in child_spans..<self.spans.length() {
-      if self.spans[k].2 > head_start {
-        head_start = self.spans[k].2
+      if self.spans[k].end > head_start {
+        head_start = self.spans[k].end
       }
     }
-    self.spans.push((span_start, head_start, out.length()))
+    self.spans.push({
+      start: span_start,
+      head: head_start,
+      end: out.length(),
+      loc: i.info.1,
+    })
   }
 }
 
@@ -47,7 +52,7 @@ fn Lowering::read_span(
 ) -> Unit raise LowerError {
   let at = out.length()
   out.push(self.read(name, loc))
-  self.spans.push((at, at, at + 1))
+  self.spans.push({ start: at, head: at, end: at + 1, loc })
 }
 
 ///|
@@ -81,7 +86,12 @@ fn Lowering::instr_span(
     }
     out.push(Hinted(self.lower_hints(i.hints), inner[inner.length() - 1]))
     for sp in inner_spans {
-      self.spans.push((sp.0 + base, sp.1 + base, sp.2 + base))
+      self.spans.push({
+        ..sp,
+        start: sp.start + base,
+        head: sp.head + base,
+        end: sp.end + base,
+      })
     }
     return
   }
@@ -174,7 +184,7 @@ fn Lowering::hinted(
           }
           let op_at = out.length()
           out.push(instruction)
-          self.spans.push((at, op_at, op_at + 1))
+          self.spans.push({ start: at, head: op_at, end: op_at + 1, loc })
         }
       }
       out.push(self.write(name, loc))

@@ -889,7 +889,7 @@ pub(all) struct TableType {
 pub(all) struct Table {
   type_ : TableType
   init : Array[Instruction]?
-  init_spans : Array[(Int, Int, Int)]
+  init_spans : Array[Span]
 } derive(Eq, Debug)
 
 ///|
@@ -953,6 +953,17 @@ pub(all) struct Export {
 
 ///|
 /// A function body: its locals, then its instructions.
+/// One node's run in a body: where it starts, where its OWN emission begins
+/// (everything before that is its operands), where it ends, and where the
+/// source wrote it.
+pub(all) struct Span {
+  start : Int
+  head : Int
+  end : Int
+  loc : @basic.Location
+} derive(Eq, Debug)
+
+///|
 pub(all) struct FunctionCode {
   locals : Array[ValType]
   body : Array[Instruction]
@@ -964,13 +975,13 @@ pub(all) struct FunctionCode {
   /// It is recorded where the body was built rather than re-derived from an
   /// arity table, because a second derivation could disagree with the first
   /// and nothing would say which output was wrong.
-  spans : Array[(Int, Int, Int)]
+  spans : Array[Span]
   /// The same, for each NESTED body -- a block's, a loop's, each arm of an
   /// `if` -- in the order those bodies completed while the function was
   /// lowered: deepest first, then left to right. A nested body is a separate
   /// array with its own indices, so its spans cannot live in the list above;
   /// that order is what pairs them up again.
-  nested_spans : Array[Array[(Int, Int, Int)]]
+  nested_spans : Array[Array[Span]]
   /// `#[priority]` on the function, if any.
   priority : Priority?
 } derive(Eq, Debug)
@@ -982,7 +993,7 @@ pub(all) struct Global {
   /// The spans of that initialiser, so the text form can fold it. A constant
   /// expression is its own body with its own indices, so its spans are its
   /// own too.
-  init_spans : Array[(Int, Int, Int)]
+  init_spans : Array[Span]
 } derive(Eq, Debug)
 
 ///|
@@ -1002,8 +1013,8 @@ pub(all) struct Element {
   type_ : RefType
   init : Array[Array[Instruction]]
   /// One span list per initialiser, and one for the active offset.
-  init_spans : Array[Array[(Int, Int, Int)]]
-  offset_spans : Array[(Int, Int, Int)]
+  init_spans : Array[Array[Span]]
+  offset_spans : Array[Span]
 } derive(Eq, Debug)
 
 ///|
@@ -1026,7 +1037,7 @@ pub(all) struct Data {
   mode : DataMode
   init : Bytes
   /// The spans of the active offset expression.
-  offset_spans : Array[(Int, Int, Int)]
+  offset_spans : Array[Span]
   /// How the source wrote those bytes.
   ///
   /// A segment is a run of bytes to the binary and a list of PIECES to the

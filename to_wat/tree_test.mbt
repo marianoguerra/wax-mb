@@ -5,11 +5,15 @@
 test "a post-order run folds back to the tree it came from" {
   // `(i32.add (local.get 0) (i32.const 1))`, as the lowering emits it. Each
   // span is (start, where the node's OWN emission began, end):
-  //   local.get 0   <- (0,0,1)
-  //   i32.const 1   <- (1,1,2)
-  //   i32.add       <- (0,2,3), recorded last
+  //   local.get 0   <- start 0, head 0, end 1
+  //   i32.const 1   <- start 1, head 1, end 2
+  //   i32.add       <- start 0, head 2, end 3, recorded last
   let body : Array[@wasm_bin.Instruction] = [LocalGet(0), I32Const(1), I32Add]
-  let spans = [(0, 0, 1), (1, 1, 2), (0, 2, 3)]
+  let spans : Array[@wasm_bin.Span] = [
+    { start: 0, head: 0, end: 1, loc: @basic.dummy_loc },
+    { start: 1, head: 1, end: 2, loc: @basic.dummy_loc },
+    { start: 0, head: 2, end: 3, loc: @basic.dummy_loc },
+  ]
   let tree = fold(body, spans)
   inspect(tree.length(), content="1")
   inspect(tree[0].head is I32Add, content="true")
@@ -24,7 +28,11 @@ test "a post-order run folds back to the tree it came from" {
 test "a node with no head of its own leaves its children alone" {
   let body : Array[@wasm_bin.Instruction] = [LocalGet(0), LocalGet(1)]
   // The tuple's own span ends where its head would have begun.
-  let spans = [(0, 0, 1), (1, 1, 2), (0, 2, 2)]
+  let spans : Array[@wasm_bin.Span] = [
+    { start: 0, head: 0, end: 1, loc: @basic.dummy_loc },
+    { start: 1, head: 1, end: 2, loc: @basic.dummy_loc },
+    { start: 0, head: 2, end: 2, loc: @basic.dummy_loc },
+  ]
   let tree = fold(body, spans)
   inspect(tree.length(), content="2")
   inspect(tree[0].head is LocalGet(0), content="true")
@@ -39,7 +47,12 @@ test "two statements stay two" {
     I32Const(2),
     Drop,
   ]
-  let spans = [(0, 0, 1), (0, 1, 2), (2, 2, 3), (2, 3, 4)]
+  let spans : Array[@wasm_bin.Span] = [
+    { start: 0, head: 0, end: 1, loc: @basic.dummy_loc },
+    { start: 0, head: 1, end: 2, loc: @basic.dummy_loc },
+    { start: 2, head: 2, end: 3, loc: @basic.dummy_loc },
+    { start: 2, head: 3, end: 4, loc: @basic.dummy_loc },
+  ]
   let tree = fold(body, spans)
   inspect(tree.length(), content="2")
   inspect(tree[0].head is Drop, content="true")

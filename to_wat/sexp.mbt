@@ -221,14 +221,17 @@ fn format(
   first : Bool,
   s : Sexp,
   ctx : Attach,
+  within? : Array[@trivia.Entry] = [],
 ) -> Unit {
   match s {
-    // Its comments, then the node, then whatever trailed it.
+    // Its comments, then the node, then whatever trailed it. What is WITHIN
+    // the node goes inside its parentheses, just before the closing one --
+    // that is where a comment in an otherwise empty body belongs, and there is
+    // nothing else for it to sit beside.
     At(loc, inner) => {
       let t = ctx.get(loc)
       print_trivia(p, t.before)
-      format(p, in_block, depth, first, inner, ctx)
-      print_trivia(p, t.within)
+      format(p, in_block, depth, first, inner, ctx, within=t.within)
       print_trivia(p, t.after)
     }
     Atom(t) => p.string(t)
@@ -262,6 +265,7 @@ fn format(
             }
           })
           p.cut()
+          print_trivia(p, within)
           p.box(fn() { p.string(")") })
         }
         if vertical {
