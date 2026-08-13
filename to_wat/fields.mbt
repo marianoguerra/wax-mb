@@ -568,7 +568,31 @@ fn data_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
     }
     head.push(expr("offset", const_expr(m, offset)))
   }
-  List([block(head), Atom(quoted(d.init))])
+  // The pieces the source wrote, when they were recorded; otherwise the bytes
+  // as one string, which is always a correct spelling of them.
+  let body : Array[Sexp] = [block(head)]
+  if d.spelling.is_empty() {
+    body.push(Atom(quoted(d.init)))
+  } else {
+    for piece in d.spelling {
+      body.push(data_piece(piece))
+    }
+  }
+  List(body)
+}
+
+///|
+fn data_piece(p : @wasm_bin.DataPiece) -> Sexp {
+  match p {
+    PieceStr(b) => Atom(quoted(b))
+    PieceRun(kw, items) => {
+      let l : Array[Sexp] = [Atom(kw)]
+      for i in items {
+        l.push(Atom(i))
+      }
+      List(l)
+    }
+  }
 }
 
 ///|

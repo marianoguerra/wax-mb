@@ -269,6 +269,7 @@ fn Lowering::field(
         m.datas.push({
           mode: Active(mem, offset),
           init: data_bytes(d.init, loc),
+          spelling: data_spelling(d.init),
         })
       }
       self.export_of(m, attributes, Memory(mem), name)
@@ -350,7 +351,11 @@ fn Lowering::field(
         note_name(m.names.data, m.datas.length(), n.name)
       }
       m.field_order.push(FData(m.datas.length()))
-      m.datas.push({ mode: mode_, init: data_bytes(init, loc) })
+      m.datas.push({
+        mode: mode_,
+        init: data_bytes(init, loc),
+        spelling: data_spelling(init),
+      })
     }
     // Nothing to EMIT: the type section comes from the STORE, which interned
     // every declaration as it was made, so a `type` field has already had its
@@ -867,6 +872,53 @@ fn data_bytes(
     }
   }
   Bytes::from_array(out)
+}
+
+///|
+/// How the source wrote a data segment, piece by piece.
+///
+/// Recorded beside the bytes rather than recovered from them: the bytes are
+/// what the binary holds, and no reading of them says whether they were a
+/// string, a run of `i16`s, or a pair of vectors.
+fn data_spelling(init : Array[@ast.DataElem]) -> Array[@wasm_bin.DataPiece] {
+  let out : Array[@wasm_bin.DataPiece] = []
+  for e in init {
+    match e {
+      Str(b) => out.push(PieceStr(b))
+      Run(ty, items) => {
+        let kw = match ty {
+          Packed(I8) => "i8"
+          Packed(I16) => "i16"
+          Value(I32) => "i32"
+          Value(I64) => "i64"
+          Value(F32) => "f32"
+          Value(F64) => "f64"
+          _ => "i8"
+        }
+        out.push(PieceRun(kw, items.map(i => i.desc)))
+      }
+      V128Run(vs) => {
+        let items : Array[String] = []
+        for v in vs {
+          items.push(
+            match v.desc.shape {
+              I8x16 => "i8x16"
+              I16x8 => "i16x8"
+              I32x4 => "i32x4"
+              I64x2 => "i64x2"
+              F32x4 => "f32x4"
+              F64x2 => "f64x2"
+            },
+          )
+          for c in v.desc.components {
+            items.push(c)
+          }
+        }
+        out.push(PieceRun("v128", items))
+      }
+    }
+  }
+  out
 }
 
 ///|

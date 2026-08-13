@@ -1017,6 +1017,24 @@ pub(all) enum DataMode {
 pub(all) struct Data {
   mode : DataMode
   init : Bytes
+  /// How the source wrote those bytes.
+  ///
+  /// A segment is a run of bytes to the binary and a list of PIECES to the
+  /// text: `"hdr" (f32 0.2 0.3 0.4) (i8 1 2 3)` flattens to bytes and does not
+  /// come back from them. Empty when nothing recorded it, and then the bytes
+  /// are written as one string.
+  spelling : Array[DataPiece]
+} derive(Eq, Debug)
+
+///|
+/// One piece of a data segment, as the source wrote it.
+pub(all) enum DataPiece {
+  /// A byte string.
+  PieceStr(Bytes)
+  /// A numeric run: the element keyword, then the literals as written. A
+  /// vector run keeps its shapes among them, because `(v128 i32x4 1 2 3 4
+  /// f64x2 1.0 2.0)` is one run of two vectors written two different ways.
+  PieceRun(String, Array[String])
 } derive(Eq, Debug)
 
 ///|
