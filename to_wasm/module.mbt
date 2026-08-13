@@ -61,6 +61,17 @@ pub fn lower_module(
   // tables and drops them from the typed output -- and they are exactly what
   // cannot be skipped, since each one starts an index space. Emitted first, in
   // written order, which is the order their indices were assigned in.
+  // The declared features lead the fields, wherever the attributes stood.
+  for f in source {
+    if f.desc is ModuleAnnotation(attrs) {
+      for a in attrs {
+        if a.attr_name == "feature" &&
+          a.attr_value is Some({ desc: Str(_, b), .. }) {
+          m.field_order.push(FFeature(b))
+        }
+      }
+    }
+  }
   let mut failure : LowerError? = None
   @typing.walk_fields(ctx, source, field => {
     if failure is Some(_) {
@@ -323,7 +334,9 @@ fn Lowering::field(
       m.field_order.push(FTypes(placed))
     }
     // A module annotation carries feature and name metadata the checker
-    // consumed, not code.
+    // consumed, not code -- except for the declared features, which the text
+    // format keeps. They are collected before the walk, not here, because the
+    // reference writes them ALL first rather than where they stood.
     ModuleAnnotation(_) => ()
     _ => raise NotLowered(field_name(field.desc), loc)
   }

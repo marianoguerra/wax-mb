@@ -1100,6 +1100,10 @@ pub(all) struct Module {
 pub(all) enum FieldRef {
   /// The type-section entries one `type` or `rec` field declared.
   FTypes(Array[Int])
+  /// A `#![feature = "name"]` inner attribute, which the text format keeps as
+  /// a leading `(@feature "name")` so the emitted module still says what it
+  /// needs. There is no binary section for it; the text is where it survives.
+  FFeature(Bytes)
   FImport(Int)
   FFunc(Int)
   FTable(Int)

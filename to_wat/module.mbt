@@ -11,24 +11,18 @@ pub fn print_module(m : @wasm_bin.Module) -> String raise WatError {
   for f in m.field_order {
     fields.push(field(m, f))
   }
-  // Whatever the source did not place: the types a lowering materialised for
-  // itself, and the element segments minted to declare function references.
-  // They belong to no written field, so they follow the ones that do.
-  let placed_types : Map[Int, Bool] = Map([])
+  // A type nothing declared is NOT written. The section holds every signature
+  // the lowering interned -- a block's, an import's, a `call_indirect`'s --
+  // and the text format spells all of those inline where they are used. Only a
+  // type the source wrote down is a field.
+  //
+  // The element segments minted to declare function references are different:
+  // there is nowhere else to put a declarative segment, so it follows the
+  // fields that were written.
   let placed_elems : Map[Int, Bool] = Map([])
   for f in m.field_order {
-    match f {
-      FTypes(ks) =>
-        for k in ks {
-          placed_types[k] = true
-        }
-      FElem(k) => placed_elems[k] = true
-      _ => ()
-    }
-  }
-  for k in 0..<m.types.length() {
-    if !placed_types.contains(k) {
-      fields.push(subtype_field(m, k))
+    if f is FElem(k) {
+      placed_elems[k] = true
     }
   }
   for k in 0..<m.elems.length() {
@@ -70,6 +64,7 @@ fn field(m : @wasm_bin.Module, f : @wasm_bin.FieldRef) -> Sexp raise WatError {
       }
       List(l)
     }
+    FFeature(name) => List([Atom("@feature"), Atom(quoted(name))])
     FImport(k) => import_field(m, k)
     FFunc(k) => function_field(m, k, m.codes[k])
     FTable(k) => table_field(m, k)
