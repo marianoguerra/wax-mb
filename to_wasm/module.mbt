@@ -72,7 +72,7 @@ pub fn lower_module(
       for a in attrs {
         if a.attr_name == "feature" &&
           a.attr_value is Some({ desc: Str(_, b), .. }) {
-          m.field_order.push(FFeature(b))
+          m.text.field_order.push(FFeature(b))
           order_at.push(f.info)
         }
       }
@@ -87,7 +87,7 @@ pub fn lower_module(
       match field.desc {
         Import(module_~, decl~) => {
           low.import_(m, module_.desc, decl.desc, field.info)
-          m.field_order.push(FImport(m.imports.length() - 1))
+          m.text.field_order.push(FImport(m.imports.length() - 1))
           order_at.push(field.info)
         }
         ImportGroup(module_~, decls~) => {
@@ -100,7 +100,7 @@ pub fn lower_module(
           }
           low.compact_group(m, decls.length(), field.info)
           for k in before..<m.imports.length() {
-            m.field_order.push(FImport(k))
+            m.text.field_order.push(FImport(k))
             order_at.push(field.info)
           }
         }
@@ -114,9 +114,9 @@ pub fn lower_module(
     raise e
   }
   for field in typed {
-    let before = m.field_order.length()
+    let before = m.text.field_order.length()
     low.field(m, field)
-    for _ in before..<m.field_order.length() {
+    for _ in before..<m.text.field_order.length() {
       order_at.push(field.info)
     }
   }
@@ -148,7 +148,7 @@ pub fn lower_module(
 /// by where each field started restores that, and the sort is stable so the
 /// fields one source field produced keep their relative order.
 fn reorder_fields(m : @wasm_bin.Module, at : Array[@basic.Location]) -> Unit {
-  guard at.length() == m.field_order.length() else { return }
+  guard at.length() == m.text.field_order.length() else { return }
   let order = Array::makei(at.length(), k => k)
   order.sort_by((a, b) => {
     if at[a].start.cnum != at[b].start.cnum {
@@ -157,14 +157,14 @@ fn reorder_fields(m : @wasm_bin.Module, at : Array[@basic.Location]) -> Unit {
       a - b
     }
   })
-  let sorted = order.map(k => m.field_order[k])
+  let sorted = order.map(k => m.text.field_order[k])
   let locs = order.map(k => at[k])
-  m.field_order.clear()
+  m.text.field_order.clear()
   for f in sorted {
-    m.field_order.push(f)
+    m.text.field_order.push(f)
   }
   for l in locs {
-    m.field_locs.push(l)
+    m.text.field_locs.push(l)
   }
 }
 
@@ -207,11 +207,11 @@ fn Lowering::field(
       // `fn f: ft(..)` names a type and prints as `(type $ft)`; `fn f(i32)`
       // spells its signature out.
       if typ is Some(_) {
-        m.named_decl_types[OwnerFunc(fi)] = true
+        m.text.named_decl_types[OwnerFunc(fi)] = true
       }
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
       m.codes.push({ ..code, priority: function_priority(attributes) })
-      m.field_order.push(FFunc(m.codes.length() - 1))
+      m.text.field_order.push(FFunc(m.codes.length() - 1))
       // The local names belong to the function that just closed over them.
       if !self.local_names.is_empty() {
         m.names.locals[fi] = self.local_names
@@ -244,7 +244,7 @@ fn Lowering::field(
       let (init, init_spans) = self.const_expr(def)
       note_name(m.names.globals, self.global_index(name, loc), name.name)
       m.globals.push({ type_: { mut_, typ: ty }, init, init_spans })
-      m.field_order.push(FGlobal(m.globals.length() - 1))
+      m.text.field_order.push(FGlobal(m.globals.length() - 1))
       self.export_of(m, attributes, Global(self.global_index(name, loc)), name)
     }
     Memory(
@@ -267,7 +267,7 @@ fn Lowering::field(
       m.memories.push({
         limits: { mi, ma, address_type, page_size_log2, shared },
       })
-      m.field_order.push(FMemory(m.memories.length() - 1))
+      m.text.field_order.push(FMemory(m.memories.length() - 1))
       let mem = self.memory_index(name, loc)
       note_name(m.names.memories, mem, name.name)
       // An inline data segment is an ACTIVE segment of this memory, written
@@ -300,7 +300,7 @@ fn Lowering::field(
         None => (None, [])
       }
       note_name(m.names.tables, self.table_index(name, loc), name.name)
-      m.field_order.push(FTable(m.tables.length()))
+      m.text.field_order.push(FTable(m.tables.length()))
       m.tables.push({
         type_: {
           elem_type,
@@ -314,12 +314,12 @@ fn Lowering::field(
     Tag(name~, typ~, sign~, attributes~) => {
       note_name(m.names.tags, self.tag_index(name, loc), name.name)
       if typ is Some(_) {
-        m.named_decl_types[OwnerTag(self.tag_index(name, loc))] = true
+        m.text.named_decl_types[OwnerTag(self.tag_index(name, loc))] = true
       }
       note_param_names(m, OwnerTag(self.tag_index(name, loc)), sign)
       // A tag that NAMES its type means that declaration, not whichever
       // like-shaped one the signature search happens to reach first.
-      m.field_order.push(FTag(m.tags.length()))
+      m.text.field_order.push(FTag(m.tags.length()))
       m.tags.push({
         type_idx: match typ {
           Some(n) => self.type_index_of(n, loc)
@@ -348,7 +348,7 @@ fn Lowering::field(
         init_spans.push(spans)
       }
       note_name(m.names.elem, m.elems.length(), name.name)
-      m.field_order.push(FElem(m.elems.length()))
+      m.text.field_order.push(FElem(m.elems.length()))
       m.elems.push({
         mode: mode_,
         type_: self.reftype_index(reftype, loc),
@@ -374,7 +374,7 @@ fn Lowering::field(
       if name is Some(n) {
         note_name(m.names.data, m.datas.length(), n.name)
       }
-      m.field_order.push(FData(m.datas.length()))
+      m.text.field_order.push(FData(m.datas.length()))
       m.datas.push({
         mode: mode_,
         init: data_bytes(init, loc),
@@ -392,7 +392,7 @@ fn Lowering::field(
       for d in decls {
         placed.push(self.type_index_of(d.desc.0, d.info))
       }
-      m.field_order.push(FTypes(placed))
+      m.text.field_order.push(FTypes(placed))
     }
     // A module annotation carries feature and name metadata the checker
     // consumed, not code -- except for the declared features, which the text
@@ -725,7 +725,7 @@ fn Lowering::import_(
     Tag(typ~, sign~) => {
       note_name(m.names.tags, self.tag_index(decl.id, loc), decl.id.name)
       if typ is Some(_) {
-        m.named_decl_types[OwnerTag(self.tag_index(decl.id, loc))] = true
+        m.text.named_decl_types[OwnerTag(self.tag_index(decl.id, loc))] = true
       }
       note_param_names(m, OwnerTag(self.tag_index(decl.id, loc)), sign)
     }
@@ -995,7 +995,7 @@ fn note_param_names(
     }
   }
   if !names.is_empty() {
-    m.decl_param_names[owner] = names
+    m.text.decl_param_names[owner] = names
   }
 }
 

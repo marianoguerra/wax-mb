@@ -310,7 +310,7 @@ fn typeuse(
   match m.types[k].composite {
     Func(ft) => {
       let names = match owner {
-        Some(o) => m.decl_param_names.get(o).unwrap_or(Map([]))
+        Some(o) => m.text.decl_param_names.get(o).unwrap_or(Map([]))
         None => Map([])
       }
       let sign = functype(m, ft, names~)
@@ -498,7 +498,7 @@ fn import_parts(
         typeuse(
           m,
           t,
-          named=m.named_decl_types.contains(OwnerTag(n)),
+          named=m.text.named_decl_types.contains(OwnerTag(n)),
           owner=Some(OwnerTag(n)),
         ),
         Tag(n),
@@ -544,7 +544,7 @@ fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
     x in typeuse(
       m,
       m.tags[k].type_idx,
-      named=m.named_decl_types.contains(OwnerTag(at)),
+      named=m.text.named_decl_types.contains(OwnerTag(at)),
       owner=Some(OwnerTag(at)),
     ) {
     head.push(x)

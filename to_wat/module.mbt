@@ -11,13 +11,13 @@ pub fn print_module(
   trivia? : @trivia.Context? = None,
 ) -> String raise WatError {
   let fields : Array[Sexp] = []
-  for k, f in m.field_order {
+  for k, f in m.text.field_order {
     let one = field(m, f)
     // The field carries where it was written, so the comments written against
     // it can be found. Fields the source did not write carry nothing.
     fields.push(
-      if k < m.field_locs.length() {
-        At(m.field_locs[k], one)
+      if k < m.text.field_locs.length() {
+        At(m.text.field_locs[k], one)
       } else {
         one
       },
@@ -32,7 +32,7 @@ pub fn print_module(
   // there is nowhere else to put a declarative segment, so it follows the
   // fields that were written.
   let placed_elems : Map[Int, Bool] = Map([])
-  for f in m.field_order {
+  for f in m.text.field_order {
     if f is FElem(k) {
       placed_elems[k] = true
     }
@@ -116,7 +116,7 @@ fn function_field(
   }
   // `fn f: ft(..)` named a type, and the text names it rather than repeating
   // the signature that declaration pointed at.
-  let by_name = m.named_decl_types.contains(OwnerFunc(index))
+  let by_name = m.text.named_decl_types.contains(OwnerFunc(index))
   if by_name {
     head.push(List([Atom("type"), Atom(name_or(m.names.types, m.funcs[k]))]))
   }

@@ -1134,6 +1134,28 @@ pub(all) struct Module {
   codes : Array[FunctionCode]
   datas : Array[Data]
   tags : Array[TagType]
+  /// What the TEXT form needs and the binary drops.
+  ///
+  /// Everything else here is encoded. These are not: they are the source
+  /// facts a binary has no room for -- where a field stood, what a
+  /// declaration called its parameters -- kept together so that reading this
+  /// model for the encoding does not mean reading past them.
+  text : TextView
+  /// The `name` custom section.
+  names : Names
+  /// The `target_features` custom section: (prefix byte, feature name) pairs,
+  /// emitted verbatim and in order, because entries from other producers pass
+  /// through untouched.
+  target_features : Array[(Int, Bytes)]
+} derive(Debug)
+
+///|
+/// The source facts the text form needs and the binary has no room for.
+///
+/// Recorded as the lowering goes rather than recovered afterwards: there is
+/// nothing in the sections to recover them from, and a second derivation could
+/// disagree with the first with nothing to say which output is wrong.
+pub(all) struct TextView {
   /// The order the SOURCE wrote the fields in.
   ///
   /// The sections group items by kind, which is not the order they were
@@ -1166,13 +1188,18 @@ pub(all) struct Module {
   /// out; a function is the same. The binary keeps only the index, which is
   /// the same either way, so which was written has to be recorded.
   named_decl_types : Map[ParamOwner, Bool]
-  /// The `name` custom section.
-  names : Names
-  /// The `target_features` custom section: (prefix byte, feature name) pairs,
-  /// emitted verbatim and in order, because entries from other producers pass
-  /// through untouched.
-  target_features : Array[(Int, Bytes)]
 } derive(Debug)
+
+///|
+/// An empty view, for a module nothing recorded one for.
+pub fn TextView::empty() -> TextView {
+  {
+    field_order: [],
+    field_locs: [],
+    decl_param_names: Map([]),
+    named_decl_types: Map([]),
+  }
+}
 
 ///|
 /// Whose parameters a name list belongs to. Imported functions and tags sit in
@@ -1207,10 +1234,7 @@ pub fn Module::empty() -> Module {
   {
     types: [],
     rec_groups: [],
-    field_order: [],
-    field_locs: [],
-    decl_param_names: Map([]),
-    named_decl_types: Map([]),
+    text: TextView::empty(),
     imports: [],
     funcs: [],
     tables: [],
