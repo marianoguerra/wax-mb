@@ -224,10 +224,20 @@ fn tabletype(m : @wasm_bin.Module, t : @wasm_bin.TableType) -> Array[Sexp] {
 }
 
 ///|
-/// The type of an imported or defined function or tag, written inline.
+/// The type of an imported function or tag, written inline.
+///
+/// The signature is a group of its own, the same way a defined function's is:
+/// it moves to the next line whole rather than splitting across the name.
 fn typeuse(m : @wasm_bin.Module, k : Int) -> Array[Sexp] {
   match m.types[k].composite {
-    Func(ft) => functype(m, ft)
+    Func(ft) => {
+      let sign = functype(m, ft)
+      if sign.is_empty() {
+        []
+      } else {
+        [block(sign)]
+      }
+    }
     // Anything else at a function's type index is not a function type, and
     // there is no inline spelling for it -- so name it.
     _ => [List([Atom("type"), Atom(name_or(m.names.types, k))])]

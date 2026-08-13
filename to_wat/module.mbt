@@ -102,8 +102,12 @@ fn function_field(
   for e in export_clauses(m, Func(index)) {
     head.push(e)
   }
+  // The signature is a group of its own, so it moves to its own line as a
+  // unit when the name and exports have already filled one -- rather than the
+  // first few parameters trailing the name and the rest wrapping.
+  let sign : Array[Sexp] = []
   for p, ty in ft.params {
-    head.push(
+    sign.push(
       List(
         named_type(local_name(locals, p), "param", valtype(ty, m.names.types)),
       ),
@@ -114,7 +118,10 @@ fn function_field(
     for ty in ft.results {
       r.push(Atom(valtype(ty, m.names.types)))
     }
-    head.push(List(r))
+    sign.push(List(r))
+  }
+  if !sign.is_empty() {
+    head.push(block(sign))
   }
   let out : Array[Sexp] = [block(head)]
   // The DECLARED locals follow the parameters in the same index space, so
@@ -206,12 +213,16 @@ fn folded(node : Node, ctx : Ctx) -> Sexp raise WatError {
     node.head is (Block(_, _) | Loop(_, _) | If(_, _, _)) {
     return structural(node, ctx)
   }
+  // The head and its operands are ONE fill group, so they pack onto as many
+  // lines as they need. They are not children of the list itself: those break
+  // all together, which is right for a body's statements and wrong for a
+  // folded instruction's operands.
   let head = mnemonic(node.head, ctx.m.names, ctx.locals, scope=ctx.scope)
   let l : Array[Sexp] = [head]
   for operand in node.operands {
     l.push(folded(operand, ctx))
   }
-  List(l)
+  List([Block(l, KBox, true)])
 }
 
 ///|
@@ -241,10 +252,16 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
   for t in blocktype(bt, ctx.m) {
     head.push(t)
   }
-  let l : Array[Sexp] = [block(head)]
-  // The `if` condition is an operand, and it is written before the clauses.
-  for operand in node.operands {
-    l.push(folded(operand, ctx))
+  // The `if` condition is an operand, so it joins the head's group; the
+  // clauses that follow are list children and break onto their own lines.
+  let l : Array[Sexp] = if node.operands.is_empty() {
+    [block(head)]
+  } else {
+    let g : Array[Sexp] = [block(head)]
+    for operand in node.operands {
+      g.push(folded(operand, ctx))
+    }
+    [Block(g, KBox, true)]
   }
   // A `try_table`'s handlers are IMMEDIATES that branch out, so they follow
   // the head and are counted against the scope the block itself opens.
