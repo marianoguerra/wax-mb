@@ -427,6 +427,13 @@ pub(all) enum Instruction {
   I64TruncSatF64U
 
   // GC instructions - struct operations
+  /// The custom-descriptors forms: like `struct.new` and its default sibling,
+  /// but taking the runtime DESCRIPTOR as a further operand, pushed last --
+  /// above the field values, because that is the order the instruction reads.
+  StructNewDesc(Int)
+  StructNewDefaultDesc(Int)
+  /// A struct's own descriptor, read back off it.
+  RefGetDesc(Int)
   StructNew(Int) // type index
   StructNewDefault(Int) // type index
   StructGet(Int, Int) // type index, field index

@@ -965,6 +965,38 @@ fn Lowering::hinted(
       }
       out.push(StructNew(t))
     }
+    // The custom-descriptors constructions. The DESCRIPTOR is pushed last,
+    // above the field values, because that is the order the instruction reads
+    // them -- and the type is the construction's own (exact) result type
+    // rather than anything the descriptor names.
+    StructDesc(descriptor, fields) => {
+      let (t, declared) = self.struct_fields_of(i, loc)
+      guard fields.length() == declared.length() else {
+        raise Unresolved("struct field count", loc)
+      }
+      for f in fields {
+        match f.1 {
+          Some(v) => self.instr(out, v)
+          None => out.push(self.read(f.0, loc))
+        }
+      }
+      self.instr(out, descriptor)
+      out.push(StructNewDesc(t))
+    }
+    StructDefaultDesc(descriptor) => {
+      let (t, _) = self.struct_fields_of(i, loc)
+      self.instr(out, descriptor)
+      out.push(StructNewDefaultDesc(t))
+    }
+    // A struct's descriptor, read back off it. The type immediate is the
+    // RECEIVER's, not the descriptor's: it says which struct is being asked.
+    GetDescriptor(e) => {
+      self.instr(out, e)
+      guard node_type_index(e) is Some(t) else {
+        raise Unresolved("descriptor receiver type", loc)
+      }
+      out.push(RefGetDesc(t))
+    }
     StructDefault(_) => {
       let (t, _) = self.struct_fields_of(i, loc)
       out.push(StructNewDefault(t))

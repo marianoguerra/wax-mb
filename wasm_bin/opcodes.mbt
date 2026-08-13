@@ -523,6 +523,21 @@ fn encode_instruction(
     }
 
     // GC instructions
+    StructNewDesc(type_idx) => {
+      w.write_byte(0xFB)
+      w.write_byte(0x20)
+      w.write_u32(type_idx)
+    }
+    StructNewDefaultDesc(type_idx) => {
+      w.write_byte(0xFB)
+      w.write_byte(0x21)
+      w.write_u32(type_idx)
+    }
+    RefGetDesc(type_idx) => {
+      w.write_byte(0xFB)
+      w.write_byte(0x22)
+      w.write_u32(type_idx)
+    }
     StructNew(type_idx) => {
       w.write_byte(0xFB)
       w.write_u32(0)

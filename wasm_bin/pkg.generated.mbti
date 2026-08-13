@@ -347,6 +347,9 @@ pub(all) enum Instruction {
   I64TruncSatF32U
   I64TruncSatF64S
   I64TruncSatF64U
+  StructNewDesc(Int)
+  StructNewDefaultDesc(Int)
+  RefGetDesc(Int)
   StructNew(Int)
   StructNewDefault(Int)
   StructGet(Int, Int)

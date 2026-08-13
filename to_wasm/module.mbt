@@ -20,6 +20,15 @@ pub fn lower_module(
     ],
   ],
 ) -> @wasm_bin.Module raise LowerError {
+  // A module with an UNRESOLVED conditional cannot be emitted at all, and the
+  // check belongs here rather than at the first one reached: the reference
+  // rejects the module, not the field, and stumbling further in produces a
+  // downstream complaint about whatever the conditional left inconsistent.
+  for field in source {
+    if field.desc is Conditional(..) {
+      raise Unemittable("conditional annotations", field.info)
+    }
+  }
   let indices = assign_indices(ctx, source)
   // The layout FIRST: it installs the store-to-emitted translation that every
   // type reference below is read through, including the ones inside the
