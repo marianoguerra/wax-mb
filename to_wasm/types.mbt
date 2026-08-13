@@ -87,6 +87,15 @@ pub fn emitted_named_index(name : String, store_index : Int) -> Int {
   // did not merge it with anything that has a definition of its own, so there
   // is nothing for it to be confused with.
   if layout.by_store.get(store_index) is Some(existing) {
+    // An entry placed FOR this name is this name's, and carries it: the
+    // reference materialises a defined function's signature under its own
+    // name once something refers to it. An entry this name merely reaches --
+    // `<string>`, or an import's inline signature -- is an alias, and stays
+    // unnamed.
+    if layout.slot_names.get(existing) is Some(owner) && owner == name {
+      layout.by_name[name] = existing
+      return existing
+    }
     if !layout.declared_slots.contains(existing) {
       // Recorded as an ALIAS, not as a name. The entry was already there --
       // interned like an inline signature rather than written down -- and the
@@ -164,6 +173,8 @@ pub struct TypeLayout {
   written : Map[String, @ast.SubType]
   /// The declared subtypes, with the index each landed at, for the reuse test.
   declared : Array[(@ast.SubType, Int)]
+  /// The name a store-tier entry was placed FOR, when it was placed for one.
+  slot_names : Map[Int, String]
   /// Names that resolve to an entry they do not own: the entry was interned
   /// for its own reasons and this name merely reaches it. Kept apart from
   /// `by_name` because the name section emits the latter and not this.
@@ -332,6 +343,7 @@ pub fn type_layout(
     declared,
     declared_slots,
     aliases,
+    slot_names,
   }
   current_layout.val = Some(layout)
   for si in 0..<store.last_index() {
