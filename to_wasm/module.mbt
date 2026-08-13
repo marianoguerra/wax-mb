@@ -679,8 +679,12 @@ fn Lowering::declare_func_refs(
       return
     }
   }
+  // LAST reference first. The reference folds its set into a list, which
+  // reverses it, and the segment's order is observable -- so this is not a
+  // detail of how the set is stored but part of the output.
   let init : Array[Array[@wasm_bin.Instruction]] = []
-  for name in self.func_refs_in_body {
+  for k = self.func_refs_in_body.length() - 1; k >= 0; k = k - 1 {
+    let name = self.func_refs_in_body[k]
     if self.func_refs_outside.contains(name) {
       continue
     }
