@@ -205,6 +205,11 @@ fn Lowering::field(
       for d in data {
         let offset : Array[@wasm_bin.Instruction] = []
         self.instr(offset, d.offset)
+        // An inline segment may still be NAMED, and the name belongs to the
+        // index it is about to take.
+        if d.data_name is Some(n) {
+          note_name(m.names.data, m.datas.length(), n.name)
+        }
         m.datas.push({
           mode: Active(mem, offset),
           init: data_bytes(d.init, loc),
