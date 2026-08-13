@@ -2,9 +2,11 @@
 //
 // Their text names follow from their constructor names by one rule -- a type
 // prefix, a dot, the rest in snake case -- because both are spellings of the
-// same spec mnemonic. The two exceptions are named explicitly: `RefEqInstr`
-// avoids a collision with the `Eq` trait and `AtomicFence` groups with the
-// atomics it is not otherwise like.
+// same spec mnemonic. Three do not follow it and are named explicitly:
+// `RefEqInstr` avoids a collision with the `Eq` trait, `AtomicFence` groups
+// with the atomics it is not otherwise like, and `i31.get_s`/`i31.get_u` take
+// `i31` as the type prefix even though the constructor runs the digits into
+// the name -- which the rule read as one word, and spelled `i31_get_s`.
 
 ///|
 /// The text name of an instruction with no immediate, or `None` when it takes
@@ -163,8 +165,8 @@ pub fn nullary(i : @wasm_bin.Instruction) -> String? {
     I64TruncSatF64U => Some("i64.trunc_sat_f64_u")
     ArrayLen => Some("array.len")
     RefI31 => Some("ref.i31")
-    I31GetS => Some("i31_get_s")
-    I31GetU => Some("i31_get_u")
+    I31GetS => Some("i31.get_s")
+    I31GetU => Some("i31.get_u")
     AnyConvertExtern => Some("any.convert_extern")
     ExternConvertAny => Some("extern.convert_any")
     I8x16Swizzle => Some("i8x16.swizzle")

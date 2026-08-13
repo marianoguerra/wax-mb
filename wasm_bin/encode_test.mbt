@@ -170,6 +170,7 @@ test "reference types take the short form only where the format allows" {
     m.globals.push({
       type_: { mut_: false, typ: Ref(rt) },
       init: [RefNull(rt.typ)],
+      init_spans: [],
     })
     let h = hex(@wasm_bin.encode(m))
     // global section: id 06, size, count 01, then the global type

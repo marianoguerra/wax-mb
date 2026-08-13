@@ -889,6 +889,7 @@ pub(all) struct TableType {
 pub(all) struct Table {
   type_ : TableType
   init : Array[Instruction]?
+  init_spans : Array[(Int, Int, Int)]
 } derive(Eq, Debug)
 
 ///|
@@ -978,6 +979,10 @@ pub(all) struct FunctionCode {
 pub(all) struct Global {
   type_ : GlobalType
   init : Array[Instruction]
+  /// The spans of that initialiser, so the text form can fold it. A constant
+  /// expression is its own body with its own indices, so its spans are its
+  /// own too.
+  init_spans : Array[(Int, Int, Int)]
 } derive(Eq, Debug)
 
 ///|
@@ -996,6 +1001,9 @@ pub(all) struct Element {
   mode : ElemMode
   type_ : RefType
   init : Array[Array[Instruction]]
+  /// One span list per initialiser, and one for the active offset.
+  init_spans : Array[Array[(Int, Int, Int)]]
+  offset_spans : Array[(Int, Int, Int)]
 } derive(Eq, Debug)
 
 ///|
@@ -1017,6 +1025,8 @@ pub(all) enum DataMode {
 pub(all) struct Data {
   mode : DataMode
   init : Bytes
+  /// The spans of the active offset expression.
+  offset_spans : Array[(Int, Int, Int)]
   /// How the source wrote those bytes.
   ///
   /// A segment is a run of bytes to the binary and a list of PIECES to the

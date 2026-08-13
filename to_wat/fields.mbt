@@ -483,7 +483,7 @@ fn global_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   }
   head.push(Atom(globaltype(m, g.type_)))
   let l : Array[Sexp] = [block(head)]
-  for x in const_expr(m, g.init) {
+  for x in const_expr(m, g.init, spans=g.init_spans) {
     l.push(x)
   }
   List(l)
@@ -537,7 +537,7 @@ fn table_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   }
   let l : Array[Sexp] = [block(head)]
   if t.init is Some(e) {
-    for x in const_expr(m, e) {
+    for x in const_expr(m, e, spans=t.init_spans) {
       l.push(x)
     }
   }
@@ -560,7 +560,7 @@ fn elem_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
       } else if tab != 0 {
         head.push(List([Atom("table"), Atom(tab.to_string())]))
       }
-      head.push(expr("offset", const_expr(m, offset)))
+      head.push(expr("offset", const_expr(m, offset, spans=e.offset_spans)))
     }
   }
   // The `func` SHORTHAND: a segment of plain `ref.func`s at the non-nullable
@@ -582,8 +582,9 @@ fn elem_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
     }
     None => {
       head.push(Atom(reftype(e.type_, m.names.types)))
-      for item in e.init {
-        items.push(expr("item", const_expr(m, item)))
+      for j, item in e.init {
+        let sp = if j < e.init_spans.length() { e.init_spans[j] } else { [] }
+        items.push(expr("item", const_expr(m, item, spans=sp)))
       }
     }
   }
@@ -615,7 +616,7 @@ fn data_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
     } else if mem != 0 {
       head.push(List([Atom("memory"), Atom(mem.to_string())]))
     }
-    head.push(expr("offset", const_expr(m, offset)))
+    head.push(expr("offset", const_expr(m, offset, spans=d.offset_spans)))
   }
   // The pieces the source wrote, when they were recorded; otherwise the bytes
   // as one string, which is always a correct spelling of them.
@@ -667,16 +668,18 @@ fn imported_count(m : @wasm_bin.Module, of_ : String) -> Int {
 }
 
 ///|
-/// A constant expression, folded like any other body. It carries no spans --
-/// an initialiser is a single instruction tree the lowering emitted in one go
-/// -- so the fold falls back to reading the last instruction as the head.
+/// A constant expression, folded like any other body, from the spans the
+/// lowering kept for it. Without them a multi-instruction initialiser folds by
+/// the fallback, which reads `(i32.add (i32.const 0) (i32.const 42))` back as
+/// `(i32.add (i32.const 42 (i32.const 0)))`.
 fn const_expr(
   m : @wasm_bin.Module,
   body : Array[@wasm_bin.Instruction],
+  spans? : Array[(Int, Int, Int)] = [],
 ) -> Array[Sexp] raise WatError {
   let ctx = { m, locals: Map([]), labels: Map([]), opened: 0, scope: [] }
   let out : Array[Sexp] = []
-  for node in fold(body, []) {
+  for node in fold(body, spans) {
     out.push(folded(node, ctx))
   }
   out

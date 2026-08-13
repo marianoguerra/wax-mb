@@ -226,10 +226,9 @@ fn Lowering::field(
             None => raise Unresolved("global type", loc)
           }
       }
-      let init : Array[@wasm_bin.Instruction] = []
-      self.instr(init, def)
+      let (init, init_spans) = self.const_expr(def)
       note_name(m.names.globals, self.global_index(name, loc), name.name)
-      m.globals.push({ type_: { mut_, typ: ty }, init })
+      m.globals.push({ type_: { mut_, typ: ty }, init, init_spans })
       m.field_order.push(FGlobal(m.globals.length() - 1))
       self.export_of(m, attributes, Global(self.global_index(name, loc)), name)
     }
@@ -259,8 +258,7 @@ fn Lowering::field(
       // An inline data segment is an ACTIVE segment of this memory, written
       // where the memory is rather than beside it.
       for d in data {
-        let offset : Array[@wasm_bin.Instruction] = []
-        self.instr(offset, d.offset)
+        let (offset, offset_spans) = self.const_expr(d.offset)
         // An inline segment may still be NAMED, and the name belongs to the
         // index it is about to take.
         if d.data_name is Some(n) {
@@ -270,6 +268,7 @@ fn Lowering::field(
           mode: Active(mem, offset),
           init: data_bytes(d.init, loc),
           spelling: data_spelling(d.init),
+          offset_spans,
         })
       }
       self.export_of(m, attributes, Memory(mem), name)
@@ -278,12 +277,12 @@ fn Lowering::field(
       let (mi, ma) = limits.unwrap_or((0UL, None))
       let elem_type = self.reftype_index(reftype, loc)
       let init_ = match init {
-        Some(e) => {
-          let out : Array[@wasm_bin.Instruction] = []
-          self.instr(out, e)
-          Some(out)
-        }
+        Some(e) => Some(self.const_expr(e))
         None => None
+      }
+      let (init_body, init_spans) = match init_ {
+        Some((b, sp)) => (Some(b), sp)
+        None => (None, [])
       }
       note_name(m.names.tables, self.table_index(name, loc), name.name)
       m.field_order.push(FTable(m.tables.length()))
@@ -292,7 +291,8 @@ fn Lowering::field(
           elem_type,
           limits: { mi, ma, address_type, page_size_log2: None, shared: false },
         },
-        init: init_,
+        init: init_body,
+        init_spans,
       })
       self.export_of(m, attributes, Table(self.table_index(name, loc)), name)
     }
@@ -310,21 +310,23 @@ fn Lowering::field(
       self.export_of(m, attributes, Tag(self.tag_index(name, loc)), name)
     }
     Elem(name~, reftype~, mode~, init~, ..) => {
+      let mut offset_spans : Array[(Int, Int, Int)] = []
       let mode_ = match mode {
         EPassive => @wasm_bin.ElemMode::Passive
         EActive(tab, offset) => {
-          let out : Array[@wasm_bin.Instruction] = []
-          self.instr(out, offset)
+          let (out, spans) = self.const_expr(offset)
+          offset_spans = spans
           Active(self.table_index(tab, loc), out)
         }
       }
       // Each element is its own constant expression, which is what lets a
       // segment mix `ref.func` and `ref.null`.
       let inits : Array[Array[@wasm_bin.Instruction]] = []
+      let init_spans : Array[Array[(Int, Int, Int)]] = []
       for e in init {
-        let out : Array[@wasm_bin.Instruction] = []
-        self.instr(out, e)
+        let (out, spans) = self.const_expr(e)
         inits.push(out)
+        init_spans.push(spans)
       }
       note_name(m.names.elem, m.elems.length(), name.name)
       m.field_order.push(FElem(m.elems.length()))
@@ -332,14 +334,17 @@ fn Lowering::field(
         mode: mode_,
         type_: self.reftype_index(reftype, loc),
         init: inits,
+        init_spans,
+        offset_spans,
       })
     }
     Data(name~, mode~, init~, ..) => {
+      let mut offset_spans : Array[(Int, Int, Int)] = []
       let mode_ = match mode {
         Passive => @wasm_bin.DataMode::Passive
         Active(mem, offset) => {
-          let out : Array[@wasm_bin.Instruction] = []
-          self.instr(out, offset)
+          let (out, spans) = self.const_expr(offset)
+          offset_spans = spans
           Active(self.memory_index(mem, loc), out)
         }
       }
@@ -355,6 +360,7 @@ fn Lowering::field(
         mode: mode_,
         init: data_bytes(init, loc),
         spelling: data_spelling(init),
+        offset_spans,
       })
     }
     // Nothing to EMIT: the type section comes from the STORE, which interned
@@ -552,6 +558,27 @@ fn Lowering::lower_body(
     self.instr(body, s)
   }
   body
+}
+
+///|
+/// Lower a constant expression, keeping its spans to itself.
+///
+/// A const expression is its own body with its own indices, so its spans
+/// cannot go in the enclosing list -- the function being lowered, or the last
+/// one lowered before this field. They did, and an element segment's four
+/// initialisers left four spans behind that the preceding function's operands
+/// then matched against, folding two of them into each other.
+fn Lowering::const_expr(
+  self : Lowering,
+  e : @ast.Instr[@typing_env.InferredAnnotation],
+) -> (Array[@wasm_bin.Instruction], Array[(Int, Int, Int)]) raise LowerError {
+  let outer = self.spans
+  self.spans = []
+  let out : Array[@wasm_bin.Instruction] = []
+  self.instr(out, e)
+  let spans = self.spans
+  self.spans = outer
+  (out, spans)
 }
 
 ///|
@@ -982,6 +1009,9 @@ fn Lowering::declare_func_refs(
       mode: Declarative,
       type_: { nullable: false, typ: Func },
       init,
+      // One `ref.func` each, so each folds to itself.
+      init_spans: init.map(_ => [(0, 0, 1)]),
+      offset_spans: [],
     })
   }
 }
