@@ -345,9 +345,12 @@ fn Lowering::hinted(
       // is opened once around both bodies rather than once per body.
       self.open_label(label)
       let then_ = self.instrs(if_block.desc)
+      // Lowered even when there is none, so that an `if` always records TWO
+      // nested span lists. The printer pairs them by count, and an `if` that
+      // sometimes records one and sometimes two shifts every list after it.
       let else_ = match else_block {
         Some(b) => self.instrs(b.desc)
-        None => []
+        None => self.instrs([])
       }
       let _ = self.labels.pop()
       out.push(If(self.block_type(typ, loc), then_, else_))

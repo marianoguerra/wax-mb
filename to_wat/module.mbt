@@ -295,11 +295,15 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
       inner.push(folded(child, ctx))
     }
     if j < clauses.length() {
-      let c : Array[Sexp] = [Atom(clauses[j])]
-      for x in inner {
-        c.push(x)
+      // An `else` with nothing in it is not written. `then` always is, even
+      // empty, because it is what the condition guards.
+      if !(clauses[j] == "else" && inner.is_empty()) {
+        let c : Array[Sexp] = [Atom(clauses[j])]
+        for x in inner {
+          c.push(x)
+        }
+        l.push(List(c))
       }
-      l.push(List(c))
     } else {
       for x in inner {
         l.push(x)

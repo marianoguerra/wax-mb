@@ -29,7 +29,10 @@ pub(all) struct Node {
 fn enclosed(i : @wasm_bin.Instruction) -> Array[Array[@wasm_bin.Instruction]] {
   match i {
     Block(_, b) | Loop(_, b) | TryTable(_, _, b) => [b]
-    If(_, t, e) => if e.is_empty() { [t] } else { [t, e] }
+    // BOTH, always: the lowering records a span list for each, and an `if`
+    // that sometimes has one and sometimes two shifts every list after it.
+    // An empty else is dropped when it is printed, not when it is paired.
+    If(_, t, e) => [t, e]
     LegacyTry(_, b, catches, all) => {
       let out = [b]
       for c in catches {
@@ -155,7 +158,7 @@ fn fold_body(
     }
     out[k] = {
       head,
-      operands: fold_body_range(body, all_spans, start, end - 1),
+      operands: fold_body_range(body, all_spans, start, end - 1, nested, cursor),
       bodies,
     }
   }
@@ -207,11 +210,16 @@ fn next_start(spans : Array[(Int, Int, Int)], at : Int, limit : Int) -> Int {
 
 ///|
 /// Fold the operands lying in `[from, limit)` of a body.
+///
+/// The spans are shifted to the slice's own indices; the nested bodies are
+/// not, because they are matched by ORDER rather than by position.
 fn fold_body_range(
   body : Array[@wasm_bin.Instruction],
   spans : Array[(Int, Int, Int)],
   from : Int,
   limit : Int,
+  nested : Array[Array[(Int, Int, Int)]],
+  cursor : Ref[Int],
 ) -> Array[Node] {
   guard from < limit else { return [] }
   let slice : Array[@wasm_bin.Instruction] = []
@@ -224,7 +232,9 @@ fn fold_body_range(
       shifted.push((s.0 - from, s.1 - from, s.2 - from))
     }
   }
-  // An operand encloses no body of its own here: a structural instruction is
-  // never an operand, because it is a statement.
-  fold_body(slice, shifted, [], @ref.new(0))
+  // An operand CAN enclose a body: `(br $l (block ...))` is one instruction
+  // taking another that guards code. So the operands read from the same list
+  // and the same cursor -- an operand's body was recorded like any other, and
+  // skipping it shifts every list recorded before it.
+  fold_body(slice, shifted, nested, cursor)
 }
