@@ -536,6 +536,20 @@ fn Lowering::hinted(
           }
         }
       }
+      // Dropping a SEGMENT. The receiver names one, not a value, so nothing
+      // is emitted for it -- the segment index is the whole instruction.
+      if callee.desc is StructGet(recv, meth) && meth.name == "drop" {
+        if recv.desc is Get(seg) && !self.locals.contains(seg.name) {
+          if self.indices.elems.get(seg.name) is Some(e) {
+            out.push(ElemDrop(e))
+            return
+          }
+          if self.indices.datas.get(seg.name) is Some(d) {
+            out.push(DataDrop(d))
+            return
+          }
+        }
+      }
       // Memory and table management: the same five names on both, told apart
       // by which space the receiver is in -- `size` on a memory counts pages
       // and on a table counts elements.

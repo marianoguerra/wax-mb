@@ -1570,6 +1570,43 @@ pub fn Checker::statement(
       }
     }
 
+    // --- Dropping a data or element segment ---
+    //
+    // `seg.drop()` names a SEGMENT, which is not a value: typing the receiver
+    // as an expression would look for a variable of that name and report it
+    // unbound, which is what was happening.
+    Call(callee, _) if self.segment_drop(callee) => {
+      guard callee.desc is StructGet(recv, _) else { return self.poisoned(i) }
+      guard recv.desc is Get(name) else { return self.poisoned(i) }
+      note_use(ctx, ctx.datas, name)
+      note_use(ctx, ctx.elems, name)
+      {
+        desc: Call(
+          {
+            desc: StructGet(
+              {
+                desc: Get(name),
+                info: annotate([], recv.info),
+                hints: recv.hints,
+                expected: recv.expected,
+              },
+              match callee.desc {
+                StructGet(_, m) => m
+                _ => { name: "drop", loc }
+              },
+            ),
+            info: annotate([], callee.info),
+            hints: callee.hints,
+            expected: callee.expected,
+          },
+          [],
+        ),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- A memory access written as a method call ---
     Call(callee, args) if self.mgmt_kind(callee) is Some(_) => {
       guard callee.desc is StructGet(recv, meth) else {
@@ -3299,6 +3336,16 @@ fn Checker::is_mem_access(
 ///
 /// The same five method names serve both, so only the RECEIVER tells them
 /// apart -- `size` on a memory counts pages, `size` on a table counts elements.
+fn Checker::segment_drop(
+  self : Checker,
+  callee : @ast.Instr[@basic.Location],
+) -> Bool {
+  guard callee.desc is StructGet(recv, meth) else { return false }
+  guard recv.desc is Get(name) else { return false }
+  classify_method_call(self.ctx, name, meth.name) is SegmentDrop
+}
+
+///|
 fn Checker::mgmt_kind(
   self : Checker,
   callee : @ast.Instr[@basic.Location],
