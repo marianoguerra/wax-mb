@@ -80,6 +80,15 @@ pub fn emitted_named_index(name : String, store_index : Int) -> Int {
   // subtype -- finality and supertype included -- not on the interned entry:
   // interning normalises exactly the differences that decide this, so two
   // names can share a store entry and still be two types here.
+  // An entry no DECLARATION put there is simply this type's own: interning
+  // did not merge it with anything that has a definition of its own, so there
+  // is nothing for it to be confused with.
+  if layout.by_store.get(store_index) is Some(existing) {
+    if !layout.declared_slots.contains(existing) {
+      layout.by_name[name] = existing
+      return existing
+    }
+  }
   guard layout.written.get(name) is Some(mine) else {
     return emitted_type_index(store_index)
   }
@@ -148,6 +157,10 @@ pub struct TypeLayout {
   written : Map[String, @ast.SubType]
   /// The declared subtypes, with the index each landed at, for the reuse test.
   declared : Array[(@ast.SubType, Int)]
+  /// Which emitted entries a DECLARATION put there. A synthesized type sharing
+  /// one of those is a different type that merely interned with it; sharing an
+  /// entry nothing declared is just itself.
+  declared_slots : Map[Int, Bool]
 }
 
 ///|
@@ -265,6 +278,10 @@ pub fn type_layout(
   let pending : Array[@wasm_bin.SubType] = []
   let written : Map[String, @ast.SubType] = Map([])
   let declared : Array[(@ast.SubType, Int)] = []
+  let declared_slots : Map[Int, Bool] = Map([])
+  for _, i in by_name {
+    declared_slots[i] = true
+  }
   for entry in ctx.type_context.types.iter_entries() {
     let (name, (_, sub)) = entry
     written[name] = sub
@@ -283,6 +300,7 @@ pub fn type_layout(
     pending,
     written,
     declared,
+    declared_slots,
   }
   current_layout.val = Some(layout)
   for si in 0..<store.last_index() {

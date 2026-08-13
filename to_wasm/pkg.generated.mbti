@@ -169,6 +169,7 @@ pub struct TypeLayout {
   pending : Array[@wasm_bin.SubType]
   written : Map[String, @ast.SubType]
   declared : Array[(@ast.SubType, Int)]
+  declared_slots : Map[Int, Bool]
 }
 
 // Type aliases
