@@ -1076,6 +1076,17 @@ pub(all) struct Module {
   codes : Array[FunctionCode]
   datas : Array[Data]
   tags : Array[TagType]
+  /// The order the SOURCE wrote the fields in.
+  ///
+  /// The sections group items by kind, which is not the order they were
+  /// written, and the text format writes each field where it stood. Nothing in
+  /// the sections records that order, so the lowering notes it as it goes --
+  /// the same way it notes the instruction spans, and for the same reason: a
+  /// second derivation could disagree with the first.
+  ///
+  /// Only the binary encoder's input is authoritative for the bytes; this is a
+  /// view for the text form, and is empty when nothing recorded it.
+  field_order : Array[FieldRef]
   /// The `name` custom section.
   names : Names
   /// The `target_features` custom section: (prefix byte, feature name) pairs,
@@ -1085,11 +1096,27 @@ pub(all) struct Module {
 } derive(Debug)
 
 ///|
+/// One field of a module, named by where its item landed.
+pub(all) enum FieldRef {
+  /// The type-section entries one `type` or `rec` field declared.
+  FTypes(Array[Int])
+  FImport(Int)
+  FFunc(Int)
+  FTable(Int)
+  FMemory(Int)
+  FGlobal(Int)
+  FTag(Int)
+  FElem(Int)
+  FData(Int)
+} derive(Eq, Debug)
+
+///|
 /// A module with nothing in it.
 pub fn Module::empty() -> Module {
   {
     types: [],
     rec_groups: [],
+    field_order: [],
     imports: [],
     funcs: [],
     tables: [],

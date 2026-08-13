@@ -8,15 +8,69 @@
 /// Print a module's text form.
 pub fn print_module(m : @wasm_bin.Module) -> String raise WatError {
   let out = StringBuilder::new()
-  let lines : Array[String] = []
-  for k, code in m.codes {
-    lines.push(function_field(m, k, code))
-  }
-  for line in lines {
-    out.write_string(line)
+  for f in m.field_order {
+    out.write_string(field(m, f))
     out.write_char('\n')
   }
+  // Whatever the source did not place: the types a lowering materialised for
+  // itself, and the element segments minted to declare function references.
+  // They belong to no written field, so they follow the ones that do.
+  let placed_types : Map[Int, Bool] = Map([])
+  let placed_elems : Map[Int, Bool] = Map([])
+  for f in m.field_order {
+    match f {
+      FTypes(ks) =>
+        for k in ks {
+          placed_types[k] = true
+        }
+      FElem(k) => placed_elems[k] = true
+      _ => ()
+    }
+  }
+  for k in 0..<m.types.length() {
+    if !placed_types.contains(k) {
+      out.write_string(subtype_field(m, k))
+      out.write_char('\n')
+    }
+  }
+  for k in 0..<m.elems.length() {
+    if !placed_elems.contains(k) {
+      out.write_string(elem_field(m, k))
+      out.write_char('\n')
+    }
+  }
+  if m.start is Some(f) {
+    out.write_string("(start " + name_or(m.names.functions, f) + ")\n")
+  }
   out.to_string()
+}
+
+///|
+/// One module field, written where the source put it.
+fn field(m : @wasm_bin.Module, f : @wasm_bin.FieldRef) -> String raise WatError {
+  match f {
+    // A `rec` group is one field holding several definitions; a lone type is
+    // written bare, because a singleton `rec` is a DIFFERENT type and the
+    // source said which it wrote.
+    FTypes([k]) => subtype_field(m, k)
+    FTypes(ks) => {
+      let out = StringBuilder::new()
+      out.write_string("(rec")
+      for k in ks {
+        out.write_string(" " + subtype_field(m, k))
+      }
+      out.write_string(")")
+      out.to_string()
+    }
+    FImport(k) => import_field(m, k)
+    FFunc(k) => function_field(m, k, m.codes[k])
+    FTable(k) => table_field(m, k)
+    FMemory(k) => memory_field(m, k)
+    FGlobal(k) => global_field(m, k)
+    FTag(k) => tag_field(m, k)
+    FElem(k) => elem_field(m, k)
+    FData(k) => data_field(m, k)
+  }
 }
 
 ///|

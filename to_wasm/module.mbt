@@ -68,13 +68,22 @@ pub fn lower_module(
     }
     try {
       match field.desc {
-        Import(module_~, decl~) =>
+        Import(module_~, decl~) => {
           low.import_(m, module_.desc, decl.desc, field.info)
+          m.field_order.push(FImport(m.imports.length() - 1))
+        }
         ImportGroup(module_~, decls~) => {
+          // The order is recorded AFTER the group is compacted, because
+          // compacting replaces the run of entries with one that stands for
+          // all of them -- so the indices to record only exist once it has run.
+          let before = m.imports.length()
           for d in decls {
             low.import_(m, module_.desc, d.desc, field.info)
           }
           low.compact_group(m, decls.length(), field.info)
+          for k in before..<m.imports.length() {
+            m.field_order.push(FImport(k))
+          }
         }
         _ => ()
       }
@@ -145,6 +154,7 @@ fn Lowering::field(
       note_name(m.names.functions, fi, name.name)
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
       m.codes.push({ ..code, priority: function_priority(attributes) })
+      m.field_order.push(FFunc(m.codes.length() - 1))
       // The local names belong to the function that just closed over them.
       if !self.local_names.is_empty() {
         m.names.locals[fi] = self.local_names
@@ -178,6 +188,7 @@ fn Lowering::field(
       self.instr(init, def)
       note_name(m.names.globals, self.global_index(name, loc), name.name)
       m.globals.push({ type_: { mut_, typ: ty }, init })
+      m.field_order.push(FGlobal(m.globals.length() - 1))
       self.export_of(m, attributes, Global(self.global_index(name, loc)), name)
     }
     Memory(
@@ -200,6 +211,7 @@ fn Lowering::field(
       m.memories.push({
         limits: { mi, ma, address_type, page_size_log2, shared },
       })
+      m.field_order.push(FMemory(m.memories.length() - 1))
       let mem = self.memory_index(name, loc)
       note_name(m.names.memories, mem, name.name)
       // An inline data segment is an ACTIVE segment of this memory, written
@@ -231,6 +243,7 @@ fn Lowering::field(
         None => None
       }
       note_name(m.names.tables, self.table_index(name, loc), name.name)
+      m.field_order.push(FTable(m.tables.length()))
       m.tables.push({
         type_: {
           elem_type,
@@ -244,6 +257,7 @@ fn Lowering::field(
       note_name(m.names.tags, self.tag_index(name, loc), name.name)
       // A tag that NAMES its type means that declaration, not whichever
       // like-shaped one the signature search happens to reach first.
+      m.field_order.push(FTag(m.tags.length()))
       m.tags.push({
         type_idx: match typ {
           Some(n) => self.type_index_of(n, loc)
@@ -270,6 +284,7 @@ fn Lowering::field(
         inits.push(out)
       }
       note_name(m.names.elem, m.elems.length(), name.name)
+      m.field_order.push(FElem(m.elems.length()))
       m.elems.push({
         mode: mode_,
         type_: self.reftype_index(reftype, loc),
@@ -292,13 +307,24 @@ fn Lowering::field(
       if name is Some(n) {
         note_name(m.names.data, m.datas.length(), n.name)
       }
+      m.field_order.push(FData(m.datas.length()))
       m.datas.push({ mode: mode_, init: data_bytes(init, loc) })
     }
-    // Nothing to emit: the type section comes from the STORE, which interned
+    // Nothing to EMIT: the type section comes from the STORE, which interned
     // every declaration as it was made, so a `type` field has already had its
-    // effect by the time the lowering runs. A module annotation carries feature
-    // and name metadata the checker consumed, not code.
-    Type(_) | ModuleAnnotation(_) => ()
+    // effect by the time the lowering runs. Its POSITION is still recorded,
+    // because the text format writes the field where the source put it and the
+    // section says nothing about that.
+    Type(decls) => {
+      let placed : Array[Int] = []
+      for d in decls {
+        placed.push(self.type_index_of(d.desc.0, d.info))
+      }
+      m.field_order.push(FTypes(placed))
+    }
+    // A module annotation carries feature and name metadata the checker
+    // consumed, not code.
+    ModuleAnnotation(_) => ()
     _ => raise NotLowered(field_name(field.desc), loc)
   }
 }
