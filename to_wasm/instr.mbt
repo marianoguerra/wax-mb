@@ -1172,10 +1172,16 @@ fn Lowering::instrs(
   self : Lowering,
   instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
 ) -> Array[@wasm_bin.Instruction] raise LowerError {
+  // A nested body is its OWN array with its own indices, so it collects its
+  // own spans; they are handed to the nested list as the body completes.
+  let outer = self.spans
+  self.spans = []
   let out : Array[@wasm_bin.Instruction] = []
   for s in instrs {
     self.instr(out, s)
   }
+  self.nested_spans.push(self.spans)
+  self.spans = outer
   out
 }
 

@@ -61,8 +61,15 @@ fn function_field(
   // does not -- which is what the reference's layout comes to for a body whose
   // statements are each a single folded group.
   let statements : Array[String] = []
-  for node in fold(code.body, code.spans) {
-    statements.push(folded(node, m, locals))
+  let ctx = {
+    m,
+    locals,
+    labels: m.names.labels.get(index).unwrap_or(Map([])),
+    opened: 0,
+    scope: [],
+  }
+  for node in fold(code.body, code.spans, nested=code.nested_spans) {
+    statements.push(folded(node, ctx))
   }
   let head = out.to_string()
   let flat = head + join_with(statements, " ", before=" ") + ")"
@@ -82,14 +89,33 @@ fn local_name(locals : Map[Int, Bytes], k : Int) -> String {
 }
 
 ///|
+/// What printing one function body needs to know beyond the tree.
+///
+/// `opened` counts the blocks in the order they OPEN, which is the order the
+/// name section numbers their labels in; `scope` is the same blocks stacked
+/// innermost-last, which is what a branch depth counts against. The two differ
+/// -- a name belongs to its block, a depth to where the branch stands -- so
+/// both are carried.
+priv struct Ctx {
+  m : @wasm_bin.Module
+  locals : Map[Int, Bytes]
+  labels : Map[Int, Bytes]
+  mut opened : Int
+  scope : Array[String?]
+}
+
+///|
 /// One folded instruction: `(head operand operand)`, or just `head` when it
 /// takes none.
-fn folded(
-  node : Node,
-  m : @wasm_bin.Module,
-  locals : Map[Int, Bytes],
-) -> String raise WatError {
-  let head = mnemonic(node.head, m.names, locals)
+///
+/// A structural instruction is written the same way, except that what follows
+/// the head is the code it guards rather than values it consumes.
+fn folded(node : Node, ctx : Ctx) -> String raise WatError {
+  if !node.bodies.is_empty() ||
+    node.head is (Block(_, _) | Loop(_, _) | If(_, _, _)) {
+    return structural(node, ctx)
+  }
+  let head = mnemonic(node.head, ctx.m.names, ctx.locals, scope=ctx.scope)
   if node.operands.is_empty() {
     return "(" + head + ")"
   }
@@ -97,10 +123,82 @@ fn folded(
   out.write_string("(" + head)
   for operand in node.operands {
     out.write_char(' ')
-    out.write_string(folded(operand, m, locals))
+    out.write_string(folded(operand, ctx))
   }
   out.write_string(")")
   out.to_string()
+}
+
+///|
+/// `(block $l (result T) body...)`, and the two that shape their bodies
+/// differently: `if`, whose operand comes before two named clauses.
+fn structural(node : Node, ctx : Ctx) -> String raise WatError {
+  // The label is claimed BEFORE the body is printed, because that is the order
+  // the blocks open in and so the order the names are numbered in.
+  let opened = ctx.opened
+  ctx.opened = opened + 1
+  let name = match ctx.labels.get(opened) {
+    Some(b) => Some(text_of(b))
+    None => None
+  }
+  let id = match name {
+    Some(n) => " $" + n
+    None => ""
+  }
+  let (word, bt) = match node.head {
+    Block(bt, _) => ("block", bt)
+    Loop(bt, _) => ("loop", bt)
+    If(bt, _, _) => ("if", bt)
+    _ => raise NotPrinted("this structured instruction")
+  }
+  let out = StringBuilder::new()
+  out.write_string("(" + word + id + blocktype(bt, ctx.m))
+  // The `if` condition is an operand, and it is written before the clauses.
+  for operand in node.operands {
+    out.write_char(' ')
+    out.write_string(folded(operand, ctx))
+  }
+  ctx.scope.push(name)
+  let clauses = if word == "if" { ["then", "else"] } else { [] }
+  for j, body in node.bodies {
+    let inner : Array[String] = []
+    for child in body {
+      inner.push(folded(child, ctx))
+    }
+    if j < clauses.length() {
+      out.write_string(
+        " (" + clauses[j] + join_with(inner, " ", before=" ") + ")",
+      )
+    } else {
+      out.write_string(join_with(inner, " ", before=" "))
+    }
+  }
+  let _ = ctx.scope.pop()
+  out.write_string(")")
+  out.to_string()
+}
+
+///|
+/// What a block produces, when it produces anything.
+fn blocktype(
+  bt : @wasm_bin.BlockType,
+  m : @wasm_bin.Module,
+) -> String raise WatError {
+  match bt {
+    Empty => ""
+    Value(t) => " (result " + valtype(t, m.names.types) + ")"
+    MultiValue(ts) | InlineType([], ts) => {
+      let out = StringBuilder::new()
+      for t in ts {
+        out.write_string(" (result " + valtype(t, m.names.types) + ")")
+      }
+      out.to_string()
+    }
+    // A block that CONSUMES values is spelled as a reference to the signature
+    // that describes it, because the inline form has no room for parameters.
+    TypeIndex(k) => " (type " + name_or(m.names.types, k) + ")"
+    InlineType(_, _) => raise NotPrinted("a block type with parameters")
+  }
 }
 
 ///|

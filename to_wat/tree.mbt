@@ -12,25 +12,66 @@
 // nothing to say which.
 
 ///|
-/// One folded instruction: a head, and the operands folded under it.
+/// One folded instruction: a head, the operands folded under it, and -- for the
+/// structural instructions -- the bodies they enclose, each folded too.
+///
+/// Operands and bodies are different things: an operand is a value the
+/// instruction consumes and a body is code it guards. They are one node here
+/// because the text format writes both inside the same parentheses.
 pub(all) struct Node {
   head : @wasm_bin.Instruction
   operands : Array[Node]
+  bodies : Array[Array[Node]]
+}
+
+///|
+/// The bodies a structural instruction encloses, in written order.
+fn enclosed(i : @wasm_bin.Instruction) -> Array[Array[@wasm_bin.Instruction]] {
+  match i {
+    Block(_, b) | Loop(_, b) | TryTable(_, _, b) => [b]
+    If(_, t, e) => if e.is_empty() { [t] } else { [t, e] }
+    LegacyTry(_, b, catches, all) => {
+      let out = [b]
+      for c in catches {
+        out.push(c.1)
+      }
+      if all is Some(a) {
+        out.push(a)
+      }
+      out
+    }
+    _ => []
+  }
 }
 
 ///|
 /// Fold a lowered body, given the spans recorded while lowering it.
 ///
-/// A span is one node's whole run, and it always follows its children's --
-/// so the LAST span ending at a given point is the outermost node there.
+/// A span is one node's whole run, and it always follows its children's -- so
+/// the widest span at a position is the node there, and the last instruction
+/// in it is the head.
+///
+/// The NESTED lists arrive in completion order: deepest first, then left to
+/// right, with each enclosing body after the bodies inside it. Taking them
+/// from the BACK while walking each body's structural instructions right to
+/// left visits them in exactly that order reversed, which is how each body
+/// finds its own.
 pub fn fold(
   body : Array[@wasm_bin.Instruction],
   spans : Array[(Int, Int)],
+  nested? : Array[Array[(Int, Int)]] = [],
 ) -> Array[Node] {
-  // The outermost span starting at or after each position, for a linear walk.
-  // Spans are recorded in completion order, so a node's own span is the last
-  // one covering its range; scanning for the WIDEST span at a position finds
-  // the node rather than one of its operands.
+  let cursor = @ref.new(nested.length())
+  fold_body(body, spans, nested, cursor)
+}
+
+///|
+fn fold_body(
+  body : Array[@wasm_bin.Instruction],
+  spans : Array[(Int, Int)],
+  nested : Array[Array[(Int, Int)]],
+  cursor : Ref[Int],
+) -> Array[Node] {
   fn widest(from : Int, limit : Int) -> (Int, Int)? {
     let mut best : (Int, Int)? = None
     for s in spans {
@@ -44,25 +85,70 @@ pub fn fold(
     best
   }
 
-  fn build(from : Int, limit : Int) -> Array[Node] {
-    let out : Array[Node] = []
-    let mut at = from
-    while at < limit {
-      let (start, end) = match widest(at, limit) {
-        Some(s) => s
-        // No span covers this instruction: it was pushed by a lowering that
-        // emits several instructions for one node -- the head is the last, and
-        // whatever precedes it here is its own operand run.
-        None => (at, limit)
-      }
-      // The head is the LAST instruction of the span; everything before it in
-      // the span computed its operands.
-      let head = body[end - 1]
-      out.push({ head, operands: build(start, end - 1) })
-      at = end
+  // The boundaries first, left to right; the nodes are built from them right to
+  // left, because that is the order the nested bodies were recorded in.
+  let bounds : Array[(Int, Int)] = []
+  let mut at = 0
+  while at < body.length() {
+    let b = match widest(at, body.length()) {
+      Some(s) => s
+      // No span covers this instruction: one wax node lowered to several, and
+      // the head is the last of them.
+      None => (at, body.length())
     }
-    out
+    bounds.push(b)
+    at = b.1
   }
+  let out : Array[Node] = Array::make(bounds.length(), {
+    head: @wasm_bin.Instruction::Nop,
+    operands: [],
+    bodies: [],
+  })
+  for k = bounds.length() - 1; k >= 0; k = k - 1 {
+    let (start, end) = bounds[k]
+    let head = body[end - 1]
+    // The enclosed bodies are taken in reverse too, so that the LAST one
+    // written is the last one recorded.
+    let inner = enclosed(head)
+    let bodies : Array[Array[Node]] = Array::make(inner.length(), [])
+    for j = inner.length() - 1; j >= 0; j = j - 1 {
+      cursor.val = cursor.val - 1
+      let s = if cursor.val >= 0 && cursor.val < nested.length() {
+        nested[cursor.val]
+      } else {
+        []
+      }
+      bodies[j] = fold_body(inner[j], s, nested, cursor)
+    }
+    out[k] = {
+      head,
+      operands: fold_body_range(body, spans, start, end - 1),
+      bodies,
+    }
+  }
+  out
+}
 
-  build(0, body.length())
+///|
+/// Fold the operands lying in `[from, limit)` of a body.
+fn fold_body_range(
+  body : Array[@wasm_bin.Instruction],
+  spans : Array[(Int, Int)],
+  from : Int,
+  limit : Int,
+) -> Array[Node] {
+  guard from < limit else { return [] }
+  let slice : Array[@wasm_bin.Instruction] = []
+  for k in from..<limit {
+    slice.push(body[k])
+  }
+  let shifted : Array[(Int, Int)] = []
+  for s in spans {
+    if s.0 >= from && s.1 <= limit {
+      shifted.push((s.0 - from, s.1 - from))
+    }
+  }
+  // An operand encloses no body of its own here: a structural instruction is
+  // never an operand, because it is a statement.
+  fold_body(slice, shifted, [], @ref.new(0))
 }

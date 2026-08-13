@@ -35,7 +35,13 @@ fn one_func(instrs : Array[@wasm_bin.Instruction]) -> @wasm_bin.Module {
   m.types.push(@wasm_bin.SubType::func([], []))
   m.rec_groups.push({ start: 0, len: 1, explicit: false })
   m.funcs.push(0)
-  m.codes.push({ locals: [], body: instrs, spans: [], priority: None })
+  m.codes.push({
+    locals: [],
+    body: instrs,
+    spans: [],
+    nested_spans: [],
+    priority: None,
+  })
   m
 }
 
@@ -60,6 +66,7 @@ test "one exported function" {
     locals: [],
     body: [LocalGet(0), LocalGet(1), I32Add],
     spans: [],
+    nested_spans: [],
     priority: None,
   })
   inspect(
@@ -371,7 +378,13 @@ test "the name section carries every name space, in ascending id order" {
   m.types.push(@wasm_bin.SubType::func([I32], []))
   m.rec_groups.push({ start: 0, len: 1, explicit: false })
   m.funcs.push(0)
-  m.codes.push({ locals: [I64], body: [], spans: [], priority: None })
+  m.codes.push({
+    locals: [I64],
+    body: [],
+    spans: [],
+    nested_spans: [],
+    priority: None,
+  })
   m.names.module_ = Some(b"m")
   m.names.functions[0] = b"f"
   m.names.types[0] = b"t"
@@ -462,7 +475,13 @@ test "name entries are sorted by index, however they were inserted" {
   m.rec_groups.push({ start: 0, len: 1, explicit: false })
   for i in [2, 0, 1] {
     m.funcs.push(0)
-    m.codes.push({ locals: [], body: [], spans: [], priority: None })
+    m.codes.push({
+      locals: [],
+      body: [],
+      spans: [],
+      nested_spans: [],
+      priority: None,
+    })
     m.names.functions[i] = [b"a", b"b", b"c"][i]
   }
   // inserted 2, 0, 1; emitted 0, 1, 2

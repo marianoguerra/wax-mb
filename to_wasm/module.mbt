@@ -43,6 +43,7 @@ pub fn lower_module(
     locals: Map([]),
     local_types: [],
     spans: [],
+    nested_spans: [],
     binding_slots: Map([]),
     claimed: Map([]),
     local_names: Map([]),
@@ -319,6 +320,7 @@ fn Lowering::function_body(
   self.locals = Map([])
   self.local_types = []
   self.spans = []
+  self.nested_spans.clear()
   self.binding_slots = Map([])
   self.claimed = Map([])
   self.local_names = Map([])
@@ -340,6 +342,7 @@ fn Lowering::function_body(
         locals: [],
         body: self.lower_body(label, instrs),
         spans: self.spans,
+        nested_spans: self.nested_spans,
         priority: None,
       }
     }
@@ -359,7 +362,13 @@ fn Lowering::function_body(
   self.collect_locals(instrs, ft.params.length())
   let body = self.lower_body(label, instrs)
   self.in_body = false
-  { locals: self.local_types, body, spans: self.spans, priority: None }
+  {
+    locals: self.local_types,
+    body,
+    spans: self.spans,
+    nested_spans: self.nested_spans,
+    priority: None,
+  }
 }
 
 ///|

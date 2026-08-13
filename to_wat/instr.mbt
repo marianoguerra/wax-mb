@@ -17,11 +17,24 @@ pub impl Show for WatError with fn output(self, logger) {
 }
 
 ///|
+/// The label a branch depth names: the enclosing blocks are counted outward
+/// from the innermost, so a depth is a distance from the END of the scope.
+fn label(scope : Array[String?], depth : Int) -> String {
+  let k = scope.length() - 1 - depth
+  if k >= 0 && k < scope.length() && scope[k] is Some(name) {
+    "$" + name
+  } else {
+    depth.to_string()
+  }
+}
+
+///|
 /// The mnemonic and immediates of one instruction, without its operands.
 pub fn mnemonic(
   i : @wasm_bin.Instruction,
   names : @wasm_bin.Names,
   locals : Map[Int, Bytes],
+  scope? : Array[String?] = [],
 ) -> String raise WatError {
   // Everything with no immediate follows one rule and lives in its own table;
   // what is left here is the instructions whose immediates have to be written.
@@ -41,8 +54,8 @@ pub fn mnemonic(
     Call(k) => "call " + name_or(names.functions, k)
     ReturnCall(k) => "return_call " + name_or(names.functions, k)
     RefFunc(k) => "ref.func " + name_or(names.functions, k)
-    Br(d) => "br " + d.to_string()
-    BrIf(d) => "br_if " + d.to_string()
+    Br(d) => "br " + label(scope, d)
+    BrIf(d) => "br_if " + label(scope, d)
     CallIndirect(t, tab) =>
       "call_indirect " +
       name_or(names.tables, tab) +

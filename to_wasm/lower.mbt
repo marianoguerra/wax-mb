@@ -81,6 +81,13 @@ pub struct Lowering {
   /// nesting from an arity table would be a second answer to a question the
   /// lowering has already answered.
   mut spans : Array[(Int, Int)]
+  /// The spans of every NESTED body -- a block's, a loop's, each arm of an
+  /// `if` -- in the order those bodies COMPLETE, which is deepest-first and
+  /// then left to right. A nested body is a separate array with its own
+  /// indices, so its spans cannot live in the enclosing body's list; the
+  /// completion order is what pairs them up again, because folding walks the
+  /// same tree the lowering built.
+  nested_spans : Array[Array[(Int, Int)]]
   mut binding_slots : Map[Int, Int]
   /// The wasm-level names already claimed in this function, each with the
   /// number its next duplicate takes. Wasm has one flat namespace per
