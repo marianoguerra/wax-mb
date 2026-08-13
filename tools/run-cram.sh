@@ -52,7 +52,6 @@ declare -A KNOWN_FAILING=(
   [duplicate-diagnostic-chains.t]="diagnostic chain differs"
   [error-format-short.t]="usage text for an unknown --error-format differs"
   [new-lints-wax.t]="missing lints"
-  [non-empty-stack-location.t]="diagnostic span differs"
   [redundant-mul-zero-float.t]="missing lint: redundant-operation on floats"
   [redundant-sub-self-float.t]="missing lint: redundant-operation on floats"
   [suggestions.t]="missing suggestion: redundant-annotation"

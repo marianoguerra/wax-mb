@@ -797,7 +797,9 @@ test "leftover values" {
       ops.push(Some(loc_at(5, 6)), @infer.valtype_cell(@infer.i32_valtype))
       ops.push(Some(loc_at(9, 10)), @infer.valtype_cell(@infer.i64_valtype))
     }),
-    content="5: These values remain on the stack. (also 9)",
+    content=(
+      #|9: These values remain on the stack. (also 5)
+    ),
   )
   // Values with no usable location are still real values -- name the construct
   // and list what is there, rather than saying nothing.

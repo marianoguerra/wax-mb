@@ -289,8 +289,9 @@ pub fn leftovers(st : Stack) -> (Array[@basic.Location], Bool) {
       _ => break
     }
   }
-  // Gathered top-first; report in source order.
-  locs.rev_in_place()
+  // Left TOP FIRST. The value on top is the one the reader is standing on --
+  // the last thing the scope computed -- so it takes the caret, and the ones
+  // under it follow as related labels.
   (locs, has_error)
 }
 
@@ -333,8 +334,8 @@ pub fn report_leftovers(
     non_empty_stack(diagnostics, location, render(st))
     return
   }
-  // The topmost carries the caret; the rest are related labels with no text of
-  // their own, since the message above already says what they are.
+  // The topmost carries the caret; the rest, descending, are related labels
+  // with no text of their own -- the message above already says what they are.
   let related = locs[1:]
     .iter()
     .map(loc => ({ loc, message: @message.concat([]) } : @diagnostic.Label))

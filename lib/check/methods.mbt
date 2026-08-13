@@ -264,9 +264,12 @@ fn Checker::cont_method_tag(
           Labelled(l, v) =>
             if l.name == "tag" && v.desc is Get(t) {
               if tag is Some(prev) {
+                // At the tag NAME both times, not at the whole `tag: e`: the
+                // two names are what the reader compares, and the label is the
+                // same word in both.
                 duplicate_argument_label(
                   ctx.diagnostics,
-                  a.info,
+                  t.loc,
                   prev.loc,
                   "tag",
                 )
