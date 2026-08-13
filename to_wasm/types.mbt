@@ -98,6 +98,37 @@ pub fn emitted_named_index(name : String, store_index : Int) -> Int {
 }
 
 ///|
+/// The emitted index of a function SHAPE, materialising one if the section
+/// holds none.
+///
+/// A block written with parameters -- `do (i32, i32) -> i32 { .. }` -- names
+/// its signature by shape rather than by name, and nothing may have interned
+/// that shape: it is not a declaration, and no function has it. The entry it
+/// then needs is a real type in the section, appended like any other.
+pub fn emitted_shape_index(
+  params : Array[@wasm_types.ValType[Int]],
+  results : Array[@wasm_types.ValType[Int]],
+) -> Int? {
+  guard current_layout.val is Some(layout) else { return None }
+  for emitted, sub in layout.types {
+    if sub.composite is Func(ft) && ft.params == params && ft.results == results {
+      return Some(emitted)
+    }
+  }
+  let emitted = layout.types.length()
+  layout.store_of.push(-1)
+  layout.types.push({
+    final_: true,
+    supertypes: [],
+    descriptor: None,
+    describes: None,
+    composite: Func({ params, results }),
+  })
+  layout.groups.push({ start: emitted, len: 1, explicit: false })
+  Some(emitted)
+}
+
+///|
 /// Where each type name lands in the emitted section.
 pub struct TypeLayout {
   /// Emitted index for a declared name.

@@ -22,6 +22,8 @@ pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @
 
 pub fn emitted_named_index(String, Int) -> Int
 
+pub fn emitted_shape_index(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]) -> Int?
+
 pub fn emitted_type_index(Int) -> Int
 
 pub fn fresh_name(Array[String], String, Int) -> String

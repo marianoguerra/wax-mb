@@ -1606,10 +1606,19 @@ fn Lowering::mgmt_call(
       } else {
         (None, args)
       }
+    // A CROSS-space copy names the source first: `dst.copy(src, i, j, n)`.
+    // It is told from the same-space `dst.copy(i, j, n)` by the first argument
+    // naming a memory or table rather than being a value -- which is what
+    // makes the two spellings one method.
     "copy" =>
-      if args.length() == 4 && args[1].desc is Get(n) {
-        // `dst.copy(i, src, j, n)`: the source is the second argument.
-        (Some(n), [args[0], args[2], args[3]])
+      if args.length() >= 1 &&
+        args[0].desc is Get(n) &&
+        (
+          self.indices.memories.get(n.name) is Some(_) ||
+          self.indices.tables.get(n.name) is Some(_)
+        ) &&
+        !self.locals.contains(n.name) {
+        (Some(n), args[1:].to_owned())
       } else {
         (None, args)
       }
@@ -1700,7 +1709,13 @@ fn Lowering::block_functype_index(
   for r in typ.results {
     results.push(self.valtype_index(r, loc))
   }
-  guard self.functypes.get((params, results)) is Some(i) else {
+  // The pre-built table first, then the section itself -- which may have to
+  // grow: a block's signature is named by SHAPE, and nothing is obliged to
+  // have interned that shape before the block asked for it.
+  if self.functypes.get((params, results)) is Some(i) {
+    return i
+  }
+  guard emitted_shape_index(params, results) is Some(i) else {
     raise Unresolved("block type", loc)
   }
   i
