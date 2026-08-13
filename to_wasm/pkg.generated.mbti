@@ -60,6 +60,8 @@ pub fn note_name(Map[Int, Bytes], Int, String) -> Unit
 
 pub fn numeric_cast(@wasm_types.ValType[Int], @wasm_types.ValType[Int]) -> Array[@wasm_bin.Instruction]?
 
+pub fn parse_f32(String, @basic.Location) -> Float raise LowerError
+
 pub fn parse_f64(String, @basic.Location) -> Double raise LowerError
 
 pub fn parse_float_bits(String, Bool, @basic.Location) -> Double raise LowerError

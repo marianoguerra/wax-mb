@@ -79,19 +79,13 @@ fn Lowering::hinted(
       match node_valtype(i) {
         Some(I32) => out.push(I32Const(parse_i32(s, loc)))
         Some(I64) => out.push(I64Const(parse_i64(s, loc)))
-        Some(F32) =>
-          out.push(
-            F32Const(Float::from_double(parse_float_bits(s, false, loc))),
-          )
+        Some(F32) => out.push(F32Const(parse_f32(s, loc)))
         Some(F64) => out.push(F64Const(parse_float_bits(s, true, loc)))
         _ => raise Unresolved("integer literal type", loc)
       }
     Float(s) =>
       match node_valtype(i) {
-        Some(F32) =>
-          out.push(
-            F32Const(Float::from_double(parse_float_bits(s, false, loc))),
-          )
+        Some(F32) => out.push(F32Const(parse_f32(s, loc)))
         Some(F64) => out.push(F64Const(parse_float_bits(s, true, loc)))
         _ => raise Unresolved("float literal type", loc)
       }
@@ -188,13 +182,7 @@ fn Lowering::hinted(
             // fits, so unlike the integers there is nothing to check.
             Some(F32) =>
               if a.desc is (Int(_) | Float(_)) {
-                out.push(
-                  F32Const(
-                    Float::from_double(
-                      parse_float_bits(literal_text(i, loc), false, loc),
-                    ),
-                  ),
-                )
+                out.push(F32Const(parse_f32(literal_text(i, loc), loc)))
               } else {
                 self.instr(out, a)
                 out.push(F32Neg)

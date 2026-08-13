@@ -140,6 +140,51 @@ pub fn parse_float_bits(
 }
 
 ///|
+/// An f32 literal, at f32 width throughout.
+///
+/// A NaN cannot be routed through a double: widening an f32 NaN to f64 and
+/// narrowing it back sets the quiet bit, because that is what a hardware
+/// conversion does to a signalling NaN. The payload the source wrote is then
+/// silently not the payload emitted -- `nan:0x12345` becomes `nan:0x412345` --
+/// which is precisely the bit pattern these literals exist to name.
+pub fn parse_f32(s : String, loc : @basic.Location) -> Float raise LowerError {
+  let cleaned = s.split("_").join("")
+  let (negative, body) = if cleaned.has_prefix("-") {
+    (true, cleaned[1:].to_owned())
+  } else if cleaned.has_prefix("+") {
+    (false, cleaned[1:].to_owned())
+  } else {
+    (false, cleaned)
+  }
+  if body.has_prefix("nan") {
+    return Float::reinterpret_from_int(
+      nan_bits32(body, negative, loc).reinterpret_as_int(),
+    )
+  }
+  Float::from_double(parse_float_bits(s, false, loc))
+}
+
+///|
+/// The 32 bits of an f32 NaN with the payload the source named.
+fn nan_bits32(
+  body : String,
+  negative : Bool,
+  loc : @basic.Location,
+) -> UInt raise LowerError {
+  let payload = if body == "nan" {
+    0x400000U
+  } else if body.has_prefix("nan:0x") {
+    let hex = body[6:].to_owned()
+    (@string.parse_uint64("0x" + hex) catch {
+      _ => raise NotLowered("nan payload", loc)
+    }).to_uint()
+  } else {
+    raise NotLowered("float literal spelling", loc)
+  }
+  (if negative { 0xFF800000U } else { 0x7F800000U }) | payload
+}
+
+///|
 /// A NaN, with the payload the source named.
 ///
 /// `nan` alone is the canonical one; `nan:0x..` names the mantissa bits. The
