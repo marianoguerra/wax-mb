@@ -65,10 +65,12 @@ pub fn lower_module(
       match field.desc {
         Import(module_~, decl~) =>
           low.import_(m, module_.desc, decl.desc, field.info)
-        ImportGroup(module_~, decls~) =>
+        ImportGroup(module_~, decls~) => {
           for d in decls {
             low.import_(m, module_.desc, d.desc, field.info)
           }
+          low.compact_group(m, decls.length(), field.info)
+        }
         _ => ()
       }
     } catch {
@@ -495,7 +497,7 @@ fn Lowering::import_(
     }
     Tag(..) => Tag(self.tag_type_index(decl.id, loc))
   }
-  m.imports.push({ mod_name: module_, name, desc })
+  m.imports.push({ mod_name: module_, name, desc, group: None })
   match decl.kind {
     Func(..) =>
       note_name(m.names.functions, self.func_index(decl.id, loc), decl.id.name)
@@ -780,4 +782,44 @@ fn Lowering::derived_pages(
   } else {
     pages
   }
+}
+
+///|
+/// Fold the last `n` imports into one compact group entry.
+///
+/// `import "m" { .. }` is one block in the source and, under the
+/// compact-import-section feature, one entry in the binary: the module name is
+/// written once. Each item still claims its own index, so the entries are built
+/// individually first and collapsed here -- which also means a module without
+/// the feature simply skips this step and keeps them.
+///
+/// The homogeneous form shares a single descriptor and lists only names. It is
+/// available exactly when every item's descriptor is EQUAL, so sharing loses
+/// nothing -- not merely when they are the same kind, which would drop the
+/// differences.
+fn Lowering::compact_group(
+  self : Lowering,
+  m : @wasm_bin.Module,
+  n : Int,
+  loc : @basic.Location,
+) -> Unit {
+  ignore(loc)
+  guard n >= 2 else { return }
+  guard self.ctx.type_context.features.is_enabled(CompactImportSection) else {
+    return
+  }
+  let start = m.imports.length() - n
+  guard start >= 0 else { return }
+  let items = m.imports[start:].to_owned()
+  let head = items[0]
+  let homogeneous = items.iter().all(i => i.desc == head.desc)
+  let group : @wasm_bin.ImportGroup = if homogeneous {
+    Homogeneous(items.map(i => i.name))
+  } else {
+    Heterogeneous(items.map(i => (i.name, i.desc)))
+  }
+  for _ in 0..<n {
+    let _ = m.imports.pop()
+  }
+  m.imports.push({ ..head, group: Some(group) })
 }

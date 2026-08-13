@@ -888,6 +888,22 @@ pub(all) struct Import {
   mod_name : Bytes
   name : Bytes
   desc : ImportDesc
+  /// The rest of a COMPACT group, when this entry heads one.
+  ///
+  /// The compact-import-section proposal writes a module name once for a run
+  /// of imports from it. The marker sits where an externtype kind byte would,
+  /// and neither marker is a valid kind, so a plain import stays unambiguous.
+  group : ImportGroup?
+} derive(Eq, Debug)
+
+///|
+/// The two compact forms: per-item descriptors, or one shared descriptor and a
+/// list of names.
+pub(all) enum ImportGroup {
+  /// Marker 0x7F: each item carries its own name and descriptor.
+  Heterogeneous(Array[(Bytes, ImportDesc)])
+  /// Marker 0x7E: one descriptor, then the names that share it.
+  Homogeneous(Array[Bytes])
 } derive(Eq, Debug)
 
 ///|

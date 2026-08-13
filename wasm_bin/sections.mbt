@@ -56,32 +56,64 @@ fn encode_import_section(mod : Module) -> Bytes raise EncodeError {
     w.write_u32(mod.imports.length())
     for imp in mod.imports {
       w.write_name(imp.mod_name)
-      w.write_name(imp.name)
-      match imp.desc {
-        Func(type_idx) => {
-          w.write_byte(0x00)
-          w.write_u32(type_idx)
+      // A compact group writes the module name once, then an EMPTY second name
+      // and a marker where a kind byte would go. Neither marker is a valid
+      // kind, which is what keeps a plain import unambiguous.
+      match imp.group {
+        Some(Heterogeneous(items)) => {
+          w.write_name(b"")
+          w.write_byte(0x7F)
+          w.write_u32(items.length())
+          for item in items {
+            w.write_name(item.0)
+            encode_import_desc(w, item.1)
+          }
+          continue
         }
-        Table(tt) => {
-          w.write_byte(0x01)
-          encode_table_type(w, tt)
+        Some(Homogeneous(names)) => {
+          w.write_name(b"")
+          w.write_byte(0x7E)
+          encode_import_desc(w, imp.desc)
+          w.write_u32(names.length())
+          for n in names {
+            w.write_name(n)
+          }
+          continue
         }
-        Memory(mt) => {
-          w.write_byte(0x02)
-          encode_limits(w, mt.limits)
-        }
-        Global(gt) => {
-          w.write_byte(0x03)
-          encode_global_type(w, gt)
-        }
-        Tag(type_idx) => {
-          w.write_byte(0x04)
-          w.write_byte(0x00) // the exception attribute
-          w.write_u32(type_idx)
-        }
+        None => ()
       }
+      w.write_name(imp.name)
+      encode_import_desc(w, imp.desc)
     }
   })
+}
+
+///|
+/// One import's externtype.
+fn encode_import_desc(w : BinaryWriter, desc : ImportDesc) -> Unit {
+  match desc {
+    Func(type_idx) => {
+      w.write_byte(0x00)
+      w.write_u32(type_idx)
+    }
+    Table(tt) => {
+      w.write_byte(0x01)
+      encode_table_type(w, tt)
+    }
+    Memory(mt) => {
+      w.write_byte(0x02)
+      encode_limits(w, mt.limits)
+    }
+    Global(gt) => {
+      w.write_byte(0x03)
+      encode_global_type(w, gt)
+    }
+    Tag(type_idx) => {
+      w.write_byte(0x04)
+      w.write_byte(0x00) // the exception attribute
+      w.write_u32(type_idx)
+    }
+  }
 }
 
 ///|

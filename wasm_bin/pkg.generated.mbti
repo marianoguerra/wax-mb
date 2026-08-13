@@ -97,6 +97,7 @@ pub(all) struct Import {
   mod_name : Bytes
   name : Bytes
   desc : ImportDesc
+  group : ImportGroup?
 } derive(Eq, @debug.Debug)
 
 pub(all) enum ImportDesc {
@@ -105,6 +106,11 @@ pub(all) enum ImportDesc {
   Memory(MemoryType)
   Global(@wasm_types.MutType[@wasm_types.ValType[Int]])
   Tag(Int)
+} derive(Eq, @debug.Debug)
+
+pub(all) enum ImportGroup {
+  Heterogeneous(Array[(Bytes, ImportDesc)])
+  Homogeneous(Array[Bytes])
 } derive(Eq, @debug.Debug)
 
 pub(all) struct InstrHints {
