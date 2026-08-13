@@ -315,22 +315,47 @@ pub fn check_module(
     ],
   ],
 ) {
-  let ctx = @typing_env.ModuleContext::new(
-    diagnostics,
-    store,
-    features,
-    simplify~,
-    warn_unused~,
-  )
   // Before anything asks whether a feature is enabled: what the module declares
   // is part of its configuration, not a fact about one of its fields.
   apply_declared_features(diagnostics, features, fields)
   // Before anything else: a bidirectional control character is invisible, so it
   // has no shape for a later pass to notice -- only a walk over every place a
-  // string can hide will find one.
+  // string can hide will find one. It is a fact about the SOURCE, so it is
+  // asked once whatever the configuration.
   if warn_unused {
     lint_confusable(diagnostics, fields)
   }
+  // A module with `#[if]` in it is a FAMILY of programs, and most of what the
+  // checker asks -- whether a value is left on the stack, whether a local is
+  // ever read -- has a different answer in each. So its diagnostics come from
+  // checking every reachable configuration on its own, and the tree built below
+  // (which the printer and the lowering consume, conditionals and all) is built
+  // with its diagnostics DISCARDED: they would be the answers to questions
+  // asked of a program that is not any of the ones being compiled.
+  let conditional = module_has_conditional(fields)
+  if conditional {
+    check_let_bindings(diagnostics, fields)
+    check_configurations(
+      diagnostics,
+      store,
+      features,
+      fields,
+      simplify~,
+      warn_unused~,
+    )
+  }
+  let build_diagnostics = if conditional {
+    @diagnostic.collector(parent=Some(diagnostics))
+  } else {
+    diagnostics
+  }
+  let ctx = @typing_env.ModuleContext::new(
+    build_diagnostics,
+    store,
+    features,
+    simplify~,
+    warn_unused~,
+  )
   declare_fields(ctx, fields)
   // The module-wide attribute constraints -- one export per name, one start,
   // one module name -- which no single field can answer on its own.

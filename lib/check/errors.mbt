@@ -2268,3 +2268,21 @@ pub fn atomic_signed_load(
     .sep(@message.text("if you need the sign.")),
   )
 }
+
+///|
+/// A `let` written inside a conditional branch.
+///
+/// Branches are transparent and mutually exclusive, so a name bound in one
+/// would leak past the conditional and clash with the other.
+pub fn let_in_conditional(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "A let binding is not allowed inside a conditional annotation; declare the local before the conditional.",
+    ),
+  )
+}

@@ -11,6 +11,7 @@ import {
   "marianoguerra/wax/internal/number",
   "marianoguerra/wax/internal/spell",
   "marianoguerra/wax/cond",
+  "marianoguerra/wax/internal/cond_explore",
   "marianoguerra/wax/wasm/atomics",
   "marianoguerra/wax/wasm/simd",
   "marianoguerra/wax/unicode",
