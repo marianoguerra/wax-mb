@@ -145,20 +145,23 @@ fn mnemonic_text(
     RefFunc(k) => "ref.func " + name_or(names.functions, k)
     Br(d) => "br " + label(scope, d)
     BrIf(d) => "br_if " + label(scope, d)
+    // The table is left out when it is the unnamed default, the same rule the
+    // memory accesses follow; the signature is always named, because an
+    // indirect call is checked against it at run time.
     CallIndirect(t, tab) =>
-      "call_indirect " +
-      name_or(names.tables, tab) +
+      "call_indirect" +
+      opt_index(names.tables, tab) +
       " (type " +
-      t.to_string() +
+      name_or(names.types, t) +
       ")"
     ReturnCallIndirect(t, tab) =>
-      "return_call_indirect " +
-      name_or(names.tables, tab) +
+      "return_call_indirect" +
+      opt_index(names.tables, tab) +
       " (type " +
-      t.to_string() +
+      name_or(names.types, t) +
       ")"
-    CallRef(t) => "call_ref " + t.to_string()
-    ReturnCallRef(t) => "return_call_ref " + t.to_string()
+    CallRef(t) => "call_ref " + name_or(names.types, t)
+    ReturnCallRef(t) => "return_call_ref " + name_or(names.types, t)
     RefNull(h) => "ref.null " + heaptype(h, names.types)
     F32Const(v) => "f32.const " + v.to_double().to_string()
     F64Const(v) => "f64.const " + v.to_string()
