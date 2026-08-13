@@ -891,7 +891,10 @@ pub(all) struct TagType {
 ///|
 /// What an import brings in.
 pub(all) enum ImportDesc {
-  Func(Int)
+  /// A function's type index, and whether the import is EXACT -- a `ref.func`
+  /// on it then yields an exact reference rather than a plain one. The flag
+  /// rides in the kind byte, not beside the index: 0x20 instead of 0x00.
+  Func(Int, Bool)
   Table(TableType)
   Memory(MemoryType)
   Global(GlobalType)

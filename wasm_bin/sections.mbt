@@ -100,9 +100,10 @@ fn encode_import_section(mod : Module) -> Bytes raise EncodeError {
 /// One import's externtype.
 fn encode_import_desc(w : BinaryWriter, desc : ImportDesc) -> Unit {
   match desc {
-    Func(type_idx) => {
-      w.write_byte(0x00)
-      w.write_u32(type_idx)
+    Func(type_idx, exact) => {
+      // The EXACT marker rides in the kind byte rather than beside the index.
+      w.write_byte(if exact { 0x20 } else { 0x00 })
+      w.write_s32(type_idx)
     }
     Table(tt) => {
       w.write_byte(0x01)

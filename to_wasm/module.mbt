@@ -530,11 +530,11 @@ fn Lowering::import_(
     }
   }
   let desc : @wasm_bin.ImportDesc = match decl.kind {
-    Func(..) => {
+    Func(exact~, ..) => {
       guard self.ctx.functions.find_no_mark(decl.id.name) is Some(Some(entry)) else {
         raise Unresolved("imported function signature", loc)
       }
-      Func(emitted_type_index(entry.0.to_int_for_tests_only()))
+      Func(emitted_type_index(entry.0.to_int_for_tests_only()), exact)
     }
     Global(mut_~, typ~) => Global({ mut_, typ: self.valtype_index(typ, loc) })
     Memory(address_type~, limits~, page_size_log2~, shared~) => {

@@ -101,7 +101,7 @@ pub(all) struct Import {
 } derive(Eq, @debug.Debug)
 
 pub(all) enum ImportDesc {
-  Func(Int)
+  Func(Int, Bool)
   Table(TableType)
   Memory(MemoryType)
   Global(@wasm_types.MutType[@wasm_types.ValType[Int]])
