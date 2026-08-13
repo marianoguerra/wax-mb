@@ -142,7 +142,11 @@ pub struct Tbl[A] {
   /// Names looked up through this table, each paired with where the lookup was
   /// made from. One entry per distinct name and origin pair; the unused-field
   /// lint reads it.
-  used : Map[String, Array[Origin]]
+  ///
+  /// Mutable so a snapshot table can SHARE this one: a name resolved through
+  /// the snapshot has been referenced, and the lint that asks reads the table
+  /// the name was declared in.
+  mut used : Map[String, Array[Origin]]
   /// Where references are currently being made from. Shared by every table of
   /// one module context, so a resolution can be attributed without the context
   /// being threaded into the table.
@@ -171,10 +175,16 @@ pub fn[A] Tbl::new(
 /// Re-adding them instead would say "already bound" for every name that is
 /// visible under more than one configuration -- and there is nothing wrong with
 /// those; that is what conditional compilation is for.
+///
+/// The record of what has been REFERENCED is shared, not copied. A snapshot is
+/// a second view of the same declarations, so a name resolved through it is a
+/// name that was used -- and the unused lint asks the table the name was
+/// declared in, which is this one.
 pub fn[A] Tbl::copy_entries_into(self : Tbl[A], dst : Tbl[A]) -> Unit {
   for name, l in self.entries {
     dst.entries[name] = l.copy()
   }
+  dst.used = self.used
 }
 
 ///|

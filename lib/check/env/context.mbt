@@ -115,7 +115,7 @@ pub struct ModuleContext {
   type_context : TypeContext
   types : Tbl[(@type_store.RefIndex, @ast.SubType)]
   functions : Tbl[FunctionEntry]
-  globals : Tbl[GlobalEntry]
+  mut globals : Tbl[GlobalEntry]
   /// The globals a TABLE initializer can see: only the imported ones. A table
   /// is checked before the module's own globals are registered, unlike a global
   /// initializer, which sees the globals declared before it.
@@ -232,6 +232,24 @@ pub fn ModuleContext::enter_function(
   self.assigned_locals = assigned_locals
   self.control_types = []
   self.return_types = return_types
+}
+
+///|
+/// Run `f` with only the IMPORTED globals in scope.
+///
+/// A table initializer runs before the module's own globals exist, so it can
+/// only name one that came from outside. The reference says this by handing the
+/// initializer a context whose global table IS the import table; swapping the
+/// field is the same act.
+pub fn[A] ModuleContext::with_import_globals(
+  self : ModuleContext,
+  f : () -> A,
+) -> A {
+  let saved = self.globals
+  self.globals = self.import_globals
+  let r = f()
+  self.globals = saved
+  r
 }
 
 ///|

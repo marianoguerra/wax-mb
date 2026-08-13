@@ -200,6 +200,22 @@ pub fn non_empty_stack(
 }
 
 ///|
+/// A table whose elements have no value to start as, and nothing to fill it
+/// with.
+pub fn non_nullable_table(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "A table with a non-nullable element type must have an initializer.",
+    ),
+  )
+}
+
+///|
 /// A local read before it holds a value.
 ///
 /// Only a non-nullable reference can be in this state: everything else has a

@@ -167,13 +167,21 @@ fn check_field(
     }
     Table(name~, address_type~, reftype~, limits~, init~, attributes~) => {
       check_limits(ctx, field.info, "table", address_type, limits)
+      // Without an initializer a table is filled with its element type's
+      // default value, which a non-nullable reference does not have.
+      if init is None && !reftype.nullable {
+        non_nullable_table(ctx.diagnostics, field.info)
+      }
       let init_ = match init {
         Some(e) =>
           Some(
-            match internalize(ctx.type_context, ctx.diagnostics, Ref(reftype)) {
-              Some(elt) => checker.check(elt, e)
-              None => checker.expression(e)
-            },
+            ctx.with_import_globals(() => {
+              match
+                internalize(ctx.type_context, ctx.diagnostics, Ref(reftype)) {
+                Some(elt) => checker.check(elt, e)
+                None => checker.expression(e)
+              }
+            }),
           )
         None => None
       }
