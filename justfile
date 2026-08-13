@@ -151,6 +151,19 @@ diff-all: build
 diff-native: build
     {{waxdiff}} run --oracle 2 --oracle2-route native --impl {{impl}}
 
+# Oracle 4: `-f wat` against the reference's.
+#
+# The one oracle with no golden behind it -- the reference answers at compare
+# time -- so it needs the binary and stays out of `diff` and CI. It is also out
+# of the DEFAULT oracle set, and reports rather than gates: the text printer
+# reaches most of the corpus and not all of it, and a gate that fails on every
+# run says nothing on the run where something actually breaks. The burn-down
+# goes to test/report/wat-drift.md. When the count reaches parity it belongs in
+# the default set, and then it gates.
+[group('diff')]
+diff-wat: build
+    {{waxdiff}} run --oracle 4 --impl {{impl}}
+
 # The inner loop when something is failing:
 #
 #     just diff-only cram/match

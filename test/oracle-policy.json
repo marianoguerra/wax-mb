@@ -11,11 +11,14 @@
     "The three buckets are decided by the REFERENCE's own behaviour, never by",
     "ours: `wax f.wax -f wax` re-prints without validating, so its exit status",
     "isolates 'did it parse?' from 'did it type-check?' -- which is exactly the",
-    "line between what this port implements and what it does not."
+    "line between what this port implements and what it does not.",
+    "",
+    "Oracle 4 (text parity) mirrors oracle 2: the same buckets, because the",
+    "question is the same one -- does this file compile? -- and only the form",
+    "of the answer differs. It is not in the default oracle set while the text",
+    "printer burns down; see check_oracle4."
   ],
-
   "scope": "full",
-
   "scopes": {
     "front-end": {
       "_comment": "Lexer, parser, AST, trivia, printer. No type checker, no lints.",
@@ -23,34 +26,55 @@
         "oracle1": "skip",
         "oracle2": "skip",
         "oracle3": "match",
-        "_why": "These fail to parse, so they are entirely within scope: our diagnostics must match the reference's on every gated field."
+        "_why": "These fail to parse, so they are entirely within scope: our diagnostics must match the reference's on every gated field.",
+        "oracle4": "skip"
       },
       "compiles-clean": {
         "oracle1": "match",
         "oracle2": "match",
         "oracle3": "no-errors",
-        "_why": "Parses and type-checks. We must reprint identically and round-trip to identical wasm. The reference may also emit lint WARNINGS here (unused-local, unused-field); we implement no lints, so warnings are ignored on both sides rather than compared."
+        "_why": "Parses and type-checks. We must reprint identically and round-trip to identical wasm. The reference may also emit lint WARNINGS here (unused-local, unused-field); we implement no lints, so warnings are ignored on both sides rather than compared.",
+        "oracle4": "match"
       },
       "type-bad": {
         "oracle1": "match",
         "oracle2": "skip",
         "oracle3": "no-errors",
-        "_why": "Parses fine but fails type checking, so it is a valid front-end test for oracle 1 and must NOT produce a syntax error from us. There is no reference wasm to compare against, hence oracle 2 skip."
+        "_why": "Parses fine but fails type checking, so it is a valid front-end test for oracle 1 and must NOT produce a syntax error from us. There is no reference wasm to compare against, hence oracle 2 skip.",
+        "oracle4": "skip"
       }
     },
-
     "full": {
       "_comment": "In force since the checker and its lints landed. type-bad is a positive error-parity test, and compiles-clean compares warnings too -- so a lint we do not implement is a visible failure rather than a silent gap.",
-      "syntax-bad": { "oracle1": "skip", "oracle2": "skip", "oracle3": "match" },
-      "compiles-clean": { "oracle1": "match", "oracle2": "match", "oracle3": "match" },
-      "type-bad": { "oracle1": "match", "oracle2": "skip", "oracle3": "match" }
+      "syntax-bad": {
+        "oracle1": "skip",
+        "oracle2": "skip",
+        "oracle3": "match",
+        "oracle4": "skip"
+      },
+      "compiles-clean": {
+        "oracle1": "match",
+        "oracle2": "match",
+        "oracle3": "match",
+        "oracle4": "match"
+      },
+      "type-bad": {
+        "oracle1": "match",
+        "oracle2": "skip",
+        "oracle3": "match",
+        "oracle4": "skip"
+      }
     }
   },
-
   "gated_fields": [
-    "severity", "file",
-    "startLine", "startColumn", "endLine", "endColumn",
-    "startOffset", "endOffset",
+    "severity",
+    "file",
+    "startLine",
+    "startColumn",
+    "endLine",
+    "endColumn",
+    "startOffset",
+    "endOffset",
     "warning"
   ],
   "_gated_why": [
@@ -61,5 +85,10 @@
     "thing we knowingly cannot reproduce yet. Divergence is still recorded, in",
     "test/report/message-drift.md, to be burned down deliberately."
   ],
-  "reported_fields": ["message", "hint", "related", "edit"]
+  "reported_fields": [
+    "message",
+    "hint",
+    "related",
+    "edit"
+  ]
 }

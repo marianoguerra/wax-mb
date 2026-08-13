@@ -983,6 +983,54 @@ def check_oracle3(
     out.passed += 1
 
 
+# --------------------------------------------------------------------------
+# oracle 4 -- text-format parity
+# --------------------------------------------------------------------------
+#
+# `wax-mb f.wax -f wat` against `wax f.wax -f wat`. This is the one oracle with
+# no golden behind it: the reference is run at compare time, so it needs the
+# binary and cannot run in CI.
+#
+# It is NOT in the default set, and that is deliberate rather than temporary
+# shyness. The text printer is a burn-down -- it reaches most of the corpus and
+# not all of it -- and a gate that fails on every run says nothing on the run
+# where something actually breaks. It reports a count and writes the burn-down
+# list, exactly as oracle 2's ladder does for the tiers it does not gate. When
+# the count reaches parity it belongs in the default set, and then it gates.
+#
+# The reference's own -f wat goes through its TEXT ast, which carries source
+# facts the binary form drops -- conditional annotations most visibly. Files it
+# prints and this port cannot are counted as failures rather than skipped: the
+# gap is real and hiding it would only make the number look better.
+def check_oracle4(
+    impl: list[str], rel: str, path: Path, meta: dict, out: Outcome, policy: dict
+) -> None:
+    """Text parity: our `-f wat` must equal the reference's."""
+    if policy["buckets"][meta["bucket"]].get("oracle4", "skip") == "skip":
+        out.skipped += 1
+        return
+    theirs = wax(str(path), "-f", "wat")
+    if theirs.code != 0:
+        # The reference cannot print it either, so there is nothing to compare.
+        out.skipped += 1
+        return
+    ours = impl_run(impl, str(path), "-f", "wat")
+    if ours.code != 0:
+        out.failed += 1
+        detail = ours.err.decode("utf-8", "replace").strip()[:400]
+        out.failures.append(Failure(rel, "wat", f"exited {ours.code}: {detail}"))
+        out.drift.append(f"### {rel}\n\nnot printed: {detail}")
+        return
+    if ours.out != theirs.out:
+        out.failed += 1
+        out.failures.append(Failure(rel, "wat", _text_diff(theirs.out, ours.out)))
+        out.drift.append(
+            f"### {rel}\n\n```\n{_text_diff(theirs.out, ours.out)}\n```"
+        )
+        return
+    out.passed += 1
+
+
 def _text_diff(want: bytes, got: bytes, context: int = 3) -> str:
     import difflib
 
@@ -1032,6 +1080,9 @@ def cmd_run(args) -> int:
     # against the committed hashes, which is what lets it run in CI.
     if 2 in oracles and policy["oracle2_route"] == VIA_REFERENCE:
         need_reference()
+    # Oracle 4 has no golden: the reference answers at compare time.
+    if 4 in oracles:
+        need_reference()
     REPORT.mkdir(parents=True, exist_ok=True)
 
     results = {o: Outcome() for o in oracles}
@@ -1051,6 +1102,8 @@ def cmd_run(args) -> int:
             check_oracle2(impl, rel, path, meta, local[2], policy)
         if 3 in oracles:
             check_oracle3(impl, rel, path, meta, local[3], policy)
+        if 4 in oracles:
+            check_oracle4(impl, rel, path, meta, local[4], policy)
         return local
 
     # Parallel because this is the command run constantly during development:
@@ -1066,7 +1119,12 @@ def cmd_run(args) -> int:
                 results[o].failures.extend(local[o].failures)
                 results[o].drift.extend(local[o].drift)
 
-    names = {1: "reprint parity", 2: "wasm equivalence", 3: "error parity"}
+    names = {
+        1: "reprint parity",
+        2: "wasm equivalence",
+        3: "error parity",
+        4: "text parity",
+    }
     failed_total = 0
     lines = []
     for o in oracles:
@@ -1116,6 +1174,24 @@ def cmd_run(args) -> int:
             f"  wasm ladder: {len(wasm_drift)} noted, {t1} differing only in "
             "custom sections (see test/report/wasm-drift.md)"
         )
+    # Oracle 4's burn-down goes to its own file for the same reason the wasm
+    # ladder does: it is a list to work through, not a list of regressions, and
+    # mixing it into the failures would bury the ones that are.
+    if 4 in oracles:
+        wat_drift = results[4].drift
+        (REPORT / "wat-drift.md").write_text(
+            "# Text-format parity (non-blocking)\n\n"
+            "`-f wat` against the reference's. Not a gate yet: the printer\n"
+            "reaches most of the corpus and not all of it, and a gate that\n"
+            "fails every run says nothing on the run where something breaks.\n\n"
+            + "\n\n".join(wat_drift[: args.max_report])
+            + "\n",
+            encoding="utf-8",
+        )
+        if wat_drift:
+            print(f"  wat drift: {len(wat_drift)} (see test/report/wat-drift.md)")
+        # Counted, reported, and NOT allowed to fail the run.
+        failed_total -= results[4].failed
     if failed_total:
         print(f"\n  {failed_total} failure(s); see test/report/failures.md")
         return 1
@@ -1724,7 +1800,7 @@ def main() -> int:
         help="PRNG seed; printed on every run so a find can be reproduced",
     )
     c.add_argument("--filter", help="only seed from files whose path contains this")
-    c.add_argument("--oracle", type=int, action="append", choices=[1, 2, 3])
+    c.add_argument("--oracle", type=int, action="append", choices=[1, 2, 3, 4])
     c.add_argument(
         "--oracle2-route",
         choices=[VIA_REFERENCE, NATIVE],
@@ -1767,7 +1843,7 @@ def main() -> int:
         "--oracle",
         type=int,
         action="append",
-        choices=[1, 2, 3],
+        choices=[1, 2, 3, 4],
         help="run only these oracles (repeatable). Oracle 2 on the default "
         "via-reference route needs the reference binary; 1, 3 and oracle 2 "
         "--oracle2-route native compare against committed goldens only.",
