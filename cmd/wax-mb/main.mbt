@@ -202,6 +202,7 @@ fn compile_text(
   src : String,
   m : @ast.LocModule,
   opts : Options,
+  trivia : @trivia.Context,
 ) -> Result[String, String] {
   let diagnostics = @diagnostic.collector(source=Some(src))
   let store = @type_store.TypeStore::new()
@@ -217,7 +218,9 @@ fn compile_text(
   let module_ = @to_wasm.lower_module(ctx, store, m, typed) catch {
     e => return Err("\{path}: \{e}")
   }
-  Ok(@to_wat.print_module(module_)) catch {
+  // The comments were written against WAX source and are being written into a
+  // wat file; the text is the same text, and only the delimiters change.
+  Ok(@to_wat.print_module(module_, trivia=Some(trivia))) catch {
     e => Err("\{path}: \{e}")
   }
 }
@@ -306,7 +309,7 @@ fn run(argv : Array[String]) -> Status {
         if failed {
           return Rejected
         }
-        match compile_text(path, src, m, opts) {
+        match compile_text(path, src, m, opts, trivia) {
           Err(msg) => {
             @io.eprintln("wax-mb: " + msg)
             return Rejected

@@ -65,7 +65,7 @@ pub fn lower_module(
   // imports first, then everything else -- can be put back into one order.
   // The walks cannot be merged: an import starts an index space and has to be
   // lowered before anything that refers to it.
-  let order_at : Array[Int] = []
+  let order_at : Array[@basic.Location] = []
   // The declared features lead the fields, wherever the attributes stood.
   for f in source {
     if f.desc is ModuleAnnotation(attrs) {
@@ -73,7 +73,7 @@ pub fn lower_module(
         if a.attr_name == "feature" &&
           a.attr_value is Some({ desc: Str(_, b), .. }) {
           m.field_order.push(FFeature(b))
-          order_at.push(-1)
+          order_at.push(f.info)
         }
       }
     }
@@ -88,7 +88,7 @@ pub fn lower_module(
         Import(module_~, decl~) => {
           low.import_(m, module_.desc, decl.desc, field.info)
           m.field_order.push(FImport(m.imports.length() - 1))
-          order_at.push(field.info.start.cnum)
+          order_at.push(field.info)
         }
         ImportGroup(module_~, decls~) => {
           // The order is recorded AFTER the group is compacted, because
@@ -101,7 +101,7 @@ pub fn lower_module(
           low.compact_group(m, decls.length(), field.info)
           for k in before..<m.imports.length() {
             m.field_order.push(FImport(k))
-            order_at.push(field.info.start.cnum)
+            order_at.push(field.info)
           }
         }
         _ => ()
@@ -117,7 +117,7 @@ pub fn lower_module(
     let before = m.field_order.length()
     low.field(m, field)
     for _ in before..<m.field_order.length() {
-      order_at.push(field.info.start.cnum)
+      order_at.push(field.info)
     }
   }
   reorder_fields(m, order_at)
@@ -147,14 +147,24 @@ pub fn lower_module(
 /// order they were RECORDED in is not the order they were written in. Sorting
 /// by where each field started restores that, and the sort is stable so the
 /// fields one source field produced keep their relative order.
-fn reorder_fields(m : @wasm_bin.Module, at : Array[Int]) -> Unit {
+fn reorder_fields(m : @wasm_bin.Module, at : Array[@basic.Location]) -> Unit {
   guard at.length() == m.field_order.length() else { return }
   let order = Array::makei(at.length(), k => k)
-  order.sort_by((a, b) => if at[a] != at[b] { at[a] - at[b] } else { a - b })
+  order.sort_by((a, b) => {
+    if at[a].start.cnum != at[b].start.cnum {
+      at[a].start.cnum - at[b].start.cnum
+    } else {
+      a - b
+    }
+  })
   let sorted = order.map(k => m.field_order[k])
+  let locs = order.map(k => at[k])
   m.field_order.clear()
   for f in sorted {
     m.field_order.push(f)
+  }
+  for l in locs {
+    m.field_locs.push(l)
   }
 }
 

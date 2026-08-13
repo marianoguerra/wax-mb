@@ -6,10 +6,22 @@
 
 ///|
 /// Print a module's text form.
-pub fn print_module(m : @wasm_bin.Module) -> String raise WatError {
+pub fn print_module(
+  m : @wasm_bin.Module,
+  trivia? : @trivia.Context? = None,
+) -> String raise WatError {
   let fields : Array[Sexp] = []
-  for f in m.field_order {
-    fields.push(field(m, f))
+  for k, f in m.field_order {
+    let one = field(m, f)
+    // The field carries where it was written, so the comments written against
+    // it can be found. Fields the source did not write carry nothing.
+    fields.push(
+      if k < m.field_locs.length() {
+        At(m.field_locs[k], one)
+      } else {
+        one
+      },
+    )
   }
   // A type nothing declared is NOT written. The section holds every signature
   // the lowering interned -- a block's, an import's, a `call_indirect`'s --
@@ -43,9 +55,9 @@ pub fn print_module(m : @wasm_bin.Module) -> String raise WatError {
       for f in fields {
         l.push(f)
       }
-      render(List(l), top_depth=0) + "\n"
+      render(List(l), top_depth=0, trivia~) + "\n"
     }
-    None => render(VBlock(fields)) + "\n"
+    None => render(VBlock(fields), trivia~) + "\n"
   }
 }
 

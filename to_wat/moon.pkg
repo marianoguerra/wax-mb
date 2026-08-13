@@ -5,6 +5,8 @@ import {
   "moonbitlang/core/debug",
   "waxmb/wax/printer",
   "waxmb/wax/atomics",
+  "waxmb/wax/trivia",
+  "waxmb/wax/basic",
 }
 
 import {

@@ -1125,6 +1125,13 @@ pub(all) struct Module {
   /// Only the binary encoder's input is authoritative for the bytes; this is a
   /// view for the text form, and is empty when nothing recorded it.
   field_order : Array[FieldRef]
+  /// Where each of those fields stood in the source, parallel to
+  /// `field_order`.
+  ///
+  /// The binary has no notion of a source position; the text format needs one,
+  /// because a comment attaches to the field it was written against and there
+  /// is nothing else to attach it to.
+  field_locs : Array[@basic.Location]
   /// The tags whose type the SOURCE named, by tag index.
   ///
   /// `tag t: ft;` writes `(type $ft)` and `tag t(i32);` spells the signature
@@ -1165,6 +1172,7 @@ pub fn Module::empty() -> Module {
     types: [],
     rec_groups: [],
     field_order: [],
+    field_locs: [],
     named_tag_types: Map([]),
     imports: [],
     funcs: [],

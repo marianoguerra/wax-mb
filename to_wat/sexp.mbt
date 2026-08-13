@@ -34,6 +34,10 @@ pub(all) enum Sexp {
   /// A delimiter, then its indented contents, then the next delimiter -- the
   /// `block ... end` shape, which is a list of neither operands nor fields.
   SBlock(Array[Structure])
+  /// A node that owns a source span, so the comments written against it can be
+  /// found. Carried as a wrapper rather than a field on every constructor:
+  /// only some nodes come from somewhere, and the layout does not change.
+  At(@basic.Location, Sexp)
 }
 
 ///|
@@ -55,6 +59,7 @@ fn needs_vertical(s : Sexp) -> Bool {
   match s {
     VBlock(_) | SBlock(_) => true
     Atom(_) => false
+    At(_, inner) => needs_vertical(inner)
     List(l) | Block(l, _, _) => l.iter().any(needs_vertical)
   }
 }
@@ -65,8 +70,137 @@ const INDENT : Int = 2
 
 ///|
 /// Lay out a document at the width the reference uses.
-pub fn render(s : Sexp, top_depth? : Int = 1) -> String {
-  @printer.run_string(p => format(p, false, top_depth, false, s), width=78)
+///
+/// TWO PASSES, as the Wax printer does and for the same reason: the first
+/// records which spans the layout will actually look up, and `associate` then
+/// attaches comments to exactly those. Attaching first would let a comment
+/// land on a node this printer never reaches, and vanish.
+pub fn render(
+  s : Sexp,
+  top_depth? : Int = 1,
+  trivia? : @trivia.Context? = None,
+) -> String {
+  match trivia {
+    None =>
+      @printer.run_string(
+        p => format(p, false, top_depth, false, s, Attach::plain()),
+        width=78,
+      )
+    Some(tc) => {
+      let (table, tail) = @trivia.associate(tc, only => {
+        @printer.run_discard(p => {
+          let dry = Attach::dry(only)
+          format(p, false, top_depth, false, s, dry)
+        })
+      })
+      @printer.run_string(
+        p => {
+          let ctx = Attach::of_table(table)
+          format(p, false, top_depth, false, s, ctx)
+          print_trivia(p, @trivia.drop_trailing_blank_lines(tail))
+        },
+        width=78,
+      )
+    }
+  }
+}
+
+///|
+/// What the layout needs to find the comments written against a span: either
+/// the table that answers, or the set that is recording the questions.
+priv struct Attach {
+  table : @trivia.Table
+  collect : @trivia.Locations?
+}
+
+///|
+fn Attach::plain() -> Attach {
+  { table: @trivia.Table::empty(), collect: None }
+}
+
+///|
+fn Attach::dry(only : @trivia.Locations) -> Attach {
+  { table: @trivia.Table::empty(), collect: Some(only) }
+}
+
+///|
+fn Attach::of_table(table : @trivia.Table) -> Attach {
+  { table, collect: None }
+}
+
+///|
+/// Look up the trivia on a span, recording the lookup during the dry pass.
+/// Every lookup goes through here, or the dry pass would not see it.
+fn Attach::get(self : Attach, loc : @basic.Location) -> @trivia.Associated {
+  match self.collect {
+    Some(set) => {
+      set.mark(loc)
+      @trivia.empty_assoc
+    }
+    None => self.table.get(Some(loc))
+  }
+}
+
+///|
+/// Print a run of comments and blank lines.
+///
+/// A comment on its own line keeps one; one trailing a token is deferred past
+/// the end of the line, so a separator printed after it still lands ahead of
+/// it. The delimiters are the TEXT format's -- the source wrote `//` and this
+/// is a wat file.
+fn print_trivia(p : @printer.Printer, entries : Array[@trivia.Entry]) -> Unit {
+  for e in entries {
+    match (e.trivia, e.position) {
+      (Item(content~, kind=BlockComment, ..), _) => {
+        p.space()
+        p.string(retarget(content, BlockComment))
+        p.space()
+      }
+      (Item(content~, kind=LineComment, ..), Inline) =>
+        p.defer_eol(() => {
+          p.string(" ")
+          p.string(retarget(content.trim().to_owned(), LineComment))
+        })
+      (Item(content~, kind=LineComment, ..), LineStart) => {
+        p.newline()
+        p.string(retarget(content.trim().to_owned(), LineComment))
+        p.newline()
+      }
+      // An annotation is verbatim SOURCE text, and only the WebAssembly text
+      // format has a syntax for one -- so it passes through as it stands.
+      (Item(content~, kind=Annotation, ..), _) => {
+        p.space()
+        p.string(content)
+        p.space()
+      }
+      (BlankLine, _) => p.blank_line()
+    }
+  }
+}
+
+///|
+/// A comment as the WAT syntax writes it. Wax says `//` and `/* */`; wat says
+/// `;;` and `(; ;)`, and the text is the same text.
+fn retarget(content : String, kind : @trivia.TriviaKind) -> String {
+  match kind {
+    LineComment =>
+      if content.has_prefix("//") {
+        ";;" + content[2:].to_owned()
+      } else {
+        content
+      }
+    BlockComment => {
+      let mut out = content
+      if out.has_prefix("/*") {
+        out = "(;" + out[2:].to_owned()
+      }
+      if out.has_suffix("*/") {
+        out = out[:out.length() - 2].to_owned() + ";)"
+      }
+      out
+    }
+    Annotation => content
+  }
 }
 
 ///|
@@ -86,8 +220,17 @@ fn format(
   depth : Int,
   first : Bool,
   s : Sexp,
+  ctx : Attach,
 ) -> Unit {
   match s {
+    // Its comments, then the node, then whatever trailed it.
+    At(loc, inner) => {
+      let t = ctx.get(loc)
+      print_trivia(p, t.before)
+      format(p, in_block, depth, first, inner, ctx)
+      print_trivia(p, t.within)
+      print_trivia(p, t.after)
+    }
     Atom(t) => p.string(t)
     List(l) =>
       if depth > 1 {
@@ -99,7 +242,7 @@ fn format(
                 if i > 0 {
                   p.space()
                 }
-                format(p, in_block, depth, i == 0, v)
+                format(p, in_block, depth, i == 0, v, ctx)
               }
             },
             indent=INDENT - 1,
@@ -115,7 +258,7 @@ fn format(
               if i > 0 {
                 p.space()
               }
-              format(p, in_block, depth + 1, i == 0, v)
+              format(p, in_block, depth + 1, i == 0, v, ctx)
             }
           })
           p.cut()
@@ -136,7 +279,7 @@ fn format(
           if i > 0 {
             p.space()
           }
-          format(p, in_block || !transparent, depth, first && i == 0, v)
+          format(p, in_block || !transparent, depth, first && i == 0, v, ctx)
         }
       }
       match bk {
@@ -151,7 +294,7 @@ fn format(
           if i > 0 {
             p.space()
           }
-          format(p, in_block, depth, false, v)
+          format(p, in_block, depth, false, v, ctx)
         }
       })
     SBlock(l) =>
@@ -162,7 +305,7 @@ fn format(
               if i > 0 {
                 p.newline()
               }
-              p.box(fn() { format(p, in_block, depth, false, d) })
+              p.box(fn() { format(p, in_block, depth, false, d, ctx) })
             }
             Contents([]) => ()
             Contents(inner) =>
@@ -173,7 +316,7 @@ fn format(
                     if j > 0 {
                       p.newline()
                     }
-                    format(p, in_block, depth, false, v)
+                    format(p, in_block, depth, false, v, ctx)
                   }
                 })
               })
