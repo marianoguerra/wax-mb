@@ -229,6 +229,10 @@ fn tabletype(m : @wasm_bin.Module, t : @wasm_bin.TableType) -> Array[Sexp] {
 /// The signature is a group of its own, the same way a defined function's is:
 /// it moves to the next line whole rather than splitting across the name.
 fn typeuse(m : @wasm_bin.Module, k : Int) -> Array[Sexp] {
+  // Whether this is written `(type $n)` or spelled out depends on which the
+  // SOURCE wrote, and the binary does not record that. Preferring `(type $n)`
+  // whenever the type has a name was measured and is worse -- 916 exact to
+  // 911 -- so the inline form stays until the choice is recorded.
   match m.types[k].composite {
     Func(ft) => {
       let sign = functype(m, ft)
