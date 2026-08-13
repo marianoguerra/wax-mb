@@ -51,7 +51,6 @@ declare -A KNOWN_FAILING=(
   [block-exit-mismatch.t]="diagnostic span differs"
   [duplicate-diagnostic-chains.t]="diagnostic chain differs"
   [error-format-short.t]="usage text for an unknown --error-format differs"
-  [float-literal-f32-range.t]="missing check"
   [new-lints-wax.t]="missing lints"
   [non-empty-stack-location.t]="diagnostic span differs"
   [redundant-mul-zero-float.t]="missing lint: redundant-operation on floats"

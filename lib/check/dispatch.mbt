@@ -688,20 +688,32 @@ pub fn Checker::statement(
 
     // --- Local binding ---
     Let(bindings, Some(init)) => {
-      // A single ANNOTATED name checks its initializer against the annotation,
-      // which is what lets a construction there be written without naming its
-      // type. Several names, or an unannotated one, have nothing to check
-      // against and synthesize instead.
-      let expectation = if bindings.length() == 1 && bindings[0].1 is Some(t) {
-        internalize(ctx.type_context, ctx.diagnostics, t)
-      } else {
-        None
+      // A single ANNOTATED name is BIDIRECTIONAL: the initializer is CHECKED
+      // against the annotation, which is what lets a construction there be
+      // written without naming its type. That is then the ONLY check -- the
+      // binding takes the annotated type as given rather than resolving it a
+      // second time and comparing again, which said everything twice: an
+      // unbound annotation, and a value that does not fit it. Several names,
+      // or an unannotated one, have nothing to check against and synthesize
+      // instead.
+      let single_annotated = bindings.length() == 1 && bindings[0].1 is Some(_)
+      let annotated = match bindings[0].1 {
+        Some(t) if single_annotated =>
+          internalize_valtype(ctx.type_context, ctx.diagnostics, t)
+        _ => None
       }
-      let checked = match expectation {
-        Some(e) => self.check(e, init)
+      let checked = match annotated {
+        Some(ity) => self.check(@infer.valtype_cell(ity), init)
         None => self.expression(init)
       }
-      if bindings.length() == 1 {
+      if single_annotated {
+        // An annotation that did not resolve was reported where it was
+        // resolved, and declares nothing: a local with no type is worse than
+        // no local at all.
+        if annotated is Some(ity) && bindings[0].0 is Some(name) {
+          bind_local(ctx, name, Some(ity))
+        }
+      } else if bindings.length() == 1 {
         // One name takes the whole initializer, which must therefore be a
         // one-value expression -- `expression_type` says so if it is not.
         let ty = expression_type(ctx, checked.info)

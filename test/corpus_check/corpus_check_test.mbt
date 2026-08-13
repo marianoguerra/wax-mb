@@ -140,11 +140,11 @@ test "the checker annotates every node it reaches" {
       #|33 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
       #|22 This cast always traps: the value can never have this type.
       #|17 This type test is always true: the value already has this type.
-      #|10 The type 'point' is not bound.
+      #|8 The type 'point' is not bound.
       #|8 Expecting 1 value(s) from the stack, but there are 0.
       #|7 This expression occurs before a hole '_'.
       #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.
-      #|6 The type 'bytes' is not bound.
+      #|5 This value remains on the stack.
     ),
   )
 }
