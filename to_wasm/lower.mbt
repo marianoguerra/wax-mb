@@ -83,6 +83,9 @@ pub struct Lowering {
   /// Where a field-order entry stands, when that is not where its field does.
   /// A guarded export stands at its attribute; everything else at its field.
   entry_locs : Map[Int, @basic.Location]
+  /// The conditional groups the source wrote, for resolving a name from the
+  /// branch that asks.
+  conditionals : Array[@wasm_bin.CondGroup]
   /// Whether an unresolved `#[if(..)]` may be lowered at all.
   ///
   /// The binary format has nowhere to put one, so `-f wasm` refuses a module

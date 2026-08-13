@@ -701,9 +701,12 @@ fn Lowering::hinted(
       }
       match callee.desc {
         // A DIRECT call: the callee names a function, and the index is enough.
-        Get(name) if self.indices.funcs.get(name.name) is Some(_) &&
+        // Resolved from where the CALL stands: two branches of a conditional
+        // may declare one name, and the site says which is meant.
+        Get(name) if self.resolve(self.indices.funcs, name.name, name.loc)
+          is Some(_) &&
           !self.locals.contains(name.name) => {
-          guard self.indices.funcs.get(name.name) is Some(f) else {
+          guard self.resolve(self.indices.funcs, name.name, name.loc) is Some(f) else {
             raise Unresolved("call target", loc)
           }
           out.push(Call(f))

@@ -49,12 +49,18 @@ pub fn lower_module(
       }
     }
   }
+  // The conditional groups FIRST: the index spaces are read through them --
+  // which declaration of a name a reference means depends on which branch the
   let indices = assign_indices(ctx, source)
   // The layout FIRST: it installs the store-to-emitted translation that every
   // type reference below is read through, including the ones inside the
   // annotations the checker left.
   let layout = type_layout(ctx, source, store)
   let m = @wasm_bin.Module::empty()
+  // The conditional groups before anything resolves a name: which declaration
+  // of a name a reference means depends on which branch the reference stands
+  // in, and that is read off these.
+  note_conditionals(m, source)
   let low : Lowering = {
     ctx,
     store,
@@ -63,6 +69,7 @@ pub fn lower_module(
     locals: Map([]),
     local_types: [],
     entry_locs: Map([]),
+    conditionals: m.text.conditionals,
     keep_conditionals,
     body_conditionals: [],
     pending_start: None,
@@ -176,11 +183,6 @@ pub fn lower_module(
   low.type_names(m)
   low.module_name(m, source)
   low.target_features(m, source)
-  // The conditionals LAST, because they are read back against the field
-  // positions above: the checker flattens a conditional away, so the fields of
-  // both branches are already in the module and only where they stood says
-  // which branch each came from.
-  note_conditionals(m, source)
   m
 }
 
@@ -919,10 +921,48 @@ fn Lowering::func_index(
   name : @ast.Ident,
   loc : @basic.Location,
 ) -> Int raise LowerError {
-  match self.indices.funcs.get(name.name) {
+  match self.resolve(self.indices.funcs, name.name, loc) {
     Some(i) => i
     None => raise Unresolved("function index", loc)
   }
+}
+
+///|
+/// The declaration of `name` a reference at `loc` can see.
+///
+/// Conditional branches make one name several declarations, and which one is
+/// meant is decided by where the reference stands.
+fn Lowering::resolve(
+  self : Lowering,
+  space : Space,
+  name : String,
+  loc : @basic.Location,
+) -> Int? {
+  space.resolve(name, guards_at(self.conditionals, loc), d => {
+    guards_at(self.conditionals, d)
+  })
+}
+
+///|
+/// The conditional frames a source position stands inside, outermost first.
+pub fn guards_at(
+  conds : Array[@wasm_bin.CondGroup],
+  loc : @basic.Location,
+) -> Array[(Int, Bool)] {
+  fn covers(outer : @basic.Location, inner : @basic.Location) -> Bool {
+    inner.start.cnum >= outer.start.cnum && inner.end.cnum <= outer.end.cnum
+  }
+
+  let out : Array[(Int, Bool)] = []
+  for k, c in conds {
+    if covers(c.then_, loc) {
+      out.push((k, true))
+    } else if c.else_ is Some(e) && covers(e, loc) {
+      out.push((k, false))
+    }
+  }
+  out.sort_by((a, b) => conds[a.0].loc.start.cnum - conds[b.0].loc.start.cnum)
+  out
 }
 
 ///|
