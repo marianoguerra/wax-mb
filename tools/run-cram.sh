@@ -57,7 +57,6 @@ declare -A KNOWN_FAILING=(
   [redundant-mul-zero-float.t]="missing lint: redundant-operation on floats"
   [redundant-sub-self-float.t]="missing lint: redundant-operation on floats"
   [suggestions.t]="missing suggestion: redundant-annotation"
-  [switch-chain-dup.t]="missing check"
   [typing-crash-recovery.t]="missing check"
   [typing-error-recovery.t]="missing check"
   [unicode-identifier.t]="caret width counts UTF-16 units, not display columns"

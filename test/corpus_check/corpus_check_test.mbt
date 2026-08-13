@@ -143,8 +143,8 @@ test "the checker annotates every node it reaches" {
       #|10 The type 'point' is not bound.
       #|8 Expecting 1 value(s) from the stack, but there are 0.
       #|7 This expression occurs before a hole '_'.
-      #|6 Expecting 1 returned value(s) from the stack, but there are 0.
       #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.
+      #|6 The type 'bytes' is not bound.
     ),
   )
 }

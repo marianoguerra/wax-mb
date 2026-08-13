@@ -178,40 +178,35 @@ fn Checker::cont_method_call(
   // top.
   let operands = args_.copy()
   operands.push(recv_)
-  let results = match ct {
-    None => []
-    Some(ct) =>
-      match meth.name {
-        "resume" =>
-          self.type_resume(
-            i.info,
-            ct,
-            handlers,
-            operands,
-            None,
-            ref_first=false,
-          )
-        "resume_throw" =>
-          match tag {
-            Some(t) =>
-              self.type_resume(
-                i.info,
-                ct,
-                handlers,
-                operands,
-                Some(t),
-                ref_first=false,
-              )
-            None => []
-          }
-        "resume_throw_ref" =>
-          self.type_resume(i.info, ct, handlers, operands, None, ref_first=true)
-        _ =>
-          match tag {
-            Some(t) => self.type_switch(i.info, ct, t, operands)
-            None => []
-          }
-      }
+  // A missing continuation type or a missing tag was already reported, and
+  // there is no instruction left to build. Recovered with the shape every
+  // failed lookup here yields -- an `unreachable` typed `Error` -- rather than
+  // with an operation that produces nothing: a chained
+  // `c.switch().switch()` would then have a value-less receiver, and its own
+  // complaint about that would bury the two real ones.
+  let recovery = () => {
+    (
+      {
+        desc: Unreachable,
+        info: annotate([@infer.Cell::make(@infer.InferredType::Error)], i.info),
+        hints: i.hints,
+        expected: i.expected,
+      } : @ast.Instr[@typing_env.InferredAnnotation])
+  }
+  guard ct is Some(ct) else { return recovery() }
+  let results = match meth.name {
+    "resume" =>
+      self.type_resume(i.info, ct, handlers, operands, None, ref_first=false)
+    "resume_throw" => {
+      guard tag is Some(t) else { return recovery() }
+      self.type_resume(i.info, ct, handlers, operands, Some(t), ref_first=false)
+    }
+    "resume_throw_ref" =>
+      self.type_resume(i.info, ct, handlers, operands, None, ref_first=true)
+    _ => {
+      guard tag is Some(t) else { return recovery() }
+      self.type_switch(i.info, ct, t, operands)
+    }
   }
   // The TAG is kept on the typed node, re-wrapped with a `tag:` label, exactly
   // as a memory access keeps its immediates. It is not a value -- nothing
