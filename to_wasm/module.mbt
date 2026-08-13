@@ -560,7 +560,15 @@ fn Lowering::import_(
         limits: { mi, ma, address_type, page_size_log2: None, shared: false },
       })
     }
-    Tag(..) => Tag(self.tag_type_index(decl.id, loc))
+    // An imported tag that NAMES its type means that declaration, exactly as a
+    // defined one does.
+    Tag(typ~, ..) =>
+      Tag(
+        match typ {
+          Some(n) => self.type_index_of(n, loc)
+          None => self.tag_type_index(decl.id, loc)
+        },
+      )
   }
   m.imports.push({ mod_name: module_, name, desc, group: None })
   match decl.kind {
