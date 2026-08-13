@@ -149,7 +149,14 @@ fn Lowering::field(
       data~,
       attributes~
     ) => {
-      let (mi, ma) = limits.unwrap_or((0UL, None))
+      // Unwritten limits are DERIVED from the inline data: the memory has to be
+      // big enough to hold what is put in it, and at least one page even when
+      // nothing is -- a zero-page memory is legal but is not what "size derived
+      // from the data" means, and instantiating against it traps.
+      let (mi, ma) = match limits {
+        Some(l) => l
+        None => (self.derived_pages(data, page_size_log2, loc), None)
+      }
       m.memories.push({
         limits: { mi, ma, address_type, page_size_log2, shared },
       })
@@ -721,5 +728,42 @@ fn Lowering::claim_name(self : Lowering, base : String) -> String {
       self.claimed[base] = k
       name
     }
+  }
+}
+
+///|
+/// The minimum page count an inline data list forces.
+///
+/// The extent is the highest `offset + length` over the ACTIVE segments, and
+/// the count is that divided by the page size, rounded up -- with a floor of
+/// one page, which is what a memory whose size is "derived from its data"
+/// means even when it has none.
+fn Lowering::derived_pages(
+  self : Lowering,
+  data : Array[@ast.MemData[@typing_env.InferredAnnotation]],
+  page_size_log2 : Int?,
+  loc : @basic.Location,
+) -> UInt64 raise LowerError {
+  ignore(self)
+  let page_size = 1UL << page_size_log2.unwrap_or(16)
+  let mut extent = 0UL
+  for d in data {
+    guard d.offset.desc is Int(s) else { continue }
+    let off = parse_i64(s, loc).reinterpret_as_uint64()
+    let len = data_bytes(d.init, loc).length().to_uint64()
+    let end = off + len
+    // Running past the end of the address space is not a small memory: the
+    // wrap would underestimate it, so treat it as maximal.
+    let end = if end < off { 0xFFFFFFFFFFFFFFFFUL } else { end }
+    if end > extent {
+      extent = end
+    }
+  }
+  let pages = extent / page_size +
+    (if extent % page_size == 0UL { 0UL } else { 1UL })
+  if pages < 1UL {
+    1UL
+  } else {
+    pages
   }
 }
