@@ -125,7 +125,7 @@ test "the checker annotates every node it reaches" {
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
     content=(
-      #|nodes 181202 poisoned 0 files 1907 clean 1729
+      #|nodes 181192 poisoned 0 files 1907 clean 1728
     ),
   )
   let top : Array[(String, Int)] = []

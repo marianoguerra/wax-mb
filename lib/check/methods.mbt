@@ -465,6 +465,17 @@ fn Checker::array_bulk_call(
         want_i32(1)
         want_i32(2)
         want_i32(3)
+        // The segment is named in the INSTRUCTION -- `array.init_data` and
+        // `array.init_elem` each carry a segment index -- so anything but a
+        // name there has no lowering at all. Quiet when the receiver is
+        // already poison: a failed call recovers with `Error`, so a chained
+        // `a.init(..).init(..)` would repeat the rejection once per link, and
+        // they share a start column and render as one line repeated.
+        if segment is None &&
+          !(@typing_env.expression_type_opt(recv_.info).map(c => c.get())
+          is Some(Error)) {
+          invalid_management_call(ctx.diagnostics, i.info, meth.name)
+        }
         if elt is Some(field) && args[0].desc is Get(seg) {
           match field.typ {
             Value(Ref(dst)) =>

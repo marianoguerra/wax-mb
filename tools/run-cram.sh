@@ -62,7 +62,6 @@ declare -A KNOWN_FAILING=(
   [typing-crash-recovery.t]="missing check"
   [typing-error-recovery.t]="missing check"
   [unicode-identifier.t]="caret width counts UTF-16 units, not display columns"
-  [wax-operand-type-checks.t]="missing check"
 )
 
 pass=0; fail=0; known=0; failed=(); fixed=()
