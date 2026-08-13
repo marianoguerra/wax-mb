@@ -111,6 +111,17 @@ pub fn ref_none_valtype(nullable~ : Bool) -> @infer.InferredValType {
 }
 
 ///|
+/// The `exn` reference type: what an exception object is, and what the
+/// instructions that carry one around take.
+pub fn ref_exn_valtype(nullable~ : Bool) -> @infer.InferredValType {
+  {
+    typ: Ref({ nullable, typ: Exn }),
+    internal: Ref({ nullable, typ: Exn }),
+    anon_comptype: None,
+  }
+}
+
+///|
 /// The concrete value type a cell stands for on its own, or `None` when it has
 /// none yet.
 ///

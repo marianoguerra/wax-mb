@@ -32,6 +32,8 @@ pub fn record_pun(Array[@basic.Location]?, @basic.Location) -> Unit
 
 pub fn record_reference(Array[Reference]?, @basic.Location, Array[@basic.Location], hover? : HoverTarget?) -> Unit
 
+pub fn ref_exn_valtype(nullable~ : Bool) -> @infer.InferredValType
+
 pub fn ref_none_valtype(nullable~ : Bool) -> @infer.InferredValType
 
 pub fn same_span(@basic.Location, @basic.Location) -> Bool

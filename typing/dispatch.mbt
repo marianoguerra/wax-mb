@@ -427,12 +427,15 @@ pub fn Checker::statement(
     }
     ThrowRef(e) => {
       let c = self.expression(e)
+      // `throw_ref` takes the EXCEPTION OBJECT -- an `&?exn`, the thing a `&`
+      // catch arm binds. It was checked against the bottom reference, which
+      // only a null satisfies, so rethrowing a caught exception was rejected.
       check_subtype(
         ctx.type_context.subtyping_info(),
         ctx.diagnostics,
         e.info,
         expression_type(ctx, c.info),
-        @infer.valtype_cell(@typing_env.ref_none_valtype(nullable=true)),
+        @infer.valtype_cell(@typing_env.ref_exn_valtype(nullable=true)),
       )
       self.ops.set_unreachable()
       {
