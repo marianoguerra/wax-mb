@@ -225,7 +225,15 @@ pub fn check_attributes(
   let exports : Map[String, Array[Occurrence]] = Map([])
   let starts : Array[Occurrence] = []
   let mut module_seen : @basic.Location? = None
-  fn visit(attrs : Array[@ast.Attribute], default_name : @ast.Ident?) -> Unit {
+  // `location` blames the ENTITY the attributes hang off, which is what a
+  // start or a module name is a fact about -- the attribute's own span says
+  // only where the word was typed, and the reader has to see which declaration
+  // it claimed.
+  fn visit(
+    attrs : Array[@ast.Attribute],
+    default_name : @ast.Ident?,
+    location : @basic.Location,
+  ) -> Unit {
     for a in attrs {
       let cond = attribute_cond(ctx, a)
       match a.attr_name {
@@ -258,16 +266,16 @@ pub fn check_attributes(
         }
         "start" => {
           if clashes(starts, cond) is Some(prev) {
-            multiple_start(ctx.diagnostics, a.attr_span, prev)
+            multiple_start(ctx.diagnostics, location, prev)
           }
-          starts.push({ when_: cond, loc: a.attr_span })
+          starts.push({ when_: cond, loc: location })
         }
         // A module name is not guarded -- it states a fact about the whole
         // module, like a feature -- so one is simply one too many.
         "module" =>
           match module_seen {
-            Some(prev) => multiple_module(ctx.diagnostics, a.attr_span, prev)
-            None => module_seen = Some(a.attr_span)
+            Some(prev) => multiple_module(ctx.diagnostics, location, prev)
+            None => module_seen = Some(location)
           }
         _ => ()
       }
@@ -316,18 +324,21 @@ pub fn check_attributes(
   })
   walk_fields(ctx, fields, field => {
     match field.desc {
-      Func(name~, attributes~, ..) => visit(attributes, Some(name))
-      Global(name~, attributes~, ..) => visit(attributes, Some(name))
-      Tag(name~, attributes~, ..) => visit(attributes, Some(name))
-      Memory(name~, attributes~, ..) => visit(attributes, Some(name))
-      Table(name~, attributes~, ..) => visit(attributes, Some(name))
-      Data(name~, attributes~, ..) => visit(attributes, name)
-      Elem(name~, attributes~, ..) => visit(attributes, Some(name))
-      ModuleAnnotation(attrs) => visit(attrs, None)
-      Import(decl~, ..) => visit(decl.desc.attributes, Some(decl.desc.id))
+      Func(name~, attributes~, ..) => visit(attributes, Some(name), field.info)
+      Global(name~, attributes~, ..) =>
+        visit(attributes, Some(name), field.info)
+      Tag(name~, attributes~, ..) => visit(attributes, Some(name), field.info)
+      Memory(name~, attributes~, ..) =>
+        visit(attributes, Some(name), field.info)
+      Table(name~, attributes~, ..) => visit(attributes, Some(name), field.info)
+      Data(name~, attributes~, ..) => visit(attributes, name, field.info)
+      Elem(name~, attributes~, ..) => visit(attributes, Some(name), field.info)
+      ModuleAnnotation(attrs) => visit(attrs, None, field.info)
+      Import(decl~, ..) =>
+        visit(decl.desc.attributes, Some(decl.desc.id), decl.info)
       ImportGroup(decls~, ..) =>
         for d in decls {
-          visit(d.desc.attributes, Some(d.desc.id))
+          visit(d.desc.attributes, Some(d.desc.id), d.info)
         }
       Type(_) | Conditional(..) => ()
     }
