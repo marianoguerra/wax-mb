@@ -80,6 +80,12 @@ fn Lowering::rebase(
 }
 
 ///|
+/// One character as the bytes that spell it.
+fn utf8_of_char(c : Char) -> Bytes {
+  Bytes::from_array(@unicode.utf8_bytes(c.to_string()).map(b => b.to_byte()))
+}
+
+///|
 /// Read a name, recording the one-instruction span it takes.
 fn Lowering::read_span(
   self : Lowering,
@@ -184,8 +190,9 @@ fn Lowering::hinted(
           out.push(Spelled(s, F64Const(parse_float_bits(s, true, loc))))
         _ => raise Unresolved("float literal type", loc)
       }
-    // A character literal is an i32 code point.
-    Char(c) => out.push(I32Const(c.to_int()))
+    // A character literal is an i32 code point, and remembers being written as
+    // a character: 65 says nothing about having been `'A'`.
+    Char(c) => out.push(FromChar(utf8_of_char(c), I32Const(c.to_int())))
     Get(name) => out.push(self.read(name, loc))
     Set(name, op, value) => {
       // `x op= e` is `x = x op e`: the read comes first, then the operand, then

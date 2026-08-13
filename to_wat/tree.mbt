@@ -220,7 +220,8 @@ fn takes_nothing(i : @wasm_bin.Instruction) -> Bool {
     | Nop
     | Unreachable => true
     // The wrappers are transparent: what they wrap is what runs.
-    Spelled(_, inner) | Hinted(_, inner) => takes_nothing(inner)
+    Spelled(_, inner) | Hinted(_, inner) | FromChar(_, inner) =>
+      takes_nothing(inner)
     _ => false
   }
 }

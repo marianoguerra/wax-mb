@@ -122,7 +122,17 @@ pub fn mnemonic(
   locals : Map[Int, Bytes],
   scope? : Array[String?] = [],
 ) -> Sexp raise WatError {
-  Atom(mnemonic_text(i, names, locals, scope~))
+  // The immediates are separate atoms so that a long one can WRAP: sixteen
+  // v128 lanes do not fit a line, and one atom cannot break.
+  let text = mnemonic_text(i, names, locals, scope~)
+  if text.contains(" ") {
+    let parts : Array[Sexp] = []
+    for w in text.split(" ") {
+      parts.push(Atom(w.to_owned()))
+    }
+    return Block(parts, KBox, false)
+  }
+  Atom(text)
 }
 
 ///|

@@ -523,6 +523,9 @@ fn folded_bare(node : Node, ctx : Ctx) -> Sexp raise WatError {
   if node.head is FromString(bytes, _) {
     return List([Atom("@string"), Atom(quoted(bytes))])
   }
+  if node.head is FromChar(bytes, _) {
+    return List([Atom("@char"), Atom(quoted(bytes))])
+  }
   // A hinted instruction prints its annotations BEFORE itself, outside the
   // parentheses of the group it heads -- the hint is about the instruction,
   // not an operand of it. The wrapper is transparent so the annotation and

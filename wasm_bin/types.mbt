@@ -275,6 +275,10 @@ pub(all) enum Instruction {
   ///
   /// Carries no opcode of its own either.
   FromString(Bytes, Instruction)
+  /// An `i32.const` the source wrote as a CHARACTER literal, carrying that
+  /// character's UTF-8 bytes. Its sibling above, for the other literal whose
+  /// value says nothing about how it was written.
+  FromChar(Bytes, Instruction)
 
   // Reference type instructions
   RefNull(HeapType) // ref.null: push a null reference to this heap type
