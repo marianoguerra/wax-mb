@@ -263,9 +263,10 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
     }
     [Block(g, KBox, true)]
   }
-  // A `try_table`'s handlers are IMMEDIATES that branch out, so they follow
-  // the head and are counted against the scope the block itself opens.
-  ctx.scope.push(name)
+  // A `try_table`'s handlers are IMMEDIATES that branch OUT of it, so their
+  // labels are read in the enclosing scope -- the try_table's own label is in
+  // scope for its body and not for its handlers. Resolved before the push, not
+  // after, or every handler names one block too deep.
   if node.head is TryTable(_, handlers, _) {
     let hs : Array[Sexp] = []
     for h in handlers {
@@ -273,6 +274,7 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
     }
     l.push(block(hs))
   }
+  ctx.scope.push(name)
   // The legacy `try`'s handlers are inline BODIES that run in place, so each
   // is a named clause around the code it guards.
   let clauses = match node.head {
