@@ -213,6 +213,25 @@ fn Checker::cont_method_call(
           }
       }
   }
+  // The TAG is kept on the typed node, re-wrapped with a `tag:` label, exactly
+  // as a memory access keeps its immediates. It is not a value -- nothing
+  // pushes it -- but it IS part of the instruction, and the code generator has
+  // no other place to read it from. `switch` wrote it that way already;
+  // `resume_throw` wrote it as an invocation, and this is the one shape both
+  // can be read out of.
+  if tag is Some(t) {
+    args_.push({
+      desc: Labelled({ name: "tag", loc: t.loc }, {
+        desc: Get(t),
+        info: annotate([], t.loc),
+        hints: @ast.no_hints,
+        expected: None,
+      }),
+      info: annotate([], t.loc),
+      hints: @ast.no_hints,
+      expected: None,
+    })
+  }
   {
     desc: Call(
       {

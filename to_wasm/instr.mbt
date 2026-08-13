@@ -1568,6 +1568,20 @@ fn lane_immediate(
 }
 
 ///|
+/// The `tag:` immediate a stack-switching method carries.
+fn labelled_tag(
+  args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  loc : @basic.Location,
+) -> @ast.Ident raise LowerError {
+  for a in args {
+    if a.desc is Labelled(l, v) && l.name == "tag" && v.desc is Get(t) {
+      return t
+    }
+  }
+  raise Unresolved("tag immediate", loc)
+}
+
+///|
 /// The mandatory `lane:` immediate of a vector lane access.
 fn labelled_lane(
   args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
@@ -1930,24 +1944,12 @@ fn Lowering::cont_method(
   match meth.name {
     "resume" => Resume(ct, on)
     "resume_throw_ref" => ResumeThrowRef(ct, on)
-    "resume_throw" => {
-      guard args.length() >= 1 && args[0].desc is Call(callee, _) else {
-        raise Unresolved("resume_throw tag", loc)
-      }
-      guard callee.desc is Get(t) else {
-        raise Unresolved("resume_throw tag", loc)
-      }
-      ResumeThrow(ct, self.tag_of(t, loc), on)
-    }
-    _ => {
-      let mut tag : @ast.Ident? = None
-      for a in args {
-        if a.desc is Labelled(l, v) && l.name == "tag" && v.desc is Get(t) {
-          tag = Some(t)
-        }
-      }
-      guard tag is Some(t) else { raise Unresolved("switch tag", loc) }
-      Switch(ct, self.tag_of(t, loc))
-    }
+    // Both remaining forms name a TAG, and the checker leaves it labelled on
+    // the node for exactly this read -- `switch` because that is how it was
+    // written, `resume_throw` because an invocation is not a shape a code
+    // generator can read a name out of twice.
+    "resume_throw" =>
+      ResumeThrow(ct, self.tag_of(labelled_tag(args, loc), loc), on)
+    _ => Switch(ct, self.tag_of(labelled_tag(args, loc), loc))
   }
 }
