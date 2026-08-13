@@ -697,9 +697,50 @@ fn data_bytes(
         for k in 0..<b.length() {
           out.push(b[k])
         }
-      // A numeric run and a vector run both need the width and endianness the
-      // element type fixes; neither is lowered yet.
-      Run(_, _) | V128Run(_) => raise NotLowered("data run", loc)
+      // A numeric run writes each value at the width its element type fixes,
+      // LITTLE-endian, which is the only endianness wasm memory has.
+      Run(ty, items) => {
+        let width = match ty {
+          Packed(I8) => 1
+          Packed(I16) => 2
+          Value(I32) | Value(F32) => 4
+          Value(I64) | Value(F64) => 8
+          _ => raise NotLowered("data run element type", loc)
+        }
+        for item in items {
+          let bits = match ty {
+            Value(F32) =>
+              parse_f32(item.desc, loc).reinterpret_as_int().to_int64() &
+              0xFFFFFFFFL
+            Value(F64) =>
+              parse_float_bits(item.desc, true, loc).reinterpret_as_int64()
+            _ => parse_i64(item.desc, loc)
+          }
+          for b in 0..<width {
+            out.push(
+              ((bits.reinterpret_as_uint64() >> (b * 8)).to_int() & 0xFF).to_byte(),
+            )
+          }
+        }
+      }
+      // A vector run is the same, sixteen bytes at a time, and each element
+      // carries its own shape: `[v128: i32x4(..), f64x2(..)]` is one segment
+      // of two vectors written two different ways.
+      V128Run(vs) =>
+        for v in vs {
+          let shape = match v.desc.shape {
+            I8x16 => @simd.Shape::I8x16
+            I16x8 => @simd.Shape::I16x8
+            I32x4 => @simd.Shape::I32x4
+            I64x2 => @simd.Shape::I64x2
+            F32x4 => @simd.Shape::F32x4
+            F64x2 => @simd.Shape::F64x2
+          }
+          let bytes = vector_bytes(shape, v.desc.components, loc)
+          for k in 0..<bytes.length() {
+            out.push(bytes[k])
+          }
+        }
     }
   }
   Bytes::from_array(out)

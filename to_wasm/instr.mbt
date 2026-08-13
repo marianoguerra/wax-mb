@@ -1433,12 +1433,26 @@ fn Lowering::vector_constant(
   loc : @basic.Location,
 ) -> Bytes raise LowerError {
   ignore(self)
+  let texts : Array[String] = []
+  for a in args {
+    texts.push(literal_text(a, loc))
+  }
+  vector_bytes(shape, texts, loc)
+}
+
+///|
+/// The 16 bytes of a vector, from its lanes as written.
+pub fn vector_bytes(
+  shape : @simd.Shape,
+  texts : Array[String],
+  loc : @basic.Location,
+) -> Bytes raise LowerError {
   let lanes = @simd.const_arity(shape)
-  guard args.length() == lanes else { raise Unresolved("vector lanes", loc) }
+  guard texts.length() == lanes else { raise Unresolved("vector lanes", loc) }
   let width = 16 / lanes
   let out : Array[Byte] = Array::make(16, b'\x00')
   for k in 0..<lanes {
-    let text = literal_text(args[k], loc)
+    let text = texts[k]
     let bits = match shape {
       F32x4 =>
         Float::from_double(parse_float_bits(text, false, loc))

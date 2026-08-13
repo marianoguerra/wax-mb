@@ -5,6 +5,7 @@ import {
   "waxmb/wax/ast",
   "waxmb/wax/basic",
   "waxmb/wax/infer",
+  "waxmb/wax/simd",
   "waxmb/wax/type_store",
   "waxmb/wax/typing_env",
   "waxmb/wax/wasm_bin",
@@ -91,6 +92,8 @@ pub fn store_type_index(Int) -> Int
 pub fn type_layout(@typing_env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @type_store.TypeStore) -> TypeLayout
 
 pub fn unary_instruction(String, @wasm_types.ValType[Int]?) -> @wasm_bin.Instruction?
+
+pub fn vector_bytes(@simd.Shape, Array[String], @basic.Location) -> Bytes raise LowerError
 
 // Errors
 pub suberror LowerError {
