@@ -1,11 +1,10 @@
 {
   "_comment": "Provenance for every corpus file. Regenerate with tools/waxdiff.py collect. Files are committed so the differential suite runs without the wax/ checkout.",
   "counts": {
-    "cram": 308,
+    "cram": 309,
     "docs": 391,
-    "wat": 258,
-    "spec": 1155,
-    "fuzz": 2
+    "wat": 259,
+    "spec": 1158
   },
   "files": {
     "cram/all-errors-semantic-raise__module-else.wax": {
@@ -124,6 +123,9 @@
     },
     "cram/compilation-hints-wax__hints.wax": {
       "origin": "test/cram-tests/compilation-hints-wax.t/hints.wax"
+    },
+    "cram/compilation-hints-wax__nonfinite.wax": {
+      "origin": "test/cram-tests/compilation-hints-wax.t/nonfinite.wax"
     },
     "cram/compilation-hints-wax__notarget.wax": {
       "origin": "test/cram-tests/compilation-hints-wax.t/notarget.wax"
@@ -3026,6 +3028,15 @@
     "spec/wasm-test-suite__core__local_set__local_set.0.wax": {
       "origin": "test/wasm-test-suite/core/local_set.wast -> local_set.0.wasm (wasm->wax)"
     },
+    "spec/wasm-test-suite__core__local_set__local_set.23.wax": {
+      "origin": "test/wasm-test-suite/core/local_set.wast -> local_set.23.wasm (wasm->wax)"
+    },
+    "spec/wasm-test-suite__core__local_set__local_set.3.wax": {
+      "origin": "test/wasm-test-suite/core/local_set.wast -> local_set.3.wasm (wasm->wax)"
+    },
+    "spec/wasm-test-suite__core__local_set__local_set.7.wax": {
+      "origin": "test/wasm-test-suite/core/local_set.wast -> local_set.7.wasm (wasm->wax)"
+    },
     "spec/wasm-test-suite__core__local_tee__local_tee.0.wax": {
       "origin": "test/wasm-test-suite/core/local_tee.wast -> local_tee.0.wasm (wasm->wax)"
     },
@@ -5692,6 +5703,9 @@
     },
     "wat/cram-tests__elem-declare-init.t__decl-init.wax": {
       "origin": "test/cram-tests/elem-declare-init.t/decl-init.wat (wat->wax)"
+    },
+    "wat/cram-tests__exact-allocation-gating.t__alloc.wax": {
+      "origin": "test/cram-tests/exact-allocation-gating.t/alloc.wat (wat->wax)"
     },
     "wat/cram-tests__exact-allocation.t__roundtrip.wax": {
       "origin": "test/cram-tests/exact-allocation.t/roundtrip.wat (wat->wax)"

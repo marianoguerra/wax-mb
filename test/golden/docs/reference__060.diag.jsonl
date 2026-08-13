@@ -1,1 +1,1 @@
-{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/reference__060.wax","startLine":1,"startColumn":16,"endLine":1,"endColumn":21,"startOffset":16,"endOffset":21,"message":"Identifier 'type1' is not a value type.","warning":null,"hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/docs/reference__060.wax","startLine":1,"startColumn":16,"endLine":1,"endColumn":21,"startOffset":16,"endOffset":21,"message":"Identifier 'type1' is not a value type.","warning":null,"hint":null,"related":[]}

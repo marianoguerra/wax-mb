@@ -1,1 +1,1 @@
-{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/wax-annotations__export-bad-value.wax","startLine":1,"startColumn":0,"endLine":1,"endColumn":13,"startOffset":0,"endOffset":13,"message":"The export annotation expects a string.","warning":null,"hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/cram/wax-annotations__export-bad-value.wax","startLine":1,"startColumn":0,"endLine":1,"endColumn":13,"startOffset":0,"endOffset":13,"message":"The export annotation expects a string.","warning":null,"hint":null,"related":[]}

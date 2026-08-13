@@ -1,1 +1,1 @@
-{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/compilation-hints-wax__dangling.wax","startLine":3,"startColumn":4,"endLine":3,"endColumn":13,"startOffset":22,"endOffset":31,"message":"A hint may only prefix an instruction.","warning":null,"hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/cram/compilation-hints-wax__dangling.wax","startLine":3,"startColumn":4,"endLine":3,"endColumn":13,"startOffset":22,"endOffset":31,"message":"A hint may only prefix an instruction.","warning":null,"hint":null,"related":[]}

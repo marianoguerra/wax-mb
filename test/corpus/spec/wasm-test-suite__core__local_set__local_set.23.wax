@@ -1,0 +1,5 @@
+type t = fn(i64);
+fn f(i64) {
+    let x_2: i64;
+    let x: f64 = 0;
+}

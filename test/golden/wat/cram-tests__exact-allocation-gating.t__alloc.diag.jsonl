@@ -1,0 +1,2 @@
+{"severity":"warning","file":"test/corpus/wat/cram-tests__exact-allocation-gating.t__alloc.wax","startLine":3,"startColumn":9,"endLine":3,"endColumn":11,"startOffset":46,"endOffset":48,"message":"The type 'sb' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/wat/cram-tests__exact-allocation-gating.t__alloc.wax","startLine":11,"startColumn":9,"endLine":11,"endColumn":11,"startOffset":209,"endOffset":211,"message":"The type 'fb' is never used.","warning":"unused-field","hint":null,"related":[]}

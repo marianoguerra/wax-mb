@@ -1,0 +1,1 @@
+{"severity":"error","file":"test/corpus/cram/compilation-hints-wax__nonfinite.wax","startLine":4,"startColumn":4,"endLine":4,"endColumn":21,"startOffset":72,"endOffset":89,"message":"An instruction frequency must be a finite number.","warning":null,"hint":null,"related":[]}

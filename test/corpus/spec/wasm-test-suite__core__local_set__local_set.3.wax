@@ -1,0 +1,4 @@
+type t = fn();
+fn f() {
+    let x: f32 = 0x0p+0;
+}

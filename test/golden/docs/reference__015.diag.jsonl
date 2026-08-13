@@ -1,1 +1,1 @@
-{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/reference__015.wax","startLine":1,"startColumn":0,"endLine":1,"endColumn":1,"startOffset":0,"endOffset":1,"message":"Assuming that the attributes are complete, expecting a definition.","warning":null,"hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/docs/reference__015.wax","startLine":1,"startColumn":0,"endLine":1,"endColumn":1,"startOffset":0,"endOffset":1,"message":"Assuming that the attributes are complete, expecting a definition.","warning":null,"hint":null,"related":[]}

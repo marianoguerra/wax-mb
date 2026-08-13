@@ -1,1 +1,1 @@
-{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/compilation-hints-wax__unbound.wax","startLine":5,"startColumn":14,"endLine":5,"endColumn":18,"startOffset":83,"endOffset":87,"message":"The function 'nope' is not bound.","warning":null,"hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/cram/compilation-hints-wax__unbound.wax","startLine":5,"startColumn":14,"endLine":5,"endColumn":18,"startOffset":83,"endOffset":87,"message":"The function 'nope' is not bound.","warning":null,"hint":null,"related":[]}

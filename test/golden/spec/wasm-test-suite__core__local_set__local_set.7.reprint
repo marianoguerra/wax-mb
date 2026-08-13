@@ -1,0 +1,4 @@
+type t = fn(f32);
+fn f(x: f32) {
+    x = 0x0p+0;
+}

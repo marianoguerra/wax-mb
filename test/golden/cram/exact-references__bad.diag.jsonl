@@ -1,1 +1,1 @@
-{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/exact-references__bad.wax","startLine":1,"startColumn":18,"endLine":1,"endColumn":23,"startOffset":18,"endOffset":23,"message":"Only a concrete type can be exact.","warning":null,"hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/cram/exact-references__bad.wax","startLine":1,"startColumn":18,"endLine":1,"endColumn":23,"startOffset":18,"endOffset":23,"message":"Only a concrete type can be exact.","warning":null,"hint":null,"related":[]}

@@ -1,1 +1,1 @@
-{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/wat/cram-tests__cond-annot.t__cond.wax","startLine":13,"startColumn":3,"endLine":13,"endColumn":4,"startOffset":107,"endOffset":108,"message":"The function 'f' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/wat/cram-tests__cond-annot.t__cond.wax","startLine":13,"startColumn":3,"endLine":13,"endColumn":4,"startOffset":107,"endOffset":108,"message":"The function 'f' is never used.","warning":"unused-field","hint":null,"related":[]}

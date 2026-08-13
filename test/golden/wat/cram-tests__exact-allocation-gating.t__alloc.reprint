@@ -1,0 +1,27 @@
+rec {
+    type sa = open { f: i32 };
+    type sb: sa = open { .., f_2: i64 };
+}
+rec {
+    type sc = open { f: i32 };
+    type sd: sc = open { .., f_2: i64 };
+}
+rec {
+    type fa = open fn() -> &func;
+    type fb: fa = open fn() -> &fa;
+}
+rec {
+    type fc = open fn() -> &func;
+    type fd: fc = open fn() -> &fc;
+}
+fn f: fa () -> &func {
+    unreachable;
+}
+#[export]
+fn alloc() -> i32 {
+    {sa| .. } is &sd;
+}
+#[export]
+fn reffunc() -> i32 {
+    f is &fd;
+}

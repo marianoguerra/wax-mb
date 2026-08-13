@@ -1,1 +1,1 @@
-{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/wat/cram-tests__cond-annot.t__arity.wax","startLine":9,"startColumn":3,"endLine":9,"endColumn":4,"startOffset":88,"endOffset":89,"message":"The function 'h' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/wat/cram-tests__cond-annot.t__arity.wax","startLine":9,"startColumn":3,"endLine":9,"endColumn":4,"startOffset":88,"endOffset":89,"message":"The function 'h' is never used.","warning":"unused-field","hint":null,"related":[]}

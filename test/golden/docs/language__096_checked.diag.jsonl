@@ -1,1 +1,1 @@
-{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/language__096_checked.wax","startLine":1,"startColumn":6,"endLine":1,"endColumn":10,"startOffset":6,"endOffset":10,"message":"The global 'ones' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/docs/language__096_checked.wax","startLine":1,"startColumn":6,"endLine":1,"endColumn":10,"startOffset":6,"endOffset":10,"message":"The global 'ones' is never used.","warning":"unused-field","hint":null,"related":[]}

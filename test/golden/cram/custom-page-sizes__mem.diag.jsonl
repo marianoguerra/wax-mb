@@ -1,1 +1,1 @@
-{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/custom-page-sizes__mem.wax","startLine":4,"startColumn":7,"endLine":4,"endColumn":10,"startOffset":65,"endOffset":68,"message":"The memory 'big' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/cram/custom-page-sizes__mem.wax","startLine":4,"startColumn":7,"endLine":4,"endColumn":10,"startOffset":65,"endOffset":68,"message":"The memory 'big' is never used.","warning":"unused-field","hint":null,"related":[]}

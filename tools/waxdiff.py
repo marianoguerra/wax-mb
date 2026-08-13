@@ -486,7 +486,18 @@ def write_golden(res: dict) -> dict:
     if res["diagnostics"]:
         p = GOLDEN / f"{stem}.diag.jsonl"
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(res["diagnostics"], encoding="utf-8")
+        # Stored with the `file` field already made repo-relative. `run` would
+        # normalize it anyway before comparing, so this changes no verdict --
+        # but a golden regenerated in a different checkout is otherwise one
+        # rewritten line per diagnostic, and upstream's actual change is
+        # unreviewable underneath 1700 files of moved path.
+        p.write_text(
+            "".join(
+                json.dumps(normalize_file(d), separators=(",", ":"), ensure_ascii=False) + "\n"
+                for d in parse_jsonl(res["diagnostics"])
+            ),
+            encoding="utf-8",
+        )
     return {
         "bucket": res["bucket"],
         "reprint_code": res["reprint_code"],

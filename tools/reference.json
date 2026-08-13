@@ -17,18 +17,15 @@
   "repo": "ocsigen/wax",
   "release": "edge",
   "asset": "wax-linux-x86_64",
-  "sha256": "28c17cc3b867e34f77c4163b6c1ff2619ed9b61059a65512b5eb81f7cca7dca5",
+  "sha256": "33779a9d35e171fa5481d992ac2411124c397d28333f2d3bc55d836f5e7f0785",
   "reports_version": "0.1.1~dev",
-  "upstream_commit": "9002a71",
-  "ported_from_commit": "75d71d05ed51e9e3fddef2fe66a60415db1516f3",
+  "upstream_commit": "e57f93b",
+  "ported_from_commit": "e57f93bbcb0fee7c09c3014c717ee2a2538ff7d7",
   "front_end_identical": true,
   "_front_end_note": [
-    "upstream_commit is 2 commits ahead of ported_from_commit (the state of the",
-    "wax/ reference checkout). Those two commits touch only src/lib-wasm/",
-    "binary_to_text.ml and src/lib-wax/typing.ml -- neither is in this port's",
-    "scope -- so the binary is front-end-identical to the sources being ported.",
-    "Verified by reproducing test/cram-tests/bracket-wrapping.t byte for byte.",
-    "Re-check this claim with:",
+    "upstream_commit and ported_from_commit are the SAME commit: the binary is",
+    "built from exactly the sources in wax/, so there is no skew to reason about.",
+    "Re-check after any bump with:",
     "  gh api repos/ocsigen/wax/compare/<ported_from_commit>...<upstream_commit>"
   ]
 }

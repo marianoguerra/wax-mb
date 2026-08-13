@@ -1,1 +1,1 @@
-{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/wat/cram-tests__simd-roundtrip.t__global.wax","startLine":1,"startColumn":4,"endLine":1,"endColumn":5,"startOffset":4,"endOffset":5,"message":"The global 'g' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/wat/cram-tests__simd-roundtrip.t__global.wax","startLine":1,"startColumn":4,"endLine":1,"endColumn":5,"startOffset":4,"endOffset":5,"message":"The global 'g' is never used.","warning":"unused-field","hint":null,"related":[]}

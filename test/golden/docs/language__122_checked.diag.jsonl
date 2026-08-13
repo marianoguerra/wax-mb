@@ -1,1 +1,1 @@
-{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/language__122_checked.wax","startLine":1,"startColumn":3,"endLine":1,"endColumn":10,"startOffset":3,"endOffset":10,"message":"The function 'add_one' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/docs/language__122_checked.wax","startLine":1,"startColumn":3,"endLine":1,"endColumn":10,"startOffset":3,"endOffset":10,"message":"The function 'add_one' is never used.","warning":"unused-field","hint":null,"related":[]}

@@ -1,1 +1,1 @@
-{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/check-all-errors__multi.wax","startLine":2,"startColumn":12,"endLine":2,"endColumn":13,"startOffset":28,"endOffset":29,"message":"Expecting an expression.","warning":null,"hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/cram/check-all-errors__multi.wax","startLine":2,"startColumn":12,"endLine":2,"endColumn":13,"startOffset":28,"endOffset":29,"message":"Expecting an expression.","warning":null,"hint":null,"related":[]}

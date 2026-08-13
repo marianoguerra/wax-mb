@@ -1,9 +1,9 @@
 {
   "_comment": "The reference's expected behaviour for every corpus file. Committed, so `waxdiff.py run` needs neither the reference binary nor the wax/ checkout. A diff here is either your behaviour change or upstream's -- never edit it to make a test pass.",
-  "reference": "28c17cc3b867e34f77c4163b6c1ff2619ed9b61059a65512b5eb81f7cca7dca5",
+  "reference": "33779a9d35e171fa5481d992ac2411124c397d28333f2d3bc55d836f5e7f0785",
   "counts": {
-    "syntax-bad": 211,
-    "compiles-clean": 1592,
+    "syntax-bad": 212,
+    "compiles-clean": 1596,
     "type-bad": 311
   },
   "files": {
@@ -240,6 +240,12 @@
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "d303f0d5e137038183e4bb39b5318e425a2d43cc4663f01516a97849457b11e3"
+    },
+    "cram/compilation-hints-wax__nonfinite.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
     },
     "cram/compilation-hints-wax__notarget.wax": {
       "bucket": "syntax-bad",
@@ -6043,6 +6049,24 @@
       "diag_code": 0,
       "wasm_sha256": "c16beb6337db246d478ea1041e093bdc597fd4a8219734790ecb4f8645f0604a"
     },
+    "spec/wasm-test-suite__core__local_set__local_set.23.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "c6432ecbd45cdb5bbca95197f3fee9491b6123c4a0587830c4cab5c51339b320"
+    },
+    "spec/wasm-test-suite__core__local_set__local_set.3.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "7891882f34c80693cdd90a0ecaffd3348d553139d490ce73c64255cfb10c27ce"
+    },
+    "spec/wasm-test-suite__core__local_set__local_set.7.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "fa436cec9a97408e6859bfddb84d1b3b573e62d7467588766463f8eb798b9622"
+    },
     "spec/wasm-test-suite__core__local_tee__local_tee.0.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
@@ -11376,6 +11400,12 @@
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "a8178e2bf834a41799bcf49d57a1d248003aba36326294e2a3c2ae507f4a214c"
+    },
+    "wat/cram-tests__exact-allocation-gating.t__alloc.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "193e32db9613b936223066b158f009eda9ffabefd89915bb9a76c4b3d4a7249a"
     },
     "wat/cram-tests__exact-allocation.t__roundtrip.wax": {
       "bucket": "compiles-clean",

@@ -1,1 +1,1 @@
-{"severity":"error","file":"/home/mariano/src/experiments/wax-mb/test/corpus/cram/match__err_no_default.wax","startLine":4,"startColumn":4,"endLine":4,"endColumn":5,"startOffset":61,"endOffset":62,"message":"Expecting ';', '_', or a match arm.","warning":null,"hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/cram/match__err_no_default.wax","startLine":4,"startColumn":4,"endLine":4,"endColumn":5,"startOffset":61,"endOffset":62,"message":"Expecting ';', '_', or a match arm.","warning":null,"hint":null,"related":[]}

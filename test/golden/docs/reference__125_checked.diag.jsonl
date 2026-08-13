@@ -1,1 +1,1 @@
-{"severity":"warning","file":"/home/mariano/src/experiments/wax-mb/test/corpus/docs/reference__125_checked.wax","startLine":1,"startColumn":3,"endLine":1,"endColumn":5,"startOffset":3,"endOffset":5,"message":"The function 'ok' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/docs/reference__125_checked.wax","startLine":1,"startColumn":3,"endLine":1,"endColumn":5,"startOffset":3,"endOffset":5,"message":"The function 'ok' is never used.","warning":"unused-field","hint":null,"related":[]}
