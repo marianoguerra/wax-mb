@@ -67,6 +67,7 @@ pub fn check_fields(
       None => bound_value_type(ctx, def.info, expression_type(ctx, def_.info))
     }
     ctx.globals.add(ctx.diagnostics, name.name, name.loc, (mut_, entry))
+    check_constant_instruction(ctx, def_)
     typed[here] = Global(name~, mut_~, typ~, def=def_, attributes~)
   })
   let total = at
@@ -176,11 +177,13 @@ fn check_field(
         Some(e) =>
           Some(
             ctx.with_import_globals(() => {
-              match
+              let checked = match
                 internalize(ctx.type_context, ctx.diagnostics, Ref(reftype)) {
                 Some(elt) => checker.check(elt, e)
                 None => checker.expression(e)
               }
+              check_constant_instruction(ctx, checked)
+              checked
             }),
           )
         None => None
@@ -193,10 +196,12 @@ fn check_field(
     Elem(name~, reftype~, mode~, init~, attributes~) => {
       let elt = internalize(ctx.type_context, ctx.diagnostics, Ref(reftype))
       let checked = init.map(e => {
-        match elt {
+        let c = match elt {
           Some(t) => checker.check(t, e)
           None => checker.expression(e)
         }
+        check_constant_instruction(ctx, c)
+        c
       })
       // An ACTIVE segment names a table and an offset into it; a passive one is
       // only a list of values until something uses it.
@@ -212,6 +217,7 @@ fn check_field(
             None => i32c()
           }
           want(offset, o, at, field.info)
+          check_constant_instruction(ctx, o)
           EActive(tab, o)
         }
       }
@@ -228,6 +234,7 @@ fn check_field(
             None => i32c()
           }
           want(offset, o, at, field.info)
+          check_constant_instruction(ctx, o)
           Active(mem, o)
         }
       }
@@ -257,6 +264,7 @@ fn check_field(
       let data_ = data.map(d => {
         let o = checker.statement(d.offset)
         want(d.offset, o, at, field.info)
+        check_constant_instruction(ctx, o)
         (
           { data_name: d.data_name, offset: o, init: d.init } :
           @ast.MemData[@typing_env.InferredAnnotation])

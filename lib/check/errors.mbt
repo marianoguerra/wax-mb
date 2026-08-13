@@ -2220,3 +2220,29 @@ pub fn cont_cast_not_ascription(
     ),
   )
 }
+
+///|
+/// An initializer expression wasm cannot evaluate before the module runs.
+pub fn constant_expression_required(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Only constant expressions are allowed here."),
+  )
+}
+
+///|
+/// An initializer reading a global that has no value yet.
+pub fn constant_global_required(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Only accessing a constant global is allowed here."),
+  )
+}
