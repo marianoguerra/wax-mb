@@ -904,10 +904,11 @@ fn Lowering::hinted(
       // A `select` over a REFERENCE needs its type written out: the untyped
       // form only works where the value type is unambiguous, which a reference
       // never is.
+      // In UNREACHABLE code there is no type, and the untyped form is right
+      // there too: nothing runs, so nothing needs telling apart.
       match node_valtype(i) {
         Some(Ref(_) as ty) => out.push(SelectTyped([ty]))
-        Some(_) => out.push(Select)
-        None => raise Unresolved("select type", loc)
+        Some(_) | None => out.push(Select)
       }
     }
     Str(_, bytes) => {
