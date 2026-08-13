@@ -1739,7 +1739,33 @@ pub fn Checker::statement(
         }
         None => {
           self.note_unpeeled("Match")
-          self.placeholder(i)
+          // The lowering did not come apart into the shape it was built as,
+          // which happens only on a module already being rejected. Rebuilt
+          // with EMPTY arm bodies rather than by walking the arms again: they
+          // were typed inside the lowering, and typing them a second time
+          // repeats every complaint they made. Only the scrutinee is typed
+          // here, since the lowering did not hand one back.
+          let rebuilt : Array[
+            (
+              @ast.MatchPattern,
+              @basic.Annotated[
+                Array[@ast.Instr[@typing_env.InferredAnnotation]],
+                @basic.Location,
+              ],
+            ),
+          ] = []
+          for a in arms {
+            rebuilt.push((a.0, { desc: [], info: a.1.info }))
+          }
+          {
+            desc: Match(scrutinee=self.expression(scrutinee), arms=rebuilt, default={
+              desc: [],
+              info: default.info,
+            }),
+            info: annotate([], loc),
+            hints: i.hints,
+            expected: i.expected,
+          }
         }
       }
     }
