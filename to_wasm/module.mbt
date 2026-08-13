@@ -344,7 +344,13 @@ fn Lowering::field(
             }
         },
       )
-      let fi = self.func_index(name, loc)
+      // The index this definition TAKES, not the one its name resolves to.
+      // Under conditional compilation two branches may declare one name, and
+      // the name table has a single answer for both -- so the second would go
+      // unnamed and the first would be named twice. A definition's index is
+      // its position after the imports, which is what it always was; asking
+      // the table for it was a longer way to the same number everywhere else.
+      let fi = self.indices.imported_funcs + m.funcs.length() - 1
       note_name(m.names.functions, fi, name.name)
       // `fn f: ft(..)` names a type and prints as `(type $ft)`; `fn f(i32)`
       // spells its signature out.
@@ -397,10 +403,11 @@ fn Lowering::field(
           }
       }
       let (init, init_spans) = self.const_expr(def)
-      note_name(m.names.globals, self.global_index(name, loc), name.name)
+      let gi = self.indices.imported_globals + m.globals.length()
+      note_name(m.names.globals, gi, name.name)
       m.globals.push({ type_: { mut_, typ: ty }, init, init_spans })
       m.text.field_order.push(FGlobal(m.globals.length() - 1))
-      self.export_of(m, attributes, Global(self.global_index(name, loc)), name)
+      self.export_of(m, attributes, Global(gi), name)
     }
     Memory(
       name~,
