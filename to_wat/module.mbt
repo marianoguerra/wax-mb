@@ -38,7 +38,7 @@ pub fn print_module(m : @wasm_bin.Module) -> String raise WatError {
   match m.names.module_ {
     Some(n) => {
       let l : Array[Sexp] = [
-        Block([Atom("module"), Atom("$" + text_of(n))], KBox, true),
+        Block([Atom("module"), Atom(ident(n))], KBox, true),
       ]
       for f in fields {
         l.push(f)
@@ -162,7 +162,7 @@ fn named_type(name : String, kind : String, ty : String) -> Array[Sexp] {
 /// A local's name, or nothing.
 fn local_name(locals : Map[Int, Bytes], k : Int) -> String {
   match locals.get(k) {
-    Some(b) => "$" + text_of(b)
+    Some(b) => ident(b)
     None => ""
   }
 }
@@ -223,7 +223,7 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
   let opened = ctx.opened
   ctx.opened = opened + 1
   let name = match ctx.labels.get(opened) {
-    Some(b) => Some(text_of(b))
+    Some(b) => Some(ident(b))
     None => None
   }
   let (word, bt) = match node.head {
@@ -236,7 +236,7 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
   }
   let head : Array[Sexp] = [Atom(word)]
   if name is Some(n) {
-    head.push(Atom("$" + n))
+    head.push(Atom(n))
   }
   for t in blocktype(bt, ctx.m) {
     head.push(t)

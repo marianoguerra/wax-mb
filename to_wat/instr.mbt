@@ -95,7 +95,7 @@ fn index_pair(names : Map[Int, Bytes], a : Int, b : Int) -> String {
 fn label(scope : Array[String?], depth : Int) -> String {
   let k = scope.length() - 1 - depth
   if k >= 0 && k < scope.length() && scope[k] is Some(name) {
-    "$" + name
+    name
   } else {
     depth.to_string()
   }

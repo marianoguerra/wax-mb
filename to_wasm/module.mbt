@@ -61,6 +61,11 @@ pub fn lower_module(
   // tables and drops them from the typed output -- and they are exactly what
   // cannot be skipped, since each one starts an index space. Emitted first, in
   // written order, which is the order their indices were assigned in.
+  // Where each recorded field stood in the SOURCE, so the two walks below --
+  // imports first, then everything else -- can be put back into one order.
+  // The walks cannot be merged: an import starts an index space and has to be
+  // lowered before anything that refers to it.
+  let order_at : Array[Int] = []
   // The declared features lead the fields, wherever the attributes stood.
   for f in source {
     if f.desc is ModuleAnnotation(attrs) {
@@ -68,6 +73,7 @@ pub fn lower_module(
         if a.attr_name == "feature" &&
           a.attr_value is Some({ desc: Str(_, b), .. }) {
           m.field_order.push(FFeature(b))
+          order_at.push(-1)
         }
       }
     }
@@ -82,6 +88,7 @@ pub fn lower_module(
         Import(module_~, decl~) => {
           low.import_(m, module_.desc, decl.desc, field.info)
           m.field_order.push(FImport(m.imports.length() - 1))
+          order_at.push(field.info.start.cnum)
         }
         ImportGroup(module_~, decls~) => {
           // The order is recorded AFTER the group is compacted, because
@@ -94,6 +101,7 @@ pub fn lower_module(
           low.compact_group(m, decls.length(), field.info)
           for k in before..<m.imports.length() {
             m.field_order.push(FImport(k))
+            order_at.push(field.info.start.cnum)
           }
         }
         _ => ()
@@ -106,8 +114,13 @@ pub fn lower_module(
     raise e
   }
   for field in typed {
+    let before = m.field_order.length()
     low.field(m, field)
+    for _ in before..<m.field_order.length() {
+      order_at.push(field.info.start.cnum)
+    }
   }
+  reorder_fields(m, order_at)
   low.declare_func_refs(m, source)
   // The type section LAST: a synthesized type is materialised when something
   // refers to it, so the section is not complete until everything has been
@@ -125,6 +138,24 @@ pub fn lower_module(
   low.module_name(m, source)
   low.target_features(m, source)
   m
+}
+
+///|
+/// Put the recorded fields back into source order.
+///
+/// The imports were lowered first because each starts an index space, so the
+/// order they were RECORDED in is not the order they were written in. Sorting
+/// by where each field started restores that, and the sort is stable so the
+/// fields one source field produced keep their relative order.
+fn reorder_fields(m : @wasm_bin.Module, at : Array[Int]) -> Unit {
+  guard at.length() == m.field_order.length() else { return }
+  let order = Array::makei(at.length(), k => k)
+  order.sort_by((a, b) => if at[a] != at[b] { at[a] - at[b] } else { a - b })
+  let sorted = order.map(k => m.field_order[k])
+  m.field_order.clear()
+  for f in sorted {
+    m.field_order.push(f)
+  }
 }
 
 ///|

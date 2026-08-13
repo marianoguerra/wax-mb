@@ -12,9 +12,39 @@
 /// nothing named it.
 fn name_or(names : Map[Int, Bytes], i : Int) -> String {
   match names.get(i) {
-    Some(b) => "$" + text_of(b)
+    Some(b) => ident(b)
     None => i.to_string()
   }
+}
+
+///|
+/// An identifier as the format spells one: `$x` when every character may
+/// appear in a bare identifier, and the quoted `$"..."` form otherwise --
+/// which is the only way to write a name that is empty or holds a space.
+pub fn ident(b : Bytes) -> String {
+  let text = text_of(b)
+  if is_bare_identifier(text) {
+    "$" + text
+  } else {
+    "$" + quoted(b)
+  }
+}
+
+///|
+fn is_bare_identifier(s : String) -> Bool {
+  if s.is_empty() {
+    return false
+  }
+  for c in s {
+    let ok = (c >= '0' && c <= '9') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= 'a' && c <= 'z') ||
+      "!#$%&'*+-./:<=>?@\\^_`|~".contains(c.to_string())
+    if !ok {
+      return false
+    }
+  }
+  true
 }
 
 ///|

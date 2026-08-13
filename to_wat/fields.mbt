@@ -59,7 +59,7 @@ fn quoted(b : Bytes) -> String {
 /// field carries no identifier at all and takes its index from its position.
 fn opt_id(names : Map[Int, Bytes], k : Int) -> Array[Sexp] {
   match names.get(k) {
-    Some(b) => [Atom("$" + text_of(b))]
+    Some(b) => [Atom(ident(b))]
     None => []
   }
 }
@@ -141,7 +141,7 @@ fn comptype(
       let field_names = m.names.fields.get(of_).unwrap_or(Map([]))
       for j, f in st.fields {
         let name = match field_names.get(j) {
-          Some(n) => "$" + text_of(n)
+          Some(n) => ident(n)
           None => ""
         }
         l.push(List(named_type(name, "field", fieldtype(m, f))))
@@ -493,7 +493,7 @@ fn elem_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
     Declarative => head.push(Atom("declare"))
     Active(tab, offset) => {
       if m.names.tables.get(tab) is Some(b) {
-        head.push(List([Atom("table"), Atom("$" + text_of(b))]))
+        head.push(List([Atom("table"), Atom(ident(b))]))
       } else if tab != 0 {
         head.push(List([Atom("table"), Atom(tab.to_string())]))
       }
@@ -548,7 +548,7 @@ fn data_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   }
   if d.mode is Active(mem, offset) {
     if m.names.memories.get(mem) is Some(b) {
-      head.push(List([Atom("memory"), Atom("$" + text_of(b))]))
+      head.push(List([Atom("memory"), Atom(ident(b))]))
     } else if mem != 0 {
       head.push(List([Atom("memory"), Atom(mem.to_string())]))
     }

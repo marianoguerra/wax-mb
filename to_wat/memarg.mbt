@@ -18,7 +18,7 @@
 /// wrote, and dropping it would change the text even though the index is 0.
 fn opt_index(names : Map[Int, Bytes], k : Int) -> String {
   match names.get(k) {
-    Some(b) => " $" + text_of(b)
+    Some(b) => " " + ident(b)
     None => if k == 0 { "" } else { " " + k.to_string() }
   }
 }
