@@ -243,10 +243,28 @@ pub fn Checker::statement(
         loc,
         params,
       )
-      let then_ = self.body(loc, label, params, results, results, if_block.desc)
+      // Each arm is anchored at its OWN span. An output underflow is reported
+      // at a block's closing token, so two arms sharing the `if`'s span print
+      // the same `line:col: message` twice -- two distinct findings the reader
+      // cannot tell apart.
+      let then_ = self.body(
+        if_block.info,
+        label,
+        params,
+        results,
+        results,
+        if_block.desc,
+      )
       let else_ = match else_block {
         Some(b) => {
-          let checked = self.body(loc, label, params, results, results, b.desc)
+          let checked = self.body(
+            b.info,
+            label,
+            params,
+            results,
+            results,
+            b.desc,
+          )
           Some(
             (
               { desc: checked, info: b.info } :

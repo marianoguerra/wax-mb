@@ -289,10 +289,19 @@ fn Checker::check_if(
   }
   let result_cell = context_result_cell(self.ctx, typ, expected)
   let results = [result_cell]
-  let then_ = self.body(i.info, label, [], results, results, if_block.desc)
+  // Each arm at its OWN span: an output underflow lands on a block's closing
+  // token, and two arms sharing the `if`'s span print one line twice.
+  let then_ = self.body(
+    if_block.info,
+    label,
+    [],
+    results,
+    results,
+    if_block.desc,
+  )
   let else_ = match else_block {
     Some(b) => {
-      let checked = self.body(i.info, label, [], results, results, b.desc)
+      let checked = self.body(b.info, label, [], results, results, b.desc)
       Some(
         (
           { desc: checked, info: b.info } :

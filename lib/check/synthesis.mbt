@@ -194,15 +194,17 @@ fn Checker::if_inference(
 ) -> @ast.Instr[@typing_env.InferredAnnotation]? {
   guard else_block is Some(eb) else { return None }
   self.infer_synthesized(i, typ, (cs, r) => {
+    // Each arm at its OWN span: an output underflow lands on a block's closing
+    // token, and two arms sharing the `if`'s span print one line twice.
     let then_ = self.collected_body(
-      i.info,
+      if_block.info,
       label,
       cs,
       r,
       if_block.desc,
       loop_=false,
     )
-    let else_ = self.collected_body(i.info, label, cs, r, eb.desc, loop_=false)
+    let else_ = self.collected_body(eb.info, label, cs, r, eb.desc, loop_=false)
     t => {
       @ast.InstrDesc::If(
         label~,
@@ -369,10 +371,17 @@ fn Checker::if_expression_fallback(
   guard self.signature_of(typ) is Some((params, results)) else {
     return self.unresolved(i)
   }
-  let then_ = self.body(i.info, label, params, results, results, if_block.desc)
+  let then_ = self.body(
+    if_block.info,
+    label,
+    params,
+    results,
+    results,
+    if_block.desc,
+  )
   let else_ = match else_block {
     Some(b) => {
-      let checked = self.body(i.info, label, params, results, results, b.desc)
+      let checked = self.body(b.info, label, params, results, results, b.desc)
       Some(
         (
           { desc: checked, info: b.info } :
