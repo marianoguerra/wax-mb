@@ -195,7 +195,17 @@ fn encode_start_section(mod : Module) -> Bytes raise EncodeError {
 ///
 /// This decides whether the compact element encodings -- the ones that list
 /// function indices instead of expressions -- are available.
+///
+/// The reference asks the same question of its own binary AST, where an
+/// initialiser is always a FOLDED node and so never matches the bare pattern.
+/// The answer there is therefore "only when the list is empty", vacuously --
+/// so the compact form is reachable for an empty segment and nothing else. We
+/// reproduce that: the bytes are what is being compared, and a shorter
+/// encoding of the same segment is still a different module.
 fn all_ref_func(init : Array[Array[Instruction]]) -> Bool {
+  if !init.is_empty() {
+    return false
+  }
   for e in init {
     guard e is [RefFunc(_)] else { return false }
   }

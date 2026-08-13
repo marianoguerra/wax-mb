@@ -192,7 +192,9 @@ pub(all) enum Instruction {
   TableGrow(Int) // table index
   TableFill(Int) // table index
   TableCopy(Int, Int) // dest table index, src table index
-  TableInit(Int, Int) // table index, elem index
+  /// The TABLE index first, then the element segment -- and, as for
+  /// `MemoryInit`, the encoding writes them the other way round.
+  TableInit(Int, Int)
 
   // Memory instructions - (memidx, align, offset)
   // offset is Int64 to support memory64 64-bit offsets
@@ -221,7 +223,10 @@ pub(all) enum Instruction {
   I64Store32(Int, Int, Int64)
   MemorySize(Int) // memidx
   MemoryGrow(Int) // memidx
-  MemoryInit(Int, Int) // memidx, data segment index
+  /// The MEMORY index first, then the data segment. Note the encoding writes
+  /// them the other way round -- segment, then memory -- which is exactly why
+  /// the order is stated here rather than left to be inferred from the bytes.
+  MemoryInit(Int, Int)
   DataDrop(Int) // data segment index
   MemoryCopy(Int, Int) // dest memidx, src memidx
   MemoryFill(Int) // memidx

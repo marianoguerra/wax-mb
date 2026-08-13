@@ -1604,7 +1604,7 @@ fn Lowering::mgmt_call(
       guard self.indices.datas.get(n.name) is Some(d) else {
         raise Unresolved("data segment", loc)
       }
-      out.push(MemoryInit(d, m))
+      out.push(MemoryInit(m, d))
     }
     ("size", _, Some(t)) => out.push(TableSize(t))
     ("grow", _, Some(t)) => out.push(TableGrow(t))
@@ -1627,7 +1627,7 @@ fn Lowering::mgmt_call(
       guard self.indices.elems.get(n.name) is Some(e) else {
         raise Unresolved("element segment", loc)
       }
-      out.push(TableInit(e, t))
+      out.push(TableInit(t, e))
     }
     _ => return false
   }
