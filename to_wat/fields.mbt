@@ -25,30 +25,85 @@ fn export_clauses(
 
 ///|
 /// A string literal, escaped the way the format escapes one.
+///
+/// The choice is ALL OR NOTHING. Text that decodes as UTF-8 and holds no
+/// character a readable rendering would have to hex-escape is written
+/// readably; anything else is written byte by byte as `\HH`. Mixing the two
+/// -- printable characters as themselves, the rest escaped -- reads as text
+/// that is not text, and is not what the format does.
 fn quoted(b : Bytes) -> String {
   let out = StringBuilder::new()
   out.write_char('"')
-  for k in 0..<b.length() {
-    let c = b[k].to_int()
-    match c {
-      0x22 => out.write_string("\\\"")
-      0x5C => out.write_string("\\\\")
-      0x0A => out.write_string("\\n")
-      0x09 => out.write_string("\\t")
-      0x0D => out.write_string("\\r")
-      // Everything printable goes through as itself; anything else in the
-      // two-digit hex form, which is what keeps the output byte-exact for
-      // names that are not text at all.
-      _ =>
-        if c >= 0x20 && c < 0x7F {
-          out.write_char(Int::unsafe_to_char(c))
-        } else {
-          out.write_string("\\" + hex2(c))
+  if readable(b) {
+    let text = text_of(b)
+    for c in text {
+      let n = c.to_int()
+      if n >= 32 && n != 127 && n != 34 && n != 92 {
+        out.write_char(c)
+      } else {
+        match n {
+          0x09 => out.write_string("\\t")
+          0x0A => out.write_string("\\n")
+          0x0D => out.write_string("\\r")
+          0x22 => out.write_string("\\\"")
+          0x5C => out.write_string("\\\\")
+          _ => out.write_string("\\" + hex2(n))
         }
+      }
+    }
+  } else {
+    // Binary: every byte, rather than decoded text interleaved with escapes.
+    for k in 0..<b.length() {
+      out.write_string("\\" + hex2(b[k].to_int()))
     }
   }
   out.write_char('"')
   out.to_string()
+}
+
+///|
+/// Whether these bytes can be written as text: valid UTF-8, and no control
+/// character that a readable rendering would have to hex-escape anyway.
+fn readable(b : Bytes) -> Bool {
+  let mut k = 0
+  while k < b.length() {
+    let c = b[k].to_int()
+    let n = if c < 0x80 {
+      // The controls that have no short escape force the byte-by-byte form.
+      if (c < 0x20 && c != 9 && c != 10 && c != 13) || c == 127 {
+        return false
+      }
+      1
+    } else if c >= 0xC2 && c <= 0xDF {
+      2
+    } else if c >= 0xE0 && c <= 0xEF {
+      3
+    } else if c >= 0xF0 && c <= 0xF4 {
+      4
+    } else {
+      return false
+    }
+    if k + n > b.length() {
+      return false
+    }
+    for j in 1..<n {
+      let cc = b[k + j].to_int()
+      if cc < 0x80 || cc > 0xBF {
+        return false
+      }
+    }
+    k = k + n
+  }
+  true
+}
+
+///|
+/// Two lowercase hex digits.
+fn hex2(c : Int) -> String {
+  let digits = [
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f",
+  ]
+  digits[c / 16] + digits[c % 16]
 }
 
 ///|
@@ -62,12 +117,6 @@ fn opt_id(names : Map[Int, Bytes], k : Int) -> Array[Sexp] {
     Some(b) => [Atom(ident(b))]
     None => []
   }
-}
-
-///|
-fn hex2(c : Int) -> String {
-  let digits = "0123456789abcdef"
-  digits[c / 16].to_string() + digits[c % 16].to_string()
 }
 
 ///|
