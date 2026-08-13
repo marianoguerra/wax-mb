@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 174278 poisoned 0 files 1903 clean 1726",
+    content="nodes 174361 poisoned 0 files 1903 clean 1726",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -139,7 +139,7 @@ test "the checker annotates every node it reaches" {
     #|17 This type test is always true: the value already has this type.
     #|10 The type 'point' is not bound.
     #|8 Expecting 1 value(s) from the stack, but there are 0.
-    #|6 This expression has type 'i64' but is expected to have type 'i32'.
+    #|6 The type 'bytes' is not bound.
   let n = if top.length() < 8 { top.length() } else { 8 }
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),

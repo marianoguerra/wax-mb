@@ -135,10 +135,31 @@ pub fn Checker::statement(
     // element rather than only its last one's. `expression_type` is what
     // insists on the one, and reports an element that produces none or several.
     Sequence(l) => {
+      // A sequence leaves its values with the LAST on top, so a run of holes
+      // takes them from the top backwards: the rightmost hole gets the top,
+      // and the leftmost gets the deepest. Popping them in written order would
+      // hand the first hole the last value and pair every one of them with the
+      // wrong expectation.
+      //
+      // They are resolved in a pass of their own because a hole takes a value
+      // that is already there, while every other element PUSHES one -- so only
+      // the holes see the incoming stack, and they see it in reverse.
+      let hole_types : Map[Int, @infer.Cell[@infer.InferredType]] = Map([])
+      for k = l.length() - 1; k >= 0; k = k - 1 {
+        if l[k].desc is Hole {
+          let batch : Ref[MissingBatch?] = @ref.new(None)
+          let ty = self.ops.pop_any(batch, 0, 1)
+          report_missing_hole(self.ops, ctx.diagnostics, l[k].info, ty)
+          hole_types[k] = ty
+        }
+      }
       let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
       let types : Array[@infer.Cell[@infer.InferredType]] = []
-      for s in l {
-        let c = self.expression(s)
+      for k, s in l {
+        let c = match hole_types.get(k) {
+          Some(ty) => self.rebuild(s, [ty])
+          None => self.expression(s)
+        }
         types.push(expression_type(ctx, c.info))
         checked.push(c)
       }
