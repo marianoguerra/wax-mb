@@ -124,15 +124,35 @@ pub fn mnemonic(
 ) -> Sexp raise WatError {
   // The immediates are separate atoms so that a long one can WRAP: sixteen
   // v128 lanes do not fit a line, and one atom cannot break.
-  let text = mnemonic_text(i, names, locals, scope~)
-  if text.contains(" ") {
-    let parts : Array[Sexp] = []
-    for w in text.split(" ") {
-      parts.push(Atom(w.to_owned()))
-    }
-    return Block(parts, KBox, false)
+  let parts = top_level_words(mnemonic_text(i, names, locals, scope~))
+  if parts.length() > 1 {
+    return Block(parts.map(w => Atom(w)), KBox, false)
   }
-  Atom(text)
+  Atom(parts[0])
+}
+
+///|
+/// Split on the spaces that separate IMMEDIATES, and not on the ones inside
+/// one: `(ref null $t)` is a single thing to write and has nowhere to break.
+fn top_level_words(text : String) -> Array[String] {
+  let out : Array[String] = []
+  let cur = StringBuilder::new()
+  let mut depth = 0
+  for c in text {
+    if c == '(' {
+      depth = depth + 1
+    } else if c == ')' {
+      depth = depth - 1
+    }
+    if c == ' ' && depth == 0 {
+      out.push(cur.to_string())
+      cur.reset()
+      continue
+    }
+    cur.write_char(c)
+  }
+  out.push(cur.to_string())
+  out
 }
 
 ///|
