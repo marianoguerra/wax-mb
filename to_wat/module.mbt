@@ -182,6 +182,7 @@ fn field(m : @wasm_bin.Module, f : @wasm_bin.FieldRef) -> Sexp raise WatError {
     }
     FFeature(name) => List([Atom("@feature"), Atom(quoted(name))])
     FStart(f) => List([Atom("start"), Atom(name_or(m.names.functions, f))])
+    FExport(k) => export_field(m, k)
     FImport(k) => import_field(m, k)
     FFunc(k) => function_field(m, k, m.codes[k])
     FTable(k) => table_field(m, k)

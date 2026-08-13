@@ -5,8 +5,11 @@
 // Exports are written INLINE on the thing exported -- `(func $f (export "f")
 // ...)` -- not as fields of their own. The binary has an export section
 // instead, so the inline form is recovered by asking which exports point at
-// this item: the two spellings hold the same information, and the reference
-// emits no standalone `(export ...)` field for anything a wax module can say.
+// this item: the two spellings hold the same information.
+//
+// Except a GUARDED one. `#[export = "n", if(c)]` is a field of its own under
+// its condition, because a clause on the thing exported has nowhere to put a
+// condition.
 
 ///|
 /// The export clauses attached to one item, in section order.
@@ -15,12 +18,37 @@ fn export_clauses(
   of_ : @wasm_bin.ExportDesc,
 ) -> Array[Sexp] {
   let out : Array[Sexp] = []
-  for e in m.exports {
-    if e.desc == of_ {
+  for k, e in m.exports {
+    if e.desc == of_ && !m.text.guarded_exports.contains(k) {
       out.push(List([Atom("export"), Atom(quoted(e.name))]))
     }
   }
   out
+}
+
+///|
+/// A guarded export, as a field: `(export "n" (func $f))`.
+fn export_field(m : @wasm_bin.Module, k : Int) -> Sexp {
+  let e = m.exports[k]
+  let (kind, i) = match e.desc {
+    Func(i) => ("func", i)
+    Table(i) => ("table", i)
+    Memory(i) => ("memory", i)
+    Global(i) => ("global", i)
+    Tag(i) => ("tag", i)
+  }
+  let names = match e.desc {
+    Func(_) => m.names.functions
+    Table(_) => m.names.tables
+    Memory(_) => m.names.memories
+    Global(_) => m.names.globals
+    Tag(_) => m.names.tags
+  }
+  List([
+    Atom("export"),
+    Atom(quoted(e.name)),
+    List([Atom(kind), Atom(name_or(names, i))]),
+  ])
 }
 
 ///|

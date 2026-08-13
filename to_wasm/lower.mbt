@@ -80,6 +80,9 @@ pub struct Lowering {
   /// be read back: the text format writes it folded, and re-deriving the
   /// nesting from an arity table would be a second answer to a question the
   /// lowering has already answered.
+  /// Where a field-order entry stands, when that is not where its field does.
+  /// A guarded export stands at its attribute; everything else at its field.
+  entry_locs : Map[Int, @basic.Location]
   mut spans : Array[@wasm_bin.Span]
   /// The spans of every NESTED body -- a block's, a loop's, each arm of an
   /// `if` -- in the order those bodies COMPLETE, which is deepest-first and

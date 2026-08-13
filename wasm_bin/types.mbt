@@ -1188,6 +1188,12 @@ pub(all) struct TextView {
   /// out; a function is the same. The binary keeps only the index, which is
   /// the same either way, so which was written has to be recorded.
   named_decl_types : Map[ParamOwner, Bool]
+  /// The exports whose attribute carried a GUARD, by export index.
+  ///
+  /// A guarded export is written as a field of its own under the condition --
+  /// `(@if $c (@then (export "n" (func $f))))` -- rather than as a clause on
+  /// the thing exported, because a clause has nowhere to put the condition.
+  guarded_exports : Map[Int, Bool]
   /// The conditional groups the source wrote.
   ///
   /// A conditional has no binary form -- that is the whole point of it, and
@@ -1215,6 +1221,7 @@ pub fn TextView::empty() -> TextView {
     field_locs: [],
     decl_param_names: Map([]),
     named_decl_types: Map([]),
+    guarded_exports: Map([]),
     conditionals: [],
   }
 }
@@ -1241,6 +1248,9 @@ pub(all) enum FieldRef {
   /// `(start $f)`. Written where the `#[start]` attribute was, because that is
   /// what a conditional around it guards.
   FStart(Int)
+  /// A standalone `(export "n" (func $f))`, by export index. Only a GUARDED
+  /// export takes this form; the rest are clauses on what they export.
+  FExport(Int)
   FTable(Int)
   FMemory(Int)
   FGlobal(Int)

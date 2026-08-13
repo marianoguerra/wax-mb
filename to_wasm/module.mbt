@@ -40,6 +40,7 @@ pub fn lower_module(
     layout,
     locals: Map([]),
     local_types: [],
+    entry_locs: Map([]),
     spans: [],
     nested_spans: [],
     binding_slots: Map([]),
@@ -114,8 +115,10 @@ pub fn lower_module(
   for field in typed {
     let before = m.text.field_order.length()
     low.field(m, field)
-    for _ in before..<m.text.field_order.length() {
-      order_at.push(field.info)
+    for k in before..<m.text.field_order.length() {
+      // Most entries stand where their field does. A guarded export stands
+      // where its ATTRIBUTE does, because that is what the condition wraps.
+      order_at.push(low.entry_locs.get(k).unwrap_or(field.info))
     }
   }
   reorder_fields(m, order_at)
@@ -716,7 +719,6 @@ fn Lowering::export_of(
   desc : @wasm_bin.ExportDesc,
   own : @ast.Ident,
 ) -> Unit raise LowerError {
-  ignore(self)
   for a in attributes {
     guard a.attr_name == "export" else { continue }
     let name = match a.attr_value {
@@ -729,7 +731,21 @@ fn Lowering::export_of(
       // whole point of writing it bare.
       None => utf8_of(own.name)
     }
+    let at = m.exports.length()
     m.exports.push({ name, desc })
+    // A GUARDED export is a field of its own under its condition. A clause on
+    // the thing exported has nowhere to put one.
+    if a.attr_guard is Some(g) {
+      m.text.guarded_exports[at] = true
+      self.entry_locs[m.text.field_order.length()] = a.attr_span
+      m.text.field_order.push(FExport(at))
+      m.text.conditionals.push({
+        cond: wat_cond(g.desc),
+        loc: a.attr_span,
+        then_: a.attr_span,
+        else_: None,
+      })
+    }
   }
 }
 
