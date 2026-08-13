@@ -3687,11 +3687,11 @@ test "an if consumes its condition and needs an else to produce a value" {
 }
 
 ///|
-/// A block whose declared shape does not resolve still has its body walked --
-/// the instructions inside are annotated -- but is not checked against a shape
-/// nobody has. The failure was reported by the resolver, and the poison keeps
-/// the enclosing scope quiet.
-test "a block with an unresolvable shape still annotates its body" {
+/// A block whose declared shape does not resolve is not looked inside at all.
+/// The shape is what the body would have been checked against, so every
+/// complaint about the body would be invented: one report about the type nobody
+/// could resolve, and poison to keep the enclosing scope quiet.
+test "a block with an unresolvable shape is not looked inside" {
   let ctx = module_ctx()
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   fn instr(
@@ -3726,11 +3726,8 @@ test "a block with an unresolvable shape still annotates its body" {
   // One report, not a cascade.
   inspect(ctx.diagnostics.collected().length(), content="1")
   inspect(checked.info.0[0].get() is Error, content="true")
-  guard! checked.desc is Block(block~, ..)
-  inspect(
-    block.desc[0].info.0.map(t => @infer.to_string(t)).join(","),
-    content="number",
-  )
+  // Not a block any more: there is no shape to have built one against.
+  inspect(checked.desc is Unreachable, content="true")
 }
 
 ///|

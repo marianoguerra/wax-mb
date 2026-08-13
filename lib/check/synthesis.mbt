@@ -321,7 +321,7 @@ fn Checker::block_expression_fallback(
   loop_~ : Bool,
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   guard self.signature_of(typ) is Some((params, results)) else {
-    return self.poisoned(i)
+    return self.unresolved(i)
   }
   let branch_target = if loop_ { params } else { results }
   let checked = self.body(
@@ -367,7 +367,7 @@ fn Checker::if_expression_fallback(
   ]?,
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   guard self.signature_of(typ) is Some((params, results)) else {
-    return self.poisoned(i)
+    return self.unresolved(i)
   }
   let then_ = self.body(i.info, label, params, results, results, if_block.desc)
   let else_ = match else_block {

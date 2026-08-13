@@ -2612,7 +2612,7 @@ fn Checker::block_construct(
   let ctx = self.ctx
   let loc = i.info
   guard self.signature_of(typ) is Some((params, results)) else {
-    return self.poisoned(i)
+    return self.unresolved(i)
   }
   // The parameters come off the ENCLOSING stack here; `checked_block` puts them
   // back on the block's own.
@@ -2645,6 +2645,28 @@ fn Checker::block_construct(
       Block(label~, typ~, block=body)
     },
     info: annotate(results, loc),
+    hints: i.hints,
+    expected: i.expected,
+  }
+}
+
+///|
+/// Recover from a construct whose declared shape did not resolve, without
+/// looking inside it.
+///
+/// The shape is what the body would have been checked against, so without it
+/// every complaint about the body is invented -- an unbound block result makes
+/// the label unbound, which makes the branch to it wrong, which makes the value
+/// it carries wrong. One report about the type nobody could resolve is the
+/// whole of what happened.
+fn Checker::unresolved(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  ignore(self)
+  {
+    desc: Unreachable,
+    info: annotate([@infer.Cell::make(@infer.InferredType::Error)], i.info),
     hints: i.hints,
     expected: i.expected,
   }
