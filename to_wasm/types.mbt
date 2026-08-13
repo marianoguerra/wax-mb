@@ -219,11 +219,21 @@ pub fn type_layout(
     groups.push({ start, len: 1, explicit: false })
   }
 
+  // The name a store-tier entry was placed FOR. Its written form is what gets
+  // lowered: a signature's inner references mean the names the signature
+  // wrote, and interning has already merged those names with any like-shaped
+  // siblings -- so reading the entry back from the store would resolve them to
+  // whichever sibling happened to be declared first.
+  let slot_names : Map[Int, String] = Map([])
   fn place_named(name : String) -> Unit {
     guard ctx.type_context.types.find_no_mark(name) is Some((Def(id), _)) else {
       return
     }
+    let before = store_of.length()
     place_store(id.to_int_for_tests_only())
+    if store_of.length() > before {
+      slot_names[before] = name
+    }
   }
 
   @typing.walk_fields(ctx, source, field => {
@@ -312,7 +322,15 @@ pub fn type_layout(
     // it back from the store would resolve every such reference to whichever
     // declaration came first, which is the same collapse this whole layout
     // exists to undo.
-    match declared_at(ctx, layout, emitted) {
+    let written_form = match declared_at(ctx, layout, emitted) {
+      Some(sub) => Some(sub)
+      None =>
+        match slot_names.get(emitted) {
+          Some(name) => layout.written.get(name)
+          None => None
+        }
+    }
+    match written_form {
       Some(sub) => types.push(layout.source_subtype(ctx, sub))
       None =>
         types.push(
