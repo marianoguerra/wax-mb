@@ -57,6 +57,10 @@ pub fn Lowering::memarg_natural(
       // The written alignment is a BYTE COUNT; the format stores its log.
       "align" => align = log2_exact(n, loc)
       "offset" => offset = n
+      // `lane:` rides along in the same argument list but is not part of the
+      // memarg -- it is a separate immediate the lane accesses take, read by
+      // the caller that knows whether there is one.
+      "lane" => ()
       _ => raise Unresolved("memory immediate label", loc)
     }
   }

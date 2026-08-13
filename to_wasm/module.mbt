@@ -374,6 +374,29 @@ fn Lowering::collect_locals(
         next = next + 1
       }
     }
+    // A `match` arm BINDS the value it matched, and the binding is written in
+    // the pattern rather than as a `let` -- so the generic walk below never
+    // sees it. Its slot has to be assigned where the arm's own lowering puts
+    // the store: before the arm's body, and after the previous arm's.
+    if i.desc is Match(arms~, default~, scrutinee~) {
+      visit(scrutinee)
+      for arm in arms {
+        if arm.0 is MatchCast(Some(bind), rt) {
+          let ty = self.valtype_index(Ref(rt), i.info.1)
+          self.binding_slots[bind.loc.start.cnum] = next
+          note_name(self.local_names, next, self.claim_name(bind.name))
+          self.local_types.push(ty)
+          next = next + 1
+        }
+        for s in arm.1.desc {
+          visit(s)
+        }
+      }
+      for s in default.desc {
+        visit(s)
+      }
+      return
+    }
     for sub in i.sub_instrs() {
       visit(sub)
     }
