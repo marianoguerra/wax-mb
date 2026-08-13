@@ -144,11 +144,22 @@ fn regroup(
   conds : Array[@wasm_bin.CondGroup],
   items : Array[(Sexp, @basic.Location)],
   kinds? : Array[FieldKind] = [],
+  outer? : Array[(Int, Bool)] = [],
 ) -> Array[Sexp] {
   if conds.is_empty() {
     return items.map(i => i.0)
   }
-  let paths = items.map(i => guards_of(conds, i.1))
+  // The frames an ENCLOSING level already wrote are not written again here.
+  // A `#[if]` holding one block holds everything in that block too, and
+  // wrapping at both levels says it twice.
+  let paths = items.map(i => {
+    let g = guards_of(conds, i.1)
+    if g.length() <= outer.length() {
+      []
+    } else {
+      g[outer.length():].to_owned()
+    }
+  })
   let order = Array::makei(items.length(), k => k)
   if needs_reorder(conds, kinds, paths) {
     let imports = order.filter(k => k < kinds.length() && kinds[k] is KImport)
@@ -506,12 +517,13 @@ fn statements(
   nodes : Array[Node],
   ctx : Ctx,
   conds : Array[@wasm_bin.CondGroup],
+  outer? : Array[(Int, Bool)] = [],
 ) -> Array[Sexp] raise WatError {
   let items : Array[(Sexp, @basic.Location)] = []
   for n in nodes {
     items.push((folded(n, ctx), n.loc))
   }
-  regroup(conds, items)
+  regroup(conds, items, outer~)
 }
 
 ///|
@@ -645,7 +657,12 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
     _ => []
   }
   for j, body in node.bodies {
-    let inner = statements(body, ctx, ctx.conditionals)
+    let inner = statements(
+      body,
+      ctx,
+      ctx.conditionals,
+      outer=guards_of(ctx.conditionals, node.loc),
+    )
     if j < clauses.length() {
       // An `else` with nothing in it is not written. `then` always is, even
       // empty, because it is what the condition guards.
