@@ -2181,6 +2181,40 @@ pub fn call_targets_direct_call(
 }
 
 ///|
+/// A stack-switching receiver that is not a declared continuation.
+pub fn expected_cont_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "This expression should be a reference to a declared continuation type.",
+    ),
+  )
+}
+
+///|
+/// A stack-switching receiver typed only as the abstract `cont`.
+///
+/// The instruction carries its continuation type as an IMMEDIATE, so an
+/// abstract reference leaves nothing to write there -- and there is no way to
+/// recover it, since a continuation reference cannot be narrowed by a cast.
+pub fn abstract_cont_receiver(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "The continuation type cannot be resolved from this expression. Give the value a declared continuation type where it is introduced (a parameter, local or block-result annotation): a continuation reference cannot be narrowed by a cast.",
+    ),
+  )
+}
+
+///|
 /// A hole standing where the construct evaluates its operand in a block of its
 /// own, whose stack the pending values never reach.
 pub fn hole_in_control_operand(

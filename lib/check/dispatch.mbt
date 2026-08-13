@@ -1806,7 +1806,7 @@ pub fn Checker::statement(
     // --- A continuation constructor: `k::new(f)`, `k::bind(x, c)` ---
     Call(callee, args) if self.cont_namespace(callee) is Some(_) => {
       guard callee.desc is Path(ns, name) else { return self.poisoned(i) }
-      self.cont_construct(i, ns, name, args)
+      self.cont_construct(i, callee.info, ns, name, args)
     }
 
     // --- Wide arithmetic: `i64::add128(..)`, `i64::mul_wide_s(..)` ---

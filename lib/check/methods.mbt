@@ -308,15 +308,40 @@ fn Checker::cont_method_tag(
 ///|
 /// The continuation TYPE a method receiver refers to.
 ///
-/// `None` when the receiver is not a reference to a named type -- the mistake is
-/// reported where the operands are checked, which has more to say about it.
+/// The name is not a convenience: `resume` and its siblings carry the
+/// continuation type as an IMMEDIATE, so a receiver that does not NAME one
+/// leaves nothing to write in the instruction. Each way of failing to name one
+/// is a different thing to say -- an abstract `&cont` cannot be narrowed to a
+/// declared type at all, a value off the polymorphic stack has no type yet, and
+/// anything else is simply not a continuation -- except poison, which was
+/// reported where it was made.
 fn cont_receiver_type(
   ctx : @typing_env.ModuleContext,
   recv : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> @ast.Ident? {
+  let loc = recv.info.1
   match expression_type(ctx, recv.info).get() {
-    Valtype({ typ: Ref({ typ: Type(n) | Exact(n), .. }), .. }) => Some(n)
-    _ => None
+    Valtype({ typ: Ref({ typ: Type(n) | Exact(n), .. }), .. }) =>
+      if ctx.type_context.types.find_no_mark(n.name) is Some((_, def)) &&
+        def.typ is Cont(_) {
+        Some(n)
+      } else {
+        expected_cont_type(ctx.diagnostics, loc)
+        None
+      }
+    Valtype({ typ: Ref({ typ: Cont | NoCont, .. }), .. }) => {
+      abstract_cont_receiver(ctx.diagnostics, loc)
+      None
+    }
+    Error => None
+    Unknown | UnknownRef => {
+      unknown_operand_type(ctx.diagnostics, loc)
+      None
+    }
+    _ => {
+      expected_cont_type(ctx.diagnostics, loc)
+      None
+    }
   }
 }
 
@@ -621,6 +646,7 @@ fn Checker::cont_namespace(
 fn Checker::cont_construct(
   self : Checker,
   i : @ast.Instr[@basic.Location],
+  callee_loc : @basic.Location,
   ns : @ast.Ident,
   name : @ast.Ident,
   args : Array[@ast.Instr[@basic.Location]],
@@ -662,9 +688,11 @@ fn Checker::cont_construct(
           expected: i.expected,
         }
       } else {
+        // At the intrinsic's name: the arity belongs to the instruction, and
+        // what was written in the parentheses is not the mistake.
         operand_count_mismatch(
           ctx.diagnostics,
-          i.info,
+          callee_loc,
           expected=1,
           provided=checked.length(),
         )
@@ -687,7 +715,7 @@ fn Checker::cont_construct(
         if checked.is_empty() {
           operand_count_mismatch(
             ctx.diagnostics,
-            i.info,
+            callee_loc,
             expected=1,
             provided=0,
           )
@@ -695,7 +723,9 @@ fn Checker::cont_construct(
         self.cont_construct_recovery(i, ns, name, checked)
       }
     _ => {
-      unknown_intrinsic(ctx.diagnostics, i.info, ns.name, name.name)
+      // At the NAME, not at the whole call: what does not exist is the
+      // intrinsic, and its arguments are not part of the mistake.
+      unknown_intrinsic(ctx.diagnostics, callee_loc, ns.name, name.name)
       self.cont_construct_recovery(i, ns, name, checked)
     }
   }
