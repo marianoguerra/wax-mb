@@ -1986,3 +1986,166 @@ pub fn shared_memory_without_max(
     @message.text("A shared memory must have a maximum size."),
   )
 }
+
+///|
+/// An annotation this port does not know.
+pub fn unknown_annotation(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("Unknown annotation")
+    .sep(@message.code(name))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// An annotation whose value is the wrong shape, or missing, or present when
+/// it should not be.
+pub fn annotation_value_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+  expected : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The")
+    .sep(@message.text(name))
+    .sep(@message.text("annotation expects"))
+    .sep(@message.text(expected))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// An annotation on an entity it means nothing for.
+pub fn annotation_not_allowed(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The")
+    .sep(@message.text(name))
+    .sep(@message.text("annotation is not allowed here.")),
+  )
+}
+
+///|
+/// A conditional guard on an annotation that cannot be conditional.
+pub fn guard_not_allowed(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "A conditional guard is only allowed on an export or start annotation, not on",
+    )
+    .sep(@message.text(name))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// A second import-name annotation on one declaration.
+pub fn multiple_import(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  prev_loc : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("An import can have at most one import-name annotation."),
+    related=[
+      {
+        loc: prev_loc,
+        message: @message.text("other import-name annotation here"),
+      },
+    ],
+  )
+}
+
+///|
+/// An optimization priority with no compilation priority to sit beside.
+pub fn priority_required(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  which : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The")
+    .sep(@message.code("#[" + which + "]"))
+    .sep(@message.text("attribute needs a"))
+    .sep(@message.code("#[priority = n]"))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// Both spellings of an optimization priority on one function.
+pub fn conflicting_optimization(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  prev_loc : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A function states at most one optimization priority:")
+    .sep(@message.code("#[optimization = n]"))
+    .sep(@message.text("or"))
+    .sep(@message.code("#[run_once]"))
+    .seq(@message.text(", not both.")),
+    related=[{ loc: prev_loc, message: @message.text("the other one here") }],
+  )
+}
+
+///|
+/// A call-target hint on a call whose target is already known.
+pub fn call_targets_direct_call(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "A call-target hint may only prefix an indirect call. This callee is a function, so the call is direct and its target is already known.",
+    ),
+  )
+}
+
+///|
+/// Call-target frequencies that add up to more than everything.
+pub fn call_targets_over_100(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  total : Int,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The call-target frequencies add up to")
+    .sep(@message.text(total.to_string()))
+    .seq(@message.text("%, more than 100%."))
+    .sep(
+      @message.text(
+        "A shortfall is how the hint says other, unlisted targets take the remainder.",
+      ),
+    ),
+  )
+}

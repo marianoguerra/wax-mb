@@ -71,6 +71,48 @@ fn annotate(
 }
 
 ///|
+/// What a `#[targets(f: 0.73, ..)]` hint on a call needs beyond the parser's
+/// check that it prefixes a call at all.
+///
+/// The mirror of the wasm validator's `call_targets` arm, which the checker
+/// owes because `wax check` never converts: a problem only the lowering would
+/// hit would otherwise pass.
+///
+/// Each target is resolved but NOT marked used -- naming a function in
+/// advisory metadata is not a use, and marking it would keep an otherwise-dead
+/// function out of the unused lint.
+fn Checker::check_call_targets_hint(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+) -> Unit {
+  guard i.hints.targets is Some(h) else { return }
+  let ctx = self.ctx
+  // The direct-call test, mirroring the lowering: a bare name that denotes a
+  // module function and is not shadowed by a local lowers to `call`, whose
+  // target is already known, so a target list says nothing.
+  match i.desc {
+    Call(callee, _) | TailCall(callee, _) =>
+      if callee.desc is Get(name) &&
+        !ctx.locals.contains(name.name) &&
+        ctx.functions.find_no_mark(name.name) is Some(_) {
+        call_targets_direct_call(ctx.diagnostics, h.loc)
+      }
+    _ => ()
+  }
+  let mut total = 0
+  for entry in h.value {
+    let (f, pct) = entry
+    if ctx.locals.contains(f.name) || ctx.functions.find_no_mark(f.name) is None {
+      unbound_name(ctx.diagnostics, f.loc, "function", f.name)
+    }
+    total = total + pct
+  }
+  if total > 100 {
+    call_targets_over_100(ctx.diagnostics, h.loc, total)
+  }
+}
+
+///|
 /// Check one instruction in STATEMENT position, returning the typed node.
 ///
 /// Statement position is the general case: the instruction may leave any number
@@ -82,6 +124,7 @@ pub fn Checker::statement(
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   let loc = i.info
   let ctx = self.ctx
+  self.check_call_targets_hint(i)
   match i.desc {
     // --- Values that need nothing but their own token ---
     Int(_) | Float(_) | Char(_) | Null => {

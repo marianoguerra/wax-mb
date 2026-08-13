@@ -53,6 +53,144 @@ fn clashes(seen : Array[Occurrence], cond : @cond.T) -> @basic.Location? {
 /// `walk_fields` descends into conditionals under each branch's assumption, so
 /// `ctx.cond` already says what configuration a field belongs to by the time it
 /// is seen -- which is exactly what makes "same name, different branches" fine.
+/// Reject unknown annotations, and check the value shape and the placement of
+/// the ones that are allowed.
+///
+/// `import_ok` is set for the declarations inside an `import "m" { .. }` block,
+/// where a name-only `#[import = "nm"]` overrides the imported name;
+/// `priority_ok` for a DEFINED function, the only thing a compilation hint can
+/// attach to -- an imported one has no code-section entry to key an offset-0
+/// hint in.
+fn check_attribute_list(
+  ctx : @typing_env.ModuleContext,
+  attributes : Array[@ast.Attribute],
+  export_ok~ : Bool,
+  start_ok~ : Bool,
+  module_ok~ : Bool,
+  import_ok~ : Bool,
+  priority_ok? : Bool = false,
+) -> Unit {
+  let d = ctx.diagnostics
+  fn is_string(v : @ast.Instr[@basic.Location]?) -> Bool {
+    v is Some({ desc: Str(_, _), .. })
+  }
+
+  for a in attributes {
+    // The whole `#[...]`. A valueless attribute has no value span to fall back
+    // on, and the field's span would underline the entire definition.
+    let location = a.attr_span
+    // A guard is only meaningful on `export` and `start`; blame its own `if`.
+    if a.attr_guard is Some(g) &&
+      a.attr_name != "export" &&
+      a.attr_name != "start" {
+      guard_not_allowed(d, g.info, a.attr_name)
+    }
+    match a.attr_name {
+      // A bare `#[export]` reuses the entity's Wax name; an explicit one must
+      // be a string.
+      "export" => {
+        if !(a.attr_value is None) && !is_string(a.attr_value) {
+          annotation_value_mismatch(d, location, "export", "a string")
+        }
+        if !export_ok {
+          annotation_not_allowed(d, location, "export")
+        }
+      }
+      "start" => {
+        if a.attr_value is Some(_) {
+          annotation_value_mismatch(d, location, "start", "no value")
+        }
+        if !start_ok {
+          annotation_not_allowed(d, location, "start")
+        }
+      }
+      "module" => {
+        if !is_string(a.attr_value) {
+          annotation_value_mismatch(d, location, "module", "a string")
+        }
+        if !module_ok {
+          annotation_not_allowed(d, location, "module")
+        }
+      }
+      // Allowed exactly where `module` is: as an inner attribute.
+      "feature" => {
+        if !is_string(a.attr_value) {
+          annotation_value_mismatch(d, location, "feature", "a string")
+        }
+        if !module_ok {
+          annotation_not_allowed(d, location, "feature")
+        }
+      }
+      "import" => {
+        if !is_string(a.attr_value) {
+          annotation_value_mismatch(d, location, "import", "a string")
+        }
+        if !import_ok {
+          annotation_not_allowed(d, location, "import")
+        }
+      }
+      // IN RANGE as well as an integer: the section stores the priority as a
+      // ULEB, and an over-long literal would otherwise reach the lowering's
+      // parse and take it down.
+      "priority" | "optimization" => {
+        let ok = match a.attr_value {
+          Some(v) =>
+            match int_literal_u64(v.desc) {
+              Some(n) => n < 0x1_0000_0000UL
+              None => false
+            }
+          None => false
+        }
+        if !ok {
+          annotation_value_mismatch(
+            d,
+            location,
+            a.attr_name,
+            "an integer in the u32 range",
+          )
+        }
+        if !priority_ok {
+          annotation_not_allowed(d, location, a.attr_name)
+        }
+      }
+      "run_once" => {
+        if a.attr_value is Some(_) {
+          annotation_value_mismatch(d, location, "run_once", "no value")
+        }
+        if !priority_ok {
+          annotation_not_allowed(d, location, "run_once")
+        }
+      }
+      other => unknown_annotation(d, location, other)
+    }
+  }
+  // The section states an optimization priority only alongside a compilation
+  // one, and `run_once` is a spelling of a particular optimization value -- so
+  // either without `#[priority]` would have nowhere to go. Rejected rather than
+  // given a compilation priority the author did not choose.
+  guard priority_ok else { return }
+  fn find(k : String) -> @ast.Attribute? {
+    for a in attributes {
+      if a.attr_name == k {
+        return Some(a)
+      }
+    }
+    None
+  }
+
+  if find("priority") is None {
+    for k in ["optimization", "run_once"] {
+      if find(k) is Some(a) {
+        priority_required(d, a.attr_span, k)
+      }
+    }
+  }
+  if find("optimization") is Some(a) && find("run_once") is Some(b) {
+    conflicting_optimization(d, a.attr_span, b.attr_span)
+  }
+}
+
+///|
 pub fn check_attributes(
   ctx : @typing_env.ModuleContext,
   fields : @ast.Module[@basic.Location],
@@ -109,6 +247,61 @@ pub fn check_attributes(
     }
   }
 
+  // Where each annotation is meaningful. A compilation hint needs a body to
+  // attach to, so only a DEFINED function may carry one.
+  fn per_field(
+    attributes : Array[@ast.Attribute],
+    export_ok : Bool,
+    start_ok : Bool,
+    module_ok : Bool,
+    priority_ok : Bool,
+  ) -> Unit {
+    check_attribute_list(
+      ctx,
+      attributes,
+      export_ok~,
+      start_ok~,
+      module_ok~,
+      import_ok=false,
+      priority_ok~,
+    )
+  }
+
+  walk_fields(ctx, fields, field => {
+    match field.desc {
+      Func(attributes~, ..) => per_field(attributes, true, true, false, true)
+      Global(attributes~, ..)
+      | Memory(attributes~, ..)
+      | Table(attributes~, ..)
+      | Tag(attributes~, ..) => per_field(attributes, true, false, false, false)
+      ModuleAnnotation(attrs) => per_field(attrs, false, false, true, false)
+      Data(attributes~, ..) | Elem(attributes~, ..) =>
+        per_field(attributes, false, false, false, false)
+      // An import's attributes hang off each declaration, and `#[import]` is
+      // allowed only there.
+      Import(decl~, ..) =>
+        check_attribute_list(
+          ctx,
+          decl.desc.attributes,
+          export_ok=true,
+          start_ok=true,
+          module_ok=false,
+          import_ok=true,
+        )
+      ImportGroup(decls~, ..) =>
+        for dd in decls {
+          check_attribute_list(
+            ctx,
+            dd.desc.attributes,
+            export_ok=true,
+            start_ok=true,
+            module_ok=false,
+            import_ok=true,
+          )
+        }
+      Type(_) | Conditional(..) => ()
+    }
+  })
   walk_fields(ctx, fields, field => {
     match field.desc {
       Func(name~, attributes~, ..) => visit(attributes, Some(name))
