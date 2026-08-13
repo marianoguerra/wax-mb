@@ -195,10 +195,11 @@ pub fn type_layout(
       guard idx is Def(id) else { continue }
       place(name.name, id.to_int_for_tests_only())
     }
+    // Pushed even when EMPTY: `rec {}` is a rec group of no types, and it is
+    // WRITTEN -- a group the author declared and the format can spell, not an
+    // absence.
     let len = store_of.length() - start
-    if len > 0 {
-      groups.push({ start, len, explicit: len != 1 })
-    }
+    groups.push({ start, len, explicit: len != 1 })
   })
   // Then the types the LOWERING interns rather than the checker, in the order
   // the sections that need them are written -- which is binary section order,

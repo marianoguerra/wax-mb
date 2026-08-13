@@ -38,7 +38,10 @@ fn write_section(w : BinaryWriter, id : Int, body : Bytes) -> Unit {
 /// A group of one written without the `0x4E` prefix is the shorthand for the
 /// common case, and it is only available when the source did not write `rec`.
 fn encode_type_section(mod : Module) -> Bytes raise EncodeError {
-  if mod.types.is_empty() {
+  // The GROUPS decide whether there is a section, not the types: `rec {}` is a
+  // group of none, and a module that writes one has a type section holding
+  // exactly that.
+  if mod.rec_groups.is_empty() {
     return b""
   }
   section_body(w => {
