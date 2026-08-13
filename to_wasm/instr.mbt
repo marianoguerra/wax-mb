@@ -15,9 +15,25 @@ pub fn Lowering::instr(
   i : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> Unit raise LowerError {
   let span_start = out.length()
+  // The children lower through this same function, so each pushes its span
+  // before this node pushes its own. Where the LAST of them ended is where
+  // this node's own emission began -- which is the one thing a plain extent
+  // cannot say, and the thing the text form needs.
+  //
+  // A node that emits nothing of its own -- a tuple, say, which is just its
+  // elements -- has that boundary at the end. It is not a folded instruction,
+  // and the printer must not make one of it by taking the last element as a
+  // head that consumes the rest.
+  let child_spans = self.spans.length()
   self.instr_span(out, i)
   if out.length() > span_start {
-    self.spans.push((span_start, out.length()))
+    let mut head_start = span_start
+    for k in child_spans..<self.spans.length() {
+      if self.spans[k].2 > head_start {
+        head_start = self.spans[k].2
+      }
+    }
+    self.spans.push((span_start, head_start, out.length()))
   }
 }
 

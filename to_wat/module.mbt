@@ -326,9 +326,16 @@ fn blocktype(
       }
       out
     }
-    // A block that CONSUMES values is spelled as a reference to the signature
-    // that describes it, because the inline form has no room for parameters.
-    TypeIndex(k) => [List([Atom("type"), Atom(name_or(m.names.types, k))])]
+    // A block that CONSUMES values names a signature. When that signature was
+    // written down it is named; when the lowering interned it for this block
+    // alone there is nothing to name, so it is spelled out here -- the same
+    // choice an import's type makes.
+    TypeIndex(k) =>
+      if m.names.types.contains(k) {
+        [List([Atom("type"), Atom(name_or(m.names.types, k))])]
+      } else {
+        typeuse(m, k)
+      }
     InlineType(_, _) => raise NotPrinted("a block type with parameters")
   }
 }

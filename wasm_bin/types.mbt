@@ -953,13 +953,13 @@ pub(all) struct FunctionCode {
   /// It is recorded where the body was built rather than re-derived from an
   /// arity table, because a second derivation could disagree with the first
   /// and nothing would say which output was wrong.
-  spans : Array[(Int, Int)]
+  spans : Array[(Int, Int, Int)]
   /// The same, for each NESTED body -- a block's, a loop's, each arm of an
   /// `if` -- in the order those bodies completed while the function was
   /// lowered: deepest first, then left to right. A nested body is a separate
   /// array with its own indices, so its spans cannot live in the list above;
   /// that order is what pairs them up again.
-  nested_spans : Array[Array[(Int, Int)]]
+  nested_spans : Array[Array[(Int, Int, Int)]]
   /// `#[priority]` on the function, if any.
   priority : Priority?
 } derive(Eq, Debug)
