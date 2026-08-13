@@ -538,6 +538,31 @@ fn encode_instruction(
       w.write_byte(0x22)
       w.write_u32(type_idx)
     }
+    RefCastDescEq(rt) => {
+      w.write_byte(0xFB)
+      w.write_byte(if rt.nullable { 0x24 } else { 0x23 })
+      encode_heaptype(w, rt.typ)
+    }
+    BrOnCastDescEq(label, from, to) => {
+      w.write_byte(0xFB)
+      w.write_byte(0x25)
+      w.write_byte(
+        (if from.nullable { 1 } else { 0 }) + (if to.nullable { 2 } else { 0 }),
+      )
+      w.write_u32(label)
+      encode_heaptype(w, from.typ)
+      encode_heaptype(w, to.typ)
+    }
+    BrOnCastDescEqFail(label, from, to) => {
+      w.write_byte(0xFB)
+      w.write_byte(0x26)
+      w.write_byte(
+        (if from.nullable { 1 } else { 0 }) + (if to.nullable { 2 } else { 0 }),
+      )
+      w.write_u32(label)
+      encode_heaptype(w, from.typ)
+      encode_heaptype(w, to.typ)
+    }
     StructNew(type_idx) => {
       w.write_byte(0xFB)
       w.write_u32(0)

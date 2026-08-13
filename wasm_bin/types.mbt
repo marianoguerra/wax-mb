@@ -434,6 +434,14 @@ pub(all) enum Instruction {
   StructNewDefaultDesc(Int)
   /// A struct's own descriptor, read back off it.
   RefGetDesc(Int)
+  /// A cast that tests a value against a DESCRIPTOR rather than against a type
+  /// immediate: the descriptor is an operand, so the same instruction can test
+  /// against a descriptor only known at run time.
+  RefCastDescEq(RefType)
+  /// The branching forms of the same test. Both reference types are immediates
+  /// and their nullability rides in one byte before the label.
+  BrOnCastDescEq(Int, RefType, RefType)
+  BrOnCastDescEqFail(Int, RefType, RefType)
   StructNew(Int) // type index
   StructNewDefault(Int) // type index
   StructGet(Int, Int) // type index, field index

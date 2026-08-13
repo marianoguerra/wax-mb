@@ -202,10 +202,12 @@ fn Lowering::hinted(
         // the same question, asked of two different kinds of nothing.
         Not => {
           self.instr(out, a)
+          // In UNREACHABLE code there is no operand type, and `i32.eqz` stands
+          // in: nothing runs, and the width is all that would have differed.
           match node_valtype(a) {
-            Some(I32) => out.push(I32Eqz)
             Some(I64) => out.push(I64Eqz)
             Some(Ref(_)) => out.push(RefIsNull)
+            Some(I32) | None => out.push(I32Eqz)
             _ => raise NotLowered("logical not at this type", loc)
           }
         }
@@ -989,6 +991,38 @@ fn Lowering::hinted(
       self.instr(out, descriptor)
       out.push(StructNewDefaultDesc(t))
     }
+    // `v as ?descriptor(d)` tests a value against a DESCRIPTOR rather than a
+    // type immediate -- so the descriptor is an operand, pushed last, and the
+    // immediate is the cast's own (exact) result type. The branching forms are
+    // the same test with the residual routed to a label.
+    CastDesc(value, _, descriptor) => {
+      self.instr(out, value)
+      self.instr(out, descriptor)
+      guard node_valtype(i) is Some(Ref(r)) else {
+        raise Unresolved("descriptor cast type", loc)
+      }
+      out.push(RefCastDescEq(r))
+    }
+    BrOnCastDescEq(label, nullable, value, descriptor) => {
+      self.instr(out, value)
+      self.instr(out, descriptor)
+      let to = self.descriptor_target(i, nullable, loc)
+      out.push(
+        BrOnCastDescEq(self.depth(label, loc), br_on_cast_source(value, to), to),
+      )
+    }
+    BrOnCastDescEqFail(label, nullable, value, descriptor) => {
+      self.instr(out, value)
+      self.instr(out, descriptor)
+      let to = self.descriptor_target(i, nullable, loc)
+      out.push(
+        BrOnCastDescEqFail(
+          self.depth(label, loc),
+          br_on_cast_source(value, to),
+          to,
+        ),
+      )
+    }
     // A struct's descriptor, read back off it. The type immediate is the
     // RECEIVER's, not the descriptor's: it says which struct is being asked.
     GetDescriptor(e) => {
@@ -1566,6 +1600,24 @@ fn lane_immediate(
   let value = if a.desc is Labelled(_, v) { v } else { a }
   guard value.desc is Int(s) else { raise Unresolved("lane immediate", loc) }
   parse_i64(s, loc).to_int()
+}
+
+///|
+/// The target reference type of a descriptor branch.
+///
+/// The node's own type is the RESIDUAL -- what is left when the test fails --
+/// so the target is recovered from it and the nullability the branch wrote.
+fn Lowering::descriptor_target(
+  self : Lowering,
+  i : @ast.Instr[@typing_env.InferredAnnotation],
+  nullable : Bool,
+  loc : @basic.Location,
+) -> @wasm_types.RefType[Int] raise LowerError {
+  ignore(self)
+  guard node_last_reftype(i) is Some(r) else {
+    raise Unresolved("descriptor branch type", loc)
+  }
+  { ..r, nullable, }
 }
 
 ///|
