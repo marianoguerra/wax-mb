@@ -253,6 +253,40 @@ pub fn check_resume_handlers(
   }
 
   for h in handlers {
+    if h is OnSwitch(tag) {
+      // A `switch` handler's tag has type `[] -> [t*]`. The reified current
+      // continuation runs to THIS resume's boundary, so `t*` must EQUAL the
+      // boundary's results rather than merely be a subtype of them: a subtype
+      // would let a continuation that produces the boundary's results be
+      // observed by a peer through the narrower tag type.
+      guard find(ctx.tags, ctx.diagnostics, tag) is Some(ft) else { continue }
+      if ft.params.length() != 0 {
+        stack_switching_type_mismatch(
+          ctx.diagnostics,
+          tag.loc,
+          "the tag of a 'switch' handler must take no parameters",
+        )
+      } else if internals(ft.results) is Some(tr) &&
+        internals(result_types) is Some(cr) {
+        let mut same = tr.length() == cr.length()
+        if same {
+          for k, t in tr {
+            if !@type_store.val_subtype(info, t, cr[k]) ||
+              !@type_store.val_subtype(info, cr[k], t) {
+              same = false
+            }
+          }
+        }
+        if !same {
+          stack_switching_type_mismatch(
+            ctx.diagnostics,
+            tag.loc,
+            "the results of a 'switch' handler's tag must match the resumed continuation's results",
+          )
+        }
+      }
+      continue
+    }
     guard h is OnLabel(tag, label) else { continue }
     guard find(ctx.tags, ctx.diagnostics, tag) is Some(ft) else {
       // The tag is unbound and reported; resolve the label anyway so it is
