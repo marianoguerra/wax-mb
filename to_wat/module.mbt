@@ -118,12 +118,29 @@ fn function_field(
   // unit when the name and exports have already filled one -- rather than the
   // first few parameters trailing the name and the rest wrapping.
   let sign : Array[Sexp] = []
-  for p, ty in ft.params {
-    sign.push(
-      List(
-        named_type(local_name(locals, p), "param", valtype(ty, m.names.types)),
-      ),
-    )
+  // All unnamed: ONE `(param i32 i32)` group. Any named: one group each,
+  // because a name belongs to its own parameter and there is nowhere in the
+  // shared form to put it.
+  let mut any_named = false
+  for p, _ in ft.params {
+    if local_name(locals, p) != "" {
+      any_named = true
+    }
+  }
+  if any_named {
+    for p, ty in ft.params {
+      sign.push(
+        List(
+          named_type(local_name(locals, p), "param", valtype(ty, m.names.types)),
+        ),
+      )
+    }
+  } else if !ft.params.is_empty() {
+    let g : Array[Sexp] = [Atom("param")]
+    for ty in ft.params {
+      g.push(Atom(valtype(ty, m.names.types)))
+    }
+    sign.push(List(g))
   }
   if !ft.results.is_empty() {
     let r : Array[Sexp] = [Atom("result")]
@@ -221,6 +238,11 @@ fn folded(node : Node, ctx : Ctx) -> Sexp raise WatError {
 
 ///|
 fn folded_bare(node : Node, ctx : Ctx) -> Sexp raise WatError {
+  // A string literal is written as one: the constants it lowered to are the
+  // string, so writing both would say the same thing twice.
+  if node.head is FromString(bytes, _) {
+    return List([Atom("@string"), Atom(quoted(bytes))])
+  }
   // A hinted instruction prints its annotations BEFORE itself, outside the
   // parentheses of the group it heads -- the hint is about the instruction,
   // not an operand of it. The wrapper is transparent so the annotation and

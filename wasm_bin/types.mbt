@@ -266,6 +266,15 @@ pub(all) enum Instruction {
   ///
   /// Carries no opcode of its own -- the encoder unwraps it.
   Spelled(String, Instruction)
+  /// An array construction that the source wrote as a STRING literal.
+  ///
+  /// The literal lowers to one constant per byte and an `array.new_fixed` over
+  /// them; the text format writes `(@string "...")` and lets the reader assume
+  /// the rest. Nothing in a run of constants says it was ever text, so the
+  /// bytes are carried here.
+  ///
+  /// Carries no opcode of its own either.
+  FromString(Bytes, Instruction)
 
   // Reference type instructions
   RefNull(HeapType) // ref.null: push a null reference to this heap type

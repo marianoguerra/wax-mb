@@ -1033,7 +1033,9 @@ fn Lowering::hinted(
       for u in units {
         out.push(I32Const(u))
       }
-      out.push(ArrayNewFixed(t, units.length()))
+      // The construction remembers it was written as a string: a run of
+      // constants says nothing about having been text.
+      out.push(FromString(bytes, ArrayNewFixed(t, units.length())))
     }
     ArraySegment(_, seg, off, len) => {
       self.instr(out, off)
