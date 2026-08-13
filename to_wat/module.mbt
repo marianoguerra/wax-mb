@@ -190,6 +190,18 @@ priv struct Ctx {
 /// A structural instruction is written the same way, except that what follows
 /// the head is the code it guards rather than values it consumes.
 fn folded(node : Node, ctx : Ctx) -> Sexp raise WatError {
+  // A hinted instruction prints its annotations BEFORE itself, outside the
+  // parentheses of the group it heads -- the hint is about the instruction,
+  // not an operand of it. The wrapper is transparent so the annotation and
+  // the group it labels break together.
+  if node.head is Hinted(h, inner) {
+    let annots = hint_annotations(h, ctx.m.names)
+    if !annots.is_empty() {
+      annots.push(folded({ ..node, head: inner }, ctx))
+      return Block(annots, KBox, true)
+    }
+    return folded({ ..node, head: inner }, ctx)
+  }
   if !node.bodies.is_empty() ||
     node.head is (Block(_, _) | Loop(_, _) | If(_, _, _)) {
     return structural(node, ctx)
@@ -218,6 +230,8 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
     Block(bt, _) => ("block", bt)
     Loop(bt, _) => ("loop", bt)
     If(bt, _, _) => ("if", bt)
+    TryTable(bt, _, _) => ("try_table", bt)
+    LegacyTry(bt, _, _, _) => ("try", bt)
     _ => raise NotPrinted(constructor_of(node.head))
   }
   let head : Array[Sexp] = [Atom(word)]
@@ -232,8 +246,32 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
   for operand in node.operands {
     l.push(folded(operand, ctx))
   }
+  // A `try_table`'s handlers are IMMEDIATES that branch out, so they follow
+  // the head and are counted against the scope the block itself opens.
   ctx.scope.push(name)
-  let clauses = if word == "if" { ["then", "else"] } else { [] }
+  if node.head is TryTable(_, handlers, _) {
+    let hs : Array[Sexp] = []
+    for h in handlers {
+      hs.push(catch_clause(h, ctx))
+    }
+    l.push(block(hs))
+  }
+  // The legacy `try`'s handlers are inline BODIES that run in place, so each
+  // is a named clause around the code it guards.
+  let clauses = match node.head {
+    If(_, _, _) => ["then", "else"]
+    LegacyTry(_, _, catches, all) => {
+      let names : Array[String] = ["do"]
+      for c in catches {
+        names.push("catch " + name_or(ctx.m.names.tags, c.0))
+      }
+      if all is Some(_) {
+        names.push("catch_all")
+      }
+      names
+    }
+    _ => []
+  }
   for j, body in node.bodies {
     let inner : Array[Sexp] = []
     for child in body {
@@ -275,5 +313,104 @@ fn blocktype(
     // that describes it, because the inline form has no room for parameters.
     TypeIndex(k) => [List([Atom("type"), Atom(name_or(m.names.types, k))])]
     InlineType(_, _) => raise NotPrinted("a block type with parameters")
+  }
+}
+
+///|
+/// One `try_table` handler: which tag it catches and where it branches to.
+fn catch_clause(h : @wasm_bin.CatchHandler, ctx : Ctx) -> Sexp {
+  let tags = ctx.m.names.tags
+  match h {
+    Catch(t, l) =>
+      List([Atom("catch"), Atom(name_or(tags, t)), Atom(label(ctx.scope, l))])
+    CatchRef(t, l) =>
+      List([
+        Atom("catch_ref"),
+        Atom(name_or(tags, t)),
+        Atom(label(ctx.scope, l)),
+      ])
+    CatchAll(l) => List([Atom("catch_all"), Atom(label(ctx.scope, l))])
+    CatchAllRef(l) => List([Atom("catch_all_ref"), Atom(label(ctx.scope, l))])
+  }
+}
+
+///|
+/// The `(@metadata.code.*)` annotations an instruction's hints print as, in
+/// the order the sections carry them.
+///
+/// A hint has to round-trip EXACTLY -- it is a byte in a custom section, not
+/// advice -- so each one prints in the structured form when that form can
+/// name the same byte, and as the raw payload when it cannot.
+fn hint_annotations(
+  h : @wasm_bin.InstrHints,
+  names : @wasm_bin.Names,
+) -> Array[Sexp] {
+  let out : Array[Sexp] = []
+  if h.branch is Some(likely) {
+    out.push(
+      List([
+        Atom("@metadata.code.branch_hint"),
+        Atom(if likely { "\"\\01\"" } else { "\"\\00\"" }),
+      ]),
+    )
+  }
+  if h.freq is Some(b) {
+    out.push(List([Atom("@metadata.code.instr_freq"), freq_payload(b)]))
+  }
+  if h.targets is Some(ts) {
+    let l : Array[Sexp] = [Atom("@metadata.code.call_targets")]
+    for t in ts {
+      l.push(
+        List([
+          Atom("target"),
+          Atom(name_or(names.functions, t.0)),
+          Atom(percent(t.1)),
+        ]),
+      )
+    }
+    out.push(List(l))
+  }
+  out
+}
+
+///|
+/// A frequency hint's payload. The two reserved bytes print as their keywords;
+/// otherwise the byte stands for a base-2 executions-per-call ratio, written
+/// as `(freq n)` when that ratio is a whole number -- the hot-instruction case
+/// -- and as the raw byte when it is not, because a fractional ratio's
+/// shortest decimal need not re-encode to the same byte.
+fn freq_payload(b : Int) -> Sexp {
+  if b == 0 {
+    return List([Atom("never_opt")])
+  }
+  if b == 127 {
+    return List([Atom("always_opt")])
+  }
+  if b >= 32 && b <= 64 {
+    let mut r = 1L
+    for _ in 0..<(b - 32) {
+      r = r * 2L
+    }
+    return List([Atom("freq"), Atom(r.to_string())])
+  }
+  Atom("\"\\" + hex2(b & 0xFF) + "\"")
+}
+
+///|
+/// A call-target share, as the fraction the annotation writes: `73` is `0.73`,
+/// and a whole one is written without a point.
+fn percent(pct : Int) -> String {
+  if pct % 100 == 0 {
+    return (pct / 100).to_string()
+  }
+  let whole = pct / 100
+  let frac = pct % 100
+  if frac % 10 == 0 {
+    whole.to_string() + "." + (frac / 10).to_string()
+  } else {
+    whole.to_string() +
+    "." +
+    (if frac < 10 { "0" } else { "" }) +
+    frac.to_string()
   }
 }

@@ -4,6 +4,7 @@ import {
   "moonbitlang/core/ref",
   "moonbitlang/core/debug",
   "waxmb/wax/printer",
+  "waxmb/wax/atomics",
 }
 
 import {

@@ -285,6 +285,48 @@ fn mnemonic_text(
       out.write_string(")")
       out.to_string()
     }
+    // The lane accessors: the shape says which lane width, the immediate says
+    // which lane.
+    I8x16ExtractLaneS(l) => "i8x16.extract_lane_s " + l.to_string()
+    I8x16ExtractLaneU(l) => "i8x16.extract_lane_u " + l.to_string()
+    I16x8ExtractLaneS(l) => "i16x8.extract_lane_s " + l.to_string()
+    I16x8ExtractLaneU(l) => "i16x8.extract_lane_u " + l.to_string()
+    I32x4ExtractLane(l) => "i32x4.extract_lane " + l.to_string()
+    I64x2ExtractLane(l) => "i64x2.extract_lane " + l.to_string()
+    F32x4ExtractLane(l) => "f32x4.extract_lane " + l.to_string()
+    F64x2ExtractLane(l) => "f64x2.extract_lane " + l.to_string()
+    I8x16ReplaceLane(l) => "i8x16.replace_lane " + l.to_string()
+    I16x8ReplaceLane(l) => "i16x8.replace_lane " + l.to_string()
+    I32x4ReplaceLane(l) => "i32x4.replace_lane " + l.to_string()
+    I64x2ReplaceLane(l) => "i64x2.replace_lane " + l.to_string()
+    F32x4ReplaceLane(l) => "f32x4.replace_lane " + l.to_string()
+    F64x2ReplaceLane(l) => "f64x2.replace_lane " + l.to_string()
+    I8x16Shuffle(lanes) => {
+      let out = StringBuilder::new()
+      out.write_string("i8x16.shuffle")
+      for k in 0..<16 {
+        out.write_string(" " + lanes[k].to_string())
+      }
+      out.to_string()
+    }
+
+    // An atomic access. The opcode is the operation, and the registry that
+    // assigned it is also the one that knows its mnemonic and the alignment it
+    // naturally has -- an atomic's alignment is not a hint, so writing the
+    // wrong default would change what the instruction means.
+    Atomic(code, mem, align, offset) => {
+      guard @atomics.of_opcode(code) is Some(op) else {
+        raise NotPrinted("an atomic with opcode " + code.to_string())
+      }
+      memarg(
+        @atomics.name(op),
+        mem,
+        align,
+        offset,
+        @atomics.natural_align_log2(op),
+        names,
+      )
+    }
     // Everything else is a gap, not a guess: reporting it keeps the burn-down
     // honest, exactly as the lowering's own gaps do -- and NAMING it is what
     // makes the remainder countable rather than one undifferentiated pile.
