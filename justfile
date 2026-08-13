@@ -19,7 +19,9 @@
 
 impl := "tools/wax-mb"
 waxdiff := "tools/waxdiff.py"
-native := "_build/native/debug/build"
+# Executables land under the module that owns them, since this repository is a
+# `moon.work` workspace of three modules -- see moon.work.
+native := "_build/native/debug/build/marianoguerra"
 
 # List every task, grouped.
 default:
@@ -47,10 +49,10 @@ test:
 test-all:
     moon test --target all
 
-# Run one package's tests, e.g. `just test-pkg grammar`.
+# Run one library package's tests, e.g. `just test-pkg syntax/parser`.
 [group('dev')]
 test-pkg pkg:
-    moon test -p waxmb/wax/{{pkg}} --target native
+    moon test -p marianoguerra/wax/{{pkg}} --target native
 
 # Accept new snapshot output (`inspect` / `t.snapshot` blocks).
 [group('dev')]
@@ -68,6 +70,26 @@ fmt:
 [group('dev')]
 interfaces:
     moon info --target all
+
+# A `.mbti` is the semver contract, so a name in one that nothing outside its
+# package uses is a promise made by accident. This REPORTS -- it is a text
+# search, not a compiler, and a library may legitimately export what this
+# repository never calls. Add `--detail`, or `--pkg check`, to see the names.
+#
+# Report public names in lib/ that nothing outside their package uses.
+[group('dev')]
+api-audit *args:
+    tools/api_audit.py {{args}}
+
+# Builds a throwaway module OUTSIDE the workspace that imports only
+# `wax/compile` and `wax/ast/build`, runs it, and then asserts the parser, the
+# lexer and the token table produced no artifact. That is the modularity claim,
+# tested rather than asserted.
+#
+# Check that an AST-first consumer does not compile the front end.
+[group('dev')]
+embed-smoke:
+    tools/embed-smoke.sh
 
 # Everything that drives the CLI needs this: the harness and the cram runner
 # call the built binary rather than `moon run`, which would re-check the build
@@ -200,7 +222,7 @@ self-test:
 # Compare the alternative layout engine against the ported one.
 [group('diff')]
 ppdiff *args: build
-    {{native}}/tools/ppdiff/ppdiff.exe test/corpus {{args}}
+    {{native}}/wax-dev/tools/ppdiff/ppdiff.exe test/corpus {{args}}
 
 # The only coverage of the CLI's behaviour rather than the library's: exit
 # codes, which stream output lands on, flag handling.
@@ -265,7 +287,7 @@ reprint src:
 # Show what the parser's automaton does with a file.
 [group('port')]
 errstate file: build
-    {{native}}/tools/errstate/errstate.exe --whole {{file}}
+    {{native}}/wax-dev/tools/errstate/errstate.exe --whole {{file}}
 
 # The corpus proves the parser BEHAVES like the reference; this is the
 # structural check that the grammar is a faithful translation rather than
@@ -283,7 +305,7 @@ grammar-fidelity:
 # Regenerate the parser from the grammar and report its conflicts.
 [group('port')]
 grammar-conflicts:
-    rm -f grammar/parser.mbt grammar/parser.mbt.map.json
+    rm -f lib/syntax/parser/parser.mbt lib/syntax/parser/parser.mbt.map.json
     moon build --target native
 
 # ---------------------------------------------------------------------------
@@ -338,7 +360,7 @@ cram-scope:
 # arms are long enough that the formatter rewraps them, and CI checks that a
 # formatted tree is a committed tree.
 #
-# Rebuild grammar/parser_messages.mbt. (needs the checkout)
+# Rebuild lib/syntax/parser/parser_messages.mbt. (needs the checkout)
 [group('regen')]
 parser-messages: build
     tools/gen_parser_messages.py
@@ -348,18 +370,39 @@ parser-messages: build
 # Packaging and documentation
 # ---------------------------------------------------------------------------
 
-# test/ and tools/ are excluded in moon.mod, so the corpus and the harness stay
-# out of the package.
+# The corpus and the harness are in a THIRD module (`marianoguerra/wax-dev`, at
+# the repository root), so they cannot end up in either package by accident --
+# see moon.work.
 #
-# List the files `moon publish` would ship.
+# List the files the two published modules would ship.
 [group('ship')]
 package:
-    moon package --list
+    moon -C lib package --list
+    moon -C cli package --list
 
-# Publish to mooncakes.io, after the full CI gate. Not reversible.
+# Everything `publish` does except the upload, including extracting the packaged
+# zip and checking that it builds on its own -- which is the step that catches a
+# package missing from the archive.
+#
+# The `cli` one CANNOT pass until `wax` of the pinned version is on the registry:
+# its extracted copy resolves the dependency from there, not from this tree. A
+# "module was not found in the registry" from that second command is expected
+# before the first release, and is not a finding.
+#
+# Rehearse the publish.
+[group('ship')]
+publish-dry: ci
+    moon -C lib publish --dry-run
+    moon -C cli publish --dry-run
+
+# The library first: wax-cli's manifest pins a version of it that must already
+# exist on the registry.
+#
+# Publish both modules to mooncakes.io, after the full CI gate. Not reversible.
 [group('ship')]
 publish: ci
-    moon publish
+    moon -C lib publish
+    moon -C cli publish
 
 # Serve the API documentation at http://127.0.0.1:3000.
 [group('ship')]

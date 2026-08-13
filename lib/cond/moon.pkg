@@ -1,0 +1,11 @@
+import {
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/wasm/types" @wasm_types,
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/message",
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

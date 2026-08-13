@@ -1,7 +1,7 @@
 import {
-  "waxmb/wax/grammar",
-  "waxmb/wax/lexer",
-  "waxmb/wax/trivia",
+  "marianoguerra/wax/syntax/parser" @grammar,
+  "marianoguerra/wax/syntax/lexer",
+  "marianoguerra/wax/syntax/trivia",
   "moonbitlang/x/fs",
   "moonbitlang/core/env",
 }

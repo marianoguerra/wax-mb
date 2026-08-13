@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax-cli/wax-mb"
+
+import {
+  "marianoguerra/wax/colors",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/warning",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn parse_args(Array[String]) -> Result[Options, (Status, String)]
+
+// Errors
+
+// Types and methods
+pub(all) enum Command {
+  Convert
+  Format
+  Check
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Options {
+  command : Command
+  files : Array[String]
+  output_format : String
+  input_format : String
+  output_path : String?
+  error_format : @diagnostic.OutputFormat
+  color : @colors.Flag
+  check_only : Bool
+  all_errors : Bool
+  inplace : Bool
+  policy : @warning.Policy
+}
+
+pub(all) enum Status {
+  Ok
+  Usage
+  BadArgs
+  Internal
+  Rejected
+} derive(Eq, @debug.Debug)
+pub fn Status::code(Self) -> Int
+
+// Type aliases
+
+// Traits

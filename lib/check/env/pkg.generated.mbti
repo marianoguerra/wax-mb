@@ -1,0 +1,187 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/check/env"
+
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/check/infer",
+  "marianoguerra/wax/check/members",
+  "marianoguerra/wax/check/store",
+  "marianoguerra/wax/cond",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/feature",
+  "marianoguerra/wax/wasm/types",
+  "moonbitlang/core/debug",
+  "moonbitlang/core/ref",
+}
+
+// Values
+pub fn blank_comments(String) -> String
+
+pub fn deletion_edit(@basic.Location) -> @diagnostic.Edit
+
+pub fn[Info] expression_type_opt((Array[@infer.Cell[@infer.InferredType]], Info)) -> @infer.Cell[@infer.InferredType]?
+
+pub fn is_source(@basic.Location) -> Bool
+
+pub fn name_already_bound(@diagnostic.Context, @basic.Location, @basic.Location, String, String) -> Unit
+
+pub fn record_members(Array[(@basic.Location, @members.MemberReceiver)]?, @basic.Location, @members.MemberReceiver) -> Unit
+
+pub fn record_pun(Array[@basic.Location]?, @basic.Location) -> Unit
+
+pub fn record_reference(Array[Reference]?, @basic.Location, Array[@basic.Location], hover? : HoverTarget?) -> Unit
+
+pub fn ref_exn_valtype(nullable~ : Bool) -> @infer.InferredValType
+
+pub fn ref_none_valtype(nullable~ : Bool) -> @infer.InferredValType
+
+pub fn same_span(@basic.Location, @basic.Location) -> Bool
+
+pub fn source_slice(String?, @basic.Location) -> String?
+
+pub fn span(@basic.Position, @basic.Position) -> @basic.Location
+
+pub fn standalone_valtype(@infer.Cell[@infer.InferredType]) -> @infer.InferredValType?
+
+// Errors
+
+// Types and methods
+pub struct ControlFrame {
+  label : @ast.Ident?
+  results : Array[@infer.Cell[@infer.InferredType]]
+}
+pub fn ControlFrame::new(Array[@infer.Cell[@infer.InferredType]], label? : @ast.Ident?) -> Self
+
+pub(all) struct Declaration {
+  kind : String
+  loc : @basic.Location
+  cond : @cond.T
+}
+
+pub(all) enum HoverTarget {
+  ValueType(@infer.InferredValType)
+  TypeDef(@ast.SubType)
+}
+
+pub struct ModuleContext {
+  diagnostics : @diagnostic.Context
+  warn_unused : Bool
+  simplify : Bool
+  suggest : Bool
+  faithful : Bool
+  type_context : TypeContext
+  types : Tbl[(@store.RefIndex, @ast.SubType)]
+  functions : Tbl[(@store.Id, String, Bool)?]
+  globals : Tbl[(Bool, @infer.InferredValType?)]
+  import_globals : Tbl[(Bool, @infer.InferredValType?)]
+  tags : Tbl[@ast.FuncType]
+  memories : Tbl[(Int, @types.AddressType)]
+  datas : Tbl[Unit]
+  tables : Tbl[(@types.AddressType, @types.RefType[@ast.Ident])]
+  elems : Tbl[@types.RefType[@ast.Ident]]
+  assigned_globals : Map[String, Unit]
+  cast_traps_reported : Map[(Int, Int), Unit]
+  canonical_type_references : Array[(Origin, @store.Id)]
+  origin : @ref.Ref[Origin]
+  structs_by_fields : Map[String, @ast.Ident?]
+  not_expression_reported : Map[(Int, Int), Unit]
+  mut locals : Map[String, (@infer.InferredValType?, @basic.Location)]
+  mut initialized_locals : Map[String, Unit]
+  mut deferred_uninit : Array[Array[@ast.Ident]]
+  unresolved_label : @ref.Ref[Bool]
+  read_locals : Array[Int]
+  local_decls : Array[@ast.Ident]
+  used_labels : Array[Int]
+  deferred_lints : Array[() -> Unit]
+  mut label_decls : Array[@ast.Ident]
+  mut assigned_locals : Map[String, Unit]
+  mut control_types : Array[ControlFrame]
+  mut return_types : Array[@infer.Cell[@infer.InferredType]]
+  cond : @ref.Ref[@cond.T]
+  cond_env : @cond.Env
+  resolve_links : Array[Reference]?
+  pun_spans : Array[@basic.Location]?
+  member_completions : Array[(@basic.Location, @members.MemberReceiver)]?
+}
+pub fn ModuleContext::current_deferral(Self) -> Array[@ast.Ident]?
+pub fn ModuleContext::enter_function(Self, return_types~ : Array[@infer.Cell[@infer.InferredType]], label_decls? : Array[@ast.Ident], assigned_locals? : Map[String, Unit]) -> Unit
+pub fn ModuleContext::merge_initialized(Self, Map[String, Unit]) -> Unit
+pub fn ModuleContext::new(@diagnostic.Context, @store.TypeStore, @feature.Set, warn_unused? : Bool, simplify? : Bool, suggest? : Bool, faithful? : Bool, resolve_links? : Array[Reference]?, pun_spans? : Array[@basic.Location]?, member_completions? : Array[(@basic.Location, @members.MemberReceiver)]?) -> Self
+pub fn ModuleContext::pop_deferral(Self) -> Unit
+pub fn ModuleContext::push_deferral(Self) -> Array[@ast.Ident]
+pub fn ModuleContext::restore_initialized(Self, Map[String, Unit]) -> Unit
+pub fn ModuleContext::snapshot_initialized(Self) -> Map[String, Unit]
+pub fn[A] ModuleContext::with_frame(Self, ControlFrame, () -> A) -> A
+pub fn[A] ModuleContext::with_initialized_snapshot(Self, () -> A) -> A
+
+pub struct Namespace {
+  cond : @ref.Ref[@cond.T]
+  entries : Map[String, Array[Declaration]]
+  links : Array[Reference]?
+}
+pub fn Namespace::exists(Self, @diagnostic.Context, String, @basic.Location) -> Bool
+pub fn Namespace::new(@ref.Ref[@cond.T], links? : Array[Reference]?) -> Self
+pub fn Namespace::register(Self, @diagnostic.Context, String, String, @basic.Location) -> Unit
+
+pub(all) enum Origin {
+  Root
+  FromFunction(String)
+  FromType(String)
+  Ignored
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Reference {
+  use_ : @basic.Location
+  definitions : Array[@basic.Location]
+  hover : HoverTarget?
+}
+
+pub struct Tbl[A] {
+  kind : String
+  names : Namespace
+  entries : Map[String, Array[(@cond.T, A)]]
+  used : Map[String, Array[Origin]]
+  current : @ref.Ref[Origin]
+  hover : (A) -> HoverTarget?
+}
+pub fn[A] Tbl::add(Self[A], @diagnostic.Context, String, @basic.Location, A) -> Unit
+pub fn[A] Tbl::copy_entries_into(Self[A], Self[A]) -> Unit
+pub fn[A] Tbl::exists(Self[A], @diagnostic.Context, String, @basic.Location) -> Bool
+pub fn[A] Tbl::find_no_mark(Self[A], String) -> A?
+pub fn[A] Tbl::iter_entries(Self[A]) -> Array[(String, A)]
+pub fn[A] Tbl::iter_references(Self[A]) -> Array[(String, Array[Origin])]
+pub fn[A] Tbl::mark_reference(Self[A], String, Origin) -> Unit
+pub fn[A] Tbl::names(Self[A]) -> Array[String]
+pub fn[A] Tbl::new(String, Namespace, @ref.Ref[Origin], hover? : (A) -> HoverTarget?) -> Self[A]
+pub fn[A] Tbl::override_(Self[A], String, A) -> Unit
+pub fn[A] Tbl::referrers(Self[A], String) -> Array[Origin]
+pub fn[A] Tbl::remove(Self[A], String) -> Unit
+pub fn[A] Tbl::resolve(Self[A], String, @basic.Location) -> A?
+pub fn[A] Tbl::select(Self[A], String) -> A?
+pub fn[A] Tbl::visible(Self[A], String) -> Array[A]
+
+pub struct TypeContext {
+  store : @store.TypeStore
+  types : Tbl[(@store.RefIndex, @ast.SubType)]
+  features : @feature.Set
+  mut subtyping_cache : @store.SubtypingInfo?
+}
+pub fn TypeContext::invalidate(Self) -> Unit
+pub fn TypeContext::new(@store.TypeStore, Tbl[(@store.RefIndex, @ast.SubType)], @feature.Set) -> Self
+pub fn TypeContext::subtyping_info(Self) -> @store.SubtypingInfo
+
+// Type aliases
+pub type FunctionEntry = (@store.Id, String, Bool)?
+
+pub type GlobalEntry = (Bool, @infer.InferredValType?)
+
+pub type InferredAnnotation = (Array[@infer.Cell[@infer.InferredType]], @basic.Location)
+
+pub type LocalEntry = (@infer.InferredValType?, @basic.Location)
+
+pub type ResolveSink = Array[Reference]?
+
+pub type TypedAnnotation = (Array[@types.StorageType[@ast.Ident]?], @basic.Location)
+
+// Traits

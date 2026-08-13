@@ -1,5 +1,5 @@
 import {
-  "waxmb/wax/printer",
+  "marianoguerra/wax/printer",
   "marianoguerra/pretty-fast-pretty-printer" @pp,
 }
 

@@ -1,0 +1,28 @@
+// The batteries-included entry point.
+//
+// Importing THIS package pulls in the front end -- the lexer, the token table
+// and the generated LR parser. A consumer that builds `@ast` values itself and
+// only wants to check and emit them imports `marianoguerra/wax/compile`
+// instead, and never compiles any of it. That distinction is the whole point of
+// how this module is laid out; see README.mbt.md.
+import {
+  "marianoguerra/wax/colors",
+  "marianoguerra/wax/compile",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/feature",
+  "marianoguerra/wax/fmt" @output,
+  "marianoguerra/wax/syntax/parser" @grammar,
+  "marianoguerra/wax/warning",
+}
+
+// The README is a doc test: `moon test` runs its examples, so a published
+// example cannot rot. The AST-first example needs the packages an embedder
+// would import, which the facade itself does not.
+import {
+  "moonbitlang/core/test",
+  "marianoguerra/wax",
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/ast/build",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/wasm/types" @wasm_types,
+} for "test"

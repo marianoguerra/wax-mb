@@ -1,0 +1,20 @@
+// The library is reached through its root package, `marianoguerra/wax`, which
+// is the same entry point an outside consumer uses. The stage packages
+// (`check`, `emit/wasm`, `wasm/bin`) are deliberately NOT imported here: if the
+// CLI needed one of them directly, that would be a gap in the library's API
+// rather than a convenience for the CLI.
+import {
+  "marianoguerra/wax",
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/colors",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/syntax/trivia",
+  "marianoguerra/wax/warning",
+  "marianoguerra/wax-cli/io",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/env",
+  "moonbitlang/x/fs",
+  "moonbitlang/x/sys",
+}
+
+pkgtype(kind: "executable")

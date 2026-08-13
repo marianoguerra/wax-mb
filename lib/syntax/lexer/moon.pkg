@@ -1,0 +1,15 @@
+import {
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/syntax/tokens",
+  "marianoguerra/wax/syntax/trivia",
+  "marianoguerra/wax/unicode/xid",
+  "moonbitlang/core/buffer",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
+
+import {
+  "moonbitlang/core/test",
+} for "wbtest"

@@ -1,0 +1,130 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/wasm/simd"
+
+import {
+  "marianoguerra/wax/wasm/bin",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub let all_shapes : Array[Shape]
+
+pub let bitselect_name : String
+
+pub fn classify(String) -> Intrinsic?
+
+pub fn const_arity(Shape) -> Int
+
+pub fn const_name(Shape) -> String
+
+pub fn const_shape_of_name(String) -> Shape?
+
+pub let float_shapes : Array[Shape]
+
+pub fn free_full(String) -> String
+
+pub fn free_member(String) -> String?
+
+pub let free_member_names : Array[String]
+
+pub let free_namespace : String
+
+pub let int_shapes : Array[Shape]
+
+pub fn is_free_intrinsic(String) -> Bool
+
+pub fn is_mem_method(String) -> Bool
+
+pub let lane_widths : Array[LaneWidth]
+
+pub fn load_lane_name(LaneWidth) -> String
+
+pub fn load_splat_name(LaneWidth) -> String
+
+pub fn mem_method(String) -> MemIntrinsic?
+
+pub let mem_method_names : Array[String]
+
+pub fn method_names(Ty) -> Array[String]
+
+pub fn size() -> Int
+
+pub fn store_lane_name(LaneWidth) -> String
+
+pub let store_name : String
+
+pub let vec_loads : Array[VecLoad]
+
+// Errors
+
+// Types and methods
+pub(all) enum Imm {
+  NoImm
+  Lane(Shape)
+  Shuffle
+} derive(Eq, @debug.Debug)
+
+pub struct Intrinsic {
+  operands : Array[Ty]
+  result : Ty?
+  imm : Imm
+  free : Bool
+  build : (Array[Int]) -> @bin.Instruction
+}
+
+pub(all) enum LaneWidth {
+  L8
+  L16
+  L32
+  L64
+} derive(Eq, Hash, @debug.Debug)
+pub fn LaneWidth::nat_align(Self) -> Int
+pub fn LaneWidth::to_str(Self) -> String
+
+pub struct MemIntrinsic {
+  operands : Array[Ty]
+  result : Ty?
+  lane : Bool
+  nat_align : Int
+  build : (Int, Int, Int64, Int) -> @bin.Instruction
+}
+
+pub(all) enum Shape {
+  I8x16
+  I16x8
+  I32x4
+  I64x2
+  F32x4
+  F64x2
+} derive(Eq, Hash, @debug.Debug)
+pub fn Shape::is_float(Self) -> Bool
+pub fn Shape::lane_count(Self) -> Int
+pub fn Shape::lane_scalar(Self) -> Ty
+pub fn Shape::of_str(String) -> Self?
+pub fn Shape::to_str(Self) -> String
+
+pub(all) enum Ty {
+  TV128
+  TI32
+  TI64
+  TF32
+  TF64
+} derive(Eq, Hash, @debug.Debug)
+
+pub(all) enum VecLoad {
+  Load128
+  Load8x8S
+  Load8x8U
+  Load16x4S
+  Load16x4U
+  Load32x2S
+  Load32x2U
+  Load32Zero
+  Load64Zero
+} derive(Eq, Hash, @debug.Debug)
+pub fn VecLoad::nat_align(Self) -> Int
+pub fn VecLoad::to_str(Self) -> String
+
+// Type aliases
+
+// Traits

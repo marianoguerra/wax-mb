@@ -2,7 +2,7 @@
 # Report what has changed upstream in the vendored sources since the pin in
 # tools/vendor.json.
 #
-# This does NOT restore anything. wasm_bin/ is a fork, not a copy -- re-spined
+# This does NOT restore anything. lib/wasm/bin/ is a fork, not a copy -- re-spined
 # onto wasm_types, with the silent encoder fallbacks removed and wax's custom
 # sections added -- so overwriting it with upstream would throw all of that
 # away. What is worth automating is the question a fork actually has to keep

@@ -1,0 +1,85 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/check/infer"
+
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/check/store",
+  "marianoguerra/wax/fmt",
+  "marianoguerra/wax/wasm/types",
+}
+
+// Values
+pub let f32_cell : Cell[InferredType]
+
+pub let f32_valtype : InferredValType
+
+pub let f64_cell : Cell[InferredType]
+
+pub let f64_valtype : InferredValType
+
+pub let i32_cell : Cell[InferredType]
+
+pub let i32_valtype : InferredValType
+
+pub let i64_cell : Cell[InferredType]
+
+pub let i64_valtype : InferredValType
+
+pub fn is_unknown_or_error(Cell[InferredType]) -> Bool
+
+pub fn[Info] render(@fmt.Ctx[Info], Cell[InferredType]) -> Unit
+
+pub fn[A] same_cell(Cell[A], Cell[A]) -> Bool
+
+pub fn to_string(Cell[InferredType]) -> String
+
+pub fn valtype_cell(InferredValType) -> Cell[InferredType]
+
+// Errors
+
+// Types and methods
+pub struct Cell[A] {
+  mut state : State[A]
+}
+pub fn[A] Cell::get(Self[A]) -> A
+pub fn[A] Cell::make(A) -> Self[A]
+pub fn[A] Cell::merge(Self[A], Self[A], A) -> Unit
+pub fn[A] Cell::set(Self[A], A) -> Unit
+
+pub(all) struct Collecting {
+  collected : Array[(@basic.Location?, Cell[InferredType])]
+  exacts : Array[(@basic.Location?, Cell[InferredType])]
+  declared : Cell[InferredType]?
+  mut needed : Bool
+}
+
+pub(all) enum InferredType {
+  Unknown
+  Error
+  UnknownRef
+  Null
+  Number
+  Int8
+  Int16
+  Int
+  LargeInt
+  Float
+  Valtype(InferredValType)
+  Collecting(Collecting)
+}
+
+pub(all) struct InferredValType {
+  typ : @types.ValType[@ast.Ident]
+  internal : @types.ValType[@store.Id]
+  anon_comptype : @ast.CompType?
+} derive(Eq)
+
+pub(all) enum State[A] {
+  Link(Cell[A])
+  Root(A)
+}
+
+// Type aliases
+
+// Traits

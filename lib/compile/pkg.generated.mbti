@@ -1,0 +1,47 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/compile"
+
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/check/env",
+  "marianoguerra/wax/check/infer",
+  "marianoguerra/wax/check/store",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/emit/wasm",
+  "marianoguerra/wax/feature",
+  "marianoguerra/wax/syntax/trivia",
+  "marianoguerra/wax/warning",
+  "marianoguerra/wax/wasm/bin",
+}
+
+// Values
+pub fn apply_policy(@warning.Policy, Array[@diagnostic.Diagnostic]) -> Array[@diagnostic.Diagnostic]
+
+pub fn rejected(Array[@diagnostic.Diagnostic]) -> Bool
+
+// Errors
+
+// Types and methods
+pub struct Checked {
+  session : Session
+  context : @env.ModuleContext
+  source_module : Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]
+  typed : Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]]
+}
+pub fn Checked::to_bytes(Self) -> Bytes raise
+pub fn Checked::to_module(Self, keep_conditionals? : Bool) -> @bin.Module raise @wasm.LowerError
+pub fn Checked::to_wat(Self, trivia? : @trivia.Context) -> String raise
+
+pub struct Session {
+  store : @store.TypeStore
+  features : @feature.Set
+  diagnostics : @diagnostic.Context
+}
+pub fn Session::check(Self, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], warn_unused? : Bool, simplify? : Bool) -> Checked
+pub fn Session::new(features? : @feature.Set, source? : String) -> Self
+pub fn Session::reports(Self, policy? : @warning.Policy) -> Array[@diagnostic.Diagnostic]
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,44 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax"
+
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/colors",
+  "marianoguerra/wax/compile",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/feature",
+  "marianoguerra/wax/syntax/parser",
+  "marianoguerra/wax/syntax/trivia",
+  "marianoguerra/wax/warning",
+}
+
+// Values
+pub fn apply_policy(@warning.Policy, Array[@diagnostic.Diagnostic]) -> Array[@diagnostic.Diagnostic]
+
+pub fn compile_string(String, fname? : String, features? : @feature.Set, policy? : @warning.Policy) -> Result[Bytes, Array[@diagnostic.Diagnostic]] raise
+
+pub fn compile_string_to_wat(String, fname? : String, features? : @feature.Set, policy? : @warning.Policy) -> Result[String, Array[@diagnostic.Diagnostic]] raise
+
+pub fn format_string(String, fname? : String, theme? : @colors.Theme) -> Result[String, Array[@diagnostic.Diagnostic]]
+
+pub fn parse_recover(String, fname? : String) -> @parser.ParseResult
+
+pub fn parse_string(String, fname? : String) -> @parser.ParseResult
+
+pub fn rejected(Array[@diagnostic.Diagnostic]) -> Bool
+
+pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context, theme? : @colors.Theme) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @compile {type Checked}
+
+pub using @parser {type ParseResult}
+
+pub using @compile {type Session}
+
+// Traits

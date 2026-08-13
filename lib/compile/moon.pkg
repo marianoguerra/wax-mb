@@ -1,0 +1,23 @@
+// The AST-first entry point. It deliberately does NOT import the front end:
+// `syntax/lexer`, `syntax/tokens` and `syntax/parser` -- about 8k lines, most of
+// it a generated LR table -- are only reachable through the root `wax` package.
+// A consumer that builds `@ast` values itself never compiles them.
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/check" @typing,
+  "marianoguerra/wax/check/env" @typing_env,
+  "marianoguerra/wax/check/infer",
+  "marianoguerra/wax/check/store" @type_store,
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/emit/wasm" @to_wasm,
+  "marianoguerra/wax/feature",
+  "marianoguerra/wax/syntax/trivia",
+  "marianoguerra/wax/warning",
+  "marianoguerra/wax/wasm/bin" @wasm_bin,
+  "marianoguerra/wax/wasm/wat" @to_wat,
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

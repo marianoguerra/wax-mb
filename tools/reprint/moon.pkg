@@ -1,6 +1,6 @@
 import {
-  "waxmb/wax/grammar",
-  "waxmb/wax/output",
+  "marianoguerra/wax/syntax/parser" @grammar,
+  "marianoguerra/wax/fmt" @output,
   "moonbitlang/x/fs",
   "moonbitlang/core/env",
 }

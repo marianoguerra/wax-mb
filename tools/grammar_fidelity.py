@@ -27,7 +27,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 REF_MLY = ROOT / "wax" / "src" / "lib-wax" / "parser.mly"
-OUR_MBTY = ROOT / "grammar" / "parser.mbty"
+OUR_MBTY = ROOT / "lib" / "syntax" / "parser" / "parser.mbty"
 
 # Rules this port renamed. The stdlib equivalents differ in name only.
 RENAMES = {
@@ -153,7 +153,7 @@ def main() -> int:
     dump = subprocess.run(
         ["moon", "runwasm", "moonbitlang/yacc@0.7.18", "--",
          "--print-as-mly-without-actions", "parser.mbty"],
-        cwd=ROOT / "grammar", capture_output=True, text=True,
+        cwd=ROOT / "lib" / "syntax" / "parser", capture_output=True, text=True,
     )
     if not dump.stdout.strip():
         sys.exit("could not dump our grammar:\n" + dump.stderr)

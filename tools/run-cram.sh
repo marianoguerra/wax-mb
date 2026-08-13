@@ -13,7 +13,7 @@
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(dirname "$here")"
-bin="$root/_build/native/debug/build/cmd/wax-mb/wax-mb.exe"
+bin="$root/_build/native/debug/build/marianoguerra/wax-cli/wax-mb/wax-mb.exe"
 [ -x "$bin" ] || { echo "run-cram: not built; run 'moon build --target native'" >&2; exit 127; }
 
 cram="$(command -v moon-cram || true)"

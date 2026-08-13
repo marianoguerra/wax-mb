@@ -1,8 +1,8 @@
 import {
-  "waxmb/wax/grammar",
-  "waxmb/wax/output",
-  "waxmb/wax/printer",
-  "waxmb/wax/printer_pp",
+  "marianoguerra/wax/syntax/parser" @grammar,
+  "marianoguerra/wax/fmt" @output,
+  "marianoguerra/wax/printer",
+  "marianoguerra/wax-dev/printer_pp",
   "moonbitlang/x/fs",
   "moonbitlang/core/env",
   "moonbitlang/core/debug",

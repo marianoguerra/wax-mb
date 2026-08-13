@@ -1,0 +1,9 @@
+import {
+  "marianoguerra/wax/colors",
+  "marianoguerra/wax/printer",
+  "marianoguerra/wax/unicode",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

@@ -2,14 +2,14 @@ import {
 }
 
 import {
-  "waxmb/wax/grammar",
-  "waxmb/wax/lexer",
-  "waxmb/wax/trivia",
+  "marianoguerra/wax/syntax/parser" @grammar,
+  "marianoguerra/wax/syntax/lexer",
+  "marianoguerra/wax/syntax/trivia",
   "moonbitlang/x/fs",
   "moonbitlang/core/json",
   "moonbitlang/core/test",
   "moonbitlang/core/cmp",
-  "waxmb/wax/ast",
-  "waxmb/wax/basic",
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
   "moonbitlang/core/string",
 } for "test"

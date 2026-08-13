@@ -1,0 +1,154 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/syntax/parser"
+
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/syntax/tokens",
+  "marianoguerra/wax/syntax/trivia",
+  "marianoguerra/wax/wasm/types",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn acceptable(Array[Int], Int) -> Bool
+
+pub fn address_type_of((@basic.Position, @basic.Position), String) -> @types.AddressType
+
+pub let always_opt : Int
+
+pub fn[T] annot((@basic.Position, @basic.Position), T) -> @basic.Annotated[T, @basic.Location]
+
+pub fn attributed((@basic.Position, @basic.Position), Array[@ast.Attribute], (Array[@ast.Attribute]) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]
+
+pub fn binop((@basic.Position, @basic.Position), (@basic.Position, @basic.Position), @ast.BinOp, @ast.Instr[@basic.Location], @ast.Instr[@basic.Location]) -> @ast.Instr[@basic.Location]
+
+pub fn blocktype(@ast.FuncType?) -> @ast.FuncType
+
+pub fn cast_type_of((@basic.Position, @basic.Position), String) -> @ast.CastType
+
+pub fn data_run((@basic.Position, @basic.Position), @ast.Ident, Array[DataRunItem]) -> @ast.DataElem
+
+pub fn decl_sign((@basic.Position, @basic.Position), @ast.Ident?, @ast.FuncType?) -> @ast.FuncType?
+
+pub fn enclosing_opener(Array[(@tokens.Token, @basic.Position, @basic.Position)], Int) -> (@basic.Position, @basic.Position)?
+
+pub fn error_state(Array[(@tokens.Token, @basic.Position, @basic.Position)]) -> ErrorState?
+
+pub fn expected_at(Array[Int]) -> Array[@tokens.TokenKind]
+
+pub fn expected_signature(Array[@tokens.TokenKind]) -> String
+
+pub fn[T] fail_at(@basic.Location, String, default~ : T, hint? : String?, fix? : @basic.Edit?) -> T
+
+pub fn freq_of_ratio(Double) -> Int
+
+pub fn heap_type_of(@ast.Ident) -> @types.HeapType[@ast.Ident]
+
+pub fn hint_of_attr((@basic.Position, @basic.Position), @ast.Attribute) -> HintSetter
+
+pub fn hinted((@basic.Position, @basic.Position), Array[HintSetter], @ast.Instr[@basic.Location]) -> @ast.Instr[@basic.Location]
+
+pub fn int_of_version_component((@basic.Position, @basic.Position), String) -> Int
+
+pub fn loc_of((@basic.Position, @basic.Position)) -> @basic.Location
+
+pub fn lower_fields(Array[RawField]) -> Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]
+
+pub fn make_exact((@basic.Position, @basic.Position), @types.HeapType[@ast.Ident]) -> @types.HeapType[@ast.Ident]
+
+pub fn mark_parenthesized(@ast.Instr[@basic.Location]) -> @ast.Instr[@basic.Location]
+
+pub let never_opt : Int
+
+pub fn page_size_log2((@basic.Position, @basic.Position), String) -> Int
+
+pub fn parse(Array[(@tokens.Token, @basic.Position, @basic.Position)], initial_pos? : @basic.Position) -> Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]] raise ParseError
+
+pub fn parse_recover(String, fname? : String) -> ParseResult
+
+pub fn parse_string(String, fname? : String) -> ParseResult
+
+pub fn process_stmts(Array[RawStmt]) -> Array[@ast.Instr[@basic.Location]]
+
+pub fn record_error(@basic.Location, String, hint? : String?, fix? : @basic.Edit?) -> Unit
+
+pub fn[T] respan(@basic.Annotated[T, @basic.Location], (@basic.Position, @basic.Position)) -> @basic.Annotated[T, @basic.Location]
+
+pub fn scalar_storagetype((@basic.Position, @basic.Position), @ast.Ident) -> @types.StorageType[@ast.Ident]
+
+pub fn set_context(@trivia.Context) -> Unit
+
+pub fn shift_sim(Array[Int], Int) -> Array[Int]?
+
+pub fn storage_type_of((@basic.Position, @basic.Position), String) -> @types.StorageType[@ast.Ident]
+
+pub fn taken_error() -> SyntaxError?
+
+pub fn target_percent((@basic.Position, @basic.Position), String) -> Int
+
+pub fn targets_of_attr((@basic.Position, @basic.Position), String, Array[(@ast.Ident, Int)]) -> HintSetter
+
+pub fn u64_of_int_literal((@basic.Position, @basic.Position), String) -> UInt64
+
+pub fn unop((@basic.Position, @basic.Position), (@basic.Position, @basic.Position), @ast.UnOp, @ast.Instr[@basic.Location]) -> @ast.Instr[@basic.Location]
+
+pub fn value_type_of((@basic.Position, @basic.Position), String) -> @types.ValType[@ast.Ident]
+
+pub fn vec_shape((@basic.Position, @basic.Position), @ast.Ident) -> @types.V128Shape
+
+pub fn with_loc((@basic.Position, @basic.Position), @ast.InstrDesc[@basic.Location]) -> @ast.Instr[@basic.Location]
+
+// Errors
+pub suberror ParseError {
+  UnexpectedToken(@tokens.Token, (@basic.Position, @basic.Position), Array[@tokens.TokenKind])
+  UnexpectedEndOfInput(@basic.Position, Array[@tokens.TokenKind])
+}
+
+pub suberror SyntaxError {
+  SyntaxError(loc~ : @basic.Location, message~ : String, hint~ : String?, fix~ : @basic.Edit?)
+} derive(@debug.Debug)
+
+// Types and methods
+pub(all) enum DataRunItem {
+  Num(@basic.Annotated[String, @basic.Location])
+  Vec(@basic.Annotated[@types.V128, @basic.Location])
+}
+
+pub struct ErrorState {
+  state : Int
+  stack : Array[Int]
+  token_index : Int
+  spans : Array[(@basic.Position, @basic.Position)]
+}
+pub fn ErrorState::subject_span(Self) -> (@basic.Position, @basic.Position)?
+
+pub(all) enum HintSetter {
+  Branch(Bool)
+  Freq(Int)
+  Targets(Array[(@ast.Ident, Int)])
+} derive(@debug.Debug)
+
+pub struct ParseResult {
+  module_ : Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]?
+  errors : Array[@basic.Report]
+  trivia : @trivia.Context
+}
+
+pub(all) enum RawField {
+  FPlain(@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location])
+  FIf((@basic.Position, @basic.Position), @types.Cond, @basic.Annotated[Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @basic.Location])
+  FElse((@basic.Position, @basic.Position), @basic.Annotated[Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @basic.Location])
+}
+
+pub(all) enum RawStmt {
+  Plain(@ast.Instr[@basic.Location])
+  Semi
+  If((@basic.Position, @basic.Position), @types.Cond, @basic.Annotated[Array[@ast.Instr[@basic.Location]], @basic.Location])
+  Else((@basic.Position, @basic.Position), @basic.Annotated[Array[@ast.Instr[@basic.Location]], @basic.Location])
+}
+
+// Type aliases
+pub type LocatedFields = @basic.Annotated[Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @basic.Location]
+
+// Traits

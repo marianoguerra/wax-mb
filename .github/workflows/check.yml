@@ -42,6 +42,12 @@ jobs:
       - name: test
         run: moon test --target all
 
+      # Reported, never gated: it is a text search, and a library may
+      # legitimately export what this repository does not call. Printing it on
+      # every run is what keeps the number from drifting upwards unnoticed.
+      - name: public API audit (report only)
+        run: tools/api_audit.py
+
       # The harness drives an executable, not `moon run`, which would re-check
       # the build graph once per file over a 2100-file corpus. tools/wax-mb
       # locates what this step builds.

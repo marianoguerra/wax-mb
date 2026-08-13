@@ -1,6 +1,12 @@
-# Reference checkouts, cloned for porting and differential testing
-wax/
-parser/
+# The reference checkout, cloned for porting and differential testing.
+#
+# ANCHORED with a leading slash, and it matters: an unanchored pattern matches a
+# directory of that name at ANY depth. The `parser/` entry that used to sit here
+# for the moonbitlang/parser checkout silently swallowed `lib/syntax/parser/` --
+# `moon package` walks the tree gitignore-aware, so the published zip came out
+# with no parser package in it at all. `moon publish --dry-run` is what caught
+# that; keep running it before a release.
+/wax/
 
 # MoonBit build output
 _build/

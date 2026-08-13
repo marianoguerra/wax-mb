@@ -1,0 +1,13 @@
+import {
+  "marianoguerra/wax/wasm/types" @wasm_types,
+  "marianoguerra/wax/basic",
+  "moonbitlang/core/buffer",
+}
+
+import {
+  // The package under test, under the name every other package knows it by.
+  // A black-box test package would otherwise see it as `@bin`, which is
+  // the directory name rather than the name this codebase reads it as.
+  "marianoguerra/wax/wasm/bin" @wasm_bin,
+  "moonbitlang/core/test",
+} for "test"

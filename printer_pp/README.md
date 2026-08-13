@@ -162,7 +162,9 @@ a group opens mid-run.
 
 ## Cost
 
-The dependency is a real one: `waxmb/wax` pulls in
-`marianoguerra/pretty-fast-pretty-printer` for every consumer, to support a
-package the formatter does not use. `printer` remains the engine
+The dependency used to be a real one: while this package lived in the library
+module, `marianoguerra/pretty-fast-pretty-printer` was fetched by every
+consumer of `wax` to support a package the formatter does not use. It now lives
+in `marianoguerra/wax-dev`, the unpublished development module, so nobody
+outside this repository pays for it. `printer` remains the engine
 `@output.render` and the CLI go through; nothing in the shipped path changed.

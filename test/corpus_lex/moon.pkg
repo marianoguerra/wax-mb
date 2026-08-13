@@ -2,8 +2,8 @@ import {
 }
 
 import {
-  "waxmb/wax/lexer",
-  "waxmb/wax/tokens",
+  "marianoguerra/wax/syntax/lexer",
+  "marianoguerra/wax/syntax/tokens",
   "moonbitlang/x/fs",
   "moonbitlang/core/json",
   "moonbitlang/core/test",

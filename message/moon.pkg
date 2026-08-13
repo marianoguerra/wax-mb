@@ -1,9 +1,0 @@
-import {
-  "waxmb/wax/colors",
-  "waxmb/wax/printer",
-  "waxmb/wax/unicode",
-}
-
-import {
-  "moonbitlang/core/test",
-} for "test"

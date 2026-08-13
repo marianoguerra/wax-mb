@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate grammar/parser_messages.mbt from the reference's message golden.
+"""Generate lib/syntax/parser/parser_messages.mbt from the reference's message golden.
 
 The reference's syntax messages are produced offline by `stele` from Menhir's
 automaton -- item sets, spurious reductions, the lot -- and shipped as a
@@ -43,8 +43,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EXPECTED = ROOT / "wax/src/lib-wax/parser_messages.expected"
-GRAMMAR = ROOT / "grammar/parser.mbty"
-OUT = ROOT / "grammar/parser_messages.mbt"
+GRAMMAR = ROOT / "lib/syntax/parser/parser.mbty"
+OUT = ROOT / "lib/syntax/parser/parser_messages.mbt"
 ERRSTATE = ROOT / "_build/native/debug/build/tools/errstate/errstate.exe"
 
 # The terminals with no alias in the grammar: what a user actually types.

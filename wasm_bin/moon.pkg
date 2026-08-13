@@ -1,9 +1,0 @@
-import {
-  "waxmb/wax/wasm_types",
-  "waxmb/wax/basic",
-  "moonbitlang/core/buffer",
-}
-
-import {
-  "moonbitlang/core/test",
-} for "test"

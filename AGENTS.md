@@ -1,35 +1,99 @@
 # Agent guide
 
-This is a [MoonBit](https://docs.moonbitlang.com) project: a port of the **Wax**
-front end (lexer, AST, parser, formatter) from OCaml to MoonBit.
+This is a [MoonBit](https://docs.moonbitlang.com) project: a port of **Wax** --
+lexer, AST, parser, formatter, type checker and the wasm/wat emitters -- from
+OCaml to MoonBit.
 
 Wax is a Rust-like surface syntax for WebAssembly. The reference implementation
 is [ocsigen/wax](https://github.com/ocsigen/wax).
 
-## The two reference checkouts
+## Three modules in one workspace
 
-Both are gitignored siblings of this module, cloned for reference only. **Never
-edit them.**
+`moon.work` lists them. Every `moon` command below runs at the repository root
+and covers all three.
 
-- `wax/` — the OCaml implementation being ported. The front-end slice lives in
-  `src/lib-wax/` (`lexer.ml`, `parser.mly`, `ast.mli`, `output.ml`) and
-  `src/lib-utils/` (`trivia.ml`, `printer.ml`, `diagnostic.ml`, `message.ml`).
-  Everything under `typing.ml`, `validation.ml`, `to_wasm.ml`, `from_wasm.ml` is
-  out of scope for now.
-- `parser/` — [moonbitlang/parser](https://github.com/moonbitlang/parser), the
-  MoonBit language's own parser written in MoonBit. This is the **structural**
-  template: package layering, `moon.pkg` conventions, moonyacc codegen wiring,
-  snapshot-test style. Note its `AGENTS.md` warning applies there too — read
-  `.mbty` grammar sources, not the huge generated `.mbt` files.
+| directory | module | published |
+|---|---|---|
+| `lib/` | `marianoguerra/wax` | yes -- **and it has no dependencies**; keep it that way |
+| `cli/` | `marianoguerra/wax-cli` | yes; `moonbitlang/x` lives here |
+| `.` (root) | `marianoguerra/wax-dev` | no: `test/`, `tools/`, `printer_pp/` |
+
+The root is a module rather than a bare workspace so that `test/corpus/`,
+`test/golden/` and `tools/` keep the paths the Python harness, the justfile and
+this document already use.
+
+Two rules follow from the split, and both are load-bearing:
+
+- **Nothing goes in `lib/moon.mod`'s dependencies.** A module's dependencies are
+  fetched by every consumer regardless of which packages they import, so one
+  convenience dependency there is paid for by every project that wanted only the
+  type checker. If something in `lib/` needs a dependency, that is a design
+  question, not a manifest edit.
+- **`wax-dev` reaches the other two through their public API only.** That is
+  what keeps the API honest -- whatever the harness needs is, by construction, a
+  name that has to stay public. Do not "fix" a harness import by widening
+  `lib/`'s surface without deciding that the name is a promise.
+
+`lib/internal/*` is enforced by the compiler: `marianoguerra/wax/internal/x` is
+importable only from inside `marianoguerra/wax`, so neither `cli` nor `dev` can
+reach it.
+
+## Package layout in `lib/`
+
+Grouped by layer, and the alias each is imported under is NOT always its
+directory name -- the aliases predate the grouping and the sources read the same
+as they did:
+
+| directory | alias |
+|---|---|
+| `syntax/{tokens,lexer,trivia}` | as named |
+| `syntax/parser` | `@grammar` |
+| `fmt` | `@output` |
+| `check` | `@typing` |
+| `check/{env,store,infer,members}` | `@typing_env`, `@type_store`, as named |
+| `emit/wasm` | `@to_wasm` |
+| `wasm/{types,bin,wat}` | `@wasm_types`, `@wasm_bin`, `@to_wat` |
+| `wasm/{simd,atomics}` | as named |
+| `internal/{spell,number,cond_explore}` | as named |
+
+A black-box test package sees its own package under the DIRECTORY name, so the
+six packages whose alias differs re-import themselves under the alias in their
+`for "test"` block. That is why `lib/check/moon.pkg` imports
+`"marianoguerra/wax/check" @typing`.
+
+## The reference checkout
+
+`wax/` is gitignored, at the repository root, cloned for reference only.
+**Never edit it**, and never let it become a build or CI input.
+
+It is the OCaml implementation being ported. The front-end slice lives in
+`src/lib-wax/` (`lexer.ml`, `parser.mly`, `ast.mli`, `output.ml`) and
+`src/lib-utils/` (`trivia.ml`, `printer.ml`, `diagnostic.ml`, `message.ml`);
+the checker and the emitters in `typing.ml`, `validation.ml`, `to_wasm.ml` and
+`wasm_output.ml`. Only `from_wasm.ml` is still out of scope.
+
+There used to be a second checkout,
+[moonbitlang/parser](https://github.com/moonbitlang/parser) (the MoonBit
+language's own parser, written in MoonBit), kept as the **structural** template
+for package layering, `moon.pkg` conventions, moonyacc codegen wiring and
+snapshot-test style. It has done its job: those conventions are now this
+repository's own, written down below. It was 207 MB for a reading reference,
+and an unanchored `parser/` in `.gitignore` for it silently swallowed
+`lib/syntax/parser/` out of the published package. Clone it again if a new
+structural question comes up:
+
+```sh
+git clone https://github.com/moonbitlang/parser   # was pinned at 7f1efb3b
+```
 
 ## Non-negotiable: the reference is the specification
 
 This port is only worth having if it is *provably* equivalent to the reference.
 Correctness is not decided by reading the OCaml and agreeing that the MoonBit
-looks similar — it is decided by `cmd/waxdiff`, which runs both implementations
-over a ~1000-file corpus and compares:
+looks similar — it is decided by `tools/waxdiff.py`, which runs both
+implementations over a ~2000-module corpus and compares:
 
-1. **Reprint parity** — `wax f.wax -f wax` vs `wax-mb fmt f.wax`, byte for byte.
+1. **Reprint parity** — `wax f.wax -f wax` vs `wax-mb f.wax`, byte for byte.
 2. **Wasm equivalence** — our printed output, fed back through the reference
    back end, must produce a byte-identical `.wasm`.
 3. **Error parity** — same diagnostics at the same spans with the same exit code.
@@ -87,11 +151,13 @@ go through `printer`, and nothing about equivalence to the reference is decided
 here. A divergence is not automatically a bug in the formatter -- it is more
 likely one in `printer_pp`'s lowering -- but it always wants explaining.
 
-## Conventions (follow `parser/`)
+## Conventions
 
-- Config is the **new DSL**, not JSON: `moon.mod`, `moon.pkg`. Deps go in an
-  `import { ... }` block, with a separate `import { ... } for "test"` block for
-  test-only deps (and `for "wbtest"` for white-box tests).
+- Config is the **new DSL**, not JSON: `moon.work`, `moon.mod`, `moon.pkg`.
+  Deps go in an `import { ... }` block, with a separate
+  `import { ... } for "test"` block for test-only deps (and `for "wbtest"` for
+  white-box tests). `moon fmt` reformats these files too, and strips comments
+  from `moon.work` — put the explanation in this document instead.
 - `///|` before every top-level item.
 - `_test.mbt` = black-box, `_wbtest.mbt` = white-box.
 - `pkg.generated.mbti` is committed for every package; CI enforces that it is
@@ -107,6 +173,14 @@ moon check --deny-warn
 moon info --target all && git diff --exit-code   # .mbti files current
 moon fmt && git diff --exit-code                 # formatted
 moon test --target all
+tools/api_audit.py                               # reported, never gated
+```
+
+Before publishing, also:
+
+```sh
+just embed-smoke     # an AST-first consumer must not compile the front end
+just publish-dry     # the full gate, then both `moon publish --dry-run`s
 ```
 
 ## Porting notes that are easy to get wrong

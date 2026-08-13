@@ -1,0 +1,14 @@
+import {
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/colors",
+  "marianoguerra/wax/message",
+  "marianoguerra/wax/printer",
+  "marianoguerra/wax/unicode",
+  "marianoguerra/wax/warning",
+  "moonbitlang/core/cmp",
+  "moonbitlang/core/int",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

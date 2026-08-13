@@ -1,0 +1,35 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/ast/build"
+
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/wasm/types",
+}
+
+// Values
+pub fn exported(name? : String, at? : @basic.Location) -> @ast.Attribute
+
+pub fn field(@ast.ModuleField[@basic.Location], at? : @basic.Location) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]
+
+pub fn func(String, params? : Array[(String?, @types.ValType[@ast.Ident])], results? : Array[@types.ValType[@ast.Ident]], body? : Array[@ast.Instr[@basic.Location]], label? : String?, attributes? : Array[@ast.Attribute], at? : @basic.Location) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]
+
+pub fn func_type(params? : Array[(String?, @types.ValType[@ast.Ident])], results? : Array[@types.ValType[@ast.Ident]], at? : @basic.Location) -> @ast.FuncType
+
+pub fn global(String, typ? : @types.ValType[@ast.Ident]?, mut_? : Bool, def~ : @ast.Instr[@basic.Location], attributes? : Array[@ast.Attribute], at? : @basic.Location) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]
+
+pub fn ident(String, at? : @basic.Location) -> @ast.Ident
+
+pub fn import_as(String, at? : @basic.Location) -> @ast.Attribute
+
+pub fn import_func(String, String, as_? : String?, params? : Array[(String?, @types.ValType[@ast.Ident])], results? : Array[@types.ValType[@ast.Ident]], exact? : Bool, attributes? : Array[@ast.Attribute], at? : @basic.Location) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]
+
+pub fn rec_group(Array[(String, @ast.SubType)], at? : @basic.Location) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

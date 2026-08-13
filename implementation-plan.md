@@ -4,6 +4,14 @@ Remaining work on the MoonBit port of the [Wax](https://github.com/ocsigen/wax)
 toolchain. Phases 0–4 are done; what follows is everything still open, in the
 order it makes sense to do it.
 
+> **Paths below are pre-workspace.** This file is a log as much as a plan, and
+> the notes in it were written when every package sat at the repository root.
+> They still name `grammar/`, `typing/`, `output/`, `tokens/` and so on. Those
+> are now `lib/syntax/parser/`, `lib/check/`, `lib/fmt/`, `lib/syntax/tokens/`;
+> see the table in `AGENTS.md`. The names were left alone deliberately —
+> rewriting them would make the record of what was decided when less accurate,
+> not more.
+
 ## Todo
 
 **Near-term — close the gaps in what already exists**

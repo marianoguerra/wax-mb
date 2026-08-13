@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "waxmb/wax/printer_pp"
+package "marianoguerra/wax-dev/printer_pp"
 
 import {
   "marianoguerra/pretty-fast-pretty-printer",
-  "waxmb/wax/printer",
+  "marianoguerra/wax/printer",
 }
 
 // Values

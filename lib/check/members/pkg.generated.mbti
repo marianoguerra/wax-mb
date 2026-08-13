@@ -1,0 +1,56 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/check/members"
+
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/check/infer",
+  "marianoguerra/wax/wasm/types",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub let float_methods : Array[ValueMethod]
+
+pub let integer_methods : Array[ValueMethod]
+
+pub fn numeric_receiver_kind(@infer.InferredType) -> MemberReceiver?
+
+pub fn simd_valtype(SimdTy) -> @infer.InferredValType
+
+// Errors
+
+// Types and methods
+pub(all) enum MemberReceiver {
+  RNumeric(@infer.InferredType)
+  RStruct(Array[@basic.Annotated[(@ast.Ident, @types.MutType[@types.StorageType[@ast.Ident]]), @basic.Location]])
+  RArray(@types.MutType[@types.StorageType[@ast.Ident]])
+  RMemory(@types.AddressType)
+  RTable(@types.AddressType, @types.RefType[@ast.Ident])
+}
+
+pub(all) enum MethodResult {
+  Same
+  Reinterpret
+} derive(Eq, @debug.Debug)
+
+pub(all) enum SimdTy {
+  TV128
+  TI32
+  TI64
+  TF32
+  TF64
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ValueMethod {
+  name : String
+  binary : Bool
+  result : MethodResult
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+pub type FieldType = @types.MutType[@types.StorageType[@ast.Ident]]
+
+pub type StructFields = Array[@basic.Annotated[(@ast.Ident, @types.MutType[@types.StorageType[@ast.Ident]]), @basic.Location]]
+
+// Traits

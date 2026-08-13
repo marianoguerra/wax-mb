@@ -1,0 +1,19 @@
+import {
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/printer",
+  "marianoguerra/wax/syntax/trivia",
+  "marianoguerra/wax/unicode",
+  "marianoguerra/wax/colors",
+  "moonbitlang/core/encoding/utf8",
+  "marianoguerra/wax/wasm/types" @wasm_types,
+}
+
+import {
+  // The package under test, under the name every other package knows it by.
+  // A black-box test package would otherwise see it as `@fmt`, which is
+  // the directory name rather than the name this codebase reads it as.
+  "marianoguerra/wax/fmt" @output,
+  "marianoguerra/wax/syntax/parser" @grammar,
+  "moonbitlang/core/test",
+} for "test"

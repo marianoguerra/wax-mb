@@ -1,0 +1,8 @@
+import {
+  "marianoguerra/wax/wasm/bin" @wasm_bin,
+}
+
+import {
+  "moonbitlang/core/test",
+  "moonbitlang/core/debug",
+} for "test"

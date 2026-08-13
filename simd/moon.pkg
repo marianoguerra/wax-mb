@@ -1,8 +1,0 @@
-import {
-  "waxmb/wax/wasm_bin",
-}
-
-import {
-  "moonbitlang/core/test",
-  "moonbitlang/core/debug",
-} for "test"

@@ -1,0 +1,59 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/message"
+
+import {
+  "marianoguerra/wax/colors",
+  "marianoguerra/wax/printer",
+}
+
+// Values
+pub fn bool_(Bool) -> Message
+
+pub fn code(String) -> Message
+
+pub fn concat(Array[Message]) -> Message
+
+pub fn enumerate(Array[Message], conj? : String) -> Message
+
+pub fn group(Message) -> Message
+
+pub fn ident(String) -> Message
+
+pub fn int(Int) -> Message
+
+pub fn int64(Int64) -> Message
+
+pub fn print_styled(@printer.Printer, @colors.Theme, @colors.Style, String) -> Unit
+
+pub fn raw((@printer.Printer, @colors.Theme) -> Unit) -> Message
+
+pub fn render(@printer.Printer, @colors.Theme, Message) -> Unit
+
+pub fn styled(@colors.Style, String) -> Message
+
+pub fn text(String) -> Message
+
+pub fn to_plain_string(Message) -> String
+
+pub fn type_(String) -> Message
+
+pub fn uint64(Int64) -> Message
+
+// Errors
+
+// Types and methods
+pub(all) enum Message {
+  Empty
+  Words(String)
+  Atom(@colors.Style, Bool, String)
+  Raw((@printer.Printer, @colors.Theme) -> Unit)
+  Seq(Message, Message)
+  Sep(Message, Message)
+  Group(Message)
+}
+pub fn Message::sep(Self, Self) -> Self
+pub fn Message::seq(Self, Self) -> Self
+
+// Type aliases
+
+// Traits

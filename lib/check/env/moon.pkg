@@ -1,0 +1,24 @@
+import {
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/check/infer",
+  "marianoguerra/wax/check/members",
+  "marianoguerra/wax/cond",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/message",
+  "marianoguerra/wax/wasm/types" @wasm_types,
+  "marianoguerra/wax/check/store" @type_store,
+  "marianoguerra/wax/feature",
+  "moonbitlang/core/ref",
+}
+
+import {
+  // The package under test, under the name every other package knows it by.
+  // A black-box test package would otherwise see it as `@env`, which is
+  // the directory name rather than the name this codebase reads it as.
+  "marianoguerra/wax/check/env" @typing_env,
+  "moonbitlang/core/test",
+  "marianoguerra/wax/check/store" @type_store,
+  "marianoguerra/wax/feature",
+  "marianoguerra/wax/check/infer",
+} for "test"

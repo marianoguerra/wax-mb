@@ -1,0 +1,68 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/wasm/wat"
+
+import {
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/syntax/trivia",
+  "marianoguerra/wax/wasm/bin",
+  "marianoguerra/wax/wasm/types",
+}
+
+// Values
+pub fn block(Array[Sexp]) -> Sexp
+
+pub fn fold(Array[@bin.Instruction], Array[@bin.Span], nested? : Array[Array[@bin.Span]]) -> Array[Node]
+
+pub fn heaptype(@types.HeapType[Int], Map[Int, Bytes]) -> String
+
+pub fn ident(Bytes) -> String
+
+pub fn mnemonic(@bin.Instruction, @bin.Names, Map[Int, Bytes], scope? : Array[String?]) -> Sexp raise WatError
+
+pub fn nullary(@bin.Instruction) -> String?
+
+pub fn print_module(@bin.Module, trivia? : @trivia.Context?) -> String raise WatError
+
+pub fn reftype(@types.RefType[Int], Map[Int, Bytes]) -> String
+
+pub fn render(Sexp, top_depth? : Int, trivia? : @trivia.Context?) -> String
+
+pub fn valtype(@types.ValType[Int], Map[Int, Bytes]) -> String
+
+// Errors
+pub suberror WatError {
+  NotPrinted(String)
+}
+pub impl Show for WatError
+
+// Types and methods
+pub(all) enum BlockKind {
+  KBox
+  KHov
+  KHv
+}
+
+pub(all) struct Node {
+  head : @bin.Instruction
+  operands : Array[Node]
+  bodies : Array[Array[Node]]
+  loc : @basic.Location
+}
+
+pub(all) enum Sexp {
+  Atom(String)
+  List(Array[Sexp])
+  Block(Array[Sexp], BlockKind, Bool)
+  VBlock(Array[Sexp])
+  SBlock(Array[Structure])
+  At(@basic.Location, Sexp)
+}
+
+pub(all) enum Structure {
+  Delimiter(Sexp)
+  Contents(Array[Sexp])
+}
+
+// Type aliases
+
+// Traits

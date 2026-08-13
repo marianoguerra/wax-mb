@@ -1,0 +1,17 @@
+// Smart constructors for the AST, for callers that generate Wax rather than
+// parse it. Nothing here is a new type: every function returns a plain `@ast`
+// value, and a generator that outgrows one of them writes the constructor out
+// by hand and mixes the two freely.
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/wasm/types" @wasm_types,
+  "moonbitlang/core/encoding/utf8",
+}
+
+import {
+  "moonbitlang/core/test",
+  "marianoguerra/wax/ast/build",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/compile",
+} for "test"

@@ -1,0 +1,10 @@
+import {
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/wasm/types" @wasm_types,
+  "marianoguerra/wax/check/infer",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

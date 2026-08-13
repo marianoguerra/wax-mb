@@ -1,0 +1,19 @@
+import {
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/check/env" @typing_env,
+  "marianoguerra/wax/check" @typing,
+  "marianoguerra/wax/check/store" @type_store,
+  "marianoguerra/wax/wasm/types" @wasm_types,
+  "marianoguerra/wax/wasm/bin" @wasm_bin,
+  "moonbitlang/core/string",
+  "moonbitlang/core/debug",
+  "marianoguerra/wax/unicode",
+  "marianoguerra/wax/wasm/simd",
+  "marianoguerra/wax/check/infer",
+  "marianoguerra/wax/wasm/atomics",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

@@ -1,0 +1,58 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wax/syntax/lexer"
+
+import {
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/syntax/tokens",
+  "marianoguerra/wax/syntax/trivia",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn tokens_from_string(String, fname? : String, trivia_ctx? : @trivia.Context) -> LexResult
+
+pub fn utf8_len(StringView) -> Int
+
+pub fn utf8_len_of_char(Char) -> Int
+
+// Errors
+
+// Types and methods
+pub struct Cursor {
+  src : String
+  fname : String
+  mut idx : Int
+  mut cnum : Int
+  mut bol : Int
+  mut lnum : Int
+}
+pub fn Cursor::at_end(Self) -> Bool
+pub fn Cursor::bump(Self) -> Char?
+pub fn Cursor::eat(Self, String) -> Unit
+pub fn Cursor::looking_at(Self, String) -> Bool
+pub fn Cursor::new(String, fname? : String) -> Self
+pub fn Cursor::peek(Self, n? : Int) -> Char?
+pub fn Cursor::pos(Self) -> @basic.Position
+pub fn Cursor::slice(Self, Int, Int) -> String
+pub fn Cursor::span(Self, @basic.Position) -> @basic.Location
+
+pub(all) enum LexError {
+  UnexpectedChar(String)
+  MalformedComment
+  MalformedString
+  MalformedUnicodeEscape
+  InvalidUnicodeChar
+} derive(Eq, @debug.Debug)
+pub fn LexError::hint(Self) -> String?
+pub fn LexError::message(Self) -> String
+pub fn LexError::to_report(Self, @basic.Location) -> @basic.Report
+
+pub struct LexResult {
+  tokens : Array[(@tokens.Token, @basic.Position, @basic.Position)]
+  errors : Array[@basic.Report]
+  trivia : @trivia.Context
+}
+
+// Type aliases
+
+// Traits
