@@ -112,10 +112,11 @@ fn fold_body(
     let b = match widest(at, body.length()) {
       Some(s) => s
       // No span covers this instruction: one wax node lowered to several
-      // without recording it, and the head is the last of them. Treating it
-      // as standing alone instead was measured and is worse -- the run really
-      // is one node, and the fusions are why.
-      None => (at, at, body.length())
+      // without recording it, and the head is the last of them. The run ends
+      // where the next RECORDED node begins -- taking it to the end of the
+      // body instead swallows every statement that follows into an operand
+      // chain, and taking it as a single instruction splits a fusion.
+      None => (at, at, next_start(spans, at, body.length()))
     }
     bounds.push(b)
     at = b.2
@@ -148,6 +149,18 @@ fn fold_body(
     }
   }
   out
+}
+
+///|
+/// Where the next recorded node begins after `at`.
+fn next_start(spans : Array[(Int, Int, Int)], at : Int, limit : Int) -> Int {
+  let mut best = limit
+  for s in spans {
+    if s.0 > at && s.0 < best {
+      best = s.0
+    }
+  }
+  best
 }
 
 ///|

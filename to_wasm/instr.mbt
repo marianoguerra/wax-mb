@@ -147,7 +147,12 @@ fn Lowering::hinted(
       match op {
         None => self.instr(out, value)
         Some(binop) => {
-          out.push(self.read(name, loc))
+          // `x op= e` spells out a tree the source did not write, so the
+          // lowering records it: the read and the operand are the operator's
+          // children, and the operator is a node of its own. Without that the
+          // read has no span and the printer folds it into whatever follows.
+          let at = out.length()
+          self.read_span(out, name, loc)
           self.instr(out, value)
           guard node_valtype(value) is Some(ty) else {
             raise Unresolved("compound operand type", loc)
@@ -155,7 +160,9 @@ fn Lowering::hinted(
           guard binop_instruction(binop.desc, ty) is Some(instruction) else {
             raise NotLowered("compound operator at this type", loc)
           }
+          let op_at = out.length()
           out.push(instruction)
+          self.spans.push((at, op_at, op_at + 1))
         }
       }
       out.push(self.write(name, loc))
