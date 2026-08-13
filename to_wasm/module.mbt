@@ -61,13 +61,7 @@ pub fn lower_module(
   // of a name a reference means depends on which branch the reference stands
   // in, and that is read off these.
   note_conditionals(m, source)
-  // The entries that hold a declaration's inline signature. They carry a name
-  // because the name section names them, and the text writes the signature
-  // where the declaration is -- so the printer must not also write them as
-  // fields of their own.
-  for at, _ in layout.slot_names {
-    m.text.signature_types[at] = true
-  }
+
   let low : Lowering = {
     ctx,
     store,
@@ -187,6 +181,13 @@ pub fn lower_module(
   }
   // The name section last: it is a view over every index space, so it wants
   // them all assigned.
+  // A materialised type is a FIELD only when something named it. An entry
+  // nothing reaches is spelled inline wherever it is used, and writing it
+  // again would say `(type $<func:g> (func))` beside the import that already
+  // spells that signature out.
+  for at, _ in layout.referenced {
+    m.text.named_types[at] = true
+  }
   low.type_names(m)
   low.module_name(m, source)
   low.target_features(m, source)

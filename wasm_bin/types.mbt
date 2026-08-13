@@ -1208,12 +1208,13 @@ pub(all) struct TextView {
   /// writes one name per item and one descriptor for all of them -- so there
   /// is nothing for a clause to hang off.
   standalone_exports : Map[Int, Bool]
-  /// The types that hold a DECLARATION's inline signature, by type index.
+  /// The types something referred to BY NAME, by type index.
   ///
-  /// They carry a name -- `<func:g>` -- because the name section names them,
-  /// but the text writes the signature where the declaration is rather than as
-  /// a field of its own, so they are not written twice.
-  signature_types : Map[Int, Bool]
+  /// A type the source did not declare is written as a field only when
+  /// something names it: `(ref $<func:f>)` in a global's type makes the entry
+  /// a field, and an entry nothing reaches is spelled inline wherever it is
+  /// used -- writing it too would say the same signature twice.
+  named_types : Map[Int, Bool]
   /// The conditional groups the source wrote.
   ///
   /// A conditional has no binary form -- that is the whole point of it, and
@@ -1242,7 +1243,7 @@ pub fn TextView::empty() -> TextView {
     decl_param_names: Map([]),
     decl_typeuse: Map([]),
     standalone_exports: Map([]),
-    signature_types: Map([]),
+    named_types: Map([]),
     conditionals: [],
   }
 }

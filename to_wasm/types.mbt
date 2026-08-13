@@ -69,6 +69,13 @@ pub fn emitted_named_index(name : String, store_index : Int) -> Int {
   guard current_layout.val is Some(layout) else {
     return emitted_type_index(store_index)
   }
+  let at = named_index(layout, name, store_index)
+  layout.referenced[at] = true
+  at
+}
+
+///|
+fn named_index(layout : TypeLayout, name : String, store_index : Int) -> Int {
   if layout.by_name.get(name) is Some(i) {
     return i
   }
@@ -183,6 +190,12 @@ pub struct TypeLayout {
   /// one of those is a different type that merely interned with it; sharing an
   /// entry nothing declared is just itself.
   declared_slots : Map[Int, Bool]
+  /// The entries something referred to BY NAME while lowering.
+  ///
+  /// A type materialised for a name is written as a field only when something
+  /// names it: `(ref $<func:f>)` in a global's type makes the entry a field,
+  /// and an entry nothing reaches is spelled inline wherever it is used.
+  referenced : Map[Int, Bool]
 }
 
 ///|
@@ -320,6 +333,7 @@ pub fn type_layout(
   let declared : Array[(@ast.SubType, Int)] = []
   let aliases : Map[String, Int] = Map([])
   let declared_slots : Map[Int, Bool] = Map([])
+  let referenced : Map[Int, Bool] = Map([])
   for _, i in by_name {
     declared_slots[i] = true
   }
@@ -342,6 +356,7 @@ pub fn type_layout(
     written,
     declared,
     declared_slots,
+    referenced,
     aliases,
     slot_names,
   }

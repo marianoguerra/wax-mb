@@ -45,7 +45,7 @@ pub fn print_module(
   }
   for k in 0..<m.types.length() {
     if !placed_types.contains(k) &&
-      !m.text.signature_types.contains(k) &&
+      m.text.named_types.contains(k) &&
       m.names.types.contains(k) {
       fields.push(subtype_field(m, k))
     }
