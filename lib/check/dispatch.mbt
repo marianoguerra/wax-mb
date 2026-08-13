@@ -1971,7 +1971,22 @@ pub fn Checker::statement(
 
     // --- An ordinary call through a function reference ---
     Call(callee, args) => {
-      let (callee_, args_, results) = self.call(loc, callee, args)
+      let (callee_, args_, results, not_a_function) = self.call(
+        loc, callee, args,
+      )
+      if not_a_function {
+        // `lookup_func_type` already said the named type is not a function, so
+        // there is no call here to build. Recovered with the shape a failed
+        // lookup yields everywhere else -- an `unreachable` typed `Error` --
+        // which is also what tells a wrapping `become` it has nothing to tail
+        // call rather than letting it form one over an `Error` result.
+        return {
+          desc: Unreachable,
+          info: annotate([@infer.Cell::make(@infer.InferredType::Error)], loc),
+          hints: i.hints,
+          expected: i.expected,
+        }
+      }
       {
         desc: Call(callee_, args_),
         info: annotate(results, loc),
@@ -1986,6 +2001,12 @@ pub fn Checker::statement(
       // callee's results must satisfy THIS function's, since its return is what
       // the caller will see.
       let typed = self.statement({ ..i, desc: Call(callee, args) })
+      if typed.desc is Unreachable {
+        // Typing the call already failed and said so; there is no tail call to
+        // form, so the failed result is passed straight through rather than
+        // re-reported as a stack-switching operation.
+        return typed
+      }
       guard typed.desc is Call(callee_, args_) else {
         // It type-checked but is not a call: a stack-switching operation, which
         // hands control away by its own means and cannot be tail-called.
@@ -3310,6 +3331,7 @@ fn Checker::call(
   @ast.Instr[@typing_env.InferredAnnotation],
   Array[@ast.Instr[@typing_env.InferredAnnotation]],
   Array[@infer.Cell[@infer.InferredType]],
+  Bool,
 ) {
   let ctx = self.ctx
   // The callee is typed FIRST, because its function type is what the arguments
@@ -3326,12 +3348,9 @@ fn Checker::call(
   let callee_type = expression_type(ctx, callee_.info)
   let functype = match callee_type.get() {
     Valtype({ typ: Ref({ typ: Type(n) | Exact(n), .. }), .. }) =>
-      lookup_func_type(
-        ctx.type_context,
-        ctx.diagnostics,
-        n,
-        location=Some(callee.info),
-      )
+      // Anchored at the TYPE NAME, not at the whole callee: what is wrong is
+      // the type, and the reader has to look at where it was named to see it.
+      lookup_func_type(ctx.type_context, ctx.diagnostics, n)
     _ => None
   }
   let params : Array[@infer.Cell[@infer.InferredType]] = []
@@ -3422,7 +3441,16 @@ fn Checker::call(
     }
   }
   ignore(location)
-  (callee_, args_, results)
+  // The last component says the callee named a type that is NOT a function --
+  // already reported, and there is no call to build.
+  (
+    callee_,
+    args_,
+    results,
+    callee_type.get()
+    is Valtype({ typ: Ref({ typ: Type(_) | Exact(_), .. }), .. }) &&
+    functype is None,
+  )
 }
 
 ///|

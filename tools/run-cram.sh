@@ -48,7 +48,6 @@ export WAX_WARN="correctness=hidden"
 # The lint and diagnostic entries are the cram-side view of the oracle 3
 # residual; closing that closes these.
 declare -A KNOWN_FAILING=(
-  [become-non-function.t]="missing check"
   [block-exit-mismatch.t]="diagnostic span differs"
   [duplicate-diagnostic-chains.t]="diagnostic chain differs"
   [error-format-short.t]="usage text for an unknown --error-format differs"
