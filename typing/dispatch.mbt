@@ -1920,7 +1920,25 @@ pub fn Checker::statement(
 
     // --- Suspending to a tag ---
     Suspend(tag, args) => {
-      let checked = args.map(a => self.expression(a))
+      // The TAG says what the operands are, so they are checked against it
+      // rather than inferred: a block written as one -- `suspend y('l: do {..})`
+      // -- has no result type of its own and takes the parameter's.
+      let want_params : Array[@infer.Cell[@infer.InferredType]] = []
+      if find(ctx.tags, ctx.diagnostics, tag) is Some(ft) {
+        for p in ft.params {
+          if internalize(ctx.type_context, ctx.diagnostics, p.desc.1) is Some(c) {
+            want_params.push(c)
+          }
+        }
+      }
+      let paired = want_params.length() == args.length()
+      let checked = args.mapi((k, a) => {
+        if paired {
+          self.check(want_params[k], a)
+        } else {
+          self.expression(a)
+        }
+      })
       let results = match find(ctx.tags, ctx.diagnostics, tag) {
         None => []
         Some(ft) => {

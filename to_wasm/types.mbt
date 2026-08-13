@@ -72,6 +72,9 @@ pub fn emitted_named_index(name : String, store_index : Int) -> Int {
   if layout.by_name.get(name) is Some(i) {
     return i
   }
+  if layout.aliases.get(name) is Some(i) {
+    return i
+  }
   if !is_synthetic(name) {
     return emitted_type_index(store_index)
   }
@@ -85,7 +88,11 @@ pub fn emitted_named_index(name : String, store_index : Int) -> Int {
   // is nothing for it to be confused with.
   if layout.by_store.get(store_index) is Some(existing) {
     if !layout.declared_slots.contains(existing) {
-      layout.by_name[name] = existing
+      // Recorded as an ALIAS, not as a name. The entry was already there --
+      // interned like an inline signature rather than written down -- and the
+      // reference leaves such an entry unnamed. Only a type materialised FOR a
+      // name carries it, because only then does the entry exist for it alone.
+      layout.aliases[name] = existing
       return existing
     }
   }
@@ -157,6 +164,10 @@ pub struct TypeLayout {
   written : Map[String, @ast.SubType]
   /// The declared subtypes, with the index each landed at, for the reuse test.
   declared : Array[(@ast.SubType, Int)]
+  /// Names that resolve to an entry they do not own: the entry was interned
+  /// for its own reasons and this name merely reaches it. Kept apart from
+  /// `by_name` because the name section emits the latter and not this.
+  aliases : Map[String, Int]
   /// Which emitted entries a DECLARATION put there. A synthesized type sharing
   /// one of those is a different type that merely interned with it; sharing an
   /// entry nothing declared is just itself.
@@ -296,6 +307,7 @@ pub fn type_layout(
   let pending : Array[@wasm_bin.SubType] = []
   let written : Map[String, @ast.SubType] = Map([])
   let declared : Array[(@ast.SubType, Int)] = []
+  let aliases : Map[String, Int] = Map([])
   let declared_slots : Map[Int, Bool] = Map([])
   for _, i in by_name {
     declared_slots[i] = true
@@ -319,6 +331,7 @@ pub fn type_layout(
     written,
     declared,
     declared_slots,
+    aliases,
   }
   current_layout.val = Some(layout)
   for si in 0..<store.last_index() {

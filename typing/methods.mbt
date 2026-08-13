@@ -617,6 +617,14 @@ fn Checker::cont_construct(
   args : Array[@ast.Instr[@basic.Location]],
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   let ctx = self.ctx
+  // `bind` is typed back to front: the SOURCE continuation is the last
+  // operand, and until it is known there is nothing to check the bound values
+  // against. A block written as a bound value -- `k::bind('l: do { .. }, c)`
+  // -- has no result type of its own and takes one from that check, so typing
+  // it first leaves it producing nothing.
+  if name.name == "bind" && args.length() >= 1 {
+    return self.cont_bind_call(i, ns, name, args)
+  }
   let checked = args.map(a => self.expression(a))
   match name.name {
     "new" =>
@@ -682,6 +690,91 @@ fn Checker::cont_construct(
       self.cont_construct_recovery(i, ns, name, checked)
     }
   }
+}
+
+///|
+/// `k::bind(v.., c)`: the bound values, then the continuation they are bound
+/// into.
+///
+/// The continuation comes LAST, as it does on the stack, and it is what says
+/// how many values are being bound and what their types are -- so it is typed
+/// first and the values are then CHECKED rather than merely inferred.
+fn Checker::cont_bind_call(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+  ns : @ast.Ident,
+  name : @ast.Ident,
+  args : Array[@ast.Instr[@basic.Location]],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let ctx = self.ctx
+  let last = args.length() - 1
+  let src_ = self.expression(args[last])
+  guard cont_receiver_type(ctx, src_) is Some(src) else {
+    let checked = args[:last].to_owned().map(a => self.expression(a))
+    checked.push(src_)
+    return self.cont_construct_recovery(i, ns, name, checked)
+  }
+  let want = self.cont_bind_params(src, ns)
+  let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
+  for k in 0..<last {
+    checked.push(
+      if k < want.length() {
+        self.check(want[k], args[k])
+      } else {
+        self.expression(args[k])
+      },
+    )
+  }
+  checked.push(src_)
+  self.check_cont_bind(i.info, src, ns, args, checked)
+  {
+    desc: ContBind(src, ns, checked),
+    info: annotate([self.fresh_continuation(ns)], i.info),
+    hints: i.hints,
+    expected: i.expected,
+  }
+}
+
+///|
+/// The types `k::bind` binds: the leading parameters the source continuation
+/// has and the destination does not.
+fn Checker::cont_bind_params(
+  self : Checker,
+  src : @ast.Ident,
+  dst : @ast.Ident,
+) -> Array[@infer.Cell[@infer.InferredType]] {
+  let ctx = self.ctx
+  let out : Array[@infer.Cell[@infer.InferredType]] = []
+  guard lookup_cont_inner(ctx.type_context, ctx.diagnostics, src)
+    is Some(src_inner) else {
+    return out
+  }
+  guard lookup_func_type(ctx.type_context, ctx.diagnostics, src_inner)
+    is Some(src_sig) else {
+    return out
+  }
+  guard lookup_cont_inner(ctx.type_context, ctx.diagnostics, dst)
+    is Some(dst_inner) else {
+    return out
+  }
+  guard lookup_func_type(ctx.type_context, ctx.diagnostics, dst_inner)
+    is Some(dst_sig) else {
+    return out
+  }
+  let np = src_sig.params.length() - dst_sig.params.length()
+  for k in 0..<np {
+    if k < src_sig.params.length() {
+      if internalize(
+          ctx.type_context,
+          ctx.diagnostics,
+          src_sig.params[k].desc.1,
+        )
+        is Some(c) {
+        out.push(c)
+      }
+    }
+  }
+  out
 }
 
 ///|
