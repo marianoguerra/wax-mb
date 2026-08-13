@@ -13,7 +13,12 @@
 //
 // These were found by comparing the mnemonics the reference PRINTS over the
 // whole corpus against the ones this prints -- a check that needs no reading
-// of the spec, and one worth repeating after any addition here.
+// of the spec, and one worth repeating after any addition here:
+//
+//   find test/corpus -name '*.wax' | xargs -P8 -I{} sh -c \
+//     'tools/wax-ref "{}" -f wat 2>/dev/null' \
+//     | grep -oE '\([a-z][a-z0-9_]*\.[a-z0-9_.]+ ' | sort -u > ref.txt
+//   ... the same with tools/wax-mb ... > ours.txt; diff ref.txt ours.txt
 
 ///|
 /// The text name of an instruction with no immediate, or `None` when it takes

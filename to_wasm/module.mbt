@@ -1385,11 +1385,14 @@ fn Lowering::declare_func_refs(
     }
   }
   // LAST reference first, which matches the reference on more modules than
-  // first-seen does (83 failures against 86) but not on all of them: its own
-  // order is a hash table's iteration order, which is neither. Reproducing
-  // that exactly would mean reimplementing OCaml's string hashing and bucket
-  // layout, and the segment's order is observable, so a handful of modules
-  // stay different for that reason alone.
+  // first-seen does but not on all of them: its own order is a hash table's
+  // iteration order, which is neither. Reproducing that exactly would mean
+  // reimplementing OCaml's string hashing and bucket layout, and the segment's
+  // order is observable, so a handful of modules stay different for this
+  // reason alone.
+  //
+  // Re-measured after the text printer landed, since it reads this order too:
+  // first-seen costs 3 files their bytes and 3 more their text.
   let init : Array[Array[@wasm_bin.Instruction]] = []
   for k = self.func_refs_in_body.length() - 1; k >= 0; k = k - 1 {
     let name = self.func_refs_in_body[k]
