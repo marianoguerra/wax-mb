@@ -752,7 +752,14 @@ fn const_expr(
   body : Array[@wasm_bin.Instruction],
   spans? : Array[@wasm_bin.Span] = [],
 ) -> Array[Sexp] raise WatError {
-  let ctx = { m, locals: Map([]), labels: Map([]), opened: 0, scope: [] }
+  let ctx = {
+    m,
+    locals: Map([]),
+    labels: Map([]),
+    opened: 0,
+    scope: [],
+    conditionals: [],
+  }
   let out : Array[Sexp] = []
   for node in fold(body, spans) {
     out.push(folded(node, ctx))

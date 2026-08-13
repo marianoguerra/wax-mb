@@ -991,6 +991,9 @@ pub(all) struct FunctionCode {
   /// array with its own indices, so its spans cannot live in the list above;
   /// that order is what pairs them up again.
   nested_spans : Array[Array[Span]]
+  /// The `#[if(..)]` groups written INSIDE this body, matched to the statements
+  /// they hold by where each was written -- the same way the module's are.
+  conditionals : Array[CondGroup]
   /// `#[priority]` on the function, if any.
   priority : Priority?
 } derive(Eq, Debug)
@@ -1211,7 +1214,7 @@ pub(all) struct CondGroup {
   loc : @basic.Location
   then_ : @basic.Location
   else_ : @basic.Location?
-} derive(Debug)
+} derive(Eq, Debug)
 
 ///|
 /// An empty view, for a module nothing recorded one for.

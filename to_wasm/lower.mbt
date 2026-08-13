@@ -83,6 +83,15 @@ pub struct Lowering {
   /// Where a field-order entry stands, when that is not where its field does.
   /// A guarded export stands at its attribute; everything else at its field.
   entry_locs : Map[Int, @basic.Location]
+  /// Whether an unresolved `#[if(..)]` may be lowered at all.
+  ///
+  /// The binary format has nowhere to put one, so `-f wasm` refuses a module
+  /// that still has one. The TEXT format writes it, and then both branches are
+  /// lowered side by side and told apart afterwards by where they were
+  /// written -- which is not a module anyone could run, and is never encoded.
+  keep_conditionals : Bool
+  /// The `#[if(..)]` groups written inside the body being lowered.
+  mut body_conditionals : Array[@wasm_bin.CondGroup]
   mut spans : Array[@wasm_bin.Span]
   /// The spans of every NESTED body -- a block's, a loop's, each arm of an
   /// `if` -- in the order those bodies COMPLETE, which is deepest-first and

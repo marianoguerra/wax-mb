@@ -40,6 +40,7 @@ fn one_func(instrs : Array[@wasm_bin.Instruction]) -> @wasm_bin.Module {
     body: instrs,
     spans: [],
     nested_spans: [],
+    conditionals: [],
     priority: None,
   })
   m
@@ -67,6 +68,7 @@ test "one exported function" {
     body: [LocalGet(0), LocalGet(1), I32Add],
     spans: [],
     nested_spans: [],
+    conditionals: [],
     priority: None,
   })
   inspect(
@@ -384,6 +386,7 @@ test "the name section carries every name space, in ascending id order" {
     body: [],
     spans: [],
     nested_spans: [],
+    conditionals: [],
     priority: None,
   })
   m.names.module_ = Some(b"m")
@@ -481,6 +484,7 @@ test "name entries are sorted by index, however they were inserted" {
       body: [],
       spans: [],
       nested_spans: [],
+      conditionals: [],
       priority: None,
     })
     m.names.functions[i] = [b"a", b"b", b"c"][i]

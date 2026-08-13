@@ -184,14 +184,6 @@ fn compile(
   if render_diagnostics(src, opts, diagnostics.collected()) {
     return Err("\{path}: rejected")
   }
-  // A module with an unresolved conditional has no single binary form -- which
-  // is what a conditional is for. The TEXT form keeps it, so the refusal is
-  // here rather than in the lowering the two share.
-  if @to_wasm.has_conditional(m) {
-    return Err(
-      "\{path}: conditional annotations cannot be emitted to the WebAssembly binary format",
-    )
-  }
   let module_ = @to_wasm.lower_module(ctx, store, m, typed) catch {
     e => return Err("\{path}: \{e}")
   }
@@ -223,7 +215,16 @@ fn compile_text(
   if render_diagnostics(src, opts, diagnostics.collected()) {
     return Err("\{path}: rejected")
   }
-  let module_ = @to_wasm.lower_module(ctx, store, m, typed) catch {
+  // A module with an unresolved conditional has no single binary form -- which
+  // is what a conditional is for -- so only the TEXT form asks for one to be
+  // kept.
+  let module_ = @to_wasm.lower_module(
+    ctx,
+    store,
+    m,
+    typed,
+    keep_conditionals=true,
+  ) catch {
     e => return Err("\{path}: \{e}")
   }
   // The comments were written against WAX source and are being written into a

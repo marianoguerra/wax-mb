@@ -22,7 +22,7 @@ pub fn print_module(
     }
     written.push((if loc.is_dummy() { one } else { At(loc, one) }, loc))
   }
-  let fields = regroup(m, written)
+  let fields = regroup(m.text.conditionals, written)
   // A type nothing declared is NOT written. The section holds every signature
   // the lowering interned -- a block's, an import's, a `call_indirect`'s --
   // and the text format spells all of those inline where they are used. Only a
@@ -66,7 +66,7 @@ pub fn print_module(
 /// branch it came from. Grouping by containment is what puts them back, and it
 /// nests without any extra bookkeeping.
 fn regroup(
-  m : @wasm_bin.Module,
+  conds : Array[@wasm_bin.CondGroup],
   items : Array[(Sexp, @basic.Location)],
 ) -> Array[Sexp] {
   let at = @ref.new(0)
@@ -86,7 +86,7 @@ fn regroup(
     skip : Int,
   ) -> Int? {
     let mut best : Int? = None
-    for k, c in m.text.conditionals {
+    for k, c in conds {
       guard k != skip else { continue }
       guard covers(lo, c.loc) && c.loc.start.cnum > lo.start.cnum - 1 else {
         continue
@@ -96,7 +96,7 @@ fn regroup(
       guard inside else { continue }
       best = match best {
         Some(b) =>
-          if c.loc.start.cnum < m.text.conditionals[b].loc.start.cnum {
+          if c.loc.start.cnum < conds[b].loc.start.cnum {
             Some(k)
           } else {
             Some(b)
@@ -117,7 +117,7 @@ fn regroup(
           at.val = at.val + 1
         }
         Some(k) => {
-          let c = m.text.conditionals[k]
+          let c = conds[k]
           let before = at.val
           let then_ = walk(c.then_, k)
           let else_ = match c.else_ {
@@ -138,7 +138,7 @@ fn regroup(
     out
   }
 
-  if m.text.conditionals.is_empty() {
+  if conds.is_empty() {
     return items.map(i => i.0)
   }
   walk(
@@ -293,9 +293,15 @@ fn function_field(
     labels: m.names.labels.get(index).unwrap_or(Map([])),
     opened: 0,
     scope: [],
+    conditionals: code.conditionals,
   }
-  for node in fold(code.body, code.spans, nested=code.nested_spans) {
-    out.push(folded(node, ctx))
+  for
+    st in statements(
+      fold(code.body, code.spans, nested=code.nested_spans),
+      ctx,
+      code.conditionals,
+    ) {
+    out.push(st)
   }
   List(out)
 }
@@ -333,6 +339,25 @@ priv struct Ctx {
   labels : Map[Int, Bytes]
   mut opened : Int
   scope : Array[String?]
+  /// The `#[if(..)]` groups written in this body, for the statements at every
+  /// level of it -- a conditional can hold a block whose body holds another.
+  conditionals : Array[@wasm_bin.CondGroup]
+}
+
+///|
+/// A run of statements, with the ones written inside a `#[if(..)]` put back
+/// under it. Every level of a body goes through here: a conditional can sit
+/// inside a block whose body has its own.
+fn statements(
+  nodes : Array[Node],
+  ctx : Ctx,
+  conds : Array[@wasm_bin.CondGroup],
+) -> Array[Sexp] raise WatError {
+  let items : Array[(Sexp, @basic.Location)] = []
+  for n in nodes {
+    items.push((folded(n, ctx), n.loc))
+  }
+  regroup(conds, items)
 }
 
 ///|
@@ -454,10 +479,7 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
     _ => []
   }
   for j, body in node.bodies {
-    let inner : Array[Sexp] = []
-    for child in body {
-      inner.push(folded(child, ctx))
-    }
+    let inner = statements(body, ctx, ctx.conditionals)
     if j < clauses.length() {
       // An `else` with nothing in it is not written. `then` always is, even
       // empty, because it is what the condition guards.

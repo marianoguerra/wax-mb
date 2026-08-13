@@ -19,6 +19,9 @@ pub fn lower_module(
       @basic.Location,
     ],
   ],
+  /// Whether an unresolved `#[if(..)]` may be lowered rather than refused.
+  /// Only the TEXT form may: the binary has nowhere to put one.
+  keep_conditionals? : Bool = false,
 ) -> @wasm_bin.Module raise LowerError {
   // A module with an UNRESOLVED conditional cannot be emitted at all, and the
   // check belongs here rather than at the first one reached: the reference
@@ -26,6 +29,25 @@ pub fn lower_module(
   // downstream complaint about whatever the conditional left inconsistent.
   for field in source {
     ignore(field)
+  }
+  // A module with an unresolved conditional cannot be EMITTED at all, and the
+  // check belongs here rather than at the first one reached: the reference
+  // rejects the module, not the field, and stumbling further in produces a
+  // downstream complaint about whatever the conditional left inconsistent.
+  if !keep_conditionals {
+    for field in source {
+      if field.desc is Conditional(..) {
+        raise Unemittable("conditional annotations", field.info)
+      }
+      // A GUARDED attribute is a conditional too, and the reference refuses a
+      // module for one just the same: `#[start, if(debug)]` says the start is
+      // conditional, and a binary has one start or none.
+      for a in field_attributes(field.desc) {
+        if a.attr_guard is Some(_) {
+          raise Unemittable("conditional annotations", field.info)
+        }
+      }
+    }
   }
   let indices = assign_indices(ctx, source)
   // The layout FIRST: it installs the store-to-emitted translation that every
@@ -41,6 +63,8 @@ pub fn lower_module(
     locals: Map([]),
     local_types: [],
     entry_locs: Map([]),
+    keep_conditionals,
+    body_conditionals: [],
     spans: [],
     nested_spans: [],
     binding_slots: Map([]),
@@ -147,18 +171,30 @@ pub fn lower_module(
 }
 
 ///|
-/// Whether a module still holds an unresolved conditional.
-///
-/// One has no binary form -- that is what it is for -- so `-f wasm` refuses
-/// such a module. The TEXT form keeps it, which is why the lowering no longer
-/// refuses on its own account.
-pub fn has_conditional(source : @ast.Module[@basic.Location]) -> Bool {
-  for field in source {
-    if field.desc is Conditional(..) {
-      return true
+/// The attributes a field carries, wherever it carries them.
+fn field_attributes(
+  f : @ast.ModuleField[@basic.Location],
+) -> Array[@ast.Attribute] {
+  match f {
+    Func(attributes~, ..)
+    | Global(attributes~, ..)
+    | Memory(attributes~, ..)
+    | Table(attributes~, ..)
+    | Tag(attributes~, ..)
+    | Elem(attributes~, ..)
+    | Data(attributes~, ..) => attributes
+    Import(decl~, ..) => decl.desc.attributes
+    ImportGroup(decls~, ..) => {
+      let out : Array[@ast.Attribute] = []
+      for d in decls {
+        for a in d.desc.attributes {
+          out.push(a)
+        }
+      }
+      out
     }
+    _ => []
   }
-  false
 }
 
 ///|
@@ -331,6 +367,18 @@ fn Lowering::field(
       for a in attributes {
         if a.attr_name == "start" {
           m.start = Some(fi)
+          // A GUARDED start stands where its attribute does, under its
+          // condition -- the same shape a guarded export takes, and for the
+          // same reason: the condition is on the start, not on the function.
+          if a.attr_guard is Some(g) {
+            self.entry_locs[m.text.field_order.length()] = a.attr_span
+            m.text.conditionals.push({
+              cond: wat_cond(g.desc),
+              loc: a.attr_span,
+              then_: a.attr_span,
+              else_: None,
+            })
+          }
           m.text.field_order.push(FStart(fi))
         }
       }
@@ -537,6 +585,7 @@ fn Lowering::function_body(
   self.label_names = Map([])
   self.label_counter = 0
   self.labels = []
+  self.body_conditionals = []
   self.in_body = true
   // A function that WROTE its parameters has them right there, and that is the
   // only answer that is certainly this function's. The checker's table is
@@ -557,6 +606,7 @@ fn Lowering::function_body(
       body: self.lower_body(label, instrs),
       spans: self.spans,
       nested_spans: self.nested_spans,
+      conditionals: self.body_conditionals,
       priority: None,
     }
   }
@@ -577,6 +627,7 @@ fn Lowering::function_body(
     body,
     spans: self.spans,
     nested_spans: self.nested_spans,
+    conditionals: self.body_conditionals,
     priority: None,
   }
 }

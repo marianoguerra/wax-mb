@@ -1253,10 +1253,30 @@ fn Lowering::hinted(
       let (t, _) = self.array_element_of(recv, loc)
       out.push(ArraySet(t))
     }
-    // An unresolved `#[if(..)]` is not a gap in this port: the binary format
-    // has nowhere to put a conditional, and the reference refuses it too. The
-    // fix is `-D`, or a text output format that can carry it.
-    IfAnnotation(..) => raise Unemittable("conditional annotations", loc)
+    // An unresolved `#[if(..)]` has nowhere to go in the binary format, and
+    // the reference refuses it there too -- the fix is `-D`. The TEXT format
+    // writes it, and then BOTH branches are lowered side by side and told
+    // apart afterwards by where each was written. That is not a body anyone
+    // could run, which is why it is only ever built for the text form.
+    IfAnnotation(cond~, then_body~, else_body~) => {
+      guard self.keep_conditionals else {
+        raise Unemittable("conditional annotations", loc)
+      }
+      self.body_conditionals.push({
+        cond: wat_cond(cond),
+        loc,
+        then_: then_body.info,
+        else_: else_body.map(b => b.info),
+      })
+      for st in then_body.desc {
+        self.instr(out, st)
+      }
+      if else_body is Some(b) {
+        for st in b.desc {
+          self.instr(out, st)
+        }
+      }
+    }
     _ => raise NotLowered(construct_name(i.desc), loc)
   }
 }
