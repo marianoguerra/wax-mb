@@ -118,18 +118,23 @@ fn Lowering::hinted(
     Hole => ()
     Nop => out.push(Nop)
     Unreachable => out.push(Unreachable)
+    // The literal's TEXT rides along with its value. `0x4` and `4` denote the
+    // same i32 and are two different programs to read, and no reading of a
+    // float's bits gives back `0x1.4p+3`.
     Int(s) =>
       match node_valtype(i) {
-        Some(I32) => out.push(I32Const(parse_i32(s, loc)))
-        Some(I64) => out.push(I64Const(parse_i64(s, loc)))
-        Some(F32) => out.push(F32Const(parse_f32(s, loc)))
-        Some(F64) => out.push(F64Const(parse_float_bits(s, true, loc)))
+        Some(I32) => out.push(Spelled(s, I32Const(parse_i32(s, loc))))
+        Some(I64) => out.push(Spelled(s, I64Const(parse_i64(s, loc))))
+        Some(F32) => out.push(Spelled(s, F32Const(parse_f32(s, loc))))
+        Some(F64) =>
+          out.push(Spelled(s, F64Const(parse_float_bits(s, true, loc))))
         _ => raise Unresolved("integer literal type", loc)
       }
     Float(s) =>
       match node_valtype(i) {
-        Some(F32) => out.push(F32Const(parse_f32(s, loc)))
-        Some(F64) => out.push(F64Const(parse_float_bits(s, true, loc)))
+        Some(F32) => out.push(Spelled(s, F32Const(parse_f32(s, loc))))
+        Some(F64) =>
+          out.push(Spelled(s, F64Const(parse_float_bits(s, true, loc))))
         _ => raise Unresolved("float literal type", loc)
       }
     // A character literal is an i32 code point.
@@ -225,16 +230,16 @@ fn Lowering::hinted(
             // fits, so unlike the integers there is nothing to check.
             Some(F32) =>
               if a.desc is (Int(_) | Float(_)) {
-                out.push(F32Const(parse_f32(literal_text(i, loc), loc)))
+                let t = literal_text(i, loc)
+                out.push(Spelled(t, F32Const(parse_f32(t, loc))))
               } else {
                 self.instr(out, a)
                 out.push(F32Neg)
               }
             Some(F64) =>
               if a.desc is (Int(_) | Float(_)) {
-                out.push(
-                  F64Const(parse_float_bits(literal_text(i, loc), true, loc)),
-                )
+                let t = literal_text(i, loc)
+                out.push(Spelled(t, F64Const(parse_float_bits(t, true, loc))))
               } else {
                 self.instr(out, a)
                 out.push(F64Neg)

@@ -70,6 +70,19 @@ fn on_clauses(
 }
 
 ///|
+/// The keyword a spelled constant belongs to.
+fn const_keyword(i : @wasm_bin.Instruction) -> String raise WatError {
+  match i {
+    I32Const(_) => "i32.const"
+    I64Const(_) => "i64.const"
+    F32Const(_) => "f32.const"
+    F64Const(_) => "f64.const"
+    V128Const(_) => "v128.const"
+    _ => raise NotPrinted("a spelled " + constructor_of(i))
+  }
+}
+
+///|
 /// A struct field's name, under the type that declared it.
 fn field_name(names : @wasm_bin.Names, t : Int, f : Int) -> String {
   match names.fields.get(t) {
@@ -124,6 +137,11 @@ fn mnemonic_text(
 ) -> String raise WatError {
   // Everything with no immediate follows one rule and lives in its own table;
   // what is left here is the instructions whose immediates have to be written.
+  // The spelling the source used stands in for the value's own rendering: the
+  // literal is what was written, not a reading of what it denotes.
+  if i is Spelled(text, inner) {
+    return const_keyword(inner) + " " + text
+  }
   if nullary(i) is Some(name) {
     return name
   }

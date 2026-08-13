@@ -744,6 +744,8 @@ fn encode_instruction(
       w.record_hint(hints)
       encode_instruction(w, inner)
     }
+    // A spelling is not part of the encoding: the bytes are the value.
+    Spelled(_, inner) => encode_instruction(w, inner)
     // Stack switching. `wasm_core` had none of these; the encodings are
     // wasm_output.ml's, which is what they are measured against.
     ContNew(idx) => {

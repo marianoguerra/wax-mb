@@ -256,6 +256,16 @@ pub(all) enum Instruction {
   /// enum is 500 constructors wide, and the encoder needs exactly one place to
   /// notice them. It emits no opcode of its own.
   Hinted(InstrHints, Instruction)
+  /// A constant, with the text the source wrote it as.
+  ///
+  /// A literal is not its value: `0x4` and `4` are the same i32 and two
+  /// different programs to read, and `0x1.4p+3` does not come back from the
+  /// bits of the float it denotes. The binary encodes the value and forgets
+  /// the spelling; the text format writes what was written, so the spelling
+  /// rides along on the instruction the way a branch hint does.
+  ///
+  /// Carries no opcode of its own -- the encoder unwraps it.
+  Spelled(String, Instruction)
 
   // Reference type instructions
   RefNull(HeapType) // ref.null: push a null reference to this heap type
