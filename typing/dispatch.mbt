@@ -1641,6 +1641,21 @@ pub fn Checker::statement(
       self.wide_arith_call(i, callee, ns, name, args)
     }
 
+    // --- `atomic::fence()`: the one atomic with no memory and no operands ---
+    Call(callee, args) if is_atomic_fence(callee) => {
+      // Any arguments are still typed, so a mistake inside one is reported
+      // where it is rather than swallowed by the arity complaint.
+      for a in args {
+        let _ = self.expression(a)
+      }
+      {
+        desc: Call(callee.map_info(_ => annotate([], callee.info)), []),
+        info: annotate([], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
+
     // --- A SIMD operation written on a value: `x.add_i32x4(y)` ---
     // --- A free intrinsic: `v128::i8x16(..)`, `v128::bitselect(..)` ---
     Call(callee, args) if callee.desc is Path(_, _) => {
@@ -3336,6 +3351,13 @@ fn Checker::is_mem_access(
 ///
 /// The same five method names serve both, so only the RECEIVER tells them
 /// apart -- `size` on a memory counts pages, `size` on a table counts elements.
+fn is_atomic_fence(callee : @ast.Instr[@basic.Location]) -> Bool {
+  guard callee.desc is Path(ns, name) else { return false }
+  ns.name == "atomic" && name.name == "fence"
+}
+
+///|
+/// `seg.drop()` names a segment, which is not a value.
 fn Checker::segment_drop(
   self : Checker,
   callee : @ast.Instr[@basic.Location],
