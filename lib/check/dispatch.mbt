@@ -2857,6 +2857,15 @@ fn Checker::struct_fields(
       provided=fields.length(),
     )
   }
+  // Paired with the declared fields first, in DECLARED order: that is the
+  // order the values are emitted in, whatever order they were written.
+  let slots : Array[
+    (
+      @ast.Ident,
+      @ast.Instr[@basic.Location]?,
+      @infer.Cell[@infer.InferredType]?,
+    ),
+  ] = []
   for d in declared {
     let want = d.desc.0
     let mut found : (@ast.Ident, @ast.Instr[@basic.Location]?)? = None
@@ -2867,20 +2876,45 @@ fn Checker::struct_fields(
     }
     match found {
       None => missing_field(ctx.diagnostics, location, want.name)
-      Some((fname, written)) => {
+      Some((fname, written)) =>
         // The field's declared type, at the width a WRITE takes, is resolved
         // BEFORE the value is typed -- that is what lets a nested literal there
         // take it as its own type rather than having to name one.
-        let cell = internalize(
-          ctx.type_context,
-          ctx.diagnostics,
-          unpack_type(d.desc.1),
+        slots.push(
+          (
+            fname,
+            written,
+            internalize(
+              ctx.type_context,
+              ctx.diagnostics,
+              unpack_type(d.desc.1),
+            ),
+          ),
         )
-        let checked = self.field_value(fname, written, expect=cell)
-        // Punning preserved: a field with no written value stays without one.
-        out.push((fname, if written is Some(_) { checked } else { None }))
-      }
     }
+  }
+  // A field value that reads the incoming stack -- a hole, or anything built
+  // over one -- has to be reached before the fields emitted BEFORE it, or they
+  // take the values meant for it. The same backwards pass a sequence and a
+  // call's arguments need, and for the same reason; here it is DECLARED order
+  // that is walked backwards, since that is the order the fields are emitted
+  // in. A struct written `{S| y: _, x: _}` over a stack of `1; 2.0` therefore
+  // pairs `x` with the `1` and `y` with the `2.0`, not the other way round.
+  let taken : Map[Int, @ast.Instr[@typing_env.InferredAnnotation]?] = Map([])
+  for k = slots.length() - 1; k >= 0; k = k - 1 {
+    let (fname, written, cell) = slots[k]
+    if written is Some(w) && contains_hole(w) {
+      taken[k] = self.field_value(fname, written, expect=cell)
+    }
+  }
+  for k, s in slots {
+    let (fname, written, cell) = s
+    let checked = match taken.get(k) {
+      Some(c) => c
+      None => self.field_value(fname, written, expect=cell)
+    }
+    // Punning preserved: a field with no written value stays without one.
+    out.push((fname, if written is Some(_) { checked } else { None }))
   }
   out
 }
