@@ -1,0 +1,21 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "waxmb/wax/to_wat"
+
+import {
+  "waxmb/wax/wasm_bin",
+}
+
+// Values
+pub fn fold(Array[@wasm_bin.Instruction], Array[(Int, Int)]) -> Array[Node]
+
+// Errors
+
+// Types and methods
+pub(all) struct Node {
+  head : @wasm_bin.Instruction
+  operands : Array[Node]
+}
+
+// Type aliases
+
+// Traits

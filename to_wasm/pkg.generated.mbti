@@ -127,6 +127,7 @@ pub struct Lowering {
   layout : TypeLayout
   mut locals : Map[String, Int]
   mut local_types : Array[@wasm_types.ValType[Int]]
+  mut spans : Array[(Int, Int)]
   mut binding_slots : Map[Int, Int]
   mut claimed : Map[String, Int]
   mut local_names : Map[Int, Bytes]

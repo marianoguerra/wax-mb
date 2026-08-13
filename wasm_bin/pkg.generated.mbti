@@ -85,6 +85,7 @@ pub(all) struct FuncType {
 pub(all) struct FunctionCode {
   locals : Array[@wasm_types.ValType[Int]]
   body : Array[Instruction]
+  spans : Array[(Int, Int)]
   priority : Priority?
 } derive(Eq, @debug.Debug)
 

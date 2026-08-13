@@ -42,6 +42,7 @@ pub fn lower_module(
     layout,
     locals: Map([]),
     local_types: [],
+    spans: [],
     binding_slots: Map([]),
     claimed: Map([]),
     local_names: Map([]),
@@ -317,6 +318,7 @@ fn Lowering::function_body(
 ) -> @wasm_bin.FunctionCode raise LowerError {
   self.locals = Map([])
   self.local_types = []
+  self.spans = []
   self.binding_slots = Map([])
   self.claimed = Map([])
   self.local_names = Map([])
@@ -334,7 +336,12 @@ fn Lowering::function_body(
     if ft.params.length() > 0 {
       raise Unresolved("parameter names", loc)
     } else {
-      { locals: [], body: self.lower_body(label, instrs), priority: None }
+      {
+        locals: [],
+        body: self.lower_body(label, instrs),
+        spans: self.spans,
+        priority: None,
+      }
     }
   }
   guard sign.params.length() == ft.params.length() else {
@@ -352,7 +359,7 @@ fn Lowering::function_body(
   self.collect_locals(instrs, ft.params.length())
   let body = self.lower_body(label, instrs)
   self.in_body = false
-  { locals: self.local_types, body, priority: None }
+  { locals: self.local_types, body, spans: self.spans, priority: None }
 }
 
 ///|

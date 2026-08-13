@@ -14,6 +14,20 @@ pub fn Lowering::instr(
   out : Array[@wasm_bin.Instruction],
   i : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> Unit raise LowerError {
+  let span_start = out.length()
+  self.instr_span(out, i)
+  if out.length() > span_start {
+    self.spans.push((span_start, out.length()))
+  }
+}
+
+///|
+/// Lower one instruction, without recording where it landed.
+fn Lowering::instr_span(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  i : @ast.Instr[@typing_env.InferredAnnotation],
+) -> Unit raise LowerError {
   // A branch hint attaches to the instruction it annotates, and the format
   // records it by BYTE OFFSET in a custom section -- so it has to be carried
   // on the instruction until the encoder knows where that instruction landed.

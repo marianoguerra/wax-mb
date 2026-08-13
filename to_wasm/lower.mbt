@@ -71,6 +71,16 @@ pub struct Lowering {
   /// Slots are assigned in one pass up front, but a name comes into scope only
   /// after its own initializer -- `let x = x + 1` reads the OUTER `x` -- so the
   /// two cannot both be carried by the name-to-slot map.
+  /// Where each lowered node's instructions START and END in the body being
+  /// built, recorded as the node COMPLETES -- so a node's span always follows
+  /// its children's.
+  ///
+  /// A wax instruction lowers to its operands and then itself, which is the
+  /// post-order flattening of a folded tree. The spans are what let that tree
+  /// be read back: the text format writes it folded, and re-deriving the
+  /// nesting from an arity table would be a second answer to a question the
+  /// lowering has already answered.
+  mut spans : Array[(Int, Int)]
   mut binding_slots : Map[Int, Int]
   /// The wasm-level names already claimed in this function, each with the
   /// number its next duplicate takes. Wasm has one flat namespace per

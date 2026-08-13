@@ -945,6 +945,15 @@ pub(all) struct Export {
 pub(all) struct FunctionCode {
   locals : Array[ValType]
   body : Array[Instruction]
+  /// Where each source instruction's run starts and ends in `body`, in the
+  /// order the runs COMPLETE.
+  ///
+  /// Not part of the format and not encoded: the binary writes the body flat
+  /// and the text writes it FOLDED, and this is the nesting the text needs.
+  /// It is recorded where the body was built rather than re-derived from an
+  /// arity table, because a second derivation could disagree with the first
+  /// and nothing would say which output was wrong.
+  spans : Array[(Int, Int)]
   /// `#[priority]` on the function, if any.
   priority : Priority?
 } derive(Eq, Debug)
