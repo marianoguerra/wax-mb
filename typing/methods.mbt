@@ -371,7 +371,36 @@ fn Checker::array_bulk_call(
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   let ctx = self.ctx
   let recv_ = self.expression(recv)
-  let args_ = args.map(a => self.expression(a))
+  // `a.init(seg, ..)` names a SEGMENT first, and a segment is not a value:
+  // typing it as an expression looks for a variable of that name and reports
+  // it unbound. It is kept on the node with an empty annotation, exactly as a
+  // memory's `init` keeps its segment, because the code generator reads the
+  // name from there.
+  let segment = if meth.name == "init" &&
+    args.length() >= 1 &&
+    args[0].desc is Get(n) {
+    Some(n)
+  } else {
+    None
+  }
+  let args_ = args.mapi((k, a) => {
+    if k == 0 && segment is Some(_) {
+      a.map_info(_ => annotate([], a.info))
+    } else {
+      self.expression(a)
+    }
+  })
+  if segment is Some(n) {
+    // Either space may hold it: `array.init_data` and `array.init_elem` are
+    // told apart by which one does.
+    if ctx.datas.visible(n.name).is_empty() &&
+      ctx.elems.visible(n.name).is_empty() {
+      let _ = find(ctx.datas, ctx.diagnostics, n)
+    } else {
+      note_use(ctx, ctx.datas, n)
+      note_use(ctx, ctx.elems, n)
+    }
+  }
   let i32c = @infer.valtype_cell(@infer.i32_valtype)
   fn want_i32(k : Int) -> Unit {
     if k < args_.length() {
