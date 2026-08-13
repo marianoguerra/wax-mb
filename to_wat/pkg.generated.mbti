@@ -13,6 +13,8 @@ pub fn heaptype(@wasm_types.HeapType[Int], Map[Int, Bytes]) -> String
 
 pub fn mnemonic(@wasm_bin.Instruction, @wasm_bin.Names, Map[Int, Bytes]) -> String raise WatError
 
+pub fn nullary(@wasm_bin.Instruction) -> String?
+
 pub fn print_module(@wasm_bin.Module) -> String raise WatError
 
 pub fn reftype(@wasm_types.RefType[Int], Map[Int, Bytes]) -> String

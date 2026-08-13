@@ -23,12 +23,12 @@ pub fn mnemonic(
   names : @wasm_bin.Names,
   locals : Map[Int, Bytes],
 ) -> String raise WatError {
+  // Everything with no immediate follows one rule and lives in its own table;
+  // what is left here is the instructions whose immediates have to be written.
+  if nullary(i) is Some(name) {
+    return name
+  }
   match i {
-    Unreachable => "unreachable"
-    Nop => "nop"
-    Drop => "drop"
-    Return => "return"
-    Select => "select"
     I32Const(v) => "i32.const " + v.to_string()
     I64Const(v) => "i64.const " + v.to_string()
     // A local is named where the function named it, which is per FUNCTION --
@@ -40,28 +40,37 @@ pub fn mnemonic(
     GlobalSet(k) => "global.set " + name_or(names.globals, k)
     Call(k) => "call " + name_or(names.functions, k)
     ReturnCall(k) => "return_call " + name_or(names.functions, k)
-    RefIsNull => "ref.is_null"
-    RefAsNonNull => "ref.as_non_null"
     RefFunc(k) => "ref.func " + name_or(names.functions, k)
-    I32Eqz => "i32.eqz"
-    I64Eqz => "i64.eqz"
-    I32Add => "i32.add"
-    I32Sub => "i32.sub"
-    I32Mul => "i32.mul"
-    I32And => "i32.and"
-    I32Or => "i32.or"
-    I32Xor => "i32.xor"
-    I64Add => "i64.add"
-    I64Sub => "i64.sub"
-    I64Mul => "i64.mul"
-    F32Add => "f32.add"
-    F32Sub => "f32.sub"
-    F32Mul => "f32.mul"
-    F32Div => "f32.div"
-    F64Add => "f64.add"
-    F64Sub => "f64.sub"
-    F64Mul => "f64.mul"
-    F64Div => "f64.div"
+    Br(d) => "br " + d.to_string()
+    BrIf(d) => "br_if " + d.to_string()
+    CallIndirect(t, tab) =>
+      "call_indirect " +
+      name_or(names.tables, tab) +
+      " (type " +
+      t.to_string() +
+      ")"
+    ReturnCallIndirect(t, tab) =>
+      "return_call_indirect " +
+      name_or(names.tables, tab) +
+      " (type " +
+      t.to_string() +
+      ")"
+    CallRef(t) => "call_ref " + t.to_string()
+    ReturnCallRef(t) => "return_call_ref " + t.to_string()
+    RefNull(h) => "ref.null " + heaptype(h, names.types)
+    F32Const(v) => "f32.const " + v.to_double().to_string()
+    F64Const(v) => "f64.const " + v.to_string()
+    StructNew(t) => "struct.new " + name_or(names.types, t)
+    StructNewDefault(t) => "struct.new_default " + name_or(names.types, t)
+    ArrayNew(t) => "array.new " + name_or(names.types, t)
+    ArrayNewDefault(t) => "array.new_default " + name_or(names.types, t)
+    ArrayNewFixed(t, n) =>
+      "array.new_fixed " + name_or(names.types, t) + " " + n.to_string()
+    RefTest(r) => "ref.test " + reftype(r, names.types)
+    RefCast(r) => "ref.cast " + reftype(r, names.types)
+    Throw(t) => "throw " + name_or(names.tags, t)
+    // Everything else is a gap, not a guess: reporting it keeps the burn-down
+    // honest, exactly as the lowering's own gaps do.
     _ => raise NotPrinted("this instruction")
   }
 }
