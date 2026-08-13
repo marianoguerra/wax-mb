@@ -1072,7 +1072,7 @@ fn Lowering::hinted(
         Some(_) | None => out.push(Select)
       }
     }
-    Str(_, bytes) => {
+    Str(named, bytes) => {
       // A string literal is an ARRAY of its bytes, built one constant at a
       // time. There is no shortcut through a data segment: `array.new_data`
       // takes a segment the source named, and a literal names none.
@@ -1091,9 +1091,15 @@ fn Lowering::hinted(
       for u in units {
         out.push(I32Const(u))
       }
-      // The construction remembers it was written as a string: a run of
-      // constants says nothing about having been text.
-      out.push(FromString(bytes, ArrayNewFixed(t, units.length())))
+      // The construction remembers it was written as a string, and under
+      // which type name if the source gave one: a run of constants says
+      // nothing about having been text, and the index says nothing about
+      // whether a name was written for it.
+      let named_type = match named {
+        Some(n) => Some(self.type_index_of(n, loc))
+        None => None
+      }
+      out.push(FromString(bytes, named_type, ArrayNewFixed(t, units.length())))
     }
     ArraySegment(_, seg, off, len) => {
       self.instr(out, off)

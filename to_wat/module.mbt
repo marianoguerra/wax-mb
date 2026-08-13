@@ -520,13 +520,17 @@ fn folded(node : Node, ctx : Ctx) -> Sexp raise WatError {
 fn folded_bare(node : Node, ctx : Ctx) -> Sexp raise WatError {
   // A string literal is written as one: the constants it lowered to are the
   // string, so writing both would say the same thing twice.
-  if node.head is FromString(bytes, _) {
-    // The reference writes `(@string $t "..")` when the SOURCE named the array
-    // type and `(@string "..")` when it did not, and the binary does not
-    // record which. Naming it whenever the type has a name was measured and is
-    // much worse -- 1611 exact to 1559 -- because most strings land in a named
-    // type the reference leaves out.
-    return List([Atom("@string"), Atom(quoted(bytes))])
+  if node.head is FromString(bytes, named, _) {
+    // The type is written only when the SOURCE named one. Naming it whenever
+    // the type HAS a name was measured and is much worse -- 1611 exact to
+    // 1559 -- because most strings land in a named type the reference leaves
+    // out, so which was written has to be recorded rather than inferred.
+    let l : Array[Sexp] = [Atom("@string")]
+    if named is Some(t) {
+      l.push(Atom(name_or(ctx.m.names.types, t)))
+    }
+    l.push(Atom(quoted(bytes)))
+    return List(l)
   }
   if node.head is FromChar(bytes, _) {
     return List([Atom("@char"), Atom(quoted(bytes))])

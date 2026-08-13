@@ -48,7 +48,7 @@ fn enclosed(i : @wasm_bin.Instruction) -> Array[Array[@wasm_bin.Instruction]] {
     }
     // The wrappers are transparent: a hinted `if` is still an `if`, and the
     // bodies it guards are its own. Without this the hint swallowed them.
-    Hinted(_, inner) | Spelled(_, inner) | FromString(_, inner) =>
+    Hinted(_, inner) | Spelled(_, inner) | FromString(_, _, inner) =>
       enclosed(inner)
     _ => []
   }
