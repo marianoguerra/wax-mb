@@ -1440,10 +1440,16 @@ pub fn Checker::statement(
         )
       }
       // The FALL-THROUGH keeps the value at its residual type: what is left of
-      // it once the cast target is taken away.
+      // it once the cast target is taken away. The OPERAND is re-typed to the
+      // source the instruction will name -- the join of its own type and the
+      // target -- because that is the type the emitted immediate has to state,
+      // and a source narrower than the target is not a well-formed one.
       let residual = match
         conditional_cast_types(ctx, operand.info, ref_ty, target) {
-        Some((_, r)) => r
+        Some((source, r)) => {
+          ref_ty.set(source.get())
+          r
+        }
         None => @infer.Cell::make(@infer.InferredType::Error)
       }
       let result = if bound {
