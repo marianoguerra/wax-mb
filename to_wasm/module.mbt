@@ -401,7 +401,10 @@ fn Lowering::function_body(
   self.locals = Map([])
   self.local_types = []
   self.spans = []
-  self.nested_spans.clear()
+  // A FRESH array, not a cleared one: the code built for the previous function
+  // holds the array itself, so emptying it in place empties that function's
+  // record too -- and every function ended up with the last one's.
+  self.nested_spans = []
   self.binding_slots = Map([])
   self.claimed = Map([])
   self.local_names = Map([])

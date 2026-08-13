@@ -62,8 +62,17 @@ fn Lowering::instr_span(
   // on the instruction until the encoder knows where that instruction landed.
   // The wrapper is how it rides along.
   guard i.hints.is_empty() else {
+    // Lowered into an array of its own so the last instruction can be picked
+    // out, which means its spans are numbered from zero and have to be moved
+    // to where the instructions actually land. Left unmoved they point into
+    // whatever else is in this body, and the printer folds by them.
+    let base = out.length()
+    let outer = self.spans
+    self.spans = []
     let inner : Array[@wasm_bin.Instruction] = []
     self.hinted(inner, i)
+    let inner_spans = self.spans
+    self.spans = outer
     guard inner.length() >= 1 else { return }
     // The hint belongs to the LAST instruction emitted, which is the one the
     // node is: everything before it computed the operands.
@@ -71,6 +80,9 @@ fn Lowering::instr_span(
       out.push(inner[k])
     }
     out.push(Hinted(self.lower_hints(i.hints), inner[inner.length() - 1]))
+    for sp in inner_spans {
+      self.spans.push((sp.0 + base, sp.1 + base, sp.2 + base))
+    }
     return
   }
   self.hinted(out, i)
