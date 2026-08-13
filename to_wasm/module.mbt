@@ -388,15 +388,23 @@ fn Lowering::collect_locals(
     // sees it. Its slot has to be assigned where the arm's own lowering puts
     // the store: before the arm's body, and after the previous arm's.
     if i.desc is Match(arms~, default~, scrutinee~) {
-      visit(scrutinee)
-      for arm in arms {
-        if arm.0 is MatchCast(Some(bind), rt) {
+      // The arms' blocks NEST, the last one outermost, so the store for the
+      // last arm's binding is the first one reached -- and slots are numbered
+      // in the order the stores happen. Walking the arms forwards would number
+      // them the other way round and name every local wrong.
+      for k = arms.length() - 1; k >= 0; k = k - 1 {
+        if arms[k].0 is MatchCast(Some(bind), rt) {
           let ty = self.valtype_index(Ref(rt), i.info.1)
           self.binding_slots[bind.loc.start.cnum] = next
           note_name(self.local_names, next, self.claim_name(bind.name))
           self.local_types.push(ty)
           next = next + 1
         }
+      }
+      // The scrutinee sits at the BOTTOM of the test chain, inside the
+      // innermost block, so anything it binds comes after every arm's binding.
+      visit(scrutinee)
+      for arm in arms {
         for s in arm.1.desc {
           visit(s)
         }
@@ -787,9 +795,12 @@ fn Lowering::declare_func_refs(
       return
     }
   }
-  // LAST reference first. The reference folds its set into a list, which
-  // reverses it, and the segment's order is observable -- so this is not a
-  // detail of how the set is stored but part of the output.
+  // LAST reference first, which matches the reference on more modules than
+  // first-seen does (83 failures against 86) but not on all of them: its own
+  // order is a hash table's iteration order, which is neither. Reproducing
+  // that exactly would mean reimplementing OCaml's string hashing and bucket
+  // layout, and the segment's order is observable, so a handful of modules
+  // stay different for that reason alone.
   let init : Array[Array[@wasm_bin.Instruction]] = []
   for k = self.func_refs_in_body.length() - 1; k >= 0; k = k - 1 {
     let name = self.func_refs_in_body[k]

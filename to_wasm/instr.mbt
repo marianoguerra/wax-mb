@@ -834,7 +834,14 @@ fn Lowering::hinted(
       }
       let escape = fresh_name(taken, "default", 0)
       labels.push({ name: escape, loc })
-      for x in @ast.lower_match(i.info, labels~, scrutinee~, arms~, default~) {
+      // The synthesized nodes carry the SCRUTINEE's type, not the match's:
+      // each threaded `br_on_cast` reads its source type off its operand's
+      // annotation, and every fall-through value in the chain stays a subtype
+      // of the scrutinee -- so the scrutinee's type is a valid source for all
+      // of them, and the match's own result type is not.
+      let chain_info = (scrutinee.info.0, loc)
+      for
+        x in @ast.lower_match(chain_info, labels~, scrutinee~, arms~, default~) {
         self.instr(out, x)
       }
     }
