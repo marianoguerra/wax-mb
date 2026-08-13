@@ -52,6 +52,19 @@ fn quoted(b : Bytes) -> String {
 }
 
 ///|
+/// A field's identifier: what the source called it, or nothing.
+///
+/// Unlike an operand, where an index is a valid spelling, a FIELD written
+/// `(elem 3 ...)` would name the index in the wrong space -- so an unnamed
+/// field carries no identifier at all and takes its index from its position.
+fn opt_id(names : Map[Int, Bytes], k : Int) -> Array[Sexp] {
+  match names.get(k) {
+    Some(b) => [Atom("$" + text_of(b))]
+    None => []
+  }
+}
+
+///|
 fn hex2(c : Int) -> String {
   let digits = "0123456789abcdef"
   digits[c / 16].to_string() + digits[c % 16].to_string()
@@ -62,7 +75,7 @@ fn hex2(c : Int) -> String {
 /// final or has a supertype.
 fn subtype_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   let t = m.types[k]
-  let head = block([Atom("type"), Atom(name_or(m.names.types, k))])
+  let head = block([Atom("type"), ..opt_id(m.names.types, k)])
   let body = comptype(m, k, t.composite)
   let clauses = describes_clauses(m, t)
   if t.final_ && t.supertypes.is_empty() {
@@ -376,25 +389,20 @@ fn import_parts(
       } else {
         typeuse(m, t)
       }
-      ("func", [Atom(name_or(m.names.functions, n))], typ, Func(n))
+      ("func", opt_id(m.names.functions, n), typ, Func(n))
     }
     Global(g) =>
       (
         "global",
-        [Atom(name_or(m.names.globals, n))],
+        opt_id(m.names.globals, n),
         [Atom(globaltype(m, g))],
         Global(n),
       )
-    Tag(t) => ("tag", [Atom(name_or(m.names.tags, n))], typeuse(m, t), Tag(n))
+    Tag(t) => ("tag", opt_id(m.names.tags, n), typeuse(m, t), Tag(n))
     Memory(mt) =>
-      (
-        "memory",
-        [Atom(name_or(m.names.memories, n))],
-        limits(mt.limits),
-        Memory(n),
-      )
+      ("memory", opt_id(m.names.memories, n), limits(mt.limits), Memory(n))
     Table(tt) =>
-      ("table", [Atom(name_or(m.names.tables, n))], tabletype(m, tt), Table(n))
+      ("table", opt_id(m.names.tables, n), tabletype(m, tt), Table(n))
   }
 }
 
@@ -403,7 +411,10 @@ fn import_parts(
 fn global_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   let g = m.globals[k]
   let at = k + imported_count(m, "global")
-  let head : Array[Sexp] = [Atom("global"), Atom(name_or(m.names.globals, at))]
+  let head : Array[Sexp] = [Atom("global")]
+  for x in opt_id(m.names.globals, at) {
+    head.push(x)
+  }
   for e in export_clauses(m, Global(at)) {
     head.push(e)
   }
@@ -418,7 +429,10 @@ fn global_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
 ///|
 fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   let at = k + imported_count(m, "tag")
-  let head : Array[Sexp] = [Atom("tag"), Atom(name_or(m.names.tags, at))]
+  let head : Array[Sexp] = [Atom("tag")]
+  for x in opt_id(m.names.tags, at) {
+    head.push(x)
+  }
   for e in export_clauses(m, Tag(at)) {
     head.push(e)
   }
@@ -431,7 +445,10 @@ fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
 ///|
 fn memory_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   let at = k + imported_count(m, "memory")
-  let head : Array[Sexp] = [Atom("memory"), Atom(name_or(m.names.memories, at))]
+  let head : Array[Sexp] = [Atom("memory")]
+  for x in opt_id(m.names.memories, at) {
+    head.push(x)
+  }
   for e in export_clauses(m, Memory(at)) {
     head.push(e)
   }
@@ -445,7 +462,10 @@ fn memory_field(m : @wasm_bin.Module, k : Int) -> Sexp {
 fn table_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   let t = m.tables[k]
   let at = k + imported_count(m, "table")
-  let head : Array[Sexp] = [Atom("table"), Atom(name_or(m.names.tables, at))]
+  let head : Array[Sexp] = [Atom("table")]
+  for x in opt_id(m.names.tables, at) {
+    head.push(x)
+  }
   for e in export_clauses(m, Table(at)) {
     head.push(e)
   }
@@ -464,41 +484,88 @@ fn table_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
 ///|
 fn elem_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   let e = m.elems[k]
-  let head : Array[Sexp] = [Atom("elem"), Atom(name_or(m.names.elem, k))]
+  let head : Array[Sexp] = [Atom("elem")]
+  for x in opt_id(m.names.elem, k) {
+    head.push(x)
+  }
   match e.mode {
     Passive => ()
     Declarative => head.push(Atom("declare"))
     Active(tab, offset) => {
-      if tab != 0 {
-        head.push(List([Atom("table"), Atom(name_or(m.names.tables, tab))]))
+      if m.names.tables.get(tab) is Some(b) {
+        head.push(List([Atom("table"), Atom("$" + text_of(b))]))
+      } else if tab != 0 {
+        head.push(List([Atom("table"), Atom(tab.to_string())]))
       }
-      head.push(clause("offset", const_expr(m, offset)))
+      head.push(expr("offset", const_expr(m, offset)))
     }
   }
-  head.push(Atom(reftype(e.type_, m.names.types)))
+  // The `func` SHORTHAND: a segment of plain `ref.func`s at the non-nullable
+  // `(ref func)` type writes its function names bare. It may only be used at
+  // that type -- abbreviating a `funcref` segment would silently drop the
+  // nullability, which is a different segment.
+  let plain = if e.type_.nullable || !(e.type_.typ is Func) {
+    None
+  } else {
+    func_indices(e.init)
+  }
   let items : Array[Sexp] = []
-  for item in e.init {
-    items.push(clause("item", const_expr(m, item)))
+  match plain {
+    Some(fs) => {
+      head.push(Atom("func"))
+      for f in fs {
+        items.push(Atom(name_or(m.names.functions, f)))
+      }
+    }
+    None => {
+      head.push(Atom(reftype(e.type_, m.names.types)))
+      for item in e.init {
+        items.push(expr("item", const_expr(m, item)))
+      }
+    }
   }
   List([block(head), block(items)])
 }
 
 ///|
+/// The functions a segment names, when every element is a bare `ref.func` and
+/// nothing else.
+fn func_indices(init : Array[Array[@wasm_bin.Instruction]]) -> Array[Int]? {
+  let out : Array[Int] = []
+  for e in init {
+    guard e.length() == 1 && e[0] is RefFunc(f) else { return None }
+    out.push(f)
+  }
+  Some(out)
+}
+
+///|
 fn data_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   let d = m.datas[k]
-  let head : Array[Sexp] = [Atom("data"), Atom(name_or(m.names.data, k))]
+  let head : Array[Sexp] = [Atom("data")]
+  for x in opt_id(m.names.data, k) {
+    head.push(x)
+  }
   if d.mode is Active(mem, offset) {
-    if mem != 0 {
-      head.push(List([Atom("memory"), Atom(name_or(m.names.memories, mem))]))
+    if m.names.memories.get(mem) is Some(b) {
+      head.push(List([Atom("memory"), Atom("$" + text_of(b))]))
+    } else if mem != 0 {
+      head.push(List([Atom("memory"), Atom(mem.to_string())]))
     }
-    head.push(clause("offset", const_expr(m, offset)))
+    head.push(expr("offset", const_expr(m, offset)))
   }
   List([block(head), Atom(quoted(d.init))])
 }
 
 ///|
-/// `(offset ...)` and the like: a keyword and what it wraps.
-fn clause(name : String, body : Array[Sexp]) -> Sexp {
+/// `(offset ...)` and the like -- except that a single FOLDED instruction
+/// already reads as one expression, so the keyword is left out and the
+/// instruction stands for itself. That is the abbreviation the format allows
+/// and the one the reference takes.
+fn expr(name : String, body : Array[Sexp]) -> Sexp {
+  if body.length() == 1 {
+    return body[0]
+  }
   let l : Array[Sexp] = [Atom(name)]
   for x in body {
     l.push(x)
