@@ -153,7 +153,7 @@ fn Checker::trycatch_node(
     checked.push({
       arm_tag: arm.arm_tag,
       arm_ref: arm.arm_ref,
-      arm_types: arm.arm_types,
+      arm_types: self.arm_entry_types(arm),
       arm_body: { desc: arm_body, info: arm.arm_body.info },
     })
   }
@@ -168,4 +168,30 @@ fn Checker::trycatch_node(
     hints: i.hints,
     expected: i.expected,
   }
+}
+
+///|
+/// An arm's entry stack in SOURCE form, for the block the lowering wraps it in.
+///
+/// The same list `arm_entry` computes as inference cells, but written as value
+/// types: the block that delivers the arm its values needs a result type, and
+/// a block type is spelled, not inferred. The field is empty as parsed and
+/// this is the typer filling it, which is what the AST says it is for.
+fn Checker::arm_entry_types(
+  self : Checker,
+  arm : @ast.TryCatchArm[@basic.Location],
+) -> Array[@ast.ValType] {
+  let out : Array[@ast.ValType] = []
+  if arm.arm_tag is Some(tag) {
+    if self.ctx.tags.find_no_mark(tag.name) is Some(ft) {
+      for p in ft.params {
+        out.push(p.desc.1)
+      }
+    }
+  }
+  // A `&` arm is handed the exception itself, above its payload.
+  if arm.arm_ref {
+    out.push(Ref({ nullable: false, typ: Exn }))
+  }
+  out
 }
