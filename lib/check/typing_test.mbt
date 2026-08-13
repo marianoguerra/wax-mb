@@ -465,8 +465,9 @@ test "the operand stack's three empty states" {
 }
 
 ///|
-/// Where the caret goes says which value is missing: before the instruction for
-/// an argument, after it for a result.
+/// Where the caret goes says which value is missing: the opening character of
+/// the construct for an argument, the closing one for a result. One character
+/// wide either way -- a caret has to sit on something.
 test "an underflow points where the value should have been" {
   let info = @type_store.TypeStore::new().subtyping_info()
   fn caret(kind : @typing.StackKind) -> String {
@@ -485,8 +486,8 @@ test "an underflow points where the value should have been" {
     "\{l.start.cnum}..\{l.end.cnum}"
   }
 
-  inspect(caret(Input), content="10..10")
-  inspect(caret(Output), content="20..20")
+  inspect(caret(Input), content="10..11")
+  inspect(caret(Output), content="19..20")
   inspect(caret(Holes), content="10..20")
 }
 
@@ -2572,9 +2573,9 @@ test "an exit that delivers nothing is reported, unless it is dead" {
     @message.to_plain_string(ctx.diagnostics.collected()[0].message),
     content="Expecting 1 returned value(s) from the stack, but there are 0.",
   )
-  // The caret sits at the block's closing token, as every other output
+  // The caret sits ON the block's closing token, as every other output
   // underflow does.
-  inspect(ctx.diagnostics.collected()[0].loc.start.cnum, content="50")
+  inspect(ctx.diagnostics.collected()[0].loc.start.cnum, content="49")
 }
 
 ///|

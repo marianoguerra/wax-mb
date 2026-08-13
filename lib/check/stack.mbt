@@ -295,15 +295,19 @@ pub fn leftovers(st : Stack) -> (Array[@basic.Location], Bool) {
 }
 
 ///|
-/// An empty span at the first character of `loc`.
+/// The span of the FIRST CHARACTER of `loc` -- the opening bracket of a
+/// construct, where a missing argument belongs.
+///
+/// One character wide, not empty: a caret has to sit on something.
 pub fn loc_first_char(loc : @basic.Location) -> @basic.Location {
-  { start: loc.start, end: loc.start }
+  { start: loc.start, end: { ..loc.start, cnum: loc.start.cnum + 1 } }
 }
 
 ///|
-/// An empty span at the last character of `loc`.
+/// The span of the LAST CHARACTER of `loc` -- the closing bracket, where a
+/// missing result belongs.
 pub fn loc_last_char(loc : @basic.Location) -> @basic.Location {
-  { start: loc.end, end: loc.end }
+  { start: { ..loc.end, cnum: loc.end.cnum - 1 }, end: loc.end }
 }
 
 ///|
