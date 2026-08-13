@@ -114,6 +114,12 @@ fn function_field(
   for e in export_clauses(m, Func(index)) {
     head.push(e)
   }
+  // `fn f: ft(..)` named a type, and the text names it rather than repeating
+  // the signature that declaration pointed at.
+  let by_name = m.named_decl_types.contains(OwnerFunc(index))
+  if by_name {
+    head.push(List([Atom("type"), Atom(name_or(m.names.types, m.funcs[k]))]))
+  }
   // The signature is a group of its own, so it moves to its own line as a
   // unit when the name and exports have already filled one -- rather than the
   // first few parameters trailing the name and the rest wrapping.
@@ -127,7 +133,11 @@ fn function_field(
       any_named = true
     }
   }
-  if any_named {
+  if by_name {
+    // Named: the signature is the type's, and repeating it here would say the
+    // same thing twice.
+    ()
+  } else if any_named {
     for p, ty in ft.params {
       sign.push(
         List(
@@ -142,7 +152,7 @@ fn function_field(
     }
     sign.push(List(g))
   }
-  if !ft.results.is_empty() {
+  if !by_name && !ft.results.is_empty() {
     let r : Array[Sexp] = [Atom("result")]
     for ty in ft.results {
       r.push(Atom(valtype(ty, m.names.types)))

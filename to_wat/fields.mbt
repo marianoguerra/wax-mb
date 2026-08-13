@@ -498,7 +498,7 @@ fn import_parts(
         typeuse(
           m,
           t,
-          named=m.named_tag_types.contains(n),
+          named=m.named_decl_types.contains(OwnerTag(n)),
           owner=Some(OwnerTag(n)),
         ),
         Tag(n),
@@ -544,7 +544,7 @@ fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
     x in typeuse(
       m,
       m.tags[k].type_idx,
-      named=m.named_tag_types.contains(at),
+      named=m.named_decl_types.contains(OwnerTag(at)),
       owner=Some(OwnerTag(at)),
     ) {
     head.push(x)

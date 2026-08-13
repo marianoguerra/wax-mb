@@ -204,6 +204,11 @@ fn Lowering::field(
       )
       let fi = self.func_index(name, loc)
       note_name(m.names.functions, fi, name.name)
+      // `fn f: ft(..)` names a type and prints as `(type $ft)`; `fn f(i32)`
+      // spells its signature out.
+      if typ is Some(_) {
+        m.named_decl_types[OwnerFunc(fi)] = true
+      }
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
       m.codes.push({ ..code, priority: function_priority(attributes) })
       m.field_order.push(FFunc(m.codes.length() - 1))
@@ -309,7 +314,7 @@ fn Lowering::field(
     Tag(name~, typ~, sign~, attributes~) => {
       note_name(m.names.tags, self.tag_index(name, loc), name.name)
       if typ is Some(_) {
-        m.named_tag_types[self.tag_index(name, loc)] = true
+        m.named_decl_types[OwnerTag(self.tag_index(name, loc))] = true
       }
       note_param_names(m, OwnerTag(self.tag_index(name, loc)), sign)
       // A tag that NAMES its type means that declaration, not whichever
@@ -720,7 +725,7 @@ fn Lowering::import_(
     Tag(typ~, sign~) => {
       note_name(m.names.tags, self.tag_index(decl.id, loc), decl.id.name)
       if typ is Some(_) {
-        m.named_tag_types[self.tag_index(decl.id, loc)] = true
+        m.named_decl_types[OwnerTag(self.tag_index(decl.id, loc))] = true
       }
       note_param_names(m, OwnerTag(self.tag_index(decl.id, loc)), sign)
     }

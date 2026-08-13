@@ -1160,12 +1160,12 @@ pub(all) struct Module {
   /// without changing the bytes. The text format shows them, so they are kept
   /// apart from the section that is encoded.
   decl_param_names : Map[ParamOwner, Map[Int, Bytes]]
-  /// The tags whose type the SOURCE named, by tag index.
+  /// The declarations whose type the SOURCE named.
   ///
   /// `tag t: ft;` writes `(type $ft)` and `tag t(i32);` spells the signature
-  /// out. The binary keeps only the index, which is the same either way, so
-  /// which was written has to be recorded.
-  named_tag_types : Map[Int, Bool]
+  /// out; a function is the same. The binary keeps only the index, which is
+  /// the same either way, so which was written has to be recorded.
+  named_decl_types : Map[ParamOwner, Bool]
   /// The `name` custom section.
   names : Names
   /// The `target_features` custom section: (prefix byte, feature name) pairs,
@@ -1210,7 +1210,7 @@ pub fn Module::empty() -> Module {
     field_order: [],
     field_locs: [],
     decl_param_names: Map([]),
-    named_tag_types: Map([]),
+    named_decl_types: Map([]),
     imports: [],
     funcs: [],
     tables: [],
