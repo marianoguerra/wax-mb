@@ -33,6 +33,21 @@ pub fn print_module(
   // The element segments minted to declare function references are different:
   // there is nowhere else to put a declarative segment, so it follows the
   // fields that were written.
+  // A type the source did not write but that carries a NAME was materialised
+  // for that name -- the entry exists for it alone -- so the text writes it.
+  let placed_types : Map[Int, Bool] = Map([])
+  for f in m.text.field_order {
+    if f is FTypes(ks) {
+      for k in ks {
+        placed_types[k] = true
+      }
+    }
+  }
+  for k in 0..<m.types.length() {
+    if !placed_types.contains(k) && m.names.types.contains(k) {
+      fields.push(subtype_field(m, k))
+    }
+  }
   let placed_elems : Map[Int, Bool] = Map([])
   for f in m.text.field_order {
     if f is FElem(k) {
