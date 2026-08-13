@@ -42,7 +42,9 @@ fn memarg(
   let out = StringBuilder::new()
   out.write_string(name + memidx(names, mem))
   if offset != 0L {
-    out.write_string(" offset=" + offset.to_string())
+    // UNSIGNED: a memory64 offset fills the 64 bits, and the format writes the
+    // number rather than the two's complement reading of it.
+    out.write_string(" offset=" + offset.reinterpret_as_uint64().to_string())
   }
   if align != natural {
     out.write_string(" align=" + (1L << align).to_string())

@@ -469,6 +469,9 @@ fn Lowering::field(
         if d.data_name is Some(n) {
           note_name(m.names.data, m.datas.length(), n.name)
         }
+        // An inline segment is still a `(data ..)` FIELD in the text, written
+        // after the memory it was written inside.
+        m.text.field_order.push(FData(m.datas.length()))
         m.datas.push({
           mode: Active(mem, offset),
           init: data_bytes(d.init, loc),

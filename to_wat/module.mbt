@@ -13,7 +13,9 @@ pub fn print_module(
   // Each field with where it was written: the comments written against it are
   // found by that, and so is the conditional branch it stood in.
   let written : Array[(Sexp, @basic.Location)] = []
+  let kinds : Array[FieldKind] = []
   for k, f in m.text.field_order {
+    kinds.push(field_kind(f))
     let one = field(m, f)
     let loc = if k < m.text.field_locs.length() {
       m.text.field_locs[k]
@@ -22,7 +24,7 @@ pub fn print_module(
     }
     written.push((if loc.is_dummy() { one } else { At(loc, one) }, loc))
   }
-  let fields = regroup(m.text.conditionals, written)
+  let fields = regroup(m.text.conditionals, written, kinds~)
   // A type nothing declared is NOT written. The section holds every signature
   // the lowering interned -- a block's, an import's, a `call_indirect`'s --
   // and the text format spells all of those inline where they are used. Only a
@@ -59,94 +61,191 @@ pub fn print_module(
 }
 
 ///|
-/// Put the fields back under the conditionals they were written in.
-///
-/// The checker flattens a conditional away, so both branches' fields are
-/// already in the module and side by side; only where each STOOD says which
-/// branch it came from. Grouping by containment is what puts them back, and it
-/// nests without any extra bookkeeping.
-fn regroup(
+/// A field's guard path: the conditional frames it was written inside,
+/// outermost first. Each frame is a group and which branch of it.
+fn guards_of(
   conds : Array[@wasm_bin.CondGroup],
-  items : Array[(Sexp, @basic.Location)],
-) -> Array[Sexp] {
-  let at = @ref.new(0)
+  loc : @basic.Location,
+) -> Array[(Int, Bool)] {
   fn covers(outer : @basic.Location, inner : @basic.Location) -> Bool {
     inner.start.cnum >= outer.start.cnum && inner.end.cnum <= outer.end.cnum
   }
 
-  // The outermost conditional that lies inside this range and holds this
-  // field. Outermost, because the inner ones are found on the way down.
-  // `skip` is the conditional whose branch this range IS. Without it a group
-  // whose field and branch share a span -- `#[if(x)] { .. }`, where the two
-  // are written as one thing -- finds itself again inside its own branch and
-  // the walk never ends.
-  fn enclosing(
-    loc : @basic.Location,
-    lo : @basic.Location,
-    skip : Int,
-  ) -> Int? {
-    let mut best : Int? = None
-    for k, c in conds {
-      guard k != skip else { continue }
-      guard covers(lo, c.loc) && c.loc.start.cnum > lo.start.cnum - 1 else {
-        continue
-      }
-      let inside = covers(c.then_, loc) ||
-        (c.else_ is Some(e) && covers(e, loc))
-      guard inside else { continue }
-      best = match best {
-        Some(b) =>
-          if c.loc.start.cnum < conds[b].loc.start.cnum {
-            Some(k)
-          } else {
-            Some(b)
-          }
-        None => Some(k)
-      }
+  let out : Array[(Int, Bool)] = []
+  for k, c in conds {
+    if covers(c.then_, loc) {
+      out.push((k, true))
+    } else if c.else_ is Some(e) && covers(e, loc) {
+      out.push((k, false))
     }
-    best
   }
+  // Outermost first: an enclosing group starts before the ones inside it.
+  out.sort_by((a, b) => conds[a.0].loc.start.cnum - conds[b.0].loc.start.cnum)
+  out
+}
 
-  fn walk(range : @basic.Location, skip : Int) -> Array[Sexp] {
-    let out : Array[Sexp] = []
-    while at.val < items.length() && items[at.val].1.start.cnum < range.end.cnum {
-      let (sexp, loc) = items[at.val]
-      match enclosing(loc, range, skip) {
-        None => {
-          out.push(sexp)
-          at.val = at.val + 1
-        }
-        Some(k) => {
-          let c = conds[k]
-          let before = at.val
-          let then_ = walk(c.then_, k)
-          let else_ = match c.else_ {
-            Some(e) => walk(e, k)
-            None => []
-          }
-          // If the branches took nothing, this field is not in either after
-          // all, and looking again would ask the same question forever.
-          if at.val == before {
-            out.push(sexp)
-            at.val = at.val + 1
-          } else {
-            out.push(cond_field(c, then_, else_))
-          }
-        }
-      }
+///|
+/// Whether two guard paths can never both hold.
+///
+/// Read in lockstep from the root: at the first frame where the CONDITIONS
+/// agree and the branches do not, the two leaves are on opposite sides of one
+/// question and never coexist. Once the conditions differ the leaves are in
+/// unrelated subtrees and nothing deeper is shared, so this is not
+/// satisfiability -- `debug` and `not(debug)` count as independent -- it only
+/// keeps one branch's definition from counting against the other branch's
+/// import.
+fn mutually_exclusive(
+  conds : Array[@wasm_bin.CondGroup],
+  g1 : Array[(Int, Bool)],
+  g2 : Array[(Int, Bool)],
+) -> Bool {
+  let n = if g1.length() < g2.length() { g1.length() } else { g2.length() }
+  for k in 0..<n {
+    if conds[g1[k].0].cond != conds[g2[k].0].cond {
+      return false
     }
-    out
+    if g1[k].1 != g2[k].1 {
+      return true
+    }
   }
+  false
+}
 
+///|
+/// Put the fields back under the conditionals they were written in, hoisting
+/// the imports ahead of the definitions when one would otherwise follow one.
+///
+/// The checker flattens a conditional away, so both branches' fields are
+/// already in the module and side by side; only where each STOOD says which
+/// branch it came from. Each field's guard path says that, and consecutive
+/// fields sharing a path are what one `(@if ..)` holds.
+///
+/// The hoist is what makes the guard path the right shape to group by rather
+/// than containment: wasm requires every import before every definition, and a
+/// conditional can put one after the other. Moving them is a no-op unless some
+/// import really does follow a definition it is not mutually exclusive with,
+/// which keeps every module that already validated byte-identical.
+fn regroup(
+  conds : Array[@wasm_bin.CondGroup],
+  items : Array[(Sexp, @basic.Location)],
+  kinds? : Array[FieldKind] = [],
+) -> Array[Sexp] {
   if conds.is_empty() {
     return items.map(i => i.0)
   }
-  walk(
-    {
-      start: { ..@basic.dummy_pos, cnum: -1 },
-      end: { ..@basic.dummy_pos, cnum: 0x7FFFFFFF },
-    },
-    -1,
+  let paths = items.map(i => guards_of(conds, i.1))
+  let order = Array::makei(items.length(), k => k)
+  if needs_reorder(conds, kinds, paths) {
+    let imports = order.filter(k => k < kinds.length() && kinds[k] is KImport)
+    let others = order.filter(k => !(k < kinds.length() && kinds[k] is KImport))
+    order.clear()
+    for k in imports {
+      order.push(k)
+    }
+    for k in others {
+      order.push(k)
+    }
+  }
+  build(conds, items, paths, order, 0, 0, order.length())
+}
+
+///|
+/// Whether any import is written after a definition it could coexist with.
+fn needs_reorder(
+  conds : Array[@wasm_bin.CondGroup],
+  kinds : Array[FieldKind],
+  paths : Array[Array[(Int, Bool)]],
+) -> Bool {
+  let defs : Array[Array[(Int, Bool)]] = []
+  for k in 0..<paths.length() {
+    guard k < kinds.length() else { continue }
+    match kinds[k] {
+      KImport =>
+        for d in defs {
+          if !mutually_exclusive(conds, d, paths[k]) {
+            return true
+          }
+        }
+      KDefine => defs.push(paths[k])
+      KOther => ()
+    }
+  }
+  false
+}
+
+///|
+/// Build the fields at one guard depth: a run sharing a frame becomes one
+/// `(@if ..)`, and a `then` run immediately followed by the matching `else`
+/// run becomes the two-clause form they were written as.
+fn build(
+  conds : Array[@wasm_bin.CondGroup],
+  items : Array[(Sexp, @basic.Location)],
+  paths : Array[Array[(Int, Bool)]],
+  order : Array[Int],
+  depth : Int,
+  from : Int,
+  to : Int,
+) -> Array[Sexp] {
+  let out : Array[Sexp] = []
+  let mut i = from
+  while i < to {
+    let g = paths[order[i]]
+    if g.length() <= depth {
+      out.push(items[order[i]].0)
+      i = i + 1
+      continue
+    }
+    let frame = g[depth]
+    let mut j = i
+    while j < to &&
+          paths[order[j]].length() > depth &&
+          paths[order[j]][depth] == frame {
+      j = j + 1
+    }
+    let inner = build(conds, items, paths, order, depth + 1, i, j)
+    // The other branch of the same group, if it is the very next run: that is
+    // the shape it was written in, and splitting it would say the same thing
+    // twice.
+    let mut k = j
+    let mut other : Array[Sexp] = []
+    if frame.1 && j < to && paths[order[j]].length() > depth {
+      let next = paths[order[j]][depth]
+      if next.0 == frame.0 && !next.1 {
+        while k < to &&
+              paths[order[k]].length() > depth &&
+              paths[order[k]][depth] == next {
+          k = k + 1
+        }
+        other = build(conds, items, paths, order, depth + 1, j, k)
+      }
+    }
+    if other.is_empty() && k == j {
+      out.push(
+        if frame.1 {
+          cond_field(conds[frame.0], inner, [])
+        } else {
+          cond_else_only(conds[frame.0], inner)
+        },
+      )
+      i = j
+    } else {
+      out.push(cond_field(conds[frame.0], inner, other))
+      i = k
+    }
+  }
+  out
+}
+
+///|
+/// `(@if $c (@then) (@else ...))` -- an else run with no then beside it.
+fn cond_else_only(c : @wasm_bin.CondGroup, else_ : Array[Sexp]) -> Sexp {
+  At(
+    c.loc,
+    List([
+      block([Atom("@if"), Atom(c.cond)]),
+      List([Atom("@then")]),
+      List([Atom("@else"), ..else_]),
+    ]),
   )
 }
 
@@ -159,10 +258,28 @@ fn cond_field(
 ) -> Sexp {
   let l : Array[Sexp] = [block([Atom("@if"), Atom(c.cond)])]
   l.push(List([Atom("@then"), ..then_]))
-  if c.else_ is Some(_) {
+  if !else_.is_empty() {
     l.push(List([Atom("@else"), ..else_]))
   }
   At(c.loc, List(l))
+}
+
+///|
+/// What a field is, for the import hoist.
+priv enum FieldKind {
+  KImport
+  KDefine
+  KOther
+}
+
+///|
+fn field_kind(f : @wasm_bin.FieldRef) -> FieldKind {
+  match f {
+    FImport(_) => KImport
+    // What wasm requires an import to precede.
+    FFunc(_) | FMemory(_) | FTable(_) | FTag(_) | FGlobal(_) => KDefine
+    _ => KOther
+  }
 }
 
 ///|
