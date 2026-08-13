@@ -1152,6 +1152,14 @@ pub(all) struct Module {
   /// because a comment attaches to the field it was written against and there
   /// is nothing else to attach it to.
   field_locs : Array[@basic.Location]
+  /// The parameter names a DECLARATION wrote, for the declarations whose
+  /// names the binary does not carry.
+  ///
+  /// A name section can hold local names for an imported function, and the
+  /// reference does not write them -- so these cannot ride in `names.locals`
+  /// without changing the bytes. The text format shows them, so they are kept
+  /// apart from the section that is encoded.
+  decl_param_names : Map[ParamOwner, Map[Int, Bytes]]
   /// The tags whose type the SOURCE named, by tag index.
   ///
   /// `tag t: ft;` writes `(type $ft)` and `tag t(i32);` spells the signature
@@ -1165,6 +1173,14 @@ pub(all) struct Module {
   /// through untouched.
   target_features : Array[(Int, Bytes)]
 } derive(Debug)
+
+///|
+/// Whose parameters a name list belongs to. Imported functions and tags sit in
+/// different index spaces, so the index alone does not say.
+pub(all) enum ParamOwner {
+  OwnerFunc(Int)
+  OwnerTag(Int)
+} derive(Eq, Hash, Debug)
 
 ///|
 /// One field of a module, named by where its item landed.
@@ -1193,6 +1209,7 @@ pub fn Module::empty() -> Module {
     rec_groups: [],
     field_order: [],
     field_locs: [],
+    decl_param_names: Map([]),
     named_tag_types: Map([]),
     imports: [],
     funcs: [],

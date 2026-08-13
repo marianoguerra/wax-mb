@@ -306,11 +306,12 @@ fn Lowering::field(
       })
       self.export_of(m, attributes, Table(self.table_index(name, loc)), name)
     }
-    Tag(name~, typ~, attributes~, ..) => {
+    Tag(name~, typ~, sign~, attributes~) => {
       note_name(m.names.tags, self.tag_index(name, loc), name.name)
       if typ is Some(_) {
         m.named_tag_types[self.tag_index(name, loc)] = true
       }
+      note_param_names(m, OwnerTag(self.tag_index(name, loc)), sign)
       // A tag that NAMES its type means that declaration, not whichever
       // like-shaped one the signature search happens to reach first.
       m.field_order.push(FTag(m.tags.length()))
@@ -706,19 +707,22 @@ fn Lowering::import_(
   }
   m.imports.push({ mod_name: module_, name, desc, group: None })
   match decl.kind {
-    Func(..) =>
+    Func(sign~, ..) => {
       note_name(m.names.functions, self.func_index(decl.id, loc), decl.id.name)
+      note_param_names(m, OwnerFunc(self.func_index(decl.id, loc)), sign)
+    }
     Global(..) =>
       note_name(m.names.globals, self.global_index(decl.id, loc), decl.id.name)
     Memory(..) =>
       note_name(m.names.memories, self.memory_index(decl.id, loc), decl.id.name)
     Table(..) =>
       note_name(m.names.tables, self.table_index(decl.id, loc), decl.id.name)
-    Tag(typ~, ..) => {
+    Tag(typ~, sign~) => {
       note_name(m.names.tags, self.tag_index(decl.id, loc), decl.id.name)
       if typ is Some(_) {
         m.named_tag_types[self.tag_index(decl.id, loc)] = true
       }
+      note_param_names(m, OwnerTag(self.tag_index(decl.id, loc)), sign)
     }
   }
   // An import may be re-exported, and then it is exported under the name THIS
@@ -966,6 +970,28 @@ fn data_spelling(init : Array[@ast.DataElem]) -> Array[@wasm_bin.DataPiece] {
     }
   }
   out
+}
+
+///|
+/// Note the parameter names a declaration wrote, when it wrote any.
+///
+/// Only the declarations whose names the binary drops: a defined function's
+/// parameters are locals and the name section carries them already.
+fn note_param_names(
+  m : @wasm_bin.Module,
+  owner : @wasm_bin.ParamOwner,
+  sign : @ast.FuncType?,
+) -> Unit {
+  guard sign is Some(ft) else { return }
+  let names : Map[Int, Bytes] = Map([])
+  for k, p in ft.params {
+    if p.desc.0 is Some(id) {
+      names[k] = utf8_of(id.name)
+    }
+  }
+  if !names.is_empty() {
+    m.decl_param_names[owner] = names
+  }
 }
 
 ///|

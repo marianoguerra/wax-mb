@@ -202,9 +202,24 @@ fn comptype(
 
 ///|
 /// A function type's parameters and results, each group written once.
-fn functype(m : @wasm_bin.Module, ft : @wasm_bin.FuncType) -> Array[Sexp] {
+fn functype(
+  m : @wasm_bin.Module,
+  ft : @wasm_bin.FuncType,
+  names? : Map[Int, Bytes] = Map([]),
+) -> Array[Sexp] {
   let out : Array[Sexp] = []
-  if !ft.params.is_empty() {
+  // Named parameters take a group each; unnamed ones share one. Same rule a
+  // defined function follows, and for the same reason: the shared form has
+  // nowhere to put a name.
+  if !names.is_empty() {
+    for k, t in ft.params {
+      let n = match names.get(k) {
+        Some(b) => ident(b)
+        None => ""
+      }
+      out.push(List(named_type(n, "param", valtype(t, m.names.types))))
+    }
+  } else if !ft.params.is_empty() {
     let l : Array[Sexp] = [Atom("param")]
     for t in ft.params {
       l.push(Atom(valtype(t, m.names.types)))
@@ -277,7 +292,12 @@ fn tabletype(m : @wasm_bin.Module, t : @wasm_bin.TableType) -> Array[Sexp] {
 ///
 /// The signature is a group of its own, the same way a defined function's is:
 /// it moves to the next line whole rather than splitting across the name.
-fn typeuse(m : @wasm_bin.Module, k : Int, named? : Bool = false) -> Array[Sexp] {
+fn typeuse(
+  m : @wasm_bin.Module,
+  k : Int,
+  named? : Bool = false,
+  owner? : @wasm_bin.ParamOwner? = None,
+) -> Array[Sexp] {
   // The source named the type, so the text names it: the signature it stands
   // for is written where the type was declared.
   if named {
@@ -289,7 +309,11 @@ fn typeuse(m : @wasm_bin.Module, k : Int, named? : Bool = false) -> Array[Sexp] 
   // 911 -- so the inline form stays until the choice is recorded.
   match m.types[k].composite {
     Func(ft) => {
-      let sign = functype(m, ft)
+      let names = match owner {
+        Some(o) => m.decl_param_names.get(o).unwrap_or(Map([]))
+        None => Map([])
+      }
+      let sign = functype(m, ft, names~)
       if sign.is_empty() {
         []
       } else {
@@ -448,14 +472,15 @@ fn import_parts(
   let n = at.get(k).unwrap_or(0)
   match d {
     Func(t, exact) => {
+      let inline = typeuse(m, t, owner=Some(OwnerFunc(n)))
       let typ : Array[Sexp] = if exact {
         let l : Array[Sexp] = [Atom("exact")]
-        for x in typeuse(m, t) {
+        for x in inline {
           l.push(x)
         }
         [List(l)]
       } else {
-        typeuse(m, t)
+        inline
       }
       ("func", opt_id(m.names.functions, n), typ, Func(n))
     }
@@ -470,7 +495,12 @@ fn import_parts(
       (
         "tag",
         opt_id(m.names.tags, n),
-        typeuse(m, t, named=m.named_tag_types.contains(n)),
+        typeuse(
+          m,
+          t,
+          named=m.named_tag_types.contains(n),
+          owner=Some(OwnerTag(n)),
+        ),
         Tag(n),
       )
     Memory(mt) =>
@@ -510,7 +540,13 @@ fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   for e in export_clauses(m, Tag(at)) {
     head.push(e)
   }
-  for x in typeuse(m, m.tags[k].type_idx, named=m.named_tag_types.contains(at)) {
+  for
+    x in typeuse(
+      m,
+      m.tags[k].type_idx,
+      named=m.named_tag_types.contains(at),
+      owner=Some(OwnerTag(at)),
+    ) {
     head.push(x)
   }
   List([block(head)])
