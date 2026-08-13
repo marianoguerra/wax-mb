@@ -156,8 +156,61 @@ pub fn type_layout(
       groups.push({ start, len, explicit: len != 1 })
     }
   })
-  // Then everything the store holds that no declaration named: the synthesized
-  // types, in the order they were interned.
+  // Then the types the LOWERING interns rather than the checker, in the order
+  // the sections that need them are written -- which is binary section order,
+  // not source order: imports, then functions, then tags. A module whose tags
+  // are declared first still emits its function types first, because the
+  // function section is written first.
+  //
+  // These are placed by STORE ENTRY, not by name: a signature with no name of
+  // its own is interned structurally, so two functions of one shape share an
+  // index rather than taking two.
+  fn place_store(store_index : Int) -> Unit {
+    if by_store.contains(store_index) {
+      return
+    }
+    let start = store_of.length()
+    by_store[store_index] = start
+    store_of.push(store_index)
+    groups.push({ start, len: 1, explicit: false })
+  }
+
+  fn place_named(name : String) -> Unit {
+    guard ctx.type_context.types.find_no_mark(name) is Some((Def(id), _)) else {
+      return
+    }
+    place_store(id.to_int_for_tests_only())
+  }
+
+  @typing.walk_fields(ctx, source, field => {
+    match field.desc {
+      Import(decl~, ..) =>
+        if decl.desc.kind is Func(..) {
+          place_named("<func:" + decl.desc.id.name + ">")
+        }
+      ImportGroup(decls~, ..) =>
+        for d in decls {
+          if d.desc.kind is Func(..) {
+            place_named("<func:" + d.desc.id.name + ">")
+          }
+        }
+      _ => ()
+    }
+  })
+  @typing.walk_fields(ctx, source, field => {
+    match field.desc {
+      Func(name~, ..) => place_named("<func:" + name.name + ">")
+      _ => ()
+    }
+  })
+  @typing.walk_fields(ctx, source, field => {
+    match field.desc {
+      Tag(name~, ..) => place_named("<functype:" + name.name + ">")
+      _ => ()
+    }
+  })
+  // Then everything the store holds that nothing above reached, in the order
+  // it was interned.
   let mut store_index = 0
   for group in store.get_all_rectypes() {
     let start = store_of.length()
