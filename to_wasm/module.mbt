@@ -538,27 +538,27 @@ fn Lowering::function_body(
   self.label_counter = 0
   self.labels = []
   self.in_body = true
-  let sub = self.store.subtyping_info().get_subtype(type_id)
-  guard sub.typ is Func(ft) else { raise Unresolved("function type", loc) }
-  // The parameter TYPES come from the store, already in index form and already
-  // deduplicated; the NAMES come from the written signature. They are the same
-  // list in the same order, which is what lets the two be zipped rather than
-  // re-derived.
+  // A function that WROTE its parameters has them right there, and that is the
+  // only answer that is certainly this function's. The checker's table is
+  // keyed by name alone, so under conditional compilation -- where two
+  // branches may declare one name with different signatures -- the store can
+  // hand back the other branch's.
+  //
+  // Only a function that named a type instead of writing a signature has to
+  // ask the store, and then there are no names to bind anyway.
   guard sign is Some(sign) else {
+    let sub = self.store.subtyping_info().get_subtype(type_id)
+    guard sub.typ is Func(ft) else { raise Unresolved("function type", loc) }
     if ft.params.length() > 0 {
       raise Unresolved("parameter names", loc)
-    } else {
-      {
-        locals: [],
-        body: self.lower_body(label, instrs),
-        spans: self.spans,
-        nested_spans: self.nested_spans,
-        priority: None,
-      }
     }
-  }
-  guard sign.params.length() == ft.params.length() else {
-    raise Unresolved("parameter count", loc)
+    return {
+      locals: [],
+      body: self.lower_body(label, instrs),
+      spans: self.spans,
+      nested_spans: self.nested_spans,
+      priority: None,
+    }
   }
   for k, p in sign.params {
     if p.desc.0 is Some(name) {
@@ -569,7 +569,7 @@ fn Lowering::function_body(
   // Then the declared locals, numbered after the parameters in the order they
   // are written -- which is how wasm numbers them, so no arithmetic is needed
   // at any `local.get`.
-  self.collect_locals(instrs, ft.params.length())
+  self.collect_locals(instrs, sign.params.length())
   let body = self.lower_body(label, instrs)
   self.in_body = false
   {
