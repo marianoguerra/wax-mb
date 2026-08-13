@@ -1501,7 +1501,23 @@ fn Lowering::path_intrinsic(
     ("v128", part) => {
       let full = @simd.free_full(part)
       if @simd.const_shape_of_name(full) is Some(shape) {
-        out.push(V128Const(self.vector_constant(shape, args, loc)))
+        // The SHAPE is part of the spelling. Sixteen bytes are sixteen bytes
+        // whichever shape wrote them, and the text says which one did.
+        let texts : Array[String] = []
+        for a in args {
+          texts.push(literal_text(a, loc))
+        }
+        let spelling = StringBuilder::new()
+        spelling.write_string(shape.to_str())
+        for t in texts {
+          spelling.write_string(" " + t)
+        }
+        out.push(
+          Spelled(
+            spelling.to_string(),
+            V128Const(vector_bytes(shape, texts, loc)),
+          ),
+        )
         return true
       }
       guard @simd.classify(full) is Some(op) else { return false }
@@ -1533,27 +1549,6 @@ fn Lowering::path_intrinsic(
     }
     _ => false
   }
-}
-
-///|
-/// The 16 bytes of a `v128::<shape>(..)` constant.
-///
-/// Each argument is one lane's literal, written in the lane's own type and
-/// stored little-endian at its own width -- which is what makes the shape part
-/// of the constant rather than of the instruction: the bytes are all the
-/// binary keeps.
-fn Lowering::vector_constant(
-  self : Lowering,
-  shape : @simd.Shape,
-  args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
-  loc : @basic.Location,
-) -> Bytes raise LowerError {
-  ignore(self)
-  let texts : Array[String] = []
-  for a in args {
-    texts.push(literal_text(a, loc))
-  }
-  vector_bytes(shape, texts, loc)
 }
 
 ///|
