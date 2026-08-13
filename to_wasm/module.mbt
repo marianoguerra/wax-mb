@@ -233,9 +233,16 @@ fn Lowering::field(
       })
       self.export_of(m, attributes, Table(self.table_index(name, loc)), name)
     }
-    Tag(name~, attributes~, ..) => {
+    Tag(name~, typ~, attributes~, ..) => {
       note_name(m.names.tags, self.tag_index(name, loc), name.name)
-      m.tags.push({ type_idx: self.tag_type_index(name, loc) })
+      // A tag that NAMES its type means that declaration, not whichever
+      // like-shaped one the signature search happens to reach first.
+      m.tags.push({
+        type_idx: match typ {
+          Some(n) => self.type_index_of(n, loc)
+          None => self.tag_type_index(name, loc)
+        },
+      })
       self.export_of(m, attributes, Tag(self.tag_index(name, loc)), name)
     }
     Elem(name~, reftype~, mode~, init~, ..) => {
