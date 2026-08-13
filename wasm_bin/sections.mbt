@@ -2,6 +2,14 @@
 //
 // Vendored from Milky2018/wasm_core 0.5.0 and rewritten more heavily than the
 // opcode table was; see VENDORED.md.
+//
+// A note on the LEBs. The format spells most indices `u32`, but the reference
+// writes several of them SIGNED -- a function's type, a tag's, an export's
+// target, the start function. For values under 64 the two coincide; at 64 and
+// above a signed LEB takes a second byte, because a lone 0x40 would read as
+// -64. Both encodings decode to the same number and both are accepted, so this
+// is not a correctness question -- but it is a BYTE question, and the bytes are
+// what is being compared.
 
 ///|
 /// Build a section body, or nothing if there is none to build.
@@ -124,7 +132,7 @@ fn encode_function_section(mod : Module) -> Bytes raise EncodeError {
   section_body(w => {
     w.write_u32(mod.funcs.length())
     for type_idx in mod.funcs {
-      w.write_u32(type_idx)
+      w.write_s32(type_idx)
     }
   })
 }
@@ -173,7 +181,7 @@ fn encode_tag_section(mod : Module) -> Bytes raise EncodeError {
     w.write_u32(mod.tags.length())
     for tag in mod.tags {
       w.write_byte(0x00) // the exception attribute
-      w.write_u32(tag.type_idx)
+      w.write_s32(tag.type_idx)
     }
   })
 }
@@ -209,7 +217,7 @@ fn encode_export_section(mod : Module) -> Bytes raise EncodeError {
         Tag(i) => (0x04, i)
       }
       w.write_byte(kind)
-      w.write_u32(idx)
+      w.write_s32(idx)
     }
   })
 }
@@ -217,7 +225,7 @@ fn encode_export_section(mod : Module) -> Bytes raise EncodeError {
 ///|
 fn encode_start_section(mod : Module) -> Bytes raise EncodeError {
   match mod.start {
-    Some(func_idx) => section_body(w => w.write_u32(func_idx))
+    Some(func_idx) => section_body(w => w.write_s32(func_idx))
     None => b""
   }
 }
