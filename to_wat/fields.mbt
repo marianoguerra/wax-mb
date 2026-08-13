@@ -10,14 +10,17 @@
 
 ///|
 /// The export clauses attached to one item, in section order.
-fn export_clauses(m : @wasm_bin.Module, of_ : @wasm_bin.ExportDesc) -> String {
-  let out = StringBuilder::new()
+fn export_clauses(
+  m : @wasm_bin.Module,
+  of_ : @wasm_bin.ExportDesc,
+) -> Array[Sexp] {
+  let out : Array[Sexp] = []
   for e in m.exports {
     if e.desc == of_ {
-      out.write_string(" (export " + quoted(e.name) + ")")
+      out.push(List([Atom("export"), Atom(quoted(e.name))]))
     }
   }
-  out.to_string()
+  out
 }
 
 ///|
@@ -57,38 +60,49 @@ fn hex2(c : Int) -> String {
 ///|
 /// A defined type: `(type $n (struct ...))`, or the `sub` form when it is not
 /// final or has a supertype.
-fn subtype_field(m : @wasm_bin.Module, k : Int) -> String {
+fn subtype_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   let t = m.types[k]
-  let head = "(type " + name_or(m.names.types, k)
+  let head = block([Atom("type"), Atom(name_or(m.names.types, k))])
   let body = comptype(m, k, t.composite)
   let clauses = describes_clauses(m, t)
   if t.final_ && t.supertypes.is_empty() {
-    head + clauses + " " + body + ")"
+    let l : Array[Sexp] = [head]
+    for c in clauses {
+      l.push(c)
+    }
+    l.push(block([body]))
+    List(l)
   } else {
-    let sub = StringBuilder::new()
-    sub.write_string("(sub")
+    let sub : Array[Sexp] = [Atom("sub")]
     if t.final_ {
-      sub.write_string(" final")
+      sub.push(Atom("final"))
     }
     for s in t.supertypes {
-      sub.write_string(" " + name_or(m.names.types, s))
+      sub.push(Atom(name_or(m.names.types, s)))
     }
-    sub.write_string(clauses + " " + body + ")")
-    head + " " + sub.to_string() + ")"
+    let inner : Array[Sexp] = [block(sub)]
+    for c in clauses {
+      inner.push(c)
+    }
+    inner.push(body)
+    List([head, List([block(inner)])])
   }
 }
 
 ///|
 /// The custom-descriptors clauses, which precede the composite type.
-fn describes_clauses(m : @wasm_bin.Module, t : @wasm_bin.SubType) -> String {
-  let out = StringBuilder::new()
+fn describes_clauses(
+  m : @wasm_bin.Module,
+  t : @wasm_bin.SubType,
+) -> Array[Sexp] {
+  let out : Array[Sexp] = []
   if t.describes is Some(i) {
-    out.write_string(" (describes " + name_or(m.names.types, i) + ")")
+    out.push(List([Atom("describes"), Atom(name_or(m.names.types, i))]))
   }
   if t.descriptor is Some(i) {
-    out.write_string(" (descriptor " + name_or(m.names.types, i) + ")")
+    out.push(List([Atom("descriptor"), Atom(name_or(m.names.types, i))]))
   }
-  out.to_string()
+  out
 }
 
 ///|
@@ -98,47 +112,51 @@ fn comptype(
   m : @wasm_bin.Module,
   of_ : Int,
   c : @wasm_bin.CompositeType,
-) -> String {
+) -> Sexp {
   match c {
-    Func(ft) => "(func" + functype(m, ft) + ")"
-    Array(at) => "(array " + fieldtype(m, at.element) + ")"
-    Cont(i) => "(cont " + name_or(m.names.types, i) + ")"
+    Func(ft) => {
+      let l : Array[Sexp] = [Atom("func")]
+      for x in functype(m, ft) {
+        l.push(x)
+      }
+      List(l)
+    }
+    Array(at) => List([Atom("array"), Atom(fieldtype(m, at.element))])
+    Cont(i) => List([Atom("cont"), Atom(name_or(m.names.types, i))])
     Struct(st) => {
-      let out = StringBuilder::new()
-      out.write_string("(struct")
+      let l : Array[Sexp] = [Atom("struct")]
       let field_names = m.names.fields.get(of_).unwrap_or(Map([]))
       for j, f in st.fields {
-        out.write_string(" (field ")
-        if field_names.get(j) is Some(n) {
-          out.write_string("$" + text_of(n) + " ")
+        let name = match field_names.get(j) {
+          Some(n) => "$" + text_of(n)
+          None => ""
         }
-        out.write_string(fieldtype(m, f) + ")")
+        l.push(List(named_type(name, "field", fieldtype(m, f))))
       }
-      out.write_string(")")
-      out.to_string()
+      List(l)
     }
   }
 }
 
 ///|
 /// A function type's parameters and results, each group written once.
-fn functype(m : @wasm_bin.Module, ft : @wasm_bin.FuncType) -> String {
-  let out = StringBuilder::new()
+fn functype(m : @wasm_bin.Module, ft : @wasm_bin.FuncType) -> Array[Sexp] {
+  let out : Array[Sexp] = []
   if !ft.params.is_empty() {
-    out.write_string(" (param")
+    let l : Array[Sexp] = [Atom("param")]
     for t in ft.params {
-      out.write_string(" " + valtype(t, m.names.types))
+      l.push(Atom(valtype(t, m.names.types)))
     }
-    out.write_string(")")
+    out.push(List(l))
   }
   if !ft.results.is_empty() {
-    out.write_string(" (result")
+    let l : Array[Sexp] = [Atom("result")]
     for t in ft.results {
-      out.write_string(" " + valtype(t, m.names.types))
+      l.push(Atom(valtype(t, m.names.types)))
     }
-    out.write_string(")")
+    out.push(List(l))
   }
-  out.to_string()
+  out
 }
 
 ///|
@@ -167,37 +185,39 @@ fn globaltype(m : @wasm_bin.Module, g : @wasm_bin.GlobalType) -> String {
 
 ///|
 /// A memory's or table's size bounds, and what else the limits carry.
-fn limits(l : @wasm_types.Limits) -> String {
-  let out = StringBuilder::new()
+fn limits(l : @wasm_types.Limits) -> Array[Sexp] {
+  let out : Array[Sexp] = []
   if l.address_type is I64 {
-    out.write_string(" i64")
+    out.push(Atom("i64"))
   }
-  out.write_string(" " + l.mi.to_string())
+  out.push(Atom(l.mi.to_string()))
   if l.ma is Some(x) {
-    out.write_string(" " + x.to_string())
+    out.push(Atom(x.to_string()))
   }
   if l.shared {
-    out.write_string(" shared")
+    out.push(Atom("shared"))
   }
   if l.page_size_log2 is Some(p) {
-    out.write_string(" (pagesize " + (1UL << p).to_string() + ")")
+    out.push(List([Atom("pagesize"), Atom((1UL << p).to_string())]))
   }
-  out.to_string()
+  out
 }
 
 ///|
-fn tabletype(m : @wasm_bin.Module, t : @wasm_bin.TableType) -> String {
-  limits(t.limits) + " " + reftype(t.elem_type, m.names.types)
+fn tabletype(m : @wasm_bin.Module, t : @wasm_bin.TableType) -> Array[Sexp] {
+  let out = limits(t.limits)
+  out.push(Atom(reftype(t.elem_type, m.names.types)))
+  out
 }
 
 ///|
 /// The type of an imported or defined function or tag, written inline.
-fn typeuse(m : @wasm_bin.Module, k : Int) -> String {
+fn typeuse(m : @wasm_bin.Module, k : Int) -> Array[Sexp] {
   match m.types[k].composite {
     Func(ft) => functype(m, ft)
     // Anything else at a function's type index is not a function type, and
     // there is no inline spelling for it -- so name it.
-    _ => " (type " + name_or(m.names.types, k) + ")"
+    _ => [List([Atom("type"), Atom(name_or(m.names.types, k))])]
   }
 }
 
@@ -208,7 +228,7 @@ fn typeuse(m : @wasm_bin.Module, k : Int) -> String {
 ///
 /// A COMPACT group is one entry standing for a run of imports from the same
 /// module, and it is written as one field with an `item` per name.
-fn import_field(m : @wasm_bin.Module, k : Int) -> String {
+fn import_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   let i = m.imports[k]
   let at = import_slots(m, k)
   match i.group {
@@ -216,11 +236,34 @@ fn import_field(m : @wasm_bin.Module, k : Int) -> String {
     None => {
       let (kind, id, typ, desc) = import_parts(m, i.desc, at)
       let e = export_clauses(m, desc)
-      let names = quoted(i.mod_name) + " " + quoted(i.name)
-      if e == "" {
-        "(import " + names + " (" + kind + id + typ + "))"
+      let names : Array[Sexp] = [
+        Atom("import"),
+        Atom(quoted(i.mod_name)),
+        Atom(quoted(i.name)),
+      ]
+      if e.is_empty() {
+        let inner : Array[Sexp] = [Atom(kind)]
+        for x in id {
+          inner.push(x)
+        }
+        for x in typ {
+          inner.push(x)
+        }
+        List([block(names), List([block(inner)])])
       } else {
-        "(" + kind + id + e + " (import " + names + ")" + typ + ")"
+        let head : Array[Sexp] = [Atom(kind)]
+        for x in id {
+          head.push(x)
+        }
+        for x in e {
+          head.push(x)
+        }
+        head.push(List(names))
+        let l : Array[Sexp] = [block(head)]
+        for x in typ {
+          l.push(x)
+        }
+        List(l)
       }
     }
   }
@@ -234,30 +277,42 @@ fn compact_import(
   i : @wasm_bin.Import,
   g : @wasm_bin.ImportGroup,
   at : Map[String, Int],
-) -> String {
-  let out = StringBuilder::new()
-  out.write_string("(import " + quoted(i.mod_name))
+) -> Sexp {
+  let out : Array[Sexp] = [block([Atom("import"), Atom(quoted(i.mod_name))])]
   match g {
     Heterogeneous(items) =>
       for it in items {
         let (kind, id, typ, _) = import_parts(m, it.1, at)
-        out.write_string(
-          " (item " + quoted(it.0) + " (" + kind + id + typ + "))",
-        )
+        let inner : Array[Sexp] = [Atom(kind)]
+        for x in id {
+          inner.push(x)
+        }
+        for x in typ {
+          inner.push(x)
+        }
+        out.push(List([Atom("item"), Atom(quoted(it.0)), List([block(inner)])]))
         bump(at, kind)
       }
     Homogeneous(names) => {
       let (kind, _, typ, _) = import_parts(m, i.desc, at)
       for n in names {
         let (_, id, _, _) = import_parts(m, i.desc, at)
-        out.write_string(" (item" + id + " " + quoted(n) + ")")
+        let item : Array[Sexp] = [Atom("item")]
+        for x in id {
+          item.push(x)
+        }
+        item.push(Atom(quoted(n)))
+        out.push(List(item))
         bump(at, kind)
       }
-      out.write_string(" (" + kind + typ + ")")
+      let tail : Array[Sexp] = [Atom(kind)]
+      for x in typ {
+        tail.push(x)
+      }
+      out.push(List(tail))
     }
   }
-  out.write_string(")")
-  out.to_string()
+  List(out)
 }
 
 ///|
@@ -307,136 +362,154 @@ fn import_parts(
   m : @wasm_bin.Module,
   d : @wasm_bin.ImportDesc,
   at : Map[String, Int],
-) -> (String, String, String, @wasm_bin.ExportDesc) {
+) -> (String, Array[Sexp], Array[Sexp], @wasm_bin.ExportDesc) {
   let k = kind_of(d)
   let n = at.get(k).unwrap_or(0)
   match d {
     Func(t, exact) => {
-      let typ = if exact {
-        " (exact" + typeuse(m, t) + ")"
+      let typ : Array[Sexp] = if exact {
+        let l : Array[Sexp] = [Atom("exact")]
+        for x in typeuse(m, t) {
+          l.push(x)
+        }
+        [List(l)]
       } else {
         typeuse(m, t)
       }
-      ("func", " " + name_or(m.names.functions, n), typ, Func(n))
+      ("func", [Atom(name_or(m.names.functions, n))], typ, Func(n))
     }
     Global(g) =>
       (
         "global",
-        " " + name_or(m.names.globals, n),
-        " " + globaltype(m, g),
+        [Atom(name_or(m.names.globals, n))],
+        [Atom(globaltype(m, g))],
         Global(n),
       )
-    Tag(t) => ("tag", " " + name_or(m.names.tags, n), typeuse(m, t), Tag(n))
+    Tag(t) => ("tag", [Atom(name_or(m.names.tags, n))], typeuse(m, t), Tag(n))
     Memory(mt) =>
       (
         "memory",
-        " " + name_or(m.names.memories, n),
+        [Atom(name_or(m.names.memories, n))],
         limits(mt.limits),
         Memory(n),
       )
     Table(tt) =>
-      (
-        "table",
-        " " + name_or(m.names.tables, n),
-        " " + tabletype(m, tt),
-        Table(n),
-      )
+      ("table", [Atom(name_or(m.names.tables, n))], tabletype(m, tt), Table(n))
   }
 }
 
 ///|
 /// A global: its type, then the constant expression that initialises it.
-fn global_field(m : @wasm_bin.Module, k : Int) -> String raise WatError {
+fn global_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   let g = m.globals[k]
   let at = k + imported_count(m, "global")
-  let head = "(global " +
-    name_or(m.names.globals, at) +
-    export_clauses(m, Global(at)) +
-    " " +
-    globaltype(m, g.type_)
-  head + const_expr(m, g.init) + ")"
+  let head : Array[Sexp] = [Atom("global"), Atom(name_or(m.names.globals, at))]
+  for e in export_clauses(m, Global(at)) {
+    head.push(e)
+  }
+  head.push(Atom(globaltype(m, g.type_)))
+  let l : Array[Sexp] = [block(head)]
+  for x in const_expr(m, g.init) {
+    l.push(x)
+  }
+  List(l)
 }
 
 ///|
-fn tag_field(m : @wasm_bin.Module, k : Int) -> String {
+fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   let at = k + imported_count(m, "tag")
-  "(tag " +
-  name_or(m.names.tags, at) +
-  export_clauses(m, Tag(at)) +
-  typeuse(m, m.tags[k].type_idx) +
-  ")"
+  let head : Array[Sexp] = [Atom("tag"), Atom(name_or(m.names.tags, at))]
+  for e in export_clauses(m, Tag(at)) {
+    head.push(e)
+  }
+  for x in typeuse(m, m.tags[k].type_idx) {
+    head.push(x)
+  }
+  List([block(head)])
 }
 
 ///|
-/// A memory, with the data segments written inline where the source wrote
-/// them -- which is what a wax `memory m: i32 [1] = "..."` becomes.
-fn memory_field(m : @wasm_bin.Module, k : Int) -> String {
+fn memory_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   let at = k + imported_count(m, "memory")
-  "(memory " +
-  name_or(m.names.memories, at) +
-  export_clauses(m, Memory(at)) +
-  limits(m.memories[k].limits) +
-  ")"
+  let head : Array[Sexp] = [Atom("memory"), Atom(name_or(m.names.memories, at))]
+  for e in export_clauses(m, Memory(at)) {
+    head.push(e)
+  }
+  for x in limits(m.memories[k].limits) {
+    head.push(x)
+  }
+  List([block(head)])
 }
 
 ///|
-fn table_field(m : @wasm_bin.Module, k : Int) -> String raise WatError {
+fn table_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   let t = m.tables[k]
   let at = k + imported_count(m, "table")
-  let head = "(table " +
-    name_or(m.names.tables, at) +
-    export_clauses(m, Table(at)) +
-    " " +
-    tabletype(m, t.type_)
-  match t.init {
-    Some(e) => head + const_expr(m, e) + ")"
-    None => head + ")"
+  let head : Array[Sexp] = [Atom("table"), Atom(name_or(m.names.tables, at))]
+  for e in export_clauses(m, Table(at)) {
+    head.push(e)
   }
+  for x in tabletype(m, t.type_) {
+    head.push(x)
+  }
+  let l : Array[Sexp] = [block(head)]
+  if t.init is Some(e) {
+    for x in const_expr(m, e) {
+      l.push(x)
+    }
+  }
+  List(l)
 }
 
 ///|
-fn elem_field(m : @wasm_bin.Module, k : Int) -> String raise WatError {
+fn elem_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   let e = m.elems[k]
-  let out = StringBuilder::new()
-  out.write_string("(elem " + name_or(m.names.elem, k))
+  let head : Array[Sexp] = [Atom("elem"), Atom(name_or(m.names.elem, k))]
   match e.mode {
     Passive => ()
-    Declarative => out.write_string(" declare")
+    Declarative => head.push(Atom("declare"))
     Active(tab, offset) => {
       if tab != 0 {
-        out.write_string(" (table " + name_or(m.names.tables, tab) + ")")
+        head.push(List([Atom("table"), Atom(name_or(m.names.tables, tab))]))
       }
-      out.write_string(" (offset" + const_expr(m, offset) + ")")
+      head.push(clause("offset", const_expr(m, offset)))
     }
   }
-  out.write_string(" " + reftype(e.type_, m.names.types))
+  head.push(Atom(reftype(e.type_, m.names.types)))
+  let items : Array[Sexp] = []
   for item in e.init {
-    out.write_string(" (item" + const_expr(m, item) + ")")
+    items.push(clause("item", const_expr(m, item)))
   }
-  out.write_string(")")
-  out.to_string()
+  List([block(head), block(items)])
 }
 
 ///|
-fn data_field(m : @wasm_bin.Module, k : Int) -> String raise WatError {
+fn data_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
   let d = m.datas[k]
-  let out = StringBuilder::new()
-  out.write_string("(data " + name_or(m.names.data, k))
+  let head : Array[Sexp] = [Atom("data"), Atom(name_or(m.names.data, k))]
   if d.mode is Active(mem, offset) {
     if mem != 0 {
-      out.write_string(" (memory " + name_or(m.names.memories, mem) + ")")
+      head.push(List([Atom("memory"), Atom(name_or(m.names.memories, mem))]))
     }
-    out.write_string(" (offset" + const_expr(m, offset) + ")")
+    head.push(clause("offset", const_expr(m, offset)))
   }
-  out.write_string(" " + quoted(d.init) + ")")
-  out.to_string()
+  List([block(head), Atom(quoted(d.init))])
+}
+
+///|
+/// `(offset ...)` and the like: a keyword and what it wraps.
+fn clause(name : String, body : Array[Sexp]) -> Sexp {
+  let l : Array[Sexp] = [Atom(name)]
+  for x in body {
+    l.push(x)
+  }
+  List(l)
 }
 
 ///|
 /// How many items of a kind the imports took before the defined ones start.
 fn imported_count(m : @wasm_bin.Module, of_ : String) -> Int {
-  let at = import_slots(m, m.imports.length())
-  at.get(of_).unwrap_or(0)
+  import_slots(m, m.imports.length()).get(of_).unwrap_or(0)
 }
 
 ///|
@@ -446,15 +519,11 @@ fn imported_count(m : @wasm_bin.Module, of_ : String) -> Int {
 fn const_expr(
   m : @wasm_bin.Module,
   body : Array[@wasm_bin.Instruction],
-) -> String raise WatError {
-  if body.is_empty() {
-    return ""
-  }
+) -> Array[Sexp] raise WatError {
   let ctx = { m, locals: Map([]), labels: Map([]), opened: 0, scope: [] }
-  let out = StringBuilder::new()
+  let out : Array[Sexp] = []
   for node in fold(body, []) {
-    out.write_char(' ')
-    out.write_string(folded(node, ctx))
+    out.push(folded(node, ctx))
   }
-  out.to_string()
+  out
 }

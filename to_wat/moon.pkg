@@ -3,6 +3,7 @@ import {
   "waxmb/wax/wasm_types",
   "moonbitlang/core/ref",
   "moonbitlang/core/debug",
+  "waxmb/wax/printer",
 }
 
 import {

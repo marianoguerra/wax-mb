@@ -46,6 +46,19 @@ pub fn mnemonic(
   names : @wasm_bin.Names,
   locals : Map[Int, Bytes],
   scope? : Array[String?] = [],
+) -> Sexp raise WatError {
+  Atom(mnemonic_text(i, names, locals, scope~))
+}
+
+///|
+/// The same, as one string. The immediates are not separate atoms yet, so an
+/// instruction breaks as a unit -- which is where the layout still differs from
+/// the reference for the few whose immediate lists are long.
+fn mnemonic_text(
+  i : @wasm_bin.Instruction,
+  names : @wasm_bin.Names,
+  locals : Map[Int, Bytes],
+  scope? : Array[String?] = [],
 ) -> String raise WatError {
   // Everything with no immediate follows one rule and lives in its own table;
   // what is left here is the instructions whose immediates have to be written.

@@ -1,16 +1,15 @@
 // The module, as the text format writes it.
 //
-// No `(module ...)` wrapper: the reference prints the FIELDS, one per line,
-// because that is what a wax module converts to -- a list of them, not a
-// nested document.
+// No `(module ...)` wrapper unless the module is named: the reference lays an
+// unnamed one out as its FIELDS, one per line, because that is what a wax
+// module converts to -- a list of them, not a nested document.
 
 ///|
 /// Print a module's text form.
 pub fn print_module(m : @wasm_bin.Module) -> String raise WatError {
-  let out = StringBuilder::new()
+  let fields : Array[Sexp] = []
   for f in m.field_order {
-    out.write_string(field(m, f))
-    out.write_char('\n')
+    fields.push(field(m, f))
   }
   // Whatever the source did not place: the types a lowering materialised for
   // itself, and the element segments minted to declare function references.
@@ -29,38 +28,47 @@ pub fn print_module(m : @wasm_bin.Module) -> String raise WatError {
   }
   for k in 0..<m.types.length() {
     if !placed_types.contains(k) {
-      out.write_string(subtype_field(m, k))
-      out.write_char('\n')
+      fields.push(subtype_field(m, k))
     }
   }
   for k in 0..<m.elems.length() {
     if !placed_elems.contains(k) {
-      out.write_string(elem_field(m, k))
-      out.write_char('\n')
+      fields.push(elem_field(m, k))
     }
   }
   if m.start is Some(f) {
-    out.write_string("(start " + name_or(m.names.functions, f) + ")\n")
+    fields.push(List([Atom("start"), Atom(name_or(m.names.functions, f))]))
   }
-  out.to_string()
+  // A NAMED module keeps its wrapper, and then its fields are one level deeper
+  // -- which is what makes them pack rather than each claim its own block.
+  match m.names.module_ {
+    Some(n) => {
+      let l : Array[Sexp] = [
+        Block([Atom("module"), Atom("$" + text_of(n))], KBox, true),
+      ]
+      for f in fields {
+        l.push(f)
+      }
+      render(List(l), top_depth=0) + "\n"
+    }
+    None => render(VBlock(fields)) + "\n"
+  }
 }
 
 ///|
 /// One module field, written where the source put it.
-fn field(m : @wasm_bin.Module, f : @wasm_bin.FieldRef) -> String raise WatError {
+fn field(m : @wasm_bin.Module, f : @wasm_bin.FieldRef) -> Sexp raise WatError {
   match f {
     // A `rec` group is one field holding several definitions; a lone type is
     // written bare, because a singleton `rec` is a DIFFERENT type and the
     // source said which it wrote.
     FTypes([k]) => subtype_field(m, k)
     FTypes(ks) => {
-      let out = StringBuilder::new()
-      out.write_string("(rec")
+      let l : Array[Sexp] = [Atom("rec")]
       for k in ks {
-        out.write_string(" " + subtype_field(m, k))
+        l.push(subtype_field(m, k))
       }
-      out.write_string(")")
-      out.to_string()
+      List(l)
     }
     FImport(k) => import_field(m, k)
     FFunc(k) => function_field(m, k, m.codes[k])
@@ -83,42 +91,55 @@ fn function_field(
   m : @wasm_bin.Module,
   k : Int,
   code : @wasm_bin.FunctionCode,
-) -> String raise WatError {
-  let imported = m.imports.length() - m.codes.length()
-  let index = (if imported > 0 { imported } else { 0 }) + k
-  let out = StringBuilder::new()
-  out.write_string(
-    "(func " +
-    name_or(m.names.functions, index) +
-    export_clauses(m, Func(index)),
-  )
+) -> Sexp raise WatError {
+  let index = k + imported_count(m, "func")
   let locals = m.names.locals.get(index).unwrap_or(Map([]))
   let ft = match m.types[m.funcs[k]].composite {
     Func(ft) => ft
     _ => raise NotPrinted("a function whose type is not a function type")
   }
+  // The head -- name, exports, signature -- breaks as one group, so a long
+  // signature wraps under the name rather than each clause taking a line.
+  let head : Array[Sexp] = [
+    Atom("func"),
+    Atom(name_or(m.names.functions, index)),
+  ]
+  for e in export_clauses(m, Func(index)) {
+    head.push(e)
+  }
   for p, ty in ft.params {
-    out.write_string(
-      " (param " + local_name(locals, p) + valtype(ty, m.names.types) + ")",
+    head.push(
+      List(
+        named_type(local_name(locals, p), "param", valtype(ty, m.names.types)),
+      ),
     )
   }
-  for ty in ft.results {
-    out.write_string(" (result " + valtype(ty, m.names.types) + ")")
+  if !ft.results.is_empty() {
+    let r : Array[Sexp] = [Atom("result")]
+    for ty in ft.results {
+      r.push(Atom(valtype(ty, m.names.types)))
+    }
+    head.push(List(r))
   }
+  let out : Array[Sexp] = [block(head)]
   // The DECLARED locals follow the parameters in the same index space, so
-  // their names are looked up past the parameter count.
-  for j, ty in code.locals {
-    out.write_string(
-      "\n  (local " +
-      local_name(locals, ft.params.length() + j) +
-      valtype(ty, m.names.types) +
-      ")",
-    )
+  // their names are looked up past the parameter count. They pack onto as few
+  // lines as they fit on, which is what `hov` means.
+  if !code.locals.is_empty() {
+    let l : Array[Sexp] = []
+    for j, ty in code.locals {
+      l.push(
+        List(
+          named_type(
+            local_name(locals, ft.params.length() + j),
+            "local",
+            valtype(ty, m.names.types),
+          ),
+        ),
+      )
+    }
+    out.push(Block(l, KHov, false))
   }
-  // One line when the whole function fits, and one statement per line when it
-  // does not -- which is what the reference's layout comes to for a body whose
-  // statements are each a single folded group.
-  let statements : Array[String] = []
   let ctx = {
     m,
     locals,
@@ -127,21 +148,26 @@ fn function_field(
     scope: [],
   }
   for node in fold(code.body, code.spans, nested=code.nested_spans) {
-    statements.push(folded(node, ctx))
+    out.push(folded(node, ctx))
   }
-  let head = out.to_string()
-  let flat = head + join_with(statements, " ", before=" ") + ")"
-  if flat.length() <= 80 && !flat.contains("\n") {
-    return flat
-  }
-  head + join_with(statements, "\n  ", before="\n  ") + ")"
+  List(out)
 }
 
 ///|
-/// A local's name, with the trailing space the caller needs, or nothing.
+/// `(param $x i32)`, or `(param i32)` when nothing named it.
+fn named_type(name : String, kind : String, ty : String) -> Array[Sexp] {
+  if name == "" {
+    [Atom(kind), Atom(ty)]
+  } else {
+    [Atom(kind), Atom(name), Atom(ty)]
+  }
+}
+
+///|
+/// A local's name, or nothing.
 fn local_name(locals : Map[Int, Bytes], k : Int) -> String {
   match locals.get(k) {
-    Some(b) => "$" + text_of(b) + " "
+    Some(b) => "$" + text_of(b)
     None => ""
   }
 }
@@ -163,34 +189,28 @@ priv struct Ctx {
 }
 
 ///|
-/// One folded instruction: `(head operand operand)`, or just `head` when it
+/// One folded instruction: `(head operand operand)`, or just `(head)` when it
 /// takes none.
 ///
 /// A structural instruction is written the same way, except that what follows
 /// the head is the code it guards rather than values it consumes.
-fn folded(node : Node, ctx : Ctx) -> String raise WatError {
+fn folded(node : Node, ctx : Ctx) -> Sexp raise WatError {
   if !node.bodies.is_empty() ||
     node.head is (Block(_, _) | Loop(_, _) | If(_, _, _)) {
     return structural(node, ctx)
   }
   let head = mnemonic(node.head, ctx.m.names, ctx.locals, scope=ctx.scope)
-  if node.operands.is_empty() {
-    return "(" + head + ")"
-  }
-  let out = StringBuilder::new()
-  out.write_string("(" + head)
+  let l : Array[Sexp] = [head]
   for operand in node.operands {
-    out.write_char(' ')
-    out.write_string(folded(operand, ctx))
+    l.push(folded(operand, ctx))
   }
-  out.write_string(")")
-  out.to_string()
+  List(l)
 }
 
 ///|
 /// `(block $l (result T) body...)`, and the two that shape their bodies
 /// differently: `if`, whose operand comes before two named clauses.
-fn structural(node : Node, ctx : Ctx) -> String raise WatError {
+fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
   // The label is claimed BEFORE the body is printed, because that is the order
   // the blocks open in and so the order the names are numbered in.
   let opened = ctx.opened
@@ -199,41 +219,45 @@ fn structural(node : Node, ctx : Ctx) -> String raise WatError {
     Some(b) => Some(text_of(b))
     None => None
   }
-  let id = match name {
-    Some(n) => " $" + n
-    None => ""
-  }
   let (word, bt) = match node.head {
     Block(bt, _) => ("block", bt)
     Loop(bt, _) => ("loop", bt)
     If(bt, _, _) => ("if", bt)
     _ => raise NotPrinted(constructor_of(node.head))
   }
-  let out = StringBuilder::new()
-  out.write_string("(" + word + id + blocktype(bt, ctx.m))
+  let head : Array[Sexp] = [Atom(word)]
+  if name is Some(n) {
+    head.push(Atom("$" + n))
+  }
+  for t in blocktype(bt, ctx.m) {
+    head.push(t)
+  }
+  let l : Array[Sexp] = [block(head)]
   // The `if` condition is an operand, and it is written before the clauses.
   for operand in node.operands {
-    out.write_char(' ')
-    out.write_string(folded(operand, ctx))
+    l.push(folded(operand, ctx))
   }
   ctx.scope.push(name)
   let clauses = if word == "if" { ["then", "else"] } else { [] }
   for j, body in node.bodies {
-    let inner : Array[String] = []
+    let inner : Array[Sexp] = []
     for child in body {
       inner.push(folded(child, ctx))
     }
     if j < clauses.length() {
-      out.write_string(
-        " (" + clauses[j] + join_with(inner, " ", before=" ") + ")",
-      )
+      let c : Array[Sexp] = [Atom(clauses[j])]
+      for x in inner {
+        c.push(x)
+      }
+      l.push(List(c))
     } else {
-      out.write_string(join_with(inner, " ", before=" "))
+      for x in inner {
+        l.push(x)
+      }
     }
   }
   let _ = ctx.scope.pop()
-  out.write_string(")")
-  out.to_string()
+  List(l)
 }
 
 ///|
@@ -241,34 +265,20 @@ fn structural(node : Node, ctx : Ctx) -> String raise WatError {
 fn blocktype(
   bt : @wasm_bin.BlockType,
   m : @wasm_bin.Module,
-) -> String raise WatError {
+) -> Array[Sexp] raise WatError {
   match bt {
-    Empty => ""
-    Value(t) => " (result " + valtype(t, m.names.types) + ")"
+    Empty => []
+    Value(t) => [List([Atom("result"), Atom(valtype(t, m.names.types))])]
     MultiValue(ts) | InlineType([], ts) => {
-      let out = StringBuilder::new()
+      let out : Array[Sexp] = []
       for t in ts {
-        out.write_string(" (result " + valtype(t, m.names.types) + ")")
+        out.push(List([Atom("result"), Atom(valtype(t, m.names.types))]))
       }
-      out.to_string()
+      out
     }
     // A block that CONSUMES values is spelled as a reference to the signature
     // that describes it, because the inline form has no room for parameters.
-    TypeIndex(k) => " (type " + name_or(m.names.types, k) + ")"
+    TypeIndex(k) => [List([Atom("type"), Atom(name_or(m.names.types, k))])]
     InlineType(_, _) => raise NotPrinted("a block type with parameters")
   }
-}
-
-///|
-/// Join with a separator, prefixed when there is anything to join.
-fn join_with(parts : Array[String], sep : String, before~ : String) -> String {
-  if parts.is_empty() {
-    return ""
-  }
-  let out = StringBuilder::new()
-  for k, p in parts {
-    out.write_string(if k == 0 { before } else { sep })
-    out.write_string(p)
-  }
-  out.to_string()
 }
