@@ -1411,6 +1411,13 @@ pub fn Checker::statement(
         name: "<while:" + loc.start.cnum.to_string() + ">",
         loc,
       }
+      let (cond, _) = reject_control_holes(
+        ctx,
+        "while",
+        "condition",
+        Int("0"),
+        cond,
+      )
       let lowered = @ast.lower_while(
         loc,
         fresh_loop=fresh,
@@ -1456,6 +1463,13 @@ pub fn Checker::statement(
           None => seen[a.0.name] = a.0.loc
         }
       }
+      let (index, _) = reject_control_holes(
+        ctx,
+        "dispatch",
+        "index",
+        Int("0"),
+        index,
+      )
       let lowered = @ast.lower_dispatch(loc, index~, cases~, default~, arms~)
       // Typed as a SEQUENCE in the current stack rather than as an isolated
       // block, so a value the trailing arm leaves -- the dispatch's own
@@ -1669,6 +1683,13 @@ pub fn Checker::statement(
           loc,
         })
       }
+      let (scrutinee, _) = reject_control_holes(
+        ctx,
+        "match",
+        "scrutinee",
+        Null,
+        scrutinee,
+      )
       let lowered = @ast.lower_match(loc, labels~, scrutinee~, arms~, default~)
       // In the current stack, as for `Dispatch` above: the escape block's
       // fall-through -- the no-match path through the default -- is the match's

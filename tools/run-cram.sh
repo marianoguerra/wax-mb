@@ -53,7 +53,6 @@ declare -A KNOWN_FAILING=(
   [duplicate-diagnostic-chains.t]="diagnostic chain differs"
   [error-format-short.t]="usage text for an unknown --error-format differs"
   [float-literal-f32-range.t]="missing check"
-  [hole-control-operand.t]="missing check"
   [hole-struct-reorder.t]="missing check"
   [new-lints-wax.t]="missing lints"
   [non-empty-stack-location.t]="diagnostic span differs"

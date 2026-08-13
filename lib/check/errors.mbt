@@ -2181,6 +2181,27 @@ pub fn call_targets_direct_call(
 }
 
 ///|
+/// A hole standing where the construct evaluates its operand in a block of its
+/// own, whose stack the pending values never reach.
+pub fn hole_in_control_operand(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  construct : String,
+  role : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A hole")
+    .sep(@message.code("_"))
+    .sep(@message.text("cannot be used as a"))
+    .sep(@message.code(construct))
+    .sep(@message.text(role))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
 /// A value pushed where a later hole needs to reach under it.
 ///
 /// Anchored at the VALUE, not at the hole: the hole is the intent, the value is

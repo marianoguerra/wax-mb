@@ -20,6 +20,34 @@
 // same mistake seen again from further in.
 
 ///|
+/// Reject a hole in the operand of a construct that lowers to blocks.
+///
+/// A `match` scrutinee, a `dispatch` index and a `while` condition are all
+/// evaluated INSIDE the blocks their construct lowers to, and a block's stack
+/// excludes the values pending in the enclosing sequence -- so a hole there has
+/// nothing to take. A `while` condition could not take one even in principle:
+/// it runs once per iteration, and the value would be gone after the first.
+///
+/// Rejected outright rather than left to underflow, and the operand replaced
+/// with a hole-free value of the shape the construct wants, so the lowering
+/// still type-checks and the reader gets one clear error instead of a cascade.
+/// The flag says the operand was replaced, for a caller with a follow-up check
+/// that the replacement would answer wrongly.
+pub fn reject_control_holes(
+  ctx : @typing_env.ModuleContext,
+  construct : String,
+  role : String,
+  recovery : @ast.InstrDesc[@basic.Location],
+  operand : @ast.Instr[@basic.Location],
+) -> (@ast.Instr[@basic.Location], Bool) {
+  if !contains_hole(operand) {
+    return (operand, false)
+  }
+  hole_in_control_operand(ctx.diagnostics, operand.info, construct, role)
+  ({ ..operand, desc: recovery }, true)
+}
+
+///|
 /// The running state of one statement's hole-order walk.
 ///
 /// `value_loc` is the first value-producing operand met in emission order, and
