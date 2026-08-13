@@ -331,7 +331,18 @@ fn Lowering::hinted(
       }
       // Bound right to left: the values are on the stack with the LAST on top,
       // and each `local.set` takes the top one.
+      //
+      // SEVERAL bindings take a span each, because each is a statement: they
+      // take turns off the same stack rather than nesting over one another,
+      // and without the spans the printer reads the run as one tree and writes
+      // `(local.set $q (local.set $r (call ...)))`.
+      //
+      // ONE binding is the opposite: `let x = e;` is `(local.set $x e)`, the
+      // set folding over the initialiser, so it stays the node's own emission
+      // and takes no span. Spanning it too was measured at 1395 exact to 1087.
+      let many = bindings.length() > 1
       for k = bindings.length() - 1; k >= 0; k = k - 1 {
+        let at = out.length()
         match bindings[k].0 {
           // An anonymous binding is a drop: `_ = e` computes and discards.
           None => out.push(Drop)
@@ -341,6 +352,9 @@ fn Lowering::hinted(
             }
             out.push(LocalSet(slot))
           }
+        }
+        if many {
+          self.spans.push({ start: at, head: at, end: at + 1, loc })
         }
       }
     }
