@@ -237,17 +237,24 @@ pub fn type_layout(
     }
   }
 
+  fn place_import_signature(decl : @ast.ImportDecl) -> Unit {
+    match decl.kind {
+      Func(..) => place_named("<func:" + decl.id.name + ">")
+      Tag(..) => place_named("<functype:" + decl.id.name + ">")
+      _ => ()
+    }
+  }
+
   @typing.walk_fields(ctx, source, field => {
     match field.desc {
-      Import(decl~, ..) =>
-        if decl.desc.kind is Func(..) {
-          place_named("<func:" + decl.desc.id.name + ">")
-        }
+      // An IMPORT's signature is a module-level reference and is interned when
+      // the import is registered, so it comes before anything a body needs --
+      // and a tag import's signature comes with it, at its written position,
+      // rather than with the defined tags much later.
+      Import(decl~, ..) => place_import_signature(decl.desc)
       ImportGroup(decls~, ..) =>
         for d in decls {
-          if d.desc.kind is Func(..) {
-            place_named("<func:" + d.desc.id.name + ">")
-          }
+          place_import_signature(d.desc)
         }
       _ => ()
     }
