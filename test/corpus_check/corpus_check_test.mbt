@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 178482 poisoned 0 files 1907 clean 1733",
+    content="nodes 181245 poisoned 0 files 1907 clean 1736",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -142,7 +142,7 @@ test "the checker annotates every node it reaches" {
       #|8 Expecting 1 value(s) from the stack, but there are 0.
       #|6 Expecting 1 returned value(s) from the stack, but there are 0.
       #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.
-      #|6 The local variable 'handler' has not been initialized.
+      #|6 The type 'bytes' is not bound.
 
     ),
   )

@@ -3257,7 +3257,15 @@ fn Checker::call(
   Array[@infer.Cell[@infer.InferredType]],
 ) {
   let ctx = self.ctx
-  let callee_ = self.expression(callee)
+  // The callee is typed FIRST, because its function type is what the arguments
+  // are checked against -- but it is EMITTED LAST, after them, since `call_ref`
+  // takes the reference off the top of the stack. So its reads of locals are
+  // deferred to that slot (an argument may initialize one first) and its own
+  // writes are withheld from it (an argument runs before it and must not see
+  // them). `replay` below puts both back in the right place.
+  let (callee_, replay) = type_trailing_operand(ctx, () => {
+    self.expression(callee)
+  })
   // Asked ONCE: `expression_type` reports a callee that produces no value or
   // several, so asking twice would report it twice.
   let callee_type = expression_type(ctx, callee_.info)
@@ -3319,6 +3327,8 @@ fn Checker::call(
     }
     args_.push(c)
   }
+  // The callee's emission slot: after every argument.
+  replay()
   let results : Array[@infer.Cell[@infer.InferredType]] = match
     callee_type.get() {
     Valtype({ typ: Ref({ typ: Type(_) | Exact(_), .. }), .. }) =>
