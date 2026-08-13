@@ -161,12 +161,31 @@ fn fold_body(
       }
       bodies[j] = fold_body(inner[j], s, nested, cursor)
     }
-    out[k] = {
-      head,
-      operands: fold_body_range(body, all_spans, start, end - 1, nested, cursor),
-      bodies,
-      loc: bounds[k].loc,
+    // A node may emit SEVERAL instructions of its own -- a cast that boxes an
+    // i32 as an i31 and then converts it to an extern emits two. They are a
+    // chain: each takes what the one before it left, and the text writes that
+    // as nesting. The operands belong to the first of them.
+    let hs = bounds[k].head
+    let mut inner = fold_body_range(
+      body,
+      all_spans,
+      start,
+      if hs > start {
+        hs
+      } else {
+        end - 1
+      },
+      nested,
+      cursor,
+    )
+    if hs > start && hs < end - 1 {
+      for j in hs..<(end - 1) {
+        inner = [
+          { head: body[j], operands: inner, bodies: [], loc: bounds[k].loc },
+        ]
+      }
     }
+    out[k] = { head, operands: inner, bodies, loc: bounds[k].loc }
   }
   out
 }
