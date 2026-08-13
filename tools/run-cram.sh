@@ -50,7 +50,6 @@ export WAX_WARN="correctness=hidden"
 declare -A KNOWN_FAILING=(
   [become-non-function.t]="missing check"
   [block-exit-mismatch.t]="diagnostic span differs"
-  [compound-assign-hole-order.t]="missing check"
   [duplicate-diagnostic-chains.t]="diagnostic chain differs"
   [error-format-short.t]="usage text for an unknown --error-format differs"
   [float-literal-f32-range.t]="missing check"

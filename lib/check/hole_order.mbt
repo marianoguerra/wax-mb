@@ -56,6 +56,14 @@ fn HoleOrder::walk(
   self : HoleOrder,
   node : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> Unit {
+  // A compound assignment reads its target before evaluating its right-hand
+  // side: `x op= e` is `x = x op e`, and the implicit `x` is pushed first. The
+  // typed tree keeps the compound spelling, so that read exists only here --
+  // and without it a hole in `e` would silently take the value BELOW the
+  // receiver and compute `_ op x`.
+  if node.desc is Set(idx, Some(_), _) && self.value_loc is None {
+    self.value_loc = Some(idx.loc)
+  }
   for child in operands(node) {
     if !self.reported && self.value_loc is Some(loc) && count_holes(child) > 0 {
       before_hole(self.ctx.diagnostics, loc)
