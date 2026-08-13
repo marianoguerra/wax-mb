@@ -17,6 +17,17 @@ pub impl Show for WatError with fn output(self, logger) {
 }
 
 ///|
+/// The constructor name of an instruction, for the gap report: the debug
+/// rendering up to its first immediate.
+fn constructor_of(i : @wasm_bin.Instruction) -> String {
+  let s = @debug.to_string(i)
+  match s.find("(") {
+    Some(k) => s[:k].to_owned()
+    None => s
+  }
+}
+
+///|
 /// The label a branch depth names: the enclosing blocks are counted outward
 /// from the innermost, so a depth is a distance from the END of the scope.
 fn label(scope : Array[String?], depth : Int) -> String {
@@ -39,6 +50,9 @@ pub fn mnemonic(
   // Everything with no immediate follows one rule and lives in its own table;
   // what is left here is the instructions whose immediates have to be written.
   if nullary(i) is Some(name) {
+    return name
+  }
+  if memarg_instr(i, names) is Some(name) {
     return name
   }
   match i {
@@ -83,7 +97,8 @@ pub fn mnemonic(
     RefCast(r) => "ref.cast " + reftype(r, names.types)
     Throw(t) => "throw " + name_or(names.tags, t)
     // Everything else is a gap, not a guess: reporting it keeps the burn-down
-    // honest, exactly as the lowering's own gaps do.
-    _ => raise NotPrinted("this instruction")
+    // honest, exactly as the lowering's own gaps do -- and NAMING it is what
+    // makes the remainder countable rather than one undifferentiated pile.
+    _ => raise NotPrinted(constructor_of(i))
   }
 }

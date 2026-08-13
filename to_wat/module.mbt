@@ -87,7 +87,11 @@ fn function_field(
   let imported = m.imports.length() - m.codes.length()
   let index = (if imported > 0 { imported } else { 0 }) + k
   let out = StringBuilder::new()
-  out.write_string("(func " + name_or(m.names.functions, index))
+  out.write_string(
+    "(func " +
+    name_or(m.names.functions, index) +
+    export_clauses(m, Func(index)),
+  )
   let locals = m.names.locals.get(index).unwrap_or(Map([]))
   let ft = match m.types[m.funcs[k]].composite {
     Func(ft) => ft
@@ -203,7 +207,7 @@ fn structural(node : Node, ctx : Ctx) -> String raise WatError {
     Block(bt, _) => ("block", bt)
     Loop(bt, _) => ("loop", bt)
     If(bt, _, _) => ("if", bt)
-    _ => raise NotPrinted("this structured instruction")
+    _ => raise NotPrinted(constructor_of(node.head))
   }
   let out = StringBuilder::new()
   out.write_string("(" + word + id + blocktype(bt, ctx.m))

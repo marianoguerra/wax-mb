@@ -2,6 +2,7 @@ import {
   "waxmb/wax/wasm_bin",
   "waxmb/wax/wasm_types",
   "moonbitlang/core/ref",
+  "moonbitlang/core/debug",
 }
 
 import {
