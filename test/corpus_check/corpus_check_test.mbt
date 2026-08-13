@@ -124,7 +124,9 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 181245 poisoned 0 files 1907 clean 1736",
+    content=(
+      #|nodes 181202 poisoned 0 files 1907 clean 1729
+    ),
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -140,9 +142,9 @@ test "the checker annotates every node it reaches" {
       #|17 This type test is always true: the value already has this type.
       #|10 The type 'point' is not bound.
       #|8 Expecting 1 value(s) from the stack, but there are 0.
+      #|7 This expression occurs before a hole '_'.
       #|6 Expecting 1 returned value(s) from the stack, but there are 0.
       #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.
-      #|6 The type 'bytes' is not bound.
     ),
   )
 }

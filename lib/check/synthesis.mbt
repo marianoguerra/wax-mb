@@ -526,6 +526,9 @@ fn Checker::block_contents(
       self.ops.push_results(s.info, c.info.0)
       out.push(c)
     }
+    // The hole-order check runs on the finished statement, which is where its
+    // operands are in emission order and their types are known.
+    check_hole_order(self.ctx, out[out.length() - 1])
     if self.ctx.warn_unused &&
       reachable_before &&
       self.ops.stack is Unreachable &&

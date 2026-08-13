@@ -2181,6 +2181,24 @@ pub fn call_targets_direct_call(
 }
 
 ///|
+/// A value pushed where a later hole needs to reach under it.
+///
+/// Anchored at the VALUE, not at the hole: the hole is the intent, the value is
+/// what makes it unencodable, and moving the value is the fix.
+pub fn before_hole(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This expression occurs before a hole")
+    .sep(@message.code("_"))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
 /// Call-target frequencies that add up to more than everything.
 pub fn call_targets_over_100(
   ctx : @diagnostic.Context,

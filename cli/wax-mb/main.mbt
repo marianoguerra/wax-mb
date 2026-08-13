@@ -122,22 +122,26 @@ fn not_implemented_format(f : String) -> Bool {
 /// reports nothing and a check that reports nothing are the same claim about the
 /// same module -- and a compile that reports an ERROR produces no bytes at all
 /// rather than bytes derived from a module known to be wrong.
+///
+/// `Err(None)` is a module the diagnostics have already spoken about: the
+/// rendered error IS the message, and a second line naming the file again says
+/// nothing the caret did not.
 fn compile(
   path : String,
   src : String,
   m : @ast.LocModule,
   opts : Options,
-) -> Result[Bytes, String] {
+) -> Result[Bytes, String?] {
   let session = @wax.Session::new(source=src)
   // No lints on the conversion path: a compile reports what stops it producing
   // a module, and a style warning does not. The reference draws the same line --
   // `wax f.wax -f wasm` is silent on a module `wax check` would comment on.
   let checked = session.check(m)
   if render_diagnostics(src, opts, session.reports()) {
-    return Err("\{path}: rejected")
+    return Err(None)
   }
   Ok(checked.to_bytes()) catch {
-    e => Err("\{path}: \{e}")
+    e => Err(Some("\{path}: \{e}"))
   }
 }
 
@@ -152,17 +156,17 @@ fn compile_text(
   m : @ast.LocModule,
   opts : Options,
   trivia : @trivia.Context,
-) -> Result[String, String] {
+) -> Result[String, String?] {
   let session = @wax.Session::new(source=src)
   let checked = session.check(m)
   if render_diagnostics(src, opts, session.reports()) {
-    return Err("\{path}: rejected")
+    return Err(None)
   }
   // `to_wat` keeps the conditionals rather than resolving them -- a module with
   // an unresolved conditional has no single binary form, which is what a
   // conditional is for -- and re-delimits the comments the parse collected.
   Ok(checked.to_wat(trivia~)) catch {
-    e => Err("\{path}: \{e}")
+    e => Err(Some("\{path}: \{e}"))
   }
 }
 
@@ -254,7 +258,9 @@ fn run(argv : Array[String]) -> Status {
         }
         match compile_text(path, src, m, opts, trivia) {
           Err(msg) => {
-            @io.eprintln(prog() + msg)
+            if msg is Some(msg) {
+              @io.eprintln(prog() + msg)
+            }
             return Rejected
           }
           Ok(text) =>
@@ -278,7 +284,9 @@ fn run(argv : Array[String]) -> Status {
         }
         match compile(path, src, m, opts) {
           Err(msg) => {
-            @io.eprintln(prog() + msg)
+            if msg is Some(msg) {
+              @io.eprintln(prog() + msg)
+            }
             return Rejected
           }
           Ok(bytes) =>
