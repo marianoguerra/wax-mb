@@ -121,14 +121,23 @@ pub fn store_instruction(
   mem : Int,
   align : Int,
   offset : Int64,
+  value : @wasm_types.ValType[Int]?,
 ) -> @wasm_bin.Instruction? {
-  match meth {
-    "store8" => Some(I32Store8(mem, align, offset))
-    "store16" => Some(I32Store16(mem, align, offset))
-    "store32" => Some(I32Store(mem, align, offset))
-    "store64" => Some(I64Store(mem, align, offset))
-    "storef32" => Some(F32Store(mem, align, offset))
-    "storef64" => Some(F64Store(mem, align, offset))
+  // A narrow store writes the low bytes of the VALUE, so which instruction it
+  // is depends on how wide that value is -- the width alone does not say. In
+  // unreachable code there is no value type to read; the width is what matters
+  // there, so the i32 form stands in.
+  let wide = value is Some(I64)
+  match (meth, wide) {
+    ("store8", true) => Some(I64Store8(mem, align, offset))
+    ("store8", false) => Some(I32Store8(mem, align, offset))
+    ("store16", true) => Some(I64Store16(mem, align, offset))
+    ("store16", false) => Some(I32Store16(mem, align, offset))
+    ("store32", true) => Some(I64Store32(mem, align, offset))
+    ("store32", false) => Some(I32Store(mem, align, offset))
+    ("store64", _) => Some(I64Store(mem, align, offset))
+    ("storef32", _) => Some(F32Store(mem, align, offset))
+    ("storef64", _) => Some(F64Store(mem, align, offset))
     _ => None
   }
 }

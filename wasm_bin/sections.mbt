@@ -212,7 +212,7 @@ fn is_funcref(rt : RefType) -> Bool {
 ///|
 /// The element section.
 ///
-/// Seven encodings, chosen by three independent questions: active or not, table
+/// Eight encodings, chosen by three independent questions: active or not, table
 /// 0 or another, function indices or full expressions. Upstream picked the
 /// compact form from the element type alone and then, if an initialiser turned
 /// out not to be a bare `ref.func`, wrote function index **0** for it -- so a
@@ -224,11 +224,22 @@ fn encode_element_section(mod : Module) -> Bytes raise EncodeError {
   section_body(w => {
     w.write_u32(mod.elems.length())
     for elem in mod.elems {
-      let compact = is_funcref(elem.type_) && all_ref_func(elem.init)
+      // The eight forms are three independent economies, and they do not
+      // combine freely: an index list instead of expressions, an implied table
+      // 0, and an implied `funcref`. The spec spells out exactly which
+      // combinations have a byte, so this is a table rather than a computation.
+      let funcref = is_funcref(elem.type_)
+      let compact = funcref && all_ref_func(elem.init)
       match elem.mode {
         Active(table_idx, offset) =>
           if compact && table_idx == 0 {
             w.write_byte(0x00)
+            encode_expr(w, offset)
+          } else if funcref && table_idx == 0 {
+            // Table 0 and `funcref` are both implied, but the initializers are
+            // real expressions -- a `ref.null func` among them is enough to
+            // rule out the index list while leaving the rest of the economy.
+            w.write_byte(0x04)
             encode_expr(w, offset)
           } else if compact {
             w.write_byte(0x02)

@@ -318,7 +318,13 @@ fn Lowering::hinted(
       if callee.desc is StructGet(recv, meth) && recv.desc is Get(memname) {
         if self.indices.memories.get(memname.name) is Some(mem) {
           let (align, offset) = self.memarg(meth, args, loc)
-          if store_instruction(meth.name, mem, align, offset) is Some(st) {
+          let stored = if args.length() >= 2 {
+            node_valtype(args[1])
+          } else {
+            None
+          }
+          if store_instruction(meth.name, mem, align, offset, stored)
+            is Some(st) {
             for a in args {
               if !(a.desc is Labelled(_, _)) {
                 self.instr(out, a)
@@ -344,6 +350,14 @@ fn Lowering::hinted(
         if self.path_intrinsic(out, ns, name, args, loc) {
           return
         }
+      }
+      // `tab[i](args)` is ONE instruction. A table read followed by a call
+      // through the reference is what the syntax says, but `call_indirect`
+      // does both, and the cast wax writes to name the signature is exactly
+      // the type immediate it takes. The operands go args-then-index, which is
+      // the reverse of how they are written.
+      if self.indirect_call(out, callee, args, loc) {
+        return
       }
       // The ATOMIC accesses: `m.atomic_load32(p)`, `m.atomic_rmw_add32(p, v)`.
       // The method name carries the width -- which is also the natural
@@ -1258,6 +1272,47 @@ fn Lowering::field_index(
     }
   }
   None
+}
+
+///|
+/// Re-fuse a table read and a call through it into `call_indirect`.
+///
+/// Three spellings reach the same instruction: the read cast to a named
+/// function type, the read cast to an inline one, and the bare read when the
+/// table's own element type already names a signature. What they share is that
+/// the type is known WITHOUT running anything, which is the whole condition --
+/// `call_indirect` carries its signature as an immediate.
+fn Lowering::indirect_call(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  callee : @ast.Instr[@typing_env.InferredAnnotation],
+  args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
+  loc : @basic.Location,
+) -> Bool raise LowerError {
+  let (read, signature) = match callee.desc {
+    Cast(inner, Value(Ref({ typ: Type(ft), .. }))) =>
+      (inner, Some(self.type_index_of(ft, loc)))
+    // A bare read: the table's element type names the signature, so there is
+    // nothing for a cast to add.
+    ArrayGet(_, _) => (callee, None)
+    _ => return false
+  }
+  guard read.desc is ArrayGet(recv, index) else { return false }
+  guard self.table_of(recv) is Some(tab) else { return false }
+  let type_idx = match signature {
+    Some(t) => t
+    None =>
+      match node_type_index(read) {
+        Some(t) => t
+        None => return false
+      }
+  }
+  for a in args {
+    self.instr(out, a)
+  }
+  self.instr(out, index)
+  out.push(CallIndirect(type_idx, tab))
+  true
 }
 
 ///|

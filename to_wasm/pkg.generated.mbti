@@ -74,7 +74,7 @@ pub fn signed_cast(@wasm_types.ValType[Int], @ast.NumType, @wasm_types.Signage, 
 
 pub fn source_type_index(@typing_env.ModuleContext) -> Map[Int, @ast.SubType]
 
-pub fn store_instruction(String, Int, Int, Int64) -> @wasm_bin.Instruction?
+pub fn store_instruction(String, Int, Int, Int64, @wasm_types.ValType[Int]?) -> @wasm_bin.Instruction?
 
 pub fn type_section(@type_store.TypeStore) -> (Array[@wasm_bin.SubType], Array[@wasm_bin.RecGroup])
 
