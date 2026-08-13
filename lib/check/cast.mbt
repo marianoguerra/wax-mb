@@ -137,6 +137,37 @@ pub fn is_cont_heaptype(
 }
 
 ///|
+/// The top of the hierarchy a heap type belongs to.
+///
+/// A cast or a test can only ask a question WITHIN one hierarchy, so this is
+/// what its operand has to be a reference into for the question to mean
+/// anything. `None` when the type name does not resolve -- already reported by
+/// the lookup, which is the reporting one on purpose.
+pub fn top_heap_type(
+  ctx : @typing_env.TypeContext,
+  diagnostics : @diagnostic.Context,
+  t : @wasm_types.HeapType[@ast.Ident],
+) -> @wasm_types.HeapType[@ast.Ident]? {
+  match t {
+    Any | Eq | I31 | Struct | Array | None_ => Some(Any)
+    Func | NoFunc => Some(Func)
+    Exn | NoExn => Some(Exn)
+    Cont | NoCont => Some(Cont)
+    Extern | NoExtern => Some(Extern)
+    Type(n) | Exact(n) =>
+      match find(ctx.types, diagnostics, n) {
+        Some((_, s)) =>
+          match s.typ {
+            Struct(_) | Array(_) => Some(Any)
+            Func(_) => Some(Func)
+            Cont(_) => Some(Cont)
+          }
+        None => None
+      }
+  }
+}
+
+///|
 /// The two types a conditional cast produces: what the operand is re-typed as,
 /// and the RESIDUAL left when the cast does not apply.
 ///

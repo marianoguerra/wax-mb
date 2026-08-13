@@ -1159,24 +1159,65 @@ pub fn Checker::statement(
     Test(operand, target) => {
       let operand_ = self.expression(operand)
       let natural = expression_type(ctx, operand_.info)
+      // Snapshotted BEFORE the hierarchy check below, which settles the cell:
+      // the lint is about what the operand WAS, not about what checking it
+      // concretised it to.
+      let op_natural = natural.get()
       // A continuation has no RTT to test against, so `is` cannot ask about
       // one -- the same reason `as` into one is an ascription rather than a
       // cast.
       if is_cont_heaptype(ctx.type_context, target.typ) {
         invalid_cast_type(ctx.diagnostics, loc)
       }
+      // A test can only ask a question WITHIN one hierarchy, so its operand has
+      // to be a reference into the target's. Failing that, the result is
+      // POISONED: `is` yields an i32, so a chain `(x is &s) is &s` hands the
+      // outer `is` a non-reference operand of its own, and -- both anchored at
+      // the shared leftmost operand -- reports an identical error at the same
+      // place. The innermost link is the one to fix. An operand that is
+      // ALREADY poison passes silently and poisons the result too, which is
+      // what keeps the chain quiet past its first link.
+      let operand_ok = match
+        top_heap_type(ctx.type_context, ctx.diagnostics, target.typ) {
+        Some(top) =>
+          match
+            internalize(
+              ctx.type_context,
+              ctx.diagnostics,
+              Ref({ nullable: true, typ: top }),
+            ) {
+            Some(want) => {
+              let ok = subtype(ctx.type_context.subtyping_info(), natural, want)
+              if !ok {
+                expression_type_mismatch(
+                  ctx.diagnostics,
+                  operand.info,
+                  natural,
+                  want,
+                )
+              }
+              ok
+            }
+            None => true
+          }
+        None => true
+      }
       if internalize(ctx.type_context, ctx.diagnostics, Ref(target)) is Some(w) {
         lint_ref_cast(
           ctx,
           loc,
           is_test=true,
-          natural.get(),
+          op_natural,
           w.get(),
           operand_location=Some(operand.info),
         )
       }
       // A test answers a question, so it produces an i32 whatever it asked.
-      let ty = @infer.valtype_cell(@infer.i32_valtype)
+      let ty = if !operand_ok || op_natural is Error {
+        @infer.Cell::make(@infer.InferredType::Error)
+      } else {
+        @infer.valtype_cell(@infer.i32_valtype)
+      }
       {
         desc: Test(operand_, target),
         info: annotate([ty], loc),
