@@ -38,6 +38,19 @@ pub fn Lowering::instr(
 }
 
 ///|
+/// Read a name, recording the one-instruction span it takes.
+fn Lowering::read_span(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  name : @ast.Ident,
+  loc : @basic.Location,
+) -> Unit raise LowerError {
+  let at = out.length()
+  out.push(self.read(name, loc))
+  self.spans.push((at, at, at + 1))
+}
+
+///|
 /// Lower one instruction, without recording where it landed.
 fn Lowering::instr_span(
   self : Lowering,
@@ -1014,7 +1027,10 @@ fn Lowering::hinted(
       for f in fields {
         match f.1 {
           Some(v) => self.instr(out, v)
-          None => out.push(self.read(f.0, loc))
+          // The shorthand still READS a name, so it is a node like any other
+          // and gets a span like any other -- without one the printer cannot
+          // tell it apart from an instruction the construction emitted itself.
+          None => self.read_span(out, f.0, loc)
         }
       }
       out.push(StructNew(t))
@@ -1031,7 +1047,10 @@ fn Lowering::hinted(
       for f in fields {
         match f.1 {
           Some(v) => self.instr(out, v)
-          None => out.push(self.read(f.0, loc))
+          // The shorthand still READS a name, so it is a node like any other
+          // and gets a span like any other -- without one the printer cannot
+          // tell it apart from an instruction the construction emitted itself.
+          None => self.read_span(out, f.0, loc)
         }
       }
       self.instr(out, descriptor)

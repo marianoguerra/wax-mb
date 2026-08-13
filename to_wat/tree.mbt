@@ -111,8 +111,10 @@ fn fold_body(
   while at < body.length() {
     let b = match widest(at, body.length()) {
       Some(s) => s
-      // No span covers this instruction: one wax node lowered to several, and
-      // the head is the last of them.
+      // No span covers this instruction: one wax node lowered to several
+      // without recording it, and the head is the last of them. Treating it
+      // as standing alone instead was measured and is worse -- the run really
+      // is one node, and the fusions are why.
       None => (at, at, body.length())
     }
     bounds.push(b)
