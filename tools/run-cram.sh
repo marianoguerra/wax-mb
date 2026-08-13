@@ -75,7 +75,6 @@ declare -A KNOWN_FAILING=(
   [wax-duplicate-params.t]="missing check"
   [wax-memarg-limits.t]="missing check"
   [wax-operand-type-checks.t]="missing check"
-  [wax-uninitialized-local.t]="missing check"
 )
 
 pass=0; fail=0; known=0; failed=(); fixed=()

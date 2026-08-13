@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 174172 poisoned 0 files 1907 clean 1711",
+    content="nodes 174156 poisoned 0 files 1907 clean 1709",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {

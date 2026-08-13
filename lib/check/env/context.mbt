@@ -251,7 +251,11 @@ pub fn[A] ModuleContext::with_frame(
     inner.push(c)
   }
   self.control_types = inner
-  let r = f()
+  // The reference's copy restores EVERY mutable field the block writes, not
+  // just the frame -- opening a control frame and entering a scope are one act
+  // there. Which locals hold a value is such a field: the block may not run, so
+  // an assignment inside it does not count outside.
+  let r = self.with_initialized_snapshot(f)
   self.control_types = saved
   r
 }

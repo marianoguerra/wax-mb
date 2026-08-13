@@ -292,11 +292,10 @@ test "frames and initialization do not outlive their block" {
   })
   inspect(depth, content="1")
   inspect(ctx.control_types.length(), content="0")
-  // The assignment inside DID escape, because nothing asked for a snapshot.
-  inspect(ctx.initialized_locals.contains("inner"), content="true")
+  // The assignment inside did not escape: opening a frame takes the snapshot.
+  inspect(ctx.initialized_locals.contains("inner"), content="false")
 
-  // With a snapshot it does not.
-  ctx.initialized_locals.remove("inner")
+  // Which is the same thing asking for the snapshot directly does.
   ctx.with_initialized_snapshot(() => ctx.initialized_locals["inner"] = ())
   inspect(ctx.initialized_locals.contains("inner"), content="false")
   inspect(ctx.initialized_locals.contains("outer"), content="true")
