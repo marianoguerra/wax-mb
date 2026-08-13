@@ -12,13 +12,20 @@
 // here and nowhere else.
 
 ///|
-/// The memory index an access names: what the source called it, or nothing
-/// when it is the unnamed default.
-fn memidx(names : @wasm_bin.Names, k : Int) -> String {
-  match names.memories.get(k) {
+/// An index the format leaves out when it is the unnamed default: the memory
+/// or table an access reaches, which is memory 0 or table 0 unless said
+/// otherwise. A NAMED one is always written -- the name is what the source
+/// wrote, and dropping it would change the text even though the index is 0.
+fn opt_index(names : Map[Int, Bytes], k : Int) -> String {
+  match names.get(k) {
     Some(b) => " $" + text_of(b)
     None => if k == 0 { "" } else { " " + k.to_string() }
   }
+}
+
+///|
+fn memidx(names : @wasm_bin.Names, k : Int) -> String {
+  opt_index(names.memories, k)
 }
 
 ///|
