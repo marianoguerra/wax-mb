@@ -1185,12 +1185,13 @@ pub(all) struct TextView {
   /// without changing the bytes. The text format shows them, so they are kept
   /// apart from the section that is encoded.
   decl_param_names : Map[ParamOwner, Map[Int, Bytes]]
-  /// The declarations whose type the SOURCE named.
+  /// How each declaration wrote its type.
   ///
-  /// `tag t: ft;` writes `(type $ft)` and `tag t(i32);` spells the signature
-  /// out; a function is the same. The binary keeps only the index, which is
-  /// the same either way, so which was written has to be recorded.
-  named_decl_types : Map[ParamOwner, Bool]
+  /// `tag t: ft;` writes `(type $ft)`, `tag t(i32);` spells the signature out,
+  /// and `fn f: ft(i32);` writes BOTH -- they are independent clauses. The
+  /// binary keeps only the index, which is the same in all three cases, so
+  /// which was written has to be recorded.
+  decl_typeuse : Map[ParamOwner, TypeUse]
   /// The exports whose attribute carried a GUARD, by export index.
   ///
   /// A guarded export is written as a field of its own under the condition --
@@ -1223,11 +1224,19 @@ pub fn TextView::empty() -> TextView {
     field_order: [],
     field_locs: [],
     decl_param_names: Map([]),
-    named_decl_types: Map([]),
+    decl_typeuse: Map([]),
     guarded_exports: Map([]),
     conditionals: [],
   }
 }
+
+///|
+/// Which of the two clauses a declaration wrote for its type. Both are
+/// optional and they are independent: `fn f: ft(i32)` wrote both.
+pub(all) struct TypeUse {
+  named : Bool
+  spelled : Bool
+} derive(Eq, Debug)
 
 ///|
 /// Whose parameters a name list belongs to. Imported functions and tags sit in

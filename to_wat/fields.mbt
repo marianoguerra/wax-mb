@@ -324,13 +324,20 @@ fn tabletype(m : @wasm_bin.Module, t : @wasm_bin.TableType) -> Array[Sexp] {
 fn typeuse(
   m : @wasm_bin.Module,
   k : Int,
-  named? : Bool = false,
   owner? : @wasm_bin.ParamOwner? = None,
 ) -> Array[Sexp] {
-  // The source named the type, so the text names it: the signature it stands
-  // for is written where the type was declared.
-  if named {
-    return [List([Atom("type"), Atom(name_or(m.names.types, k))])]
+  // The two clauses are independent, and a declaration may write either or
+  // both: `fn f: ft(i32)` names a type AND spells the signature out.
+  let wrote = match owner {
+    Some(o) => m.text.decl_typeuse.get(o)
+    None => None
+  }
+  let out : Array[Sexp] = []
+  if wrote is Some({ named: true, .. }) {
+    out.push(List([Atom("type"), Atom(name_or(m.names.types, k))]))
+    if wrote is Some({ spelled: false, .. }) {
+      return out
+    }
   }
   // Whether this is written `(type $n)` or spelled out depends on which the
   // SOURCE wrote, and the binary does not record that. Preferring `(type $n)`
@@ -343,11 +350,10 @@ fn typeuse(
         None => Map([])
       }
       let sign = functype(m, ft, names~)
-      if sign.is_empty() {
-        []
-      } else {
-        [block(sign)]
+      if !sign.is_empty() {
+        out.push(block(sign))
       }
+      out
     }
     // Anything else at a function's type index is not a function type, and
     // there is no inline spelling for it -- so name it.
@@ -524,12 +530,7 @@ fn import_parts(
       (
         "tag",
         opt_id(m.names.tags, n),
-        typeuse(
-          m,
-          t,
-          named=m.text.named_decl_types.contains(OwnerTag(n)),
-          owner=Some(OwnerTag(n)),
-        ),
+        typeuse(m, t, owner=Some(OwnerTag(n))),
         Tag(n),
       )
     Memory(mt) =>
@@ -569,13 +570,7 @@ fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
   for e in export_clauses(m, Tag(at)) {
     head.push(e)
   }
-  for
-    x in typeuse(
-      m,
-      m.tags[k].type_idx,
-      named=m.text.named_decl_types.contains(OwnerTag(at)),
-      owner=Some(OwnerTag(at)),
-    ) {
+  for x in typeuse(m, m.tags[k].type_idx, owner=Some(OwnerTag(at))) {
     head.push(x)
   }
   List([block(head)])

@@ -384,11 +384,7 @@ fn Lowering::field(
       // the table for it was a longer way to the same number everywhere else.
       let fi = self.indices.imported_funcs + m.funcs.length() - 1
       note_name(m.names.functions, fi, name.name)
-      // `fn f: ft(..)` names a type and prints as `(type $ft)`; `fn f(i32)`
-      // spells its signature out.
-      if typ is Some(_) {
-        m.text.named_decl_types[OwnerFunc(fi)] = true
-      }
+      note_typeuse(m, OwnerFunc(fi), typ, sign)
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
       m.codes.push({ ..code, priority: function_priority(attributes) })
       m.text.field_order.push(FFunc(m.codes.length() - 1))
@@ -507,9 +503,7 @@ fn Lowering::field(
     }
     Tag(name~, typ~, sign~, attributes~) => {
       note_name(m.names.tags, self.tag_index(name, loc), name.name)
-      if typ is Some(_) {
-        m.text.named_decl_types[OwnerTag(self.tag_index(name, loc))] = true
-      }
+      note_typeuse(m, OwnerTag(self.tag_index(name, loc)), typ, sign)
       note_param_names(m, OwnerTag(self.tag_index(name, loc)), sign)
       // A tag that NAMES its type means that declaration, not whichever
       // like-shaped one the signature search happens to reach first.
@@ -928,9 +922,11 @@ fn Lowering::import_(
   }
   m.imports.push({ mod_name: module_, name, desc, group: None })
   match decl.kind {
-    Func(sign~, ..) => {
-      note_name(m.names.functions, self.func_index(decl.id, loc), decl.id.name)
-      note_param_names(m, OwnerFunc(self.func_index(decl.id, loc)), sign)
+    Func(typ~, sign~, ..) => {
+      let fi = self.func_index(decl.id, loc)
+      note_name(m.names.functions, fi, decl.id.name)
+      note_param_names(m, OwnerFunc(fi), sign)
+      note_typeuse(m, OwnerFunc(fi), typ, sign)
     }
     Global(..) =>
       note_name(m.names.globals, self.global_index(decl.id, loc), decl.id.name)
@@ -940,9 +936,7 @@ fn Lowering::import_(
       note_name(m.names.tables, self.table_index(decl.id, loc), decl.id.name)
     Tag(typ~, sign~) => {
       note_name(m.names.tags, self.tag_index(decl.id, loc), decl.id.name)
-      if typ is Some(_) {
-        m.text.named_decl_types[OwnerTag(self.tag_index(decl.id, loc))] = true
-      }
+      note_typeuse(m, OwnerTag(self.tag_index(decl.id, loc)), typ, sign)
       note_param_names(m, OwnerTag(self.tag_index(decl.id, loc)), sign)
     }
   }
@@ -1195,6 +1189,21 @@ fn data_spelling(init : Array[@ast.DataElem]) -> Array[@wasm_bin.DataPiece] {
     }
   }
   out
+}
+
+///|
+/// Note which of the two type clauses a declaration wrote. Both are optional
+/// and independent, and the index the binary keeps says nothing about either.
+fn note_typeuse(
+  m : @wasm_bin.Module,
+  owner : @wasm_bin.ParamOwner,
+  typ : @ast.Ident?,
+  sign : @ast.FuncType?,
+) -> Unit {
+  m.text.decl_typeuse[owner] = {
+    named: typ is Some(_),
+    spelled: sign is Some(_),
+  }
 }
 
 ///|

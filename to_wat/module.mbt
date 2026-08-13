@@ -222,7 +222,8 @@ fn function_field(
   }
   // `fn f: ft(..)` named a type, and the text names it rather than repeating
   // the signature that declaration pointed at.
-  let by_name = m.text.named_decl_types.contains(OwnerFunc(index))
+  let wrote = m.text.decl_typeuse.get(OwnerFunc(index))
+  let by_name = wrote is Some({ named: true, .. })
   if by_name {
     head.push(List([Atom("type"), Atom(name_or(m.names.types, m.funcs[k]))]))
   }
@@ -239,9 +240,9 @@ fn function_field(
       any_named = true
     }
   }
-  if by_name {
-    // Named: the signature is the type's, and repeating it here would say the
-    // same thing twice.
+  if by_name && !(wrote is Some({ spelled: true, .. })) {
+    // Named and nothing else written: the signature is the type's, and
+    // repeating it here would say the same thing twice.
     ()
   } else if any_named {
     for p, ty in ft.params {
@@ -258,7 +259,8 @@ fn function_field(
     }
     sign.push(List(g))
   }
-  if !by_name && !ft.results.is_empty() {
+  if (!by_name || wrote is Some({ spelled: true, .. })) &&
+    !ft.results.is_empty() {
     let r : Array[Sexp] = [Atom("result")]
     for ty in ft.results {
       r.push(Atom(valtype(ty, m.names.types)))
@@ -269,6 +271,26 @@ fn function_field(
     head.push(block(sign))
   }
   let out : Array[Sexp] = [block(head)]
+  // The compilation hint belongs to the FUNCTION rather than to any
+  // instruction, and the section keys it at offset zero -- which is why it is
+  // written here, before the locals, rather than on the first statement.
+  if code.priority is Some(p) {
+    let l : Array[Sexp] = [
+      Atom("@metadata.code.compilation_priority"),
+      List([Atom("priority"), Atom(p.compilation.to_string())]),
+    ]
+    if p.optimization is Some(o) {
+      // `run_once` is the reserved value, and prints as its keyword.
+      l.push(
+        if o == 127 {
+          List([Atom("run_once")])
+        } else {
+          List([Atom("optimization"), Atom(o.to_string())])
+        },
+      )
+    }
+    out.push(List(l))
+  }
   // The DECLARED locals follow the parameters in the same index space, so
   // their names are looked up past the parameter count. They pack onto as few
   // lines as they fit on, which is what `hov` means.
