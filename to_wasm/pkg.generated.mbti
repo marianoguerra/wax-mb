@@ -83,7 +83,7 @@ pub let run_once_level : Int
 
 pub fn signed_cast(@wasm_types.ValType[Int], @ast.NumType, @wasm_types.Signage, Bool) -> Array[@wasm_bin.Instruction]?
 
-pub fn source_type_index(@typing_env.ModuleContext) -> Map[Int, @ast.SubType]
+pub fn source_type_index(@typing_env.ModuleContext, TypeLayout) -> Map[Int, @ast.SubType]
 
 pub fn store_instruction(String, Int, Int, Int64, @wasm_types.ValType[Int]?) -> @wasm_bin.Instruction?
 

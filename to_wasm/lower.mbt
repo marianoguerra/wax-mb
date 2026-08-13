@@ -154,12 +154,23 @@ pub fn functype_index(
 /// Index every source type definition by the index it interned to.
 pub fn source_type_index(
   ctx : @typing_env.ModuleContext,
+  layout : TypeLayout,
 ) -> Map[Int, @ast.SubType] {
   let out : Map[Int, @ast.SubType] = Map([])
   for entry in ctx.type_context.types.iter_entries() {
-    let (_, (idx, sub)) = entry
-    if idx is Def(id) {
-      out[emitted_type_index(id.to_int_for_tests_only())] = sub
+    let (name, (idx, sub)) = entry
+    // By NAME where the layout gave the name an entry of its own: two
+    // declarations that interned together are one store id and two emitted
+    // ones, and only the name says which definition is at which.
+    match layout.by_name.get(name) {
+      Some(emitted) => out[emitted] = sub
+      None =>
+        if idx is Def(id) {
+          let emitted = emitted_type_index(id.to_int_for_tests_only())
+          if !out.contains(emitted) {
+            out[emitted] = sub
+          }
+        }
     }
   }
   out

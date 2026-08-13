@@ -52,7 +52,7 @@ pub fn lower_module(
     func_refs_outside: [],
     in_body: false,
     labels: [],
-    source_types: source_type_index(ctx),
+    source_types: source_type_index(ctx, layout),
     functypes: functype_index(store, layout),
   }
   // Imports come from the SOURCE, because the checker resolves them into its
