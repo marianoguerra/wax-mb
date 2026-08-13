@@ -133,17 +133,15 @@ pub fn functype_index(
     (Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]),
     Int,
   ] = Map([])
-  // Walked in EMITTED order, because that is the order a block looking for a
-  // matching signature searches: the first entry of that shape in the section
-  // is the one its type immediate names.
-  let info = store.subtyping_info()
-  for emitted, si in layout.store_of {
-    let sub = info.get_subtype(@type_store.Id::of_index(si))
-    if sub.typ is Func(ft) {
-      let key = (
-        ft.params.map(v => lower_valtype(v)),
-        ft.results.map(v => lower_valtype(v)),
-      )
+  // Read off the EMITTED section, not the store. Two declarations that
+  // interned together can still be different types once their own inner
+  // references are resolved -- `fn(&t1)` and `fn(&t2)` are the same shape in
+  // the store and two shapes here -- and it is this section a signature is
+  // matched against. First match wins, which is the order a search finds.
+  ignore(store)
+  for emitted, sub in layout.types {
+    if sub.composite is Func(ft) {
+      let key = (ft.params, ft.results)
       if !out.contains(key) {
         out[key] = emitted
       }

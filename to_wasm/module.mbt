@@ -102,14 +102,28 @@ fn Lowering::field(
 ) -> Unit raise LowerError {
   let loc = field.info
   match field.desc {
-    Func(name~, sign~, body~, attributes~, ..) => {
+    Func(name~, typ~, sign~, body~, attributes~) => {
       // The function's TYPE index comes from the checker, which interned the
       // signature when it declared the function -- so the type section and the
       // function section agree by construction rather than by a second lookup.
       guard self.ctx.functions.find_no_mark(name.name) is Some(Some(entry)) else {
         raise Unresolved("function signature", loc)
       }
-      m.funcs.push(emitted_type_index(entry.0.to_int_for_tests_only()))
+      // A function that NAMES its type means that declaration, not whichever
+      // like-shaped one interned first.
+      m.funcs.push(
+        match typ {
+          Some(n) => self.type_index_of(n, loc)
+          // No name: the signature is matched against the emitted section, the
+          // same way a block's is, because that is where the difference between
+          // two like-interned declarations survives.
+          None =>
+            match sign {
+              Some(s) => self.functype_of(s, loc)
+              None => emitted_type_index(entry.0.to_int_for_tests_only())
+            }
+        },
+      )
       let fi = self.func_index(name, loc)
       note_name(m.names.functions, fi, name.name)
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)

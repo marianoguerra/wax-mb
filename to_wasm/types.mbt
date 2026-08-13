@@ -122,16 +122,156 @@ pub fn type_layout(
       groups.push({ start, len: added, explicit: added != 1 })
     }
   }
-  // With the mapping known, the subtypes can be read out -- their own inner
-  // references are store indices too, and go through the same translation.
   type_remap.val = by_store
   store_remap.val = store_of
   let info = store.subtyping_info()
   let types : Array[@wasm_bin.SubType] = []
-  for si in store_of {
-    types.push(lower_subtype(info.get_subtype(@type_store.Id::of_index(si))))
+  let layout = { by_name, by_store, store_of, types, groups }
+  for emitted, si in store_of {
+    // A DECLARED type is lowered from what the source wrote, so that an inner
+    // `&t2` means `t2` and not the like-shaped `t1` it interned with. Reading
+    // it back from the store would resolve every such reference to whichever
+    // declaration came first, which is the same collapse this whole layout
+    // exists to undo.
+    match declared_at(ctx, layout, emitted) {
+      Some(sub) => types.push(layout.source_subtype(ctx, sub))
+      None =>
+        types.push(
+          lower_subtype(info.get_subtype(@type_store.Id::of_index(si))),
+        )
+    }
   }
-  { by_name, by_store, store_of, types, groups }
+  layout
+}
+
+///|
+/// The source declaration at an emitted index, if a declaration put it there.
+fn declared_at(
+  ctx : @typing_env.ModuleContext,
+  layout : TypeLayout,
+  emitted : Int,
+) -> @ast.SubType? {
+  for name, i in layout.by_name {
+    if i == emitted {
+      if ctx.type_context.types.find_no_mark(name) is Some((_, sub)) {
+        return Some(sub)
+      }
+    }
+  }
+  None
+}
+
+///|
+/// A declared type, lowered from what the source wrote.
+fn TypeLayout::source_subtype(
+  self : TypeLayout,
+  ctx : @typing_env.ModuleContext,
+  s : @ast.SubType,
+) -> @wasm_bin.SubType {
+  fn idx(n : @ast.Ident) -> Int {
+    match self.by_name.get(n.name) {
+      Some(i) => i
+      None =>
+        match ctx.type_context.types.find_no_mark(n.name) {
+          Some((Def(id), _)) => emitted_type_index(id.to_int_for_tests_only())
+          _ => 0
+        }
+    }
+  }
+
+  {
+    final_: s.final_,
+    supertypes: match s.supertype {
+      Some(n) => [idx(n)]
+      None => []
+    },
+    descriptor: s.descriptor.map(n => idx(n)),
+    describes: s.describes.map(n => idx(n)),
+    composite: match s.typ {
+      Func(ft) =>
+        Func({
+          params: ft.params.map(p => self.source_valtype(ctx, p.desc.1)),
+          results: ft.results.map(r => self.source_valtype(ctx, r)),
+        })
+      Struct(fields) =>
+        Struct({
+          fields: fields.map(f => {
+            (
+              {
+                mut_: f.desc.1.mut_,
+                typ: self.source_storagetype(ctx, f.desc.1.typ),
+              } : @wasm_types.MutType[@wasm_types.StorageType[Int]])
+          }),
+        })
+      Array(f) =>
+        Array({
+          element: { mut_: f.mut_, typ: self.source_storagetype(ctx, f.typ) },
+        })
+      Cont(n) => Cont(idx(n))
+    },
+  }
+}
+
+///|
+fn TypeLayout::source_storagetype(
+  self : TypeLayout,
+  ctx : @typing_env.ModuleContext,
+  s : @wasm_types.StorageType[@ast.Ident],
+) -> @wasm_types.StorageType[Int] {
+  match s {
+    Value(v) => Value(self.source_valtype(ctx, v))
+    Packed(p) => Packed(p)
+  }
+}
+
+///|
+fn TypeLayout::source_valtype(
+  self : TypeLayout,
+  ctx : @typing_env.ModuleContext,
+  v : @wasm_types.ValType[@ast.Ident],
+) -> @wasm_types.ValType[Int] {
+  match v {
+    I32 => I32
+    I64 => I64
+    F32 => F32
+    F64 => F64
+    V128 => V128
+    Ref(r) => {
+      fn idx(n : @ast.Ident) -> Int {
+        match self.by_name.get(n.name) {
+          Some(i) => i
+          None =>
+            match ctx.type_context.types.find_no_mark(n.name) {
+              Some((Def(id), _)) =>
+                emitted_type_index(id.to_int_for_tests_only())
+              _ => 0
+            }
+        }
+      }
+
+      Ref({
+        nullable: r.nullable,
+        typ: match r.typ {
+          Func => Func
+          NoFunc => NoFunc
+          Exn => Exn
+          NoExn => NoExn
+          Cont => Cont
+          NoCont => NoCont
+          Extern => Extern
+          NoExtern => NoExtern
+          Any => Any
+          Eq => Eq
+          I31 => I31
+          Struct => Struct
+          Array => Array
+          None_ => None_
+          Type(n) => Type(idx(n))
+          Exact(n) => Exact(idx(n))
+        },
+      })
+    }
+  }
 }
 
 ///|

@@ -1630,6 +1630,15 @@ fn Lowering::mgmt_call(
 /// has to be there already -- the checker interned every block type it saw --
 /// so this is a lookup, and its failure means the two disagree about what was
 /// declared rather than that something is missing.
+fn Lowering::functype_of(
+  self : Lowering,
+  typ : @ast.FuncType,
+  loc : @basic.Location,
+) -> Int raise LowerError {
+  self.block_functype_index(typ, loc)
+}
+
+///|
 fn Lowering::block_functype_index(
   self : Lowering,
   typ : @ast.FuncType,
