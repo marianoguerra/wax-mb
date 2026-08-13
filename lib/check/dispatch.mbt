@@ -572,6 +572,7 @@ pub fn Checker::statement(
         // later context can still widen -- `1 << 40` pinned to i64 is fine.
         ctx.deferred_lints.push(() => lint_shift(ctx, op, ty, b))
         lint_division(ctx, op, b)
+        lint_comparison(ctx, op, a_, b_, a, b)
       }
       // An operand that already failed poisons the RESULT. The arms above treat
       // `Error` like `Unknown` on purpose, so the operand cells still get a
@@ -1019,6 +1020,9 @@ pub fn Checker::statement(
       // operand, so without the poison one unlowerable value reports once per
       // cast in the chain.
       let mut cast_failed = false
+      if ctx.warn_unused {
+        lint_conversion(ctx, loc, target, operand)
+      }
       let ty = match target {
         // `e as t` for a value type: the result IS the target, and a reference
         // target is worth linting -- it can be impossible or pointless before

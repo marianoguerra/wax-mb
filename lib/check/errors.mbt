@@ -1041,7 +1041,7 @@ pub fn expected_ref(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
-  ctx.report(location, Error, @message.text("Expected a reference type."))
+  ctx.report(location, Error, @message.text("Expected reference."))
 }
 
 ///|
@@ -1674,6 +1674,41 @@ pub fn unused_result(
       "The result of this expression is discarded, and computing it has no effect.",
     ),
     warning=Some(UnusedResult),
+    universal=true,
+  )
+}
+
+///|
+/// A comparison whose answer does not depend on its variable operand.
+pub fn tautological_comparison(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  value : Bool,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text("This comparison is always")
+    .sep(@message.bool_(value))
+    .seq(@message.text(".")),
+    warning=Some(TautologicalComparison),
+    universal=true,
+  )
+}
+
+///|
+/// A trapping float-to-integer conversion of a constant that is out of range.
+pub fn conversion_out_of_range(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text(
+      "This conversion always traps: the constant is out of the target type's range.",
+    ),
+    warning=Some(ConstantTrap),
     universal=true,
   )
 }

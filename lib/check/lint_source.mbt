@@ -525,6 +525,132 @@ pub fn lint_division(
 }
 
 ///|
+/// A float literal's value, underscores ignored.
+///
+/// `nan`, `nan:0x..` and the like are all NaN as far as a range check is
+/// concerned: what matters is that no truncation of one is in range.
+fn float_literal_value(s : String) -> Double? {
+  if s.length() >= 3 && s[0:3] == "nan" {
+    return Some(@double.not_a_number)
+  }
+  Some(@string.parse_double(s.split("_").join(""))) catch {
+    _ => None
+  }
+}
+
+///|
+/// The value of a constant float operand, folded as the code generator folds
+/// it.
+///
+/// A leading sign, as for an integer -- and a cast to a float type, which is
+/// transparent to the value but not to its PRECISION. A constant `f32` has no
+/// literal suffix, so a decompiler writes it `<lit> as f32`; rounding through
+/// that demote is what makes the folded value the one the conversion actually
+/// sees.
+fn float_operand_value(e : @ast.Instr[@basic.Location]) -> Double? {
+  match e.desc {
+    Float(s) => float_literal_value(s)
+    UnOpI(op, inner) =>
+      match (op.desc, inner.desc) {
+        (Neg, Float(s)) => float_literal_value(s).map(v => -v)
+        (Pos, _) => float_operand_value(inner)
+        _ => None
+      }
+    Cast(inner, Value(F32)) =>
+      float_operand_value(inner).map(v => {
+        (Float::from_double(v) : Float).to_double()
+      })
+    Cast(inner, Value(F64)) => float_operand_value(inner)
+    _ => None
+  }
+}
+
+///|
+/// Report a trapping float-to-integer conversion of a constant that is out of
+/// the target's range.
+///
+/// Only the STRICT forms: those lower to `trunc`, which traps, where the
+/// saturating forms clamp. The bounds are exact powers of two, so a value is
+/// flagged only when it is definitely outside -- never one the float type
+/// cannot represent exactly enough to be sure about.
+pub fn lint_conversion(
+  ctx : @typing_env.ModuleContext,
+  location : @basic.Location,
+  target : @ast.CastType,
+  operand : @ast.Instr[@basic.Location],
+) -> Unit {
+  guard target is Signed(typ~, signage~, strict=true) else { return }
+  guard typ is (I32 | I64) else { return }
+  guard float_operand_value(operand) is Some(f) else { return }
+  let traps = if f.is_nan() || f.is_inf() {
+    true
+  } else {
+    let t = f.trunc()
+    let pow2 = (n : Int) => @math.pow(2.0, n.to_double())
+    match (typ, signage) {
+      (I32, Signed) => t < -pow2(31) || t >= pow2(31)
+      (I32, Unsigned) => t < 0.0 || t >= pow2(32)
+      (I64, Signed) => t < -pow2(63) || t >= pow2(63)
+      (I64, Unsigned) => t < 0.0 || t >= pow2(64)
+      _ => false
+    }
+  }
+  if traps {
+    conversion_out_of_range(ctx.diagnostics, location)
+  }
+}
+
+///|
+/// Report a comparison whose answer does not depend on its variable operand.
+///
+/// Two shapes: an unsigned comparison against zero, which every unsigned value
+/// is at or above; and a comparison of one expression with itself. The second
+/// is restricted to a pure read of a name -- anything else could have an effect
+/// or trap, and then the two evaluations are not the same act.
+///
+/// `Eq`/`Ne` carry no signage, so a self-comparison needs a concrete integer
+/// operand to be flagged: a float `a == a` is FALSE when `a` is NaN, and
+/// reference identity is a different question.
+pub fn lint_comparison(
+  ctx : @typing_env.ModuleContext,
+  op : @basic.Annotated[@ast.BinOp, @basic.Location],
+  l : @ast.Instr[@typing_env.InferredAnnotation],
+  _r : @ast.Instr[@typing_env.InferredAnnotation],
+  l_src : @ast.Instr[@basic.Location],
+  r_src : @ast.Instr[@basic.Location],
+) -> Unit {
+  fn is_int(e : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
+    match @typing_env.expression_type_opt(e.info) {
+      Some(c) => c.get() is Valtype({ internal: I32 | I64, .. })
+      None => false
+    }
+  }
+
+  fn is_zero(e : @ast.Instr[@basic.Location]) -> Bool {
+    int_operand_value(e) is Some(0)
+  }
+
+  let same = match (l_src.desc, r_src.desc) {
+    (Get(a), Get(b)) => a.name == b.name
+    _ => false
+  }
+  let tautology = match op.desc {
+    Lt(Some(Unsigned)) if is_zero(r_src) => Some(false)
+    Ge(Some(Unsigned)) if is_zero(r_src) => Some(true)
+    Gt(Some(Unsigned)) if is_zero(l_src) => Some(false)
+    Le(Some(Unsigned)) if is_zero(l_src) => Some(true)
+    Lt(Some(_)) | Gt(Some(_)) if same => Some(false)
+    Le(Some(_)) | Ge(Some(_)) if same => Some(true)
+    Eq if same && is_int(l) => Some(true)
+    Ne if same && is_int(l) => Some(false)
+    _ => None
+  }
+  if tautology is Some(value) {
+    tautological_comparison(ctx.diagnostics, op.info, value)
+  }
+}
+
+///|
 /// Run and clear the lints that were waiting for their result cells to settle.
 pub fn flush_deferred_lints(ctx : @typing_env.ModuleContext) -> Unit {
   for f in ctx.deferred_lints {
