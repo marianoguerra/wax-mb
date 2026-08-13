@@ -144,20 +144,22 @@ pub fn Checker::statement(
       // They are resolved in a pass of their own because a hole takes a value
       // that is already there, while every other element PUSHES one -- so only
       // the holes see the incoming stack, and they see it in reverse.
-      let hole_types : Map[Int, @infer.Cell[@infer.InferredType]] = Map([])
+      // An element that CONTAINS a hole -- the hole itself, or anything built
+      // over one -- is typed in this backwards pass, and the rest afterwards
+      // in written order. An element that consumes nothing does not care when
+      // it is typed; one that does has to be reached before everything to its
+      // left, or it takes a value meant for its neighbour.
+      let taken : Map[Int, @ast.Instr[@typing_env.InferredAnnotation]] = Map([])
       for k = l.length() - 1; k >= 0; k = k - 1 {
-        if l[k].desc is Hole {
-          let batch : Ref[MissingBatch?] = @ref.new(None)
-          let ty = self.ops.pop_any(batch, 0, 1)
-          report_missing_hole(self.ops, ctx.diagnostics, l[k].info, ty)
-          hole_types[k] = ty
+        if contains_hole(l[k]) {
+          taken[k] = self.expression(l[k])
         }
       }
       let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
       let types : Array[@infer.Cell[@infer.InferredType]] = []
       for k, s in l {
-        let c = match hole_types.get(k) {
-          Some(ty) => self.rebuild(s, [ty])
+        let c = match taken.get(k) {
+          Some(c) => c
           None => self.expression(s)
         }
         types.push(expression_type(ctx, c.info))
@@ -3375,6 +3377,20 @@ fn Checker::is_mem_access(
 ///
 /// The same five method names serve both, so only the RECEIVER tells them
 /// apart -- `size` on a memory counts pages, `size` on a table counts elements.
+fn contains_hole(i : @ast.Instr[@basic.Location]) -> Bool {
+  if i.desc is Hole {
+    return true
+  }
+  for sub in i.sub_instrs() {
+    if contains_hole(sub) {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// `atomic::fence()`: the one atomic with no memory operand and no memarg.
 fn is_atomic_fence(callee : @ast.Instr[@basic.Location]) -> Bool {
   guard callee.desc is Path(ns, name) else { return false }
   ns.name == "atomic" && name.name == "fence"
