@@ -8,6 +8,7 @@ import {
   "waxmb/wax/type_store",
   "waxmb/wax/feature",
   "waxmb/wax/to_wasm",
+  "waxmb/wax/to_wat",
   "waxmb/wax/wasm_bin",
   "waxmb/wax/warning",
   "waxmb/wax/message",

@@ -154,7 +154,7 @@ fn render_diagnostics(
 ///|
 /// Whether an output format has no implementation.
 fn not_implemented_format(f : String) -> Bool {
-  !(f == "wax" || f == "wasm")
+  !(f == "wax" || f == "wasm" || f == "wat")
 }
 
 ///|
@@ -188,6 +188,36 @@ fn compile(
     e => return Err("\{path}: \{e}")
   }
   Ok(@wasm_bin.encode(module_)) catch {
+    e => Err("\{path}: \{e}")
+  }
+}
+
+///|
+/// Check and print one module in the text format.
+///
+/// The same path the binary takes as far as the lowered module; only the last
+/// step differs, which is what makes the two forms the same module.
+fn compile_text(
+  path : String,
+  src : String,
+  m : @ast.LocModule,
+  opts : Options,
+) -> Result[String, String] {
+  let diagnostics = @diagnostic.collector(source=Some(src))
+  let store = @type_store.TypeStore::new()
+  let (ctx, typed) = @typing.check_module(
+    diagnostics,
+    store,
+    @feature.default(),
+    m,
+  )
+  if render_diagnostics(src, opts, diagnostics.collected()) {
+    return Err("\{path}: rejected")
+  }
+  let module_ = @to_wasm.lower_module(ctx, store, m, typed) catch {
+    e => return Err("\{path}: \{e}")
+  }
+  Ok(@to_wat.print_module(module_)) catch {
     e => Err("\{path}: \{e}")
   }
 }
@@ -269,6 +299,31 @@ fn run(argv : Array[String]) -> Status {
         if !failed && check(path, src, m, opts) {
           rejected = true
         }
+      // The TEXT format is the same module the binary one is, written folded
+      // and named rather than flat and numbered -- so it comes from the same
+      // lowering, and the two cannot drift.
+      (Some(m), Convert) if opts.output_format == "wat" => {
+        if failed {
+          return Rejected
+        }
+        match compile_text(path, src, m, opts) {
+          Err(msg) => {
+            @io.eprintln("wax-mb: " + msg)
+            return Rejected
+          }
+          Ok(text) =>
+            match opts.output_path {
+              None | Some("-") => @io.print(text)
+              Some(out) =>
+                @fs.write_bytes_to_file(out, @utf8.encode(text)) catch {
+                  _ => {
+                    @io.eprintln("wax-mb: cannot write \{out}")
+                    return Usage
+                  }
+                }
+            }
+        }
+      }
       (Some(m), Convert) if opts.output_format == "wasm" => {
         // The checker has to run first: the lowering reads the types it left on
         // every node, which is the whole interface between the two.
