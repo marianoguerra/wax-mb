@@ -2246,3 +2246,25 @@ pub fn constant_global_required(
     @message.text("Only accessing a constant global is allowed here."),
   )
 }
+
+///|
+/// A sign-extending cast on an atomic narrow load, which has no such form.
+///
+/// Only the zero-extending `_u` instructions exist, so the alternative -- load
+/// unsigned, then sign-extend -- is spelled out rather than left to the reader.
+pub fn atomic_signed_load(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  cast : String,
+  extend_ : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("An atomic load zero-extends; use")
+    .sep(@message.code(cast).seq(@message.text(",")))
+    .sep(@message.text("then"))
+    .sep(@message.code(extend_))
+    .sep(@message.text("if you need the sign.")),
+  )
+}

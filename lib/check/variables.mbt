@@ -533,3 +533,24 @@ pub fn[A] note_use(
 ) -> Unit {
   tbl.mark_reference(name.name, ctx.origin.val)
 }
+
+///|
+/// The width of an atomic NARROW load, when that is what this expression is.
+///
+/// `W32` is not narrow enough to matter here: an `i64` reading 32 bits is the
+/// only case, and it has the same absent sign-extending form, but the reference
+/// asks only about the 8- and 16-bit ones.
+pub fn atomic_narrow_load_width(
+  ctx : @typing_env.ModuleContext,
+  e : @ast.Instr[@basic.Location],
+) -> @atomics.Width? {
+  guard e.desc is Call(callee, _) else { return None }
+  guard callee.desc is StructGet(recv, meth) else { return None }
+  guard recv.desc is Get(memname) else { return None }
+  guard memory_receiver(ctx, memname) else { return None }
+  match @atomics.of_method_name(meth.name) {
+    Some(Load(W8)) => Some(W8)
+    Some(Load(W16)) => Some(W16)
+    _ => None
+  }
+}

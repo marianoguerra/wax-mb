@@ -1098,8 +1098,27 @@ pub fn Checker::statement(
           }
         // `e as i32_s` and friends: a numeric conversion, whose result is the
         // named numeric type and nothing else.
-        Signed(typ~, ..) => {
-          if !signed_cast(ctx, natural, typ) {
+        Signed(typ~, signage~, ..) => {
+          // An atomic narrow load has no sign-extending form -- only the
+          // zero-extending `_u` instructions exist -- so reject `as iN_s` on
+          // one outright, naming the spelling to use, rather than quietly
+          // compiling a load and a separate sign-extend.
+          let narrow = if signage is Signed && typ is (I32 | I64) {
+            atomic_narrow_load_width(ctx, operand)
+          } else {
+            None
+          }
+          if narrow is Some(w) {
+            atomic_signed_load(
+              ctx.diagnostics,
+              loc,
+              "as " + (if typ is I32 { "i32" } else { "i64" }) + "_u",
+              match w {
+                @atomics.Width::W8 => ".extend8_s()"
+                _ => ".extend16_s()"
+              },
+            )
+          } else if !signed_cast(ctx, natural, typ) {
             invalid_cast(ctx.diagnostics, operand.info, natural)
             cast_failed = true
           }
