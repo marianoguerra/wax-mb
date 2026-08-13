@@ -159,9 +159,18 @@ fn Lowering::field(
         }
       }
     }
-    Global(name~, mut_~, def~, attributes~, ..) => {
-      guard node_valtype(def) is Some(ty) else {
-        raise Unresolved("global type", loc)
+    Global(name~, mut_~, typ~, def~, attributes~) => {
+      // The WRITTEN type when there is one. A global's initialiser may have a
+      // narrower type than the global itself -- `let g: &?func = f;` holds a
+      // funcref, not the type of `f` -- and the declaration is what the module
+      // states.
+      let ty = match typ {
+        Some(t) => self.valtype_index(t, loc)
+        None =>
+          match node_valtype(def) {
+            Some(t) => t
+            None => raise Unresolved("global type", loc)
+          }
       }
       let init : Array[@wasm_bin.Instruction] = []
       self.instr(init, def)
