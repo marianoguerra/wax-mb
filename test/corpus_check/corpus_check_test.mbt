@@ -143,7 +143,6 @@ test "the checker annotates every node it reaches" {
       #|6 Expecting 1 returned value(s) from the stack, but there are 0.
       #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.
       #|6 The type 'bytes' is not bound.
-
     ),
   )
 }

@@ -1001,6 +1001,15 @@ fn Lowering::hinted(
       }
     }
     Cast(operand, target) => {
+      // A cast to a CONTINUATION type is a compile-time ascription, not a
+      // `ref.cast`: continuations carry no RTT, so there is nothing to test at
+      // run time and the instruction does not exist. The checker accepted this
+      // one only as a provable no-op, so the operand alone is the whole of it.
+      if target is Value(Ref(r)) &&
+        @typing.is_cont_heaptype(self.ctx.type_context, r.typ) {
+        self.instr(out, operand)
+        return
+      }
       // A narrow load and a following sign cast are ONE instruction: wax splits
       // the width and the signedness across two constructs, and the binary has
       // no separate sign-extension to emit afterwards.
