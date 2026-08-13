@@ -265,6 +265,16 @@ fn build(
 }
 
 ///|
+/// Whether a type is the array a bare string literal already lowers to: a
+/// MUTABLE byte array. Anything else has to be named, because the spelling
+/// alone would not say which it is.
+fn default_string_type(m : @wasm_bin.Module, t : Int) -> Bool {
+  guard m.types.get(t) is Some(sub) else { return false }
+  guard sub.composite is Array(at) else { return false }
+  at.element.mut_ && at.element.typ is Packed(I8)
+}
+
+///|
 /// `(@if $c (@then) (@else ...))` -- an else run with no then beside it.
 fn cond_else_only(c : @wasm_bin.CondGroup, else_ : Array[Sexp]) -> Sexp {
   At(
@@ -549,13 +559,19 @@ fn folded(node : Node, ctx : Ctx) -> Sexp raise WatError {
 fn folded_bare(node : Node, ctx : Ctx) -> Sexp raise WatError {
   // A string literal is written as one: the constants it lowered to are the
   // string, so writing both would say the same thing twice.
-  if node.head is FromString(bytes, named, _) {
+  if node.head is FromString(bytes, inner) {
     // The type is written only when the SOURCE named one. Naming it whenever
     // the type HAS a name was measured and is much worse -- 1611 exact to
     // 1559 -- because most strings land in a named type the reference leaves
     // out, so which was written has to be recorded rather than inferred.
     let l : Array[Sexp] = [Atom("@string")]
-    if named is Some(t) {
+    // The DEFAULT string is a mutable byte array, and `(@string "..")` already
+    // says that -- so only a string at some other element type names one.
+    let t = match inner {
+      ArrayNewFixed(t, _) => Some(t)
+      _ => None
+    }
+    if t is Some(t) && !default_string_type(ctx.m, t) {
       l.push(Atom(name_or(ctx.m.names.types, t)))
     }
     l.push(Atom(quoted(bytes)))

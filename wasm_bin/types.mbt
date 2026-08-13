@@ -273,12 +273,8 @@ pub(all) enum Instruction {
   /// the rest. Nothing in a run of constants says it was ever text, so the
   /// bytes are carried here.
   ///
-  /// The array type is carried too, when the SOURCE named one: `[chars| "hi"]`
-  /// writes `(@string $chars "hi")` and a bare `"hi"` writes `(@string "hi")`.
-  /// Which was written is not in the index either construction ends up with.
-  ///
   /// Carries no opcode of its own either.
-  FromString(Bytes, Int?, Instruction)
+  FromString(Bytes, Instruction)
   /// An `i32.const` the source wrote as a CHARACTER literal, carrying that
   /// character's UTF-8 bytes. Its sibling above, for the other literal whose
   /// value says nothing about how it was written.
