@@ -2149,3 +2149,23 @@ pub fn call_targets_over_100(
     ),
   )
 }
+
+///|
+/// A cast to a continuation type that is not already a no-op.
+pub fn cont_cast_not_ascription(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "A cast to a continuation type is a compile-time ascription: the operand's type must already be a subtype of the target, as there is no runtime continuation cast.",
+    ),
+    hint=Some(
+      @message.text(
+        "Give the value a declared continuation type where it is introduced (a parameter, local or block-result annotation).",
+      ),
+    ),
+  )
+}

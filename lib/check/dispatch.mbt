@@ -1020,6 +1020,20 @@ pub fn Checker::statement(
         // it is ever run.
         Value(v) => {
           let want = internalize(ctx.type_context, ctx.diagnostics, v)
+          // A continuation carries no RTT, so there is no `ref.cast` into one:
+          // `e as &k` with a continuation target is a compile-time ASCRIPTION,
+          // and is accepted exactly when it lowers to no instruction at all.
+          // Not the castability test below, which admits runtime downcasts.
+          if v is Ref(target) && is_cont_heaptype(ctx.type_context, target.typ) {
+            // ASKED, not applied:  settles inference cells as a side
+            // effect, and this is a question about the operand's type, not a
+            // constraint on it. Pinning here changed the bytes of two files
+            // whose operand is polymorphic dead code.
+            if want is Some(w) &&
+              !subtype(ctx.type_context.subtyping_info(), natural, w, pin=false) {
+              cont_cast_not_ascription(ctx.diagnostics, loc)
+            }
+          }
           // Settle a still-flexible operand at the type the cast names, BEFORE
           // the result type is decided: a literal has no width of its own, and
           // the cast is what says which one it takes.
@@ -1081,6 +1095,12 @@ pub fn Checker::statement(
     Test(operand, target) => {
       let operand_ = self.expression(operand)
       let natural = expression_type(ctx, operand_.info)
+      // A continuation has no RTT to test against, so `is` cannot ask about
+      // one -- the same reason `as` into one is an ascription rather than a
+      // cast.
+      if is_cont_heaptype(ctx.type_context, target.typ) {
+        invalid_cast_type(ctx.diagnostics, loc)
+      }
       if internalize(ctx.type_context, ctx.diagnostics, Ref(target)) is Some(w) {
         lint_ref_cast(
           ctx,

@@ -191,6 +191,33 @@ fn check_attribute_list(
 }
 
 ///|
+/// One declaration's attributes, plus the one rule that is about the LIST
+/// rather than about any single attribute: an import takes one import-name
+/// annotation, and a second has no name left to override.
+fn check_import_attributes(
+  ctx : @typing_env.ModuleContext,
+  attributes : Array[@ast.Attribute],
+) -> Unit {
+  check_attribute_list(
+    ctx,
+    attributes,
+    export_ok=true,
+    start_ok=true,
+    module_ok=false,
+    import_ok=true,
+  )
+  let names = []
+  for a in attributes {
+    if a.attr_name == "import" {
+      names.push(a.attr_span)
+    }
+  }
+  if names.length() > 1 {
+    multiple_import(ctx.diagnostics, names[1], names[0])
+  }
+}
+
+///|
 pub fn check_attributes(
   ctx : @typing_env.ModuleContext,
   fields : @ast.Module[@basic.Location],
@@ -279,25 +306,10 @@ pub fn check_attributes(
         per_field(attributes, false, false, false, false)
       // An import's attributes hang off each declaration, and `#[import]` is
       // allowed only there.
-      Import(decl~, ..) =>
-        check_attribute_list(
-          ctx,
-          decl.desc.attributes,
-          export_ok=true,
-          start_ok=true,
-          module_ok=false,
-          import_ok=true,
-        )
+      Import(decl~, ..) => check_import_attributes(ctx, decl.desc.attributes)
       ImportGroup(decls~, ..) =>
         for dd in decls {
-          check_attribute_list(
-            ctx,
-            dd.desc.attributes,
-            export_ok=true,
-            start_ok=true,
-            module_ok=false,
-            import_ok=true,
-          )
+          check_import_attributes(ctx, dd.desc.attributes)
         }
       Type(_) | Conditional(..) => ()
     }

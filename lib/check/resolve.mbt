@@ -342,10 +342,17 @@ pub fn comptype(
       n_fieldtype(ctx, diagnostics, field).map(f => {
         @type_store.CompType::Array(f)
       })
-    Cont(idx) =>
+    // A continuation is a continuation OF a function type: `cont ct` where
+    // `ct` is itself a continuation names nothing to run.
+    Cont(idx) => {
+      if ctx.types.find_no_mark(idx.name) is Some((_, def)) &&
+        !(def.typ is Func(_)) {
+        expected_func_type(diagnostics, idx.loc)
+      }
       resolve_type_ref(ctx, diagnostics, idx).map(r => {
         @type_store.CompType::Cont(r)
       })
+    }
   }
 }
 

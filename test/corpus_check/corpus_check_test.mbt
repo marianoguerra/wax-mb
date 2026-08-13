@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 174972 poisoned 0 files 1907 clean 1729",
+    content="nodes 174172 poisoned 0 files 1907 clean 1711",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -143,6 +143,15 @@ test "the checker annotates every node it reaches" {
   let n = if top.length() < 8 { top.length() } else { 8 }
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),
-    content=expected,
+    content=(
+      #|33 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
+      #|32 This cast is redundant: the value already has this type.
+      #|27 This value remains on the stack.
+      #|22 This cast always traps: the value can never have this type.
+      #|20 Expecting 1 returned value(s) from the stack, but there are 0.
+      #|17 This type test is always true: the value already has this type.
+      #|10 The type 'point' is not bound.
+      #|8 Expecting 1 value(s) from the stack, but there are 0.
+    ),
   )
 }
