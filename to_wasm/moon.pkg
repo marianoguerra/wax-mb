@@ -10,6 +10,7 @@ import {
   "moonbitlang/core/debug",
   "waxmb/wax/unicode",
   "waxmb/wax/simd",
+  "waxmb/wax/infer",
   "waxmb/wax/atomics",
 }
 

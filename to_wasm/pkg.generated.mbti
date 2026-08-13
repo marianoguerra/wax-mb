@@ -20,6 +20,8 @@ pub fn binop_instruction(@ast.BinOp, @wasm_types.ValType[Int]) -> @wasm_bin.Inst
 
 pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> String
 
+pub fn emitted_named_index(String, Int) -> Int
+
 pub fn emitted_type_index(Int) -> Int
 
 pub fn fresh_name(Array[String], String, Int) -> String
@@ -29,6 +31,8 @@ pub fn function_priority(Array[@ast.Attribute]) -> @wasm_bin.Priority?
 pub fn functype_index(@type_store.TypeStore, TypeLayout) -> Map[(Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]), Int]
 
 pub fn hierarchy_conversion(@wasm_types.HeapType[Int], @wasm_types.HeapType[Int]) -> @wasm_bin.Instruction?
+
+pub fn inferred_valtype(@infer.InferredValType) -> @wasm_types.ValType[Int]
 
 pub fn is_any_hierarchy(@wasm_types.HeapType[Int]) -> Bool
 
@@ -157,6 +161,9 @@ pub struct TypeLayout {
   store_of : Array[Int]
   types : Array[@wasm_bin.SubType]
   groups : Array[@wasm_bin.RecGroup]
+  pending : Array[@wasm_bin.SubType]
+  written : Map[String, @ast.SubType]
+  declared : Array[(@ast.SubType, Int)]
 }
 
 // Type aliases

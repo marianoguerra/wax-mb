@@ -234,7 +234,38 @@ pub fn node_valtype(
   guard @typing_env.standalone_valtype(i.info.0[0]) is Some(v) else {
     return None
   }
-  Some(lower_valtype(v.internal))
+  Some(inferred_valtype(v))
+}
+
+///|
+/// An inferred type as an emitted value type.
+///
+/// The annotation carries the type twice: the NAME the source form kept and
+/// the interned id. The name is the better answer where there is one, because
+/// interning collapses distinct declarations and the emitted section does not.
+pub fn inferred_valtype(v : @infer.InferredValType) -> @wasm_types.ValType[Int] {
+  match (v.typ, v.internal) {
+    (Ref({ typ: Type(n), .. }), Ref(r)) =>
+      Ref({
+        nullable: r.nullable,
+        typ: Type(emitted_named_index(n.name, store_id_of(r.typ))),
+      })
+    (Ref({ typ: Exact(n), .. }), Ref(r)) =>
+      Ref({
+        nullable: r.nullable,
+        typ: Exact(emitted_named_index(n.name, store_id_of(r.typ))),
+      })
+    _ => lower_valtype(v.internal)
+  }
+}
+
+///|
+/// The store index a heap type carries, or -1 when it carries none.
+fn store_id_of(h : @wasm_types.HeapType[@type_store.Id]) -> Int {
+  match h {
+    Type(i) | Exact(i) => i.to_int_for_tests_only()
+    _ => -1
+  }
 }
 
 ///|

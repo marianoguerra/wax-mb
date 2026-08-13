@@ -26,12 +26,6 @@ pub fn lower_module(
   // annotations the checker left.
   let layout = type_layout(ctx, source, store)
   let m = @wasm_bin.Module::empty()
-  for t in layout.types {
-    m.types.push(t)
-  }
-  for g in layout.groups {
-    m.rec_groups.push(g)
-  }
   let low : Lowering = {
     ctx,
     store,
@@ -84,6 +78,16 @@ pub fn lower_module(
     low.field(m, field)
   }
   low.declare_func_refs(m, source)
+  // The type section LAST: a synthesized type is materialised when something
+  // refers to it, so the section is not complete until everything has been
+  // lowered. Its declared prefix was fixed before any of that, which is what
+  // lets the indices be handed out along the way.
+  for t in layout.types {
+    m.types.push(t)
+  }
+  for g in layout.groups {
+    m.rec_groups.push(g)
+  }
   // The name section last: it is a view over every index space, so it wants
   // them all assigned.
   low.type_names(m)

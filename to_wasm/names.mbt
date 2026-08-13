@@ -33,18 +33,23 @@ pub fn note_name(into : Map[Int, Bytes], index : Int, name : String) -> Unit {
 /// it interned to are joined. A type that several names reach keeps the first,
 /// because that is the one the reference emits.
 pub fn Lowering::type_names(self : Lowering, m : @wasm_bin.Module) -> Unit {
+  // A NAME names its own emitted entry, not the store entry it shares with a
+  // like-shaped sibling -- which is the whole reason the two indices are
+  // different numbers. `by_name` holds exactly the names that reached the
+  // section: the declarations, and the synthesized types something referred to.
+  // A synthesized name is emitted precisely because it was materialised: the
+  // entry exists only for it, so nothing else can carry the name.
+  for name, i in self.layout.by_name {
+    if !m.names.types.contains(i) {
+      m.names.types[i] = utf8_of(name)
+    }
+  }
   for entry in self.ctx.type_context.types.iter_entries() {
     let (name, (idx, sub)) = entry
     guard idx is Def(id) else { continue }
-    // A declared name names ITS OWN emitted entry, not the store entry it
-    // shares with a like-shaped sibling -- which is the whole reason the two
-    // indices are different numbers.
     let i = match self.layout.by_name.get(name) {
       Some(emitted) => emitted
       None => emitted_type_index(id.to_int_for_tests_only())
-    }
-    if !is_synthetic(name) && !m.names.types.contains(i) {
-      m.names.types[i] = utf8_of(name)
     }
     // A struct's fields are named per TYPE, so they hang off the same index.
     if sub.typ is Struct(fields) && !m.names.fields.contains(i) {

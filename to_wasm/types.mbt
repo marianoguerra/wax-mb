@@ -53,6 +53,51 @@ pub fn store_type_index(emitted : Int) -> Int {
 }
 
 ///|
+/// The layout of the module being lowered, for the leaf functions that resolve
+/// a reference by name. Companion to `type_remap`, and installed with it.
+let current_layout : Ref[TypeLayout?] = { val: None }
+
+///|
+/// The emitted index a type NAME means.
+///
+/// A declared name has its own entry. A SYNTHESIZED one -- `<func:f>`, the
+/// type a `ref.func` gives its function -- has none until something refers to
+/// it, and then it gets one of its own rather than borrowing the like-shaped
+/// declaration it interned with: the reference materialises it too, and the
+/// index is observable.
+pub fn emitted_named_index(name : String, store_index : Int) -> Int {
+  guard current_layout.val is Some(layout) else {
+    return emitted_type_index(store_index)
+  }
+  if layout.by_name.get(name) is Some(i) {
+    return i
+  }
+  if !is_synthetic(name) {
+    return emitted_type_index(store_index)
+  }
+  // A synthesized type REUSES a declared one of the same definition rather
+  // than being materialised beside it. The comparison is on the whole written
+  // subtype -- finality and supertype included -- not on the interned entry:
+  // interning normalises exactly the differences that decide this, so two
+  // names can share a store entry and still be two types here.
+  guard layout.written.get(name) is Some(mine) else {
+    return emitted_type_index(store_index)
+  }
+  for entry in layout.declared {
+    if entry.0 == mine {
+      layout.by_name[name] = entry.1
+      return entry.1
+    }
+  }
+  let emitted = layout.types.length()
+  layout.by_name[name] = emitted
+  layout.store_of.push(store_index)
+  layout.types.push(layout.pending[store_index])
+  layout.groups.push({ start: emitted, len: 1, explicit: false })
+  emitted
+}
+
+///|
 /// Where each type name lands in the emitted section.
 pub struct TypeLayout {
   /// Emitted index for a declared name.
@@ -65,6 +110,13 @@ pub struct TypeLayout {
   store_of : Array[Int]
   types : Array[@wasm_bin.SubType]
   groups : Array[@wasm_bin.RecGroup]
+  /// Every store entry already lowered, so a synthesized type materialised
+  /// mid-lowering costs a lookup rather than a re-resolution.
+  pending : Array[@wasm_bin.SubType]
+  /// The subtype each name was WRITTEN as, before interning normalised it.
+  written : Map[String, @ast.SubType]
+  /// The declared subtypes, with the index each landed at, for the reuse test.
+  declared : Array[(@ast.SubType, Int)]
 }
 
 ///|
@@ -126,7 +178,32 @@ pub fn type_layout(
   store_remap.val = store_of
   let info = store.subtyping_info()
   let types : Array[@wasm_bin.SubType] = []
-  let layout = { by_name, by_store, store_of, types, groups }
+  let pending : Array[@wasm_bin.SubType] = []
+  let written : Map[String, @ast.SubType] = Map([])
+  let declared : Array[(@ast.SubType, Int)] = []
+  for entry in ctx.type_context.types.iter_entries() {
+    let (name, (_, sub)) = entry
+    written[name] = sub
+  }
+  for name, i in by_name {
+    if written.get(name) is Some(sub) {
+      declared.push((sub, i))
+    }
+  }
+  let layout = {
+    by_name,
+    by_store,
+    store_of,
+    types,
+    groups,
+    pending,
+    written,
+    declared,
+  }
+  current_layout.val = Some(layout)
+  for si in 0..<store.last_index() {
+    pending.push(lower_subtype(info.get_subtype(@type_store.Id::of_index(si))))
+  }
   for emitted, si in store_of {
     // A DECLARED type is lowered from what the source wrote, so that an inner
     // `&t2` means `t2` and not the like-shaped `t1` it interned with. Reading
