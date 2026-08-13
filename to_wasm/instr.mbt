@@ -283,17 +283,33 @@ fn Lowering::hinted(
       let _ = self.labels.pop()
       out.push(If(self.block_type(typ, loc), then_, else_))
     }
+    // A tail call lowers exactly like the call it is, and then the trailing
+    // CALL becomes its `return_call` form. Reusing the whole call dispatch is
+    // the point: `become f(x)` and `become tab[i](x)` are the same two
+    // questions the plain forms answer, and answering them twice is how the
+    // two spellings drift apart.
     TailCall(callee, args) => {
-      for a in args {
-        self.instr(out, a)
+      let inner = self.instrs([{ ..i, desc: Call(callee, args) }])
+      guard inner.length() >= 1 else { return }
+      let last = inner[inner.length() - 1]
+      let tail : @wasm_bin.Instruction? = match last {
+        Call(f) => Some(ReturnCall(f))
+        CallIndirect(t, tab) => Some(ReturnCallIndirect(t, tab))
+        CallRef(t) => Some(ReturnCallRef(t))
+        // An INTRINSIC is not a call and has no tail form: it is evaluated and
+        // its result returned, which is what the source asked for anyway.
+        _ => None
       }
-      guard callee.desc is Get(name) else {
-        raise NotLowered("indirect tail call", loc)
+      for k in 0..<(inner.length() - 1) {
+        out.push(inner[k])
       }
-      guard self.indices.funcs.get(name.name) is Some(f) else {
-        raise Unresolved("tail-call target", loc)
+      match tail {
+        Some(t) => out.push(t)
+        None => {
+          out.push(last)
+          out.push(Return)
+        }
       }
-      out.push(ReturnCall(f))
     }
     Call(callee, args) => {
       // The special forms come FIRST and emit their own operands, because they
