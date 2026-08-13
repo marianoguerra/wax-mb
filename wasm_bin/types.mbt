@@ -1200,12 +1200,14 @@ pub(all) struct TextView {
   /// binary keeps only the index, which is the same in all three cases, so
   /// which was written has to be recorded.
   decl_typeuse : Map[ParamOwner, TypeUse]
-  /// The exports whose attribute carried a GUARD, by export index.
+  /// The exports written as a FIELD rather than as a clause, by export index.
   ///
-  /// A guarded export is written as a field of its own under the condition --
-  /// `(@if $c (@then (export "n" (func $f))))` -- rather than as a clause on
-  /// the thing exported, because a clause has nowhere to put the condition.
-  guarded_exports : Map[Int, Bool]
+  /// Two reasons an export cannot be a clause on the thing it exports. A
+  /// GUARDED one has nowhere to put its condition. And an import inside a
+  /// compact group is not written as a form of its own at all -- the group
+  /// writes one name per item and one descriptor for all of them -- so there
+  /// is nothing for a clause to hang off.
+  standalone_exports : Map[Int, Bool]
   /// The conditional groups the source wrote.
   ///
   /// A conditional has no binary form -- that is the whole point of it, and
@@ -1233,7 +1235,7 @@ pub fn TextView::empty() -> TextView {
     field_locs: [],
     decl_param_names: Map([]),
     decl_typeuse: Map([]),
-    guarded_exports: Map([]),
+    standalone_exports: Map([]),
     conditionals: [],
   }
 }

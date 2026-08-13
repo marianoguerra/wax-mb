@@ -19,7 +19,7 @@ fn export_clauses(
 ) -> Array[Sexp] {
   let out : Array[Sexp] = []
   for k, e in m.exports {
-    if e.desc == of_ && !m.text.guarded_exports.contains(k) {
+    if e.desc == of_ && !m.text.standalone_exports.contains(k) {
       out.push(List([Atom("export"), Atom(quoted(e.name))]))
     }
   }

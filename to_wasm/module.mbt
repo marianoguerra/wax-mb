@@ -120,6 +120,7 @@ pub fn lower_module(
           // compacting replaces the run of entries with one that stands for
           // all of them -- so the indices to record only exist once it has run.
           let before = m.imports.length()
+          let before_exports = m.exports.length()
           for d in decls {
             low.import_(m, module_.desc, d.desc, field.info)
           }
@@ -127,6 +128,16 @@ pub fn lower_module(
           for k in before..<m.imports.length() {
             m.text.field_order.push(FImport(k))
             order_at.push(field.info)
+          }
+          // A COMPACTED group writes one name per item and one descriptor for
+          // all of them, so an item has no form of its own for an export
+          // clause to hang off. Those exports become fields.
+          if m.imports.length() - before < decls.length() {
+            for e in before_exports..<m.exports.length() {
+              m.text.standalone_exports[e] = true
+              m.text.field_order.push(FExport(e))
+              order_at.push(field.info)
+            }
           }
           low.flush_start(m, order_at, field.info)
         }
@@ -883,7 +894,7 @@ fn Lowering::export_of(
     // A GUARDED export is a field of its own under its condition. A clause on
     // the thing exported has nowhere to put one.
     if a.attr_guard is Some(g) {
-      m.text.guarded_exports[at] = true
+      m.text.standalone_exports[at] = true
       self.entry_locs[m.text.field_order.length()] = a.attr_span
       m.text.field_order.push(FExport(at))
       m.text.conditionals.push({
