@@ -29,6 +29,13 @@ mkdir -p "$work/bin"
 ln -sf "$bin" "$work/bin/wax"
 export PATH="$work/bin:$PATH"
 
+# The reference's cram suite hides the correctness lints for the whole group
+# (see wax/test/cram-tests/dune), because they fire during the validation these
+# tests exercise and would clutter every unrelated one. A test that is ABOUT a
+# lint re-enables it with an explicit -W, which overrides this. Setting it here
+# is what makes the tests runnable unedited, which is the point of having them.
+export WAX_WARN="correctness=hidden"
+
 pass=0; fail=0; failed=()
 for t in "$root"/test/cram/*.t; do
   [ -d "$t" ] || continue

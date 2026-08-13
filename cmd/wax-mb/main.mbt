@@ -121,7 +121,10 @@ fn render_diagnostics(
     palette=@colors.wax_theme,
     is_tty=@io.stderr_is_tty(),
   )
-  let policy = @warning.default_policy
+  // The policy the RUN was given -- the defaults, refined by WAX_WARN and then
+  // by `-W`. Reaching for the defaults here instead made both of those parse,
+  // validate, and do nothing.
+  let policy = opts.policy
   let mut rejected = false
   for d in collected {
     let severity = match (d.severity, d.warning) {

@@ -86,7 +86,12 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
   let mut check_only = false
   let mut all_errors = false
   let mut inplace = false
-  let mut policy = @warning.default_policy
+  // The defaults, then WAX_WARN, then the `-W` flags -- each left to right, so
+  // later settings win. The environment is read directly rather than as a
+  // fallback for the flag: a `-W` refines the environment's policy instead of
+  // replacing it, which is what lets a suite hide a whole group and a single
+  // test re-enable the one warning it is about.
+  let mut policy = env_policy()
   let mut i = 0
   // The first non-flag word is the command, but only when it names one --
   // `wax-mb f.wax` converts, exactly as `wax f.wax` does.
@@ -259,4 +264,37 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
     inplace,
     policy,
   })
+}
+
+///|
+/// The warning policy `WAX_WARN` asks for.
+///
+/// A list of `NAME=LEVEL` specs separated by commas or whitespace. A malformed
+/// or unknown entry is reported and skipped, so a stray value in an
+/// environment never aborts a run that had nothing to do with it.
+fn env_policy() -> @warning.Policy {
+  let mut policy = @warning.default_policy
+  guard @env.get_env_var("WAX_WARN") is Some(raw) else { return policy }
+  let specs : Array[String] = []
+  for part in raw.split(",") {
+    for word in part.to_owned().split(" ") {
+      for token in word.to_owned().split("\t") {
+        let t = token.to_owned()
+        if t != "" {
+          specs.push(t)
+        }
+      }
+    }
+  }
+  for spec in specs {
+    match @warning.parse_spec(spec) {
+      Err(msg) => @io.eprintln("wax-mb: WAX_WARN: " + msg)
+      Ok((target, level)) =>
+        match policy.set(target, level) {
+          Err(msg) => @io.eprintln("wax-mb: WAX_WARN: " + msg)
+          Ok(p) => policy = p
+        }
+    }
+  }
+  policy
 }
