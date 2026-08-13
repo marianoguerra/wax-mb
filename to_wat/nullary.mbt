@@ -2,13 +2,18 @@
 //
 // Their text names follow from their constructor names by one rule -- a type
 // prefix, a dot, the rest in snake case -- because both are spellings of the
-// same spec mnemonic. Four do not follow it and are named explicitly:
+// same spec mnemonic. A handful do not follow it and are named explicitly:
 // `RefEqInstr` avoids a collision with the `Eq` trait, `AtomicFence` groups
 // with the atomics it is not otherwise like, and `i31.get_s`/`i31.get_u` take
 // `i31` as the type prefix even though the constructor runs the digits into
 // the name -- which the rule read as one word, and spelled `i31_get_s` -- and
 // `i16x8.q15mulr_sat_s`, where the spec runs `q15` into `mulr` and the rule
-// read `Q15Mulr` as two.
+// read `Q15Mulr` as two. `extadd`, `extmul` and `andnot` run together the same
+// way.
+//
+// These were found by comparing the mnemonics the reference PRINTS over the
+// whole corpus against the ones this prints -- a check that needs no reading
+// of the spec, and one worth repeating after any addition here.
 
 ///|
 /// The text name of an instruction with no immediate, or `None` when it takes
@@ -228,7 +233,7 @@ pub fn nullary(i : @wasm_bin.Instruction) -> String? {
     F64x2Ge => Some("f64x2.ge")
     V128Not => Some("v128.not")
     V128And => Some("v128.and")
-    V128AndNot => Some("v128.and_not")
+    V128AndNot => Some("v128.andnot")
     V128Or => Some("v128.or")
     V128Xor => Some("v128.xor")
     V128Bitselect => Some("v128.bitselect")
@@ -254,8 +259,8 @@ pub fn nullary(i : @wasm_bin.Instruction) -> String? {
     I8x16MaxS => Some("i8x16.max_s")
     I8x16MaxU => Some("i8x16.max_u")
     I8x16AvgrU => Some("i8x16.avgr_u")
-    I16x8ExtAddPairwiseI8x16S => Some("i16x8.ext_add_pairwise_i8x16_s")
-    I16x8ExtAddPairwiseI8x16U => Some("i16x8.ext_add_pairwise_i8x16_u")
+    I16x8ExtAddPairwiseI8x16S => Some("i16x8.extadd_pairwise_i8x16_s")
+    I16x8ExtAddPairwiseI8x16U => Some("i16x8.extadd_pairwise_i8x16_u")
     I16x8Abs => Some("i16x8.abs")
     I16x8Neg => Some("i16x8.neg")
     I16x8Q15MulrSatS => Some("i16x8.q15mulr_sat_s")
@@ -282,12 +287,12 @@ pub fn nullary(i : @wasm_bin.Instruction) -> String? {
     I16x8MaxS => Some("i16x8.max_s")
     I16x8MaxU => Some("i16x8.max_u")
     I16x8AvgrU => Some("i16x8.avgr_u")
-    I16x8ExtMulLowI8x16S => Some("i16x8.ext_mul_low_i8x16_s")
-    I16x8ExtMulHighI8x16S => Some("i16x8.ext_mul_high_i8x16_s")
-    I16x8ExtMulLowI8x16U => Some("i16x8.ext_mul_low_i8x16_u")
-    I16x8ExtMulHighI8x16U => Some("i16x8.ext_mul_high_i8x16_u")
-    I32x4ExtAddPairwiseI16x8S => Some("i32x4.ext_add_pairwise_i16x8_s")
-    I32x4ExtAddPairwiseI16x8U => Some("i32x4.ext_add_pairwise_i16x8_u")
+    I16x8ExtMulLowI8x16S => Some("i16x8.extmul_low_i8x16_s")
+    I16x8ExtMulHighI8x16S => Some("i16x8.extmul_high_i8x16_s")
+    I16x8ExtMulLowI8x16U => Some("i16x8.extmul_low_i8x16_u")
+    I16x8ExtMulHighI8x16U => Some("i16x8.extmul_high_i8x16_u")
+    I32x4ExtAddPairwiseI16x8S => Some("i32x4.extadd_pairwise_i16x8_s")
+    I32x4ExtAddPairwiseI16x8U => Some("i32x4.extadd_pairwise_i16x8_u")
     I32x4Abs => Some("i32x4.abs")
     I32x4Neg => Some("i32x4.neg")
     I32x4AllTrue => Some("i32x4.all_true")
@@ -307,10 +312,10 @@ pub fn nullary(i : @wasm_bin.Instruction) -> String? {
     I32x4MaxS => Some("i32x4.max_s")
     I32x4MaxU => Some("i32x4.max_u")
     I32x4DotI16x8S => Some("i32x4.dot_i16x8_s")
-    I32x4ExtMulLowI16x8S => Some("i32x4.ext_mul_low_i16x8_s")
-    I32x4ExtMulHighI16x8S => Some("i32x4.ext_mul_high_i16x8_s")
-    I32x4ExtMulLowI16x8U => Some("i32x4.ext_mul_low_i16x8_u")
-    I32x4ExtMulHighI16x8U => Some("i32x4.ext_mul_high_i16x8_u")
+    I32x4ExtMulLowI16x8S => Some("i32x4.extmul_low_i16x8_s")
+    I32x4ExtMulHighI16x8S => Some("i32x4.extmul_high_i16x8_s")
+    I32x4ExtMulLowI16x8U => Some("i32x4.extmul_low_i16x8_u")
+    I32x4ExtMulHighI16x8U => Some("i32x4.extmul_high_i16x8_u")
     I64x2Abs => Some("i64x2.abs")
     I64x2Neg => Some("i64x2.neg")
     I64x2AllTrue => Some("i64x2.all_true")
@@ -325,10 +330,10 @@ pub fn nullary(i : @wasm_bin.Instruction) -> String? {
     I64x2Add => Some("i64x2.add")
     I64x2Sub => Some("i64x2.sub")
     I64x2Mul => Some("i64x2.mul")
-    I64x2ExtMulLowI32x4S => Some("i64x2.ext_mul_low_i32x4_s")
-    I64x2ExtMulHighI32x4S => Some("i64x2.ext_mul_high_i32x4_s")
-    I64x2ExtMulLowI32x4U => Some("i64x2.ext_mul_low_i32x4_u")
-    I64x2ExtMulHighI32x4U => Some("i64x2.ext_mul_high_i32x4_u")
+    I64x2ExtMulLowI32x4S => Some("i64x2.extmul_low_i32x4_s")
+    I64x2ExtMulHighI32x4S => Some("i64x2.extmul_high_i32x4_s")
+    I64x2ExtMulLowI32x4U => Some("i64x2.extmul_low_i32x4_u")
+    I64x2ExtMulHighI32x4U => Some("i64x2.extmul_high_i32x4_u")
     F32x4Ceil => Some("f32x4.ceil")
     F32x4Floor => Some("f32x4.floor")
     F32x4Trunc => Some("f32x4.trunc")
