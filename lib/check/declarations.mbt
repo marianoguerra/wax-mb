@@ -229,7 +229,6 @@ pub fn register_tag(
     None =>
       match sign {
         Some(sign) => {
-          check_unique_param_names(ctx.diagnostics, sign.params)
           // Interned like any other function type. A tag's signature is a type
           // the binary format refers to BY INDEX, so leaving it out of the
           // store would leave the code generator with a tag it cannot name --
