@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 174923 poisoned 0 files 1903 clean 1733",
+    content="nodes 174970 poisoned 0 files 1903 clean 1734",
   )
   let top : Array[(String, Int)] = []
   for m, n in messages {
@@ -139,7 +139,7 @@ test "the checker annotates every node it reaches" {
     #|17 This type test is always true: the value already has this type.
     #|10 The type 'point' is not bound.
     #|8 Expecting 1 value(s) from the stack, but there are 0.
-    #|6 This cast is redundant: the value already has this type.
+    #|6 The local variable 'handler' has not been initialized.
   let n = if top.length() < 8 { top.length() } else { 8 }
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),

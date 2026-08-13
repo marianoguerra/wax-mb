@@ -3156,8 +3156,25 @@ fn Checker::call(
   // take the parameter's type as its own; synthesized when the arity does not
   // line up, since then no argument is reliably paired with any parameter.
   let paired = have_params && params.length() == args.length()
+  // An argument that reads the incoming stack -- a hole, or anything built
+  // over one -- has to be reached before the arguments to its LEFT, or they
+  // take the values meant for it. Everything else is typed in written order,
+  // which is the order it is emitted in.
+  let taken : Map[Int, @ast.Instr[@typing_env.InferredAnnotation]] = Map([])
+  for k = args.length() - 1; k >= 0; k = k - 1 {
+    if contains_hole(args[k]) {
+      taken[k] = if paired {
+        self.check(params[k], args[k])
+      } else {
+        self.expression(args[k])
+      }
+    }
+  }
   for k, a in args {
-    let c = if paired { self.check(params[k], a) } else { self.expression(a) }
+    let c = match taken.get(k) {
+      Some(c) => c
+      None => if paired { self.check(params[k], a) } else { self.expression(a) }
+    }
     if have_params && !paired && k < params.length() {
       check_subtype(
         ctx.type_context.subtyping_info(),
