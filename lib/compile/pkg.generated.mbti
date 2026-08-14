@@ -13,6 +13,7 @@ import {
   "marianoguerra/wax/syntax/trivia",
   "marianoguerra/wax/warning",
   "marianoguerra/wax/wasm/bin",
+  "marianoguerra/wax/wasm/wat",
 }
 
 // Values
@@ -21,6 +22,12 @@ pub fn apply_policy(@warning.Policy, Array[@diagnostic.Diagnostic]) -> Array[@di
 pub fn rejected(Array[@diagnostic.Diagnostic]) -> Bool
 
 // Errors
+pub suberror CompileError {
+  Lower(@wasm.LowerError)
+  Encode(@bin.EncodeError)
+  Wat(@wat.WatError)
+}
+pub impl Show for CompileError
 
 // Types and methods
 pub struct Checked {
@@ -29,9 +36,9 @@ pub struct Checked {
   source_module : Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]
   typed : Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]]
 }
-pub fn Checked::to_bytes(Self) -> Bytes raise
+pub fn Checked::to_bytes(Self) -> Bytes raise CompileError
 pub fn Checked::to_module(Self, keep_conditionals? : Bool) -> @bin.Module raise @wasm.LowerError
-pub fn Checked::to_wat(Self, trivia? : @trivia.Context) -> String raise
+pub fn Checked::to_wat(Self, trivia? : @trivia.Context) -> String raise CompileError
 
 pub struct Session {
   store : @store.TypeStore

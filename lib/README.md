@@ -47,6 +47,11 @@ let bytes = match @wax.compile_string(src) {
 reports an error produces no bytes at all, rather than bytes derived from a
 module known to be wrong.
 
+A rejected module comes back as `Err`; a module that *checked* and then would
+not lower **raises** `CompileError`, which is a bug in this port rather than in
+the input. It names its three stages — `Lower`, `Encode`, `Wat` — so a caller
+can match on which one, and `Show` renders each with its own span.
+
 `compile_string_to_wat` takes the same route as far as the lowered module and
 prints it instead of encoding it, so the two forms cannot describe different
 modules:

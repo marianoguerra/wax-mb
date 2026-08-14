@@ -1,6 +1,42 @@
 // What a checked module can be turned into.
 
 ///|
+/// What can stop a checked module from becoming output.
+///
+/// Three packages sit on this path and each raises its own error: the lowering
+/// to the wasm module model, the binary encoder, and the text printer. A caller
+/// handed the open `Error` type can only print what it catches; naming the
+/// three lets it match on them, and says up front that there is no fourth.
+///
+/// None of these are a rejected module. A module the checker rejected is
+/// reported through `Session::reports` and `rejected` before anything is
+/// lowered -- these are the lowering's own gaps, and reaching one on a module
+/// that checked clean is a bug in this port rather than in the input. The one
+/// exception is `LowerError::AmbiguousBinding`, which only a generated tree can
+/// reach and which names what the generator has to fix.
+pub suberror CompileError {
+  /// The Wax module would not lower: a construct not handled yet, a name the
+  /// checker accepted that did not survive, or one the binary format cannot
+  /// hold at all.
+  Lower(@to_wasm.LowerError)
+  /// The lowered module would not encode.
+  Encode(@wasm_bin.EncodeError)
+  /// The lowered module would not print as WebAssembly text.
+  Wat(@to_wat.WatError)
+}
+
+///|
+/// Delegated to the wrapped error, which already renders with its own span:
+/// the wrapper says which stage, and the stage's own message is the answer.
+pub impl Show for CompileError with fn output(self, logger) {
+  match self {
+    Lower(e) => Show::output(e, logger)
+    Encode(e) => Show::output(e, logger)
+    Wat(e) => Show::output(e, logger)
+  }
+}
+
+///|
 /// A module that has been through the type checker.
 ///
 /// It holds the four things the lowering needs and that a caller would
@@ -52,8 +88,11 @@ pub fn Checked::to_module(
 
 ///|
 /// Encode to a `.wasm` binary.
-pub fn Checked::to_bytes(self : Checked) -> Bytes raise {
-  @wasm_bin.encode(self.to_module())
+pub fn Checked::to_bytes(self : Checked) -> Bytes raise CompileError {
+  let m = self.to_module() catch { e => raise Lower(e) }
+  @wasm_bin.encode(m) catch {
+    e => raise Encode(e)
+  }
 }
 
 ///|
@@ -66,6 +105,9 @@ pub fn Checked::to_bytes(self : Checked) -> Bytes raise {
 pub fn Checked::to_wat(
   self : Checked,
   trivia? : @trivia.Context,
-) -> String raise {
-  @to_wat.print_module(self.to_module(keep_conditionals=true), trivia~)
+) -> String raise CompileError {
+  let m = self.to_module(keep_conditionals=true) catch { e => raise Lower(e) }
+  @to_wat.print_module(m, trivia~) catch {
+    e => raise Wat(e)
+  }
 }

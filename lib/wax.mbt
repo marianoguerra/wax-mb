@@ -24,7 +24,13 @@ pub using @output {render}
 ///
 /// These names are the reason that package exists separately: a code generator
 /// imports it directly and never pays for the parser.
-pub using @compile {type Session, type Checked, apply_policy, rejected}
+pub using @compile {
+  type Session,
+  type Checked,
+  type CompileError,
+  apply_policy,
+  rejected,
+}
 
 ///|
 /// Parse, check and compile Wax source to a `.wasm` binary.
@@ -42,7 +48,7 @@ pub fn compile_string(
   fname? : String,
   features? : @feature.Set,
   policy? : @warning.Policy,
-) -> Result[Bytes, Array[@diagnostic.Diagnostic]] raise {
+) -> Result[Bytes, Array[@diagnostic.Diagnostic]] raise @compile.CompileError {
   match checked(src, fname?, features?, policy?) {
     Err(diagnostics) => Err(diagnostics)
     Ok(c) => Ok(c.to_bytes())
@@ -61,7 +67,7 @@ pub fn compile_string_to_wat(
   fname? : String,
   features? : @feature.Set,
   policy? : @warning.Policy,
-) -> Result[String, Array[@diagnostic.Diagnostic]] raise {
+) -> Result[String, Array[@diagnostic.Diagnostic]] raise @compile.CompileError {
   let r = parse(src, fname?)
   match checked_of(r, src, features?, policy?) {
     Err(diagnostics) => Err(diagnostics)
