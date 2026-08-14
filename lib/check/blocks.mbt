@@ -42,7 +42,13 @@ pub fn fresh_collecting(
   declared : @infer.Cell[@infer.InferredType]?,
   needed? : Bool = false,
 ) -> (@infer.Collecting, @infer.Cell[@infer.InferredType]) {
-  let cs : @infer.Collecting = { collected: [], exacts: [], declared, needed }
+  let cs : @infer.Collecting = {
+    collected: [],
+    exacts: [],
+    declared,
+    needed,
+    empty_exits: [],
+  }
   (cs, @infer.Cell::make(Collecting(cs)))
 }
 
@@ -77,14 +83,18 @@ fn infer_block_applies(
 ///   * A reachable exit delivering NOTHING while some branch delivered a value
 ///     means the block yields a result its own exit does not produce. The
 ///     lowering would emit a block whose declared result the body never leaves,
-///     so it is reported here -- an inferred result must be delivered by every
-///     exit, just as a declared one is. An unreachable exit needs no value:
-///     nothing reaches the exit that way.
+///     so an inferred result must be delivered by every exit, just as a declared
+///     one is. Only RECORDED here: whether it is an error depends on the exits
+///     still to come, and an `if` types one arm before the other, so deciding it
+///     here reported an empty ELSE arm (a value had already been collected from
+///     the THEN arm) but accepted an empty THEN, which nothing revisited once
+///     the ELSE arm delivered one. `report_empty_exits` decides, once the whole
+///     body is typed. An unreachable exit needs no value: nothing reaches the
+///     exit that way.
 ///   * Anything else is left alone, for the leftover report to speak about.
 fn collect_exit(
   ops : Operands,
   cs : @infer.Collecting,
-  diagnostics : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
   match ops.stack {
@@ -96,13 +106,24 @@ fn collect_exit(
       cs.collected.push((loc, tv))
       ops.stack = Unreachable
     }
-    Empty =>
-      if !cs.collected.is_empty() {
-        // Anchored at the block's closing token, as every other output
-        // underflow is.
-        short_stack(diagnostics, Output, loc_last_char(location), 0, 1)
-      }
+    // Anchored at the block's closing token, as every other output underflow is.
+    Empty => cs.empty_exits.push(loc_last_char(location))
     Unreachable | Poisoned | Cons(_, _, _) => ()
+  }
+}
+
+///|
+/// Report the exits that delivered nothing, now that every exit has been met.
+///
+/// Nothing to report when NO exit delivered a value: a block every exit of
+/// which delivers nothing is simply void.
+pub fn report_empty_exits(
+  diagnostics : @diagnostic.Context,
+  cs : @infer.Collecting,
+) -> Unit {
+  guard !cs.collected.is_empty() else { return }
+  for location in cs.empty_exits {
+    short_stack(diagnostics, Output, location, 0, 1)
   }
 }
 
@@ -137,7 +158,7 @@ pub fn collect_into(
     ctx.with_frame(@typing_env.ControlFrame::new(br, label~), check_body)
     // Outside the frame: the fall-through is not a branch to the label, and by
     // here the label is out of scope anyway.
-    collect_exit(ops, cs, ctx.diagnostics, location)
+    collect_exit(ops, cs, location)
   })
 }
 

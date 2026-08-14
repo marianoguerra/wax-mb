@@ -164,11 +164,20 @@ fn Checker::cont_method_call(
   // name -- cannot be typed usefully before it is known.
   let recv_ = self.expression(recv)
   let ct = cont_receiver_type(ctx, recv_)
+  let src = match ct {
+    Some(c) => self.resume_operand_source_types(c, meth.name, tag)
+    None => None
+  }
   let want = match ct {
     Some(c) => self.resume_operand_types(c, meth.name, tag)
     None => None
   }
   let args_ = rest.mapi((k, a) => {
+    if src is Some(s) && k < s.length() {
+      if self.annotated_block_operand(s[k], a) is Some(c) {
+        return c
+      }
+    }
     match want {
       Some(w) if k < w.length() => self.check(w[k], a)
       _ => self.expression(a)
@@ -753,9 +762,18 @@ fn Checker::cont_bind_call(
     checked.push(src_)
     return self.cont_construct_recovery(i, ns, name, checked)
   }
+  let src_types = self.cont_bind_source_params(src, ns)
   let want = self.cont_bind_params(src, ns)
   let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
   for k in 0..<last {
+    // A block written as a bound value takes its result from the parameter it
+    // binds, and is then typed as though it had been annotated -- see
+    // `annotated_block_operand`.
+    if k < src_types.length() &&
+      self.annotated_block_operand(src_types[k], args[k]) is Some(c) {
+      checked.push(c)
+      continue
+    }
     checked.push(
       if k < want.length() {
         self.check(want[k], args[k])
@@ -777,13 +795,13 @@ fn Checker::cont_bind_call(
 ///|
 /// The types `k::bind` binds: the leading parameters the source continuation
 /// has and the destination does not.
-fn Checker::cont_bind_params(
+fn Checker::cont_bind_source_params(
   self : Checker,
   src : @ast.Ident,
   dst : @ast.Ident,
-) -> Array[@infer.Cell[@infer.InferredType]] {
+) -> Array[@wasm_types.ValType[@ast.Ident]] {
   let ctx = self.ctx
-  let out : Array[@infer.Cell[@infer.InferredType]] = []
+  let out : Array[@wasm_types.ValType[@ast.Ident]] = []
   guard lookup_cont_inner(ctx.type_context, ctx.diagnostics, src)
     is Some(src_inner) else {
     return out
@@ -803,14 +821,24 @@ fn Checker::cont_bind_params(
   let np = src_sig.params.length() - dst_sig.params.length()
   for k in 0..<np {
     if k < src_sig.params.length() {
-      if internalize(
-          ctx.type_context,
-          ctx.diagnostics,
-          src_sig.params[k].desc.1,
-        )
-        is Some(c) {
-        out.push(c)
-      }
+      out.push(src_sig.params[k].desc.1)
+    }
+  }
+  out
+}
+
+///|
+/// The same types as cells, for checking a bound value against.
+fn Checker::cont_bind_params(
+  self : Checker,
+  src : @ast.Ident,
+  dst : @ast.Ident,
+) -> Array[@infer.Cell[@infer.InferredType]] {
+  let ctx = self.ctx
+  let out : Array[@infer.Cell[@infer.InferredType]] = []
+  for t in self.cont_bind_source_params(src, dst) {
+    if internalize(ctx.type_context, ctx.diagnostics, t) is Some(c) {
+      out.push(c)
     }
   }
   out
@@ -925,12 +953,12 @@ fn Checker::wide_arith_call(
 ///
 /// `None` when the source is not resolvable -- the operands are then typed as
 /// written, and whatever is wrong with them is reported where they are checked.
-fn Checker::resume_operand_types(
+fn Checker::resume_operand_source_types(
   self : Checker,
   ct : @ast.Ident,
   meth : String,
   tag : @ast.Ident?,
-) -> Array[@infer.Cell[@infer.InferredType]]? {
+) -> Array[@wasm_types.ValType[@ast.Ident]]? {
   let ctx = self.ctx
   fn cont_params() -> Array[@wasm_types.ValType[@ast.Ident]]? {
     guard lookup_cont_inner(ctx.type_context, ctx.diagnostics, ct)
@@ -943,36 +971,90 @@ fn Checker::resume_operand_types(
     Some(sg.params.map(p => p.desc.1))
   }
 
-  fn cells(
-    ts : Array[@wasm_types.ValType[@ast.Ident]],
-  ) -> Array[@infer.Cell[@infer.InferredType]]? {
-    let out : Array[@infer.Cell[@infer.InferredType]] = []
-    for t in ts {
-      guard internalize(ctx.type_context, ctx.diagnostics, t) is Some(c) else {
-        return None
-      }
-      out.push(c)
-    }
-    Some(out)
-  }
-
   match meth {
-    "resume_throw_ref" => cells([Ref({ nullable: true, typ: Exn })])
+    "resume_throw_ref" => Some([Ref({ nullable: true, typ: Exn })])
     "resume_throw" => {
       guard tag is Some(t) else { return None }
       guard find(ctx.tags, ctx.diagnostics, t) is Some(ft) else { return None }
-      cells(ft.params.map(p => p.desc.1))
+      Some(ft.params.map(p => p.desc.1))
     }
-    "resume" => cont_params().bind(cells)
+    "resume" => cont_params()
     "switch" =>
-      cont_params().bind(ps => {
+      cont_params().map(ps => {
         // The last parameter is the slot the CURRENT continuation is passed
         // in, so it is not written as an operand.
         let n = if ps.length() > 0 { ps.length() - 1 } else { 0 }
-        cells(ps[0:n].to_owned())
+        ps[0:n].to_owned()
       })
     _ => None
   }
+}
+
+///|
+/// The same types as cells, for checking an operand against.
+fn Checker::resume_operand_types(
+  self : Checker,
+  ct : @ast.Ident,
+  meth : String,
+  tag : @ast.Ident?,
+) -> Array[@infer.Cell[@infer.InferredType]]? {
+  let ctx = self.ctx
+  guard self.resume_operand_source_types(ct, meth, tag) is Some(ts) else {
+    return None
+  }
+  let out : Array[@infer.Cell[@infer.InferredType]] = []
+  for t in ts {
+    guard internalize(ctx.type_context, ctx.diagnostics, t) is Some(c) else {
+      return None
+    }
+    out.push(c)
+  }
+  Some(out)
+}
+
+///|
+/// Fill in a block-construct operand's OMITTED result from the type its
+/// consumer expects, and type it in expression position.
+///
+/// A stack-switching operand written `'h: do { .. }` has to lower exactly like
+/// the annotated `'h: do &?t { .. }`. Writing the result in is what makes that
+/// so: the block then types through the ANNOTATED path -- a concrete result
+/// flowing into its body -- rather than through the checking or synthesis
+/// paths, which route a self-resolving trailing instruction through an
+/// inferring cell and so never materialize the result the consumer is waiting
+/// for.
+///
+/// A block that wrote its own result is typed the same way, unchanged: what
+/// decides the path is the annotation being present, not who supplied it.
+/// Anything that is not a block construct is `None` -- there is no result to
+/// fill, and the caller checks it against the expected type as before.
+fn Checker::annotated_block_operand(
+  self : Checker,
+  src : @wasm_types.ValType[@ast.Ident],
+  operand : @ast.Instr[@basic.Location],
+) -> @ast.Instr[@typing_env.InferredAnnotation]? {
+  fn fill(typ : @ast.FuncType) -> @ast.FuncType {
+    if typ.results.is_empty() {
+      { ..typ, results: [src] }
+    } else {
+      typ
+    }
+  }
+
+  let desc : @ast.InstrDesc[@basic.Location] = match operand.desc {
+    Block(label~, typ~, block~) => Block(label~, typ=fill(typ), block~)
+    Loop(label~, typ~, block~) => Loop(label~, typ=fill(typ), block~)
+    If(label~, typ~, cond~, if_block~, else_block~) =>
+      If(label~, typ=fill(typ), cond~, if_block~, else_block~)
+    TryTable(label~, typ~, catches~, block~) =>
+      TryTable(label~, typ=fill(typ), catches~, block~)
+    Try(label~, typ~, block~, catches~, catch_all~) =>
+      Try(label~, typ=fill(typ), block~, catches~, catch_all~)
+    TryCatch(label~, typ~, block~, arms~) =>
+      TryCatch(label~, typ=fill(typ), block~, arms~)
+    _ => return None
+  }
+  Some(self.expression({ ..operand, desc, }))
 }
 
 ///|
@@ -989,8 +1071,14 @@ fn Checker::resume_operands(
   tag : @ast.Ident?,
   args : Array[@ast.Instr[@basic.Location]],
 ) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
+  let src = self.resume_operand_source_types(ct, meth, tag)
   let want = self.resume_operand_types(ct, meth, tag)
   args.mapi((k, a) => {
+    if src is Some(s) && k < s.length() {
+      if self.annotated_block_operand(s[k], a) is Some(c) {
+        return c
+      }
+    }
     match want {
       Some(w) if k < w.length() => self.check(w[k], a)
       _ => self.expression(a)

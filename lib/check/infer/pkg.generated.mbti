@@ -49,6 +49,7 @@ pub(all) struct Collecting {
   exacts : Array[(@basic.Location?, Cell[InferredType])]
   declared : Cell[InferredType]?
   mut needed : Bool
+  empty_exits : Array[@basic.Location]
 }
 
 pub(all) enum InferredType {

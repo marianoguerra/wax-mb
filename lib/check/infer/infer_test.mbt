@@ -87,6 +87,7 @@ test "a block result under inference renders as the annotation being tested" {
       exacts: [],
       declared: Some(declared),
       needed: false,
+      empty_exits: [],
     }),
   )
   inspect(@infer.to_string(collecting), content="i64")
@@ -97,6 +98,7 @@ test "a block result under inference renders as the annotation being tested" {
       exacts: [],
       declared: None,
       needed: false,
+      empty_exits: [],
     }),
   )
   inspect(@infer.to_string(bare), content="any")

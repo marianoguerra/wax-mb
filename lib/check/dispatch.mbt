@@ -1686,14 +1686,14 @@ pub fn Checker::statement(
       // source the instruction will name -- the join of its own type and the
       // target -- because that is the type the emitted immediate has to state,
       // and a source narrower than the target is not a well-formed one.
-      let residual = match
-        conditional_cast_types(ctx, operand.info, ref_ty, target) {
-        Some((source, r)) => {
-          ref_ty.set(source.get())
-          r
-        }
-        None => @infer.Cell::make(@infer.InferredType::Error)
+      // No pair of types means the operand is not a reference at all (reported
+      // just now): there is no instruction left to annotate, so the whole
+      // `br_on_cast` is abandoned rather than kept with an `Error` residual.
+      guard conditional_cast_types(ctx, operand.info, ref_ty, target)
+        is Some((source, residual)) else {
+        return self.abandoned()
       }
+      ref_ty.set(source.get())
       let result = if bound {
         if params.length() > 0 {
           params[0:params.length() - 1].to_owned()
@@ -1770,7 +1770,7 @@ pub fn Checker::statement(
           loc,
         })
       }
-      let (scrutinee, _) = reject_control_holes(
+      let (scrutinee, scrut_had_holes) = reject_control_holes(
         ctx,
         "match",
         "scrutinee",
@@ -1796,17 +1796,18 @@ pub fn Checker::statement(
           for k, a in arms {
             rebuilt.push((a.0, { desc: bodies[k], info: a.1.info }))
           }
+          // With no arms the scrutinee never reaches the lowering, so there is
+          // nothing typed to recover and it is checked here instead.
+          let scrut = match scrutinee_ {
+            Some(sc) => sc
+            None => self.expression(scrutinee)
+          }
+          self.require_ref_scrutinee(scrut, scrut_had_holes)
           {
-            // With no arms the scrutinee never reaches the lowering, so there
-            // is nothing typed to recover and it is checked here instead.
-            desc: Match(
-              scrutinee=match scrutinee_ {
-                Some(sc) => sc
-                None => self.expression(scrutinee)
-              },
-              arms=rebuilt,
-              default={ desc: default_body, info: default.info },
-            ),
+            desc: Match(scrutinee=scrut, arms=rebuilt, default={
+              desc: default_body,
+              info: default.info,
+            }),
             info: annotate([], loc),
             hints: i.hints,
             expected: i.expected,
@@ -1832,8 +1833,10 @@ pub fn Checker::statement(
           for a in arms {
             rebuilt.push((a.0, { desc: [], info: a.1.info }))
           }
+          let scrut = self.expression(scrutinee)
+          self.require_ref_scrutinee(scrut, scrut_had_holes)
           {
-            desc: Match(scrutinee=self.expression(scrutinee), arms=rebuilt, default={
+            desc: Match(scrutinee=scrut, arms=rebuilt, default={
               desc: [],
               info: default.info,
             }),
@@ -2193,9 +2196,11 @@ pub fn Checker::statement(
       // The TAG says what the operands are, so they are checked against it
       // rather than inferred: a block written as one -- `suspend y('l: do {..})`
       // -- has no result type of its own and takes the parameter's.
+      let src_params : Array[@wasm_types.ValType[@ast.Ident]] = []
       let want_params : Array[@infer.Cell[@infer.InferredType]] = []
       if find(ctx.tags, ctx.diagnostics, tag) is Some(ft) {
         for p in ft.params {
+          src_params.push(p.desc.1)
           if internalize(ctx.type_context, ctx.diagnostics, p.desc.1) is Some(c) {
             want_params.push(c)
           }
@@ -2203,6 +2208,13 @@ pub fn Checker::statement(
       }
       let paired = want_params.length() == args.length()
       let checked = args.mapi((k, a) => {
+        // A block operand takes the parameter's type as its own result and is
+        // then typed as though it had been annotated -- see
+        // `annotated_block_operand`.
+        if k < src_params.length() &&
+          self.annotated_block_operand(src_params[k], a) is Some(c) {
+          return c
+        }
         if paired {
           self.check(want_params[k], a)
         } else {
@@ -2675,6 +2687,12 @@ fn Checker::signature_of(
 /// `checked_block` takes a `() -> Unit`: what it wraps the body IN -- the fresh
 /// stack, the control frame, the output check -- is the same whatever the body
 /// produces, so threading a result through it would only obscure that.
+///
+/// `body_results` is what the body is TYPED against, which is not always what
+/// the exit is CHECKED against: a check-position block routes a self-resolving
+/// trailing instruction through a collecting cell so it synthesizes, while its
+/// exit is still checked against the concrete result. Defaults to `results`,
+/// where the two are the same thing.
 fn Checker::body(
   self : Checker,
   location : @basic.Location,
@@ -2683,7 +2701,9 @@ fn Checker::body(
   results : Array[@infer.Cell[@infer.InferredType]],
   branch_target : Array[@infer.Cell[@infer.InferredType]],
   instrs : Array[@ast.Instr[@basic.Location]],
+  body_results? : Array[@infer.Cell[@infer.InferredType]]? = None,
 ) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
+  let typed_against = body_results.unwrap_or(results)
   let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
   checked_block(
     self.ctx,
@@ -2694,7 +2714,7 @@ fn Checker::body(
     results,
     branch_target,
     () => {
-      for c in self.block_contents(results, instrs) {
+      for c in self.block_contents(typed_against, instrs) {
         checked.push(c)
       }
     },
@@ -2776,6 +2796,57 @@ fn Checker::unresolved(
     info: annotate([@infer.Cell::make(@infer.InferredType::Error)], i.info),
     hints: i.hints,
     expected: i.expected,
+  }
+}
+
+///|
+/// A `match` narrows with casts, so its scrutinee has to be a reference.
+///
+/// The test chain in the lowering already complains about a non-reference --
+/// this says it again, about the scrutinee the typed chain handed back. The
+/// two reports are not the same report: the chain's points at the operand, and
+/// this one points at whatever recovering the scrutinee found, which is a
+/// spanless `abandoned` node when the chain itself came apart.
+///
+/// Skipped when the scrutinee was a rejected hole. Its `null` replacement is
+/// no more a reference than the hole was, and saying so would be a second
+/// complaint about a hole already reported.
+fn Checker::require_ref_scrutinee(
+  self : Checker,
+  scrut : @ast.Instr[@typing_env.InferredAnnotation],
+  had_holes : Bool,
+) -> Unit {
+  if had_holes {
+    return
+  }
+  let ty = expression_type(self.ctx, scrut.info)
+  if !(@typing_env.standalone_valtype(ty) is Some({ typ: Ref(_), .. })) {
+    expected_ref(self.ctx.diagnostics, scrut.info.1)
+  }
+}
+
+///|
+/// Abandon an instruction whose types could not be built at all.
+///
+/// This is the reference's `let*!`: the instruction it was assembling is
+/// dropped for an `Unreachable` carrying one `Error` -- and, unlike
+/// `poisoned`, carrying NO SPAN. The missing span is observable, not an
+/// accident: a `match` recovers its scrutinee from the bottom of the typed
+/// test chain, so when the chain was abandoned here the scrutinee it finds is
+/// this node, and the second "Expected reference." it reports has no location
+/// to point at.
+fn Checker::abandoned(
+  self : Checker,
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  ignore(self)
+  {
+    desc: Unreachable,
+    info: annotate(
+      [@infer.Cell::make(@infer.InferredType::Error)],
+      @basic.dummy_loc,
+    ),
+    hints: @ast.no_hints,
+    expected: None,
   }
 }
 

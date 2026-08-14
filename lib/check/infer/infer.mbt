@@ -106,6 +106,15 @@ pub(all) struct Collecting {
   /// Set when `declared` is relied on in a way the join cannot re-derive, which
   /// forces the annotation to be kept.
   mut needed : Bool
+  /// Where each REACHABLE exit that delivered nothing was, anchored at the
+  /// closing token it is reported on.
+  ///
+  /// Recorded rather than reported as it is met, because whether it is an error
+  /// depends on the exits still to come: an `if` types one arm before the
+  /// other, so an empty THEN arm is only wrong once the ELSE arm delivers a
+  /// value, and nothing would revisit it. The inference reports these once the
+  /// whole body is typed.
+  empty_exits : Array[@basic.Location]
 }
 
 ///|

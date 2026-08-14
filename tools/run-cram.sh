@@ -48,7 +48,7 @@ export WAX_WARN="correctness=hidden"
 # The lint and diagnostic entries are the cram-side view of the oracle 3
 # residual; closing that closes these.
 declare -A KNOWN_FAILING=(
-  [block-exit-mismatch.t]="a checked block types its body against the concrete result, so a trailing if is checked rather than synthesized"
+  [block-exit-mismatch.t]="an exit's flexible literal is rendered by family ('number') where the reference has resolved it to its default width ('i32')"
   [duplicate-diagnostic-chains.t]="diagnostic chain differs"
   [error-format-short.t]="usage text for an unknown --error-format differs"
   [new-lints-wax.t]="missing lints"

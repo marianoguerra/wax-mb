@@ -278,6 +278,9 @@ fn Checker::infer_synthesized(
     declared_result(self.ctx.type_context, self.ctx.diagnostics, typ),
   )
   let rebuild = type_body(cs, r)
+  // Every exit that delivered nothing, now that they have all been met -- and
+  // in source order, which is the order `collect_exit` recorded them in.
+  report_empty_exits(self.ctx.diagnostics, cs)
   // Snapshotted BEFORE the join, which resolves the cells it folds: the natural
   // types are what each exit would be on its own, and that is what decides
   // whether a written annotation is load-bearing.

@@ -132,7 +132,10 @@ test "the checker annotates every node it reaches" {
   for m, n in messages {
     top.push((m, n))
   }
-  top.sort_by((a, b) => b.1 - a.1)
+  // Ties broken on the message, not left to the map's iteration order: two
+  // messages reported the same number of times would otherwise swap places in
+  // this snapshot whenever some UNRELATED message is added or removed.
+  top.sort_by((a, b) => if a.1 == b.1 { a.0.compare(b.0) } else { b.1 - a.1 })
   let n = if top.length() < 8 { top.length() } else { 8 }
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),
@@ -141,10 +144,10 @@ test "the checker annotates every node it reaches" {
       #|24 This cast always traps: the value can never have this type.
       #|17 This type test is always true: the value already has this type.
       #|7 This expression occurs before a hole '_'.
-      #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.
       #|6 Expecting 1 value(s) from the stack, but there are 0.
+      #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.
       #|5 This value remains on the stack.
-      #|4 The element type '&?extern' is not compatible with the expected element type '&?func'.
+      #|4 The type 'k' is not bound.
     ),
   )
 }

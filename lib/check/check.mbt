@@ -217,12 +217,28 @@ fn Checker::check_block(
     parameterized_block_expression(self.ctx.diagnostics, i.info)
   }
   let result_cell = context_result_cell(self.ctx, typ, expected)
+  // The body is typed against a COLLECTING cell that declares the result, not
+  // against the result itself. The two differ for the trailing instruction, and
+  // only for one that resolves its own type: a nested block routed through the
+  // collecting cell synthesizes, where checking it against the concrete result
+  // would tell it what to produce. That is the difference between an `if` with
+  // no `else` being told it must produce a value and the enclosing block being
+  // told nothing reached its exit -- which is what actually happened.
+  //
+  // Everything else still goes through the concrete result, because a
+  // construction there has no type of its own to resolve and the block's result
+  // is what gives it one.
+  let (_, collecting) = fresh_collecting(Some(result_cell))
+  let self_resolving = match block.desc.last() {
+    Some(last) => classify_trailing(self.ctx, last.desc).1
+    None => false
+  }
   // A `br` to a LOOP re-enters at its top with the loop's parameters -- none
   // here -- so it carries no result and the loop's value is its fall-through.
   let branch_target : Array[@infer.Cell[@infer.InferredType]] = if loop_ {
     []
   } else {
-    [result_cell]
+    [collecting]
   }
   let checked = self.body(
     i.info,
@@ -231,6 +247,7 @@ fn Checker::check_block(
     [result_cell],
     branch_target,
     block.desc,
+    body_results=if self_resolving { Some([collecting]) } else { None },
   )
   check_subtype(
     self.ctx.type_context.subtyping_info(),

@@ -1996,6 +1996,7 @@ test "subtype records and join_collected folds" {
     exacts: [],
     declared: None,
     needed: false,
+    empty_exits: [],
   }
   let result = @infer.Cell::make(@infer.InferredType::Collecting(collecting))
   // Two deliveries, checked against the block's result cell.
@@ -2540,7 +2541,8 @@ test "the fall-through reaches the exit alongside the branches" {
 ///
 /// A REACHABLE exit delivering nothing while a branch delivered a value is a
 /// different matter: the block would yield a result its own exit never
-/// produces, so it is reported.
+/// produces. It is RECORDED as it is met and reported once every exit has been
+/// -- whether it is an error depends on the exits still to come.
 test "an exit that delivers nothing is reported, unless it is dead" {
   let ctx = module_ctx()
   let ops = @typing.Operands::new()
@@ -2571,6 +2573,10 @@ test "an exit that delivers nothing is reported, unless it is dead" {
   )
   @typing.collect_into(ctx, ops, loc_at(0, 50), None, short_, r2, () => ())
   inspect(short_.collected.length(), content="1")
+  // Recorded, not yet reported.
+  inspect(short_.empty_exits.length(), content="1")
+  inspect(ctx.diagnostics.collected().length(), content="0")
+  @typing.report_empty_exits(ctx.diagnostics, short_)
   inspect(
     @message.to_plain_string(ctx.diagnostics.collected()[0].message),
     content="Expecting 1 returned value(s) from the stack, but there are 0.",
@@ -2578,6 +2584,13 @@ test "an exit that delivers nothing is reported, unless it is dead" {
   // The caret sits ON the block's closing token, as every other output
   // underflow does.
   inspect(ctx.diagnostics.collected()[0].loc.start.cnum, content="49")
+
+  // Nothing at all reached the exit: a block every exit of which delivers
+  // nothing is simply void, so the recorded exit is not an error.
+  let (void_, r3) = @typing.fresh_collecting(None)
+  @typing.collect_into(ctx, ops, loc_at(0, 50), None, void_, r3, () => ())
+  @typing.report_empty_exits(ctx.diagnostics, void_)
+  inspect(ctx.diagnostics.collected().length(), content="1")
 }
 
 ///|

@@ -61,7 +61,7 @@ Measured 2026-08-14, at the first release.
 | Oracle 1 — reprint parity | 1907 pass, 0 fail, 212 skip; idempotence gated alongside |
 | Oracle 2 — same wasm, via the reference | 1576 pass, 20 fail, 523 skip (`just diff-all`) |
 | Oracle 2 — same wasm, our own back end | 1577 pass, 19 fail, 523 skip (`just diff-native`) — one better than the route through the reference |
-| Oracle 3 — same errors | 2117 pass, **2 fail**, on severity, file, spans, offsets, exit code |
+| Oracle 3 — same errors | 2119 pass, 0 fail, on severity, file, spans, offsets, exit code |
 | Oracle 4 — same WAT | reported, not gated; see `test/report/wat-drift.md` |
 | Unit tests | 502, on all four backends |
 | Message drift | 67 entries, in `test/report/message-drift.md` |
@@ -69,11 +69,16 @@ Measured 2026-08-14, at the first release.
 | Cram tests | 72 of 331 in scope: 62 pass, 10 known-failing in `tools/run-cram.sh` |
 | Corpus | 2119 files: 2117 collected, 2 adopted fuzz finds |
 
-Oracles 1 and 3 are the gate for everything below, and **oracle 3 is currently
-red**: `cram/block-exit-mismatch__br-no-fall-through.wax` (see task 12) and
+Oracles 1 and 3 are the gate for everything below, and both are **green**. The
+last two oracle-3 residuals closed together:
+`cram/block-exit-mismatch__br-no-fall-through.wax`, which needed a checked
+block to route a self-resolving trailing instruction through a collecting cell
+(and, with it, the reference's `annotate_omitted_block` for stack-switching
+operands, which is what keeps such an operand on the annotated path); and
 `cram/match__err_scrut.wax`, where the reference emits its "Expected reference."
-twice, the second time with no location at all. Any task that changes behaviour
-has to leave the count no worse, and
+twice, the second time with no location at all — the spanless one comes from the
+poison node a `br_on_cast` on a non-reference operand is abandoned for. Any task
+that changes behaviour has to leave the count no worse, and
 `tools/waxdiff.py run --oracle 1 --oracle 3 --impl tools/wax-mb` is the one
 command that says so.
 

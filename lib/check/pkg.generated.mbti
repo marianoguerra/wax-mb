@@ -149,6 +149,8 @@ pub fn n_heaptype(@env.TypeContext, @diagnostic.Context, @types.HeapType[@ast.Id
 
 pub fn render_stack(Stack) -> String
 
+pub fn report_empty_exits(@diagnostic.Context, @infer.Collecting) -> Unit
+
 pub fn report_exact_mismatches(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], Array[(@basic.Location?, @infer.Cell[@infer.InferredType])]) -> Unit
 
 pub fn report_leftovers(Stack, @diagnostic.Context, @basic.Location, (Stack) -> String) -> Unit
