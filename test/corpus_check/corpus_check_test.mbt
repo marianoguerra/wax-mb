@@ -137,7 +137,7 @@ test "the checker annotates every node it reaches" {
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),
     content=(
-      #|33 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
+      #|31 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
       #|22 This cast always traps: the value can never have this type.
       #|17 This type test is always true: the value already has this type.
       #|7 This expression occurs before a hole '_'.

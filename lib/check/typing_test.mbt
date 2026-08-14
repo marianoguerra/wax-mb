@@ -7763,9 +7763,12 @@ test "a descriptor construction recovers its type from the descriptor" {
     ),
   )
   inspect(ctx.diagnostics.collected().length(), content="0")
+  // EXACT, because custom-descriptors is on here: what an allocator produces
+  // is the same question for this construction as for any other, and the
+  // descriptor's own exactness has no say in it.
   inspect(
     checked.info.0.map(t => @infer.to_string(t)).join(","),
-    content="&obj",
+    content="&!obj",
   )
   inspect(checker.gaps().length(), content="0")
 

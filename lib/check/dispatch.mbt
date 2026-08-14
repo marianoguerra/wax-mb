@@ -2369,13 +2369,19 @@ pub fn Checker::statement(
         _ => None
       }
       let checked = self.struct_fields(loc, declared, fields)
+      // Through `construction_result`, not from the recovered target directly:
+      // the target's exactness came off the DESCRIPTOR's own type, and writing
+      // it down again asks for the custom-descriptors feature a second time --
+      // at the `describes` clause the descriptor type was declared with, which
+      // is nowhere near this construction. What an allocator produces is the
+      // same question here as anywhere else, and it is answered in one place.
       let ty = match target {
-        Some(rt) =>
-          match internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) {
+        Some({ typ: Type(n) | Exact(n), .. }) =>
+          match construction_result(ctx, n) {
             Some(c) => c
             None => @infer.Cell::make(@infer.InferredType::Error)
           }
-        None => @infer.Cell::make(@infer.InferredType::Error)
+        _ => @infer.Cell::make(@infer.InferredType::Error)
       }
       {
         desc: StructDesc(desc_, checked),
