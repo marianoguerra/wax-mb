@@ -25,6 +25,16 @@ pub suberror LowerError {
   /// no way to hold it, and the reference refuses it too. Named separately so
   /// the burn-down is not padded with work that will never be done.
   Unemittable(String, @basic.Location)
+  /// Two bindings in one function whose names were written at the same
+  /// position. A local's slot is keyed by that position -- see
+  /// `Lowering::binding_slots` -- so the second binding would take the first
+  /// one's slot and every use of either name would reach one of them.
+  ///
+  /// Parsed input cannot produce this: two identifiers in one file are two byte
+  /// offsets. A GENERATED tree can, by building every identifier at
+  /// `@basic.dummy_loc`, and the result would be a module that is wrong rather
+  /// than one that fails -- so it fails here instead.
+  AmbiguousBinding(String, @basic.Location)
 }
 
 ///|
@@ -35,6 +45,12 @@ pub suberror LowerError {
 /// the two should not look alike.
 pub impl Show for LowerError with fn output(self, logger) {
   match self {
+    // The one error here that is the CALLER's to fix rather than this port's,
+    // so it says what to do about it. Its reader is whoever generated the tree.
+    AmbiguousBinding(name, loc) =>
+      logger.write_string(
+        "\{loc.start.fname}:\{loc.start.lnum}:\{loc.start.column1()}: local `\{name}` was written at the same position as an earlier binding in this function; every generated identifier needs a distinct location",
+      )
     Unemittable(what, loc) =>
       logger.write_string(
         "\{loc.start.fname}:\{loc.start.lnum}:\{loc.start.column1()}: \{what} cannot be emitted to the WebAssembly binary format",

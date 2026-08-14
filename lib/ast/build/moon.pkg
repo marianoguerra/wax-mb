@@ -1,7 +1,8 @@
 // Smart constructors for the AST, for callers that generate Wax rather than
-// parse it. Nothing here is a new type: every function returns a plain `@ast`
-// value, and a generator that outgrows one of them writes the constructor out
-// by hand and mixes the two freely.
+// parse it. Every function returns a plain `@ast` value, and a generator that
+// outgrows one of them writes the constructor out by hand and mixes the two
+// freely. `Spans` is the one type here, and it holds a counter rather than any
+// part of a tree.
 import {
   "marianoguerra/wax/ast",
   "marianoguerra/wax/basic",
@@ -14,4 +15,5 @@ import {
   "marianoguerra/wax/ast/build",
   "marianoguerra/wax/basic",
   "marianoguerra/wax/compile",
+  "marianoguerra/wax/emit/wasm",
 } for "test"

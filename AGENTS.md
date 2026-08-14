@@ -191,6 +191,13 @@ just publish-dry     # the full gate, then both `moon publish --dry-run`s
   site has to say which it means.
 - **`dummy_pos.cnum` is `-1`, not `0`.** The reference's no-source error path
   tests for exactly that sentinel; `0` is a legitimate offset.
+- **A binding's offset is its identity.** Local slots (`Lowering::binding_slots`)
+  and the unused-local and unused-label lints (`read_locals`, `used_labels`) are
+  keyed by `name.loc.start.cnum`, so that a shadowing binding is a different key
+  from the one it shadows. Two bindings in one function may therefore never share
+  a span — impossible from the parser, easy from a generated tree built at
+  `dummy_loc`, and refused with `AmbiguousBinding` rather than emitted.
+  `@build.Spans` is what a generator with no source text uses instead.
 - **Numeric literals stay raw strings** (`Int(String)`, `Float(String)`) through
   the whole front end. Parsing them early would break round-tripping and would
   break the type checker's flexible-literal inference later.

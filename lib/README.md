@@ -120,6 +120,26 @@ source spans into it costs one argument and buys the entire diagnostic renderer
 — the snippet, the caret, the related labels, the quick fixes — pointing at
 *your* syntax rather than at nothing.
 
+**A binding's location has to be distinct.** A local's wasm slot is keyed by the
+offset its name was written at — that is what lets a shadowing `let` take a new
+slot while the old name is still readable in its own initializer. So the names
+in two `let`s, or in two `match` arms, of one function must not share a span.
+Nothing parsed can violate that; a generated tree can, by building every
+identifier at `dummy_loc`. Doing so is refused rather than emitted
+(`@wasm.AmbiguousBinding`), since the module it would produce is wrong rather
+than invalid. A generator with no source text of its own mints spans instead:
+
+```moonbit
+let s = @build.Spans::new()          // or Spans::new(fname="my.dsl")
+let body = [
+  s.instr(Let([(Some(s.ident("a")), Some(i32_))], Some(s.instr(Int("1"))))),
+  s.instr(Get(s.ident("a"))),
+]
+```
+
+Each span is a line of its own, so a diagnostic names the node (`File
+"<generated>", line 7`) even with no text behind it.
+
 ## The packages
 
 | package | |

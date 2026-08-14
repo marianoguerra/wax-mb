@@ -750,6 +750,28 @@ fn Lowering::function_body(
 }
 
 ///|
+/// Record the slot a binding took, refusing to take one twice.
+///
+/// `binding_slots` is keyed by where the name was written and is rebuilt per
+/// function, so within one function two bindings sharing a key is not a case to
+/// resolve -- it is a caller that built its identifiers without spans. Silently
+/// overwriting the entry costs nothing here and produces a module whose locals
+/// are all one slot, which is the failure this refuses to emit. See
+/// `AmbiguousBinding`.
+fn Lowering::claim_slot(
+  self : Lowering,
+  name : @ast.Ident,
+  slot : Int,
+  loc : @basic.Location,
+) -> Unit raise LowerError {
+  let key = name.loc.start.cnum
+  guard !self.binding_slots.contains(key) else {
+    raise AmbiguousBinding(name.name, loc)
+  }
+  self.binding_slots[key] = slot
+}
+
+///|
 /// Assign a slot to every `let` binding in a body, in source order.
 fn Lowering::collect_locals(
   self : Lowering,
@@ -792,7 +814,7 @@ fn Lowering::collect_locals(
         // The slot is recorded against the BINDING, not the name: a shadowing
         // `let` must not be in scope for its own initializer, and only the
         // lowering knows when that moment has passed.
-        self.binding_slots[name.loc.start.cnum] = next
+        self.claim_slot(name, next, i.info.1)
         note_name(self.local_names, next, self.claim_name(name.name))
         self.local_types.push(ty)
         next = next + 1
@@ -810,7 +832,7 @@ fn Lowering::collect_locals(
       for k = arms.length() - 1; k >= 0; k = k - 1 {
         if arms[k].0 is MatchCast(Some(bind), rt) {
           let ty = self.valtype_index(Ref(rt), i.info.1)
-          self.binding_slots[bind.loc.start.cnum] = next
+          self.claim_slot(bind, next, i.info.1)
           note_name(self.local_names, next, self.claim_name(bind.name))
           self.local_types.push(ty)
           next = next + 1

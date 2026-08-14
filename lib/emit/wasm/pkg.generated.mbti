@@ -102,6 +102,7 @@ pub suberror LowerError {
   NotLowered(String, @basic.Location)
   Unresolved(String, @basic.Location)
   Unemittable(String, @basic.Location)
+  AmbiguousBinding(String, @basic.Location)
 }
 pub impl Show for LowerError
 

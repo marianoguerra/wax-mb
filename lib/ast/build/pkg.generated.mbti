@@ -29,6 +29,14 @@ pub fn rec_group(Array[(String, @ast.SubType)], at? : @basic.Location) -> @basic
 // Errors
 
 // Types and methods
+pub struct Spans {
+  fname : String
+  mut next : Int
+}
+pub fn Spans::fresh(Self) -> @basic.Location
+pub fn Spans::ident(Self, String) -> @ast.Ident
+pub fn Spans::instr(Self, @ast.InstrDesc[@basic.Location]) -> @ast.Instr[@basic.Location]
+pub fn Spans::new(fname? : String) -> Self
 
 // Type aliases
 
