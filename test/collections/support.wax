@@ -1,0 +1,210 @@
+// Test-only adapter for the vendorable collections sources. The generated
+// property modules append their state-machine traces to this file.
+
+type ct_key = { id: i32, hash: i32 };
+
+fn ct_hash(key: &eq) -> i32 { (key as &ct_key).hash }
+
+fn ct_equal(left: &eq, right: &eq) -> i32 {
+    if (left as &ct_key).id == (right as &ct_key).id { 1 } else { 0 }
+}
+
+fn ct_key_new(id: i32, hash: i32) -> &eq {
+    let key: &ct_key = { id, hash };
+    key
+}
+
+fn ct_box(value: i32) -> &eq { value as &i31 }
+
+fn ct_unbox(value: &eq) -> i32 { value as i32_s }
+
+fn ct_assert(condition: i32) {
+    if condition == 0 { unreachable; }
+}
+
+let ct_stage: i32 = 0;
+
+#[export = "collections_stage"]
+fn ct_get_stage() -> i32 { ct_stage }
+
+fn ct_assert_value(actual: &?eq, is_null: i32, expected: i32) {
+    if is_null != 0 {
+        ct_assert(if actual == null { 1 } else { 0 });
+    } else {
+        ct_assert(if actual == null { 0 } else { 1 });
+        ct_assert(if ct_unbox(actual!) == expected { 1 } else { 0 });
+    }
+}
+
+fn ct_assert_map(
+    map: &phm_map,
+    key: &?eq,
+    expected_found: i32,
+    expected_null: i32,
+    expected_value: i32,
+) {
+    let (found, value) = phm_get(map, key);
+    ct_assert(if found == expected_found { 1 } else { 0 });
+    if found != 0 { ct_assert_value(value, expected_null, expected_value); }
+}
+
+fn ct_assert_vector(
+    vector: &pv_vector,
+    index: i32,
+    expected_found: i32,
+    expected_null: i32,
+    expected_value: i32,
+) {
+    let (found, value) = pv_get(vector, index);
+    ct_assert(if found == expected_found { 1 } else { 0 });
+    if found != 0 { ct_assert_value(value, expected_null, expected_value); }
+}
+
+type ct_fold = { count: mut i32, sum: mut i32 };
+
+fn ct_map_fold(context: &?eq, _key: &?eq, value: &?eq) {
+    let fold = context! as &ct_fold;
+    fold.count = fold.count + 1;
+    if value != null { fold.sum = fold.sum + ct_unbox(value!); }
+}
+
+fn ct_vector_fold(context: &?eq, index: i32, value: &?eq) {
+    let fold = context! as &ct_fold;
+    fold.count = fold.count + 1;
+    if value != null { fold.sum = fold.sum + index + ct_unbox(value!); }
+}
+
+#[export = "collections_boundaries"]
+fn ct_boundaries() -> i32 {
+    ct_stage = 1;
+    let map = phm_empty(ct_hash, ct_equal);
+    let i: i32 = 0;
+    while i <s (17 as i32) {
+        map = phm_assoc(map, ct_key_new(i, i), ct_box(i + 100));
+        i += 1;
+    }
+    ct_assert(if phm_count(map) == 17 { 1 } else { 0 });
+    ct_assert(if phm_contains(map, ct_key_new(12, 12)) == 1 { 1 } else { 0 });
+    let (_, same_value) = phm_get(map, ct_key_new(12, 12));
+    let unchanged_map = phm_assoc(map, ct_key_new(12, 12), same_value);
+    ct_assert(if unchanged_map == map { 1 } else { 0 });
+    let map_fold: &ct_fold = { count: 0, sum: 0 };
+    phm_each(map, map_fold, ct_map_fold);
+    ct_assert(if map_fold.count == 17 { 1 } else { 0 });
+    ct_assert(if map_fold.sum == 1836 { 1 } else { 0 });
+    ct_assert(if map.root! is &phm_array_node { 1 } else { 0 });
+    let original = map;
+    let original_root = original.root! as &phm_array_node;
+    let untouched_map_branch = original_root.children[16];
+    let changed_map = phm_assoc(original, ct_key_new(0, 0), ct_box(900));
+    ct_assert(if changed_map.root != original.root { 1 } else { 0 });
+    ct_assert(
+        if (changed_map.root! as &phm_array_node).children[16] == untouched_map_branch { 1 }
+        else { 0 },
+    );
+    i = 0;
+    while i <s (9 as i32) {
+        map = phm_dissoc(map, ct_key_new(i, i));
+        i += 1;
+    }
+    ct_assert(if map.root! is &phm_bitmap_node { 1 } else { 0 });
+    ct_assert_map(original, ct_key_new(0, 0), 1, 0, 100);
+
+    ct_stage = 2;
+    let collision = phm_empty(ct_hash, ct_equal);
+    collision = phm_assoc(collision, ct_key_new(1, 7), ct_box(1));
+    collision = phm_assoc(collision, ct_key_new(2, 7), null);
+    let collision_root = collision.root! as &phm_bitmap_node;
+    ct_assert(if collision_root.slots[1] is &phm_collision_node { 1 } else { 0 });
+    ct_assert_map(collision, ct_key_new(2, 7), 1, 1, 0);
+
+    ct_stage = 3;
+    let vector = pv_empty();
+    i = 0;
+    while i <s (1057 as i32) {
+        vector = pv_push(vector, ct_box(i));
+        i += 1;
+    }
+    ct_assert(if pv_count(vector) == 1057 { 1 } else { 0 });
+    ct_assert(if vector.shift == 10 { 1 } else { 0 });
+    ct_assert_vector(vector, 0, 1, 0, 0);
+    ct_assert_vector(vector, 31, 1, 0, 31);
+    ct_assert_vector(vector, 32, 1, 0, 32);
+    ct_assert_vector(vector, 1024, 1, 0, 1024);
+    let (peek_found, peek_value) = pv_peek(vector);
+    ct_assert(if peek_found == 1 { 1 } else { 0 });
+    ct_assert_value(peek_value, 0, 1056);
+    let vector_fold: &ct_fold = { count: 0, sum: 0 };
+    pv_each(vector, vector_fold, ct_vector_fold);
+    ct_assert(if vector_fold.count == 1057 { 1 } else { 0 });
+    ct_assert(if vector_fold.sum == 1116192 { 1 } else { 0 });
+    let vector_original = vector;
+    let untouched_vector_branch = vector_original.root.slots[1];
+    vector = pv_assoc(vector, 32, null);
+    ct_assert(if vector.root != vector_original.root { 1 } else { 0 });
+    ct_assert(if vector.root.slots[1] == untouched_vector_branch { 1 } else { 0 });
+    ct_assert_vector(vector, 32, 1, 1, 0);
+    ct_assert_vector(vector_original, 32, 1, 0, 32);
+    vector = pv_pop(vector);
+    ct_assert(if pv_count(vector) == 1056 { 1 } else { 0 });
+
+    ct_stage = 4;
+    let transient_map = phm_as_transient(original);
+    phmt_assoc(transient_map, ct_key_new(0, 0), ct_box(500));
+    let owned_map_root = transient_map.root;
+    phmt_assoc(transient_map, ct_key_new(1, 1), ct_box(501));
+    ct_assert(if transient_map.root == owned_map_root { 1 } else { 0 });
+    let frozen_map = phmt_persistent(transient_map);
+    ct_assert_map(frozen_map, ct_key_new(0, 0), 1, 0, 500);
+    ct_assert_map(original, ct_key_new(0, 0), 1, 0, 100);
+
+    let shrinking_map = phm_as_transient(original);
+    i = 0;
+    while i <s (9 as i32) {
+        phmt_dissoc(shrinking_map, ct_key_new(i, i));
+        i += 1;
+    }
+    let shrunk_map = phmt_persistent(shrinking_map);
+    ct_assert(if shrunk_map.root! is &phm_bitmap_node { 1 } else { 0 });
+    ct_assert(if phm_count(shrunk_map) == 8 { 1 } else { 0 });
+
+    ct_stage = 5;
+    let transient_vector = pv_as_transient(vector_original);
+    pvt_assoc(transient_vector, 0, ct_box(700));
+    let owned_vector_root = transient_vector.root;
+    pvt_assoc(transient_vector, 1, ct_box(701));
+    ct_assert(if transient_vector.root == owned_vector_root { 1 } else { 0 });
+    let frozen_vector = pvt_persistent(transient_vector);
+    ct_assert_vector(frozen_vector, 0, 1, 0, 700);
+    ct_assert_vector(vector_original, 0, 1, 0, 0);
+
+    let growing_vector = pv_as_transient(pv_empty());
+    i = 0;
+    while i <s (65 as i32) {
+        pvt_push(growing_vector, ct_box(i));
+        i += 1;
+    }
+    pvt_pop(growing_vector);
+    pvt_pop(growing_vector);
+    let grown_vector = pvt_persistent(growing_vector);
+    ct_assert(if pv_count(grown_vector) == 63 { 1 } else { 0 });
+    ct_assert_vector(grown_vector, 31, 1, 0, 31);
+    ct_assert_vector(grown_vector, 32, 1, 0, 32);
+    ct_assert_vector(grown_vector, 62, 1, 0, 62);
+    ct_stage = 6;
+    1
+}
+
+#[export = "collections_invalid_map_transient"]
+fn ct_invalid_map_transient() -> i32 {
+    let transient = phm_as_transient(phm_empty(ct_hash, ct_equal));
+    let _ = phmt_persistent(transient);
+    phmt_count(transient)
+}
+
+#[export = "collections_invalid_vector_transient"]
+fn ct_invalid_vector_transient() -> i32 {
+    let transient = pv_as_transient(pv_empty());
+    let _ = pvt_persistent(transient);
+    pvt_count(transient)
+}

@@ -25,6 +25,11 @@ jobs:
       - name: moon update
         run: moon update
 
+      - name: install Node with WebAssembly GC support
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
       - name: check
         run: moon check --deny-warn
 
@@ -41,6 +46,9 @@ jobs:
 
       - name: test
         run: moon test --target all
+
+      - name: persistent collections
+        run: tools/collections-test.sh
 
       # Reported, never gated: it is a text search, and a library may
       # legitimately export what this repository does not call. Printing it on

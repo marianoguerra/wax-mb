@@ -1,0 +1,79 @@
+// Appended only by the benchmark build, keeping the correctness gate small.
+
+#[export = "collections_bench_map_persistent"]
+fn ct_bench_map_persistent(size: i32) -> i32 {
+    let map = phm_empty(ct_hash, ct_equal);
+    let i: i32 = 0;
+    while i <s size {
+        map = phm_assoc(map, ct_key_new(i, i), ct_box(i));
+        i += 1;
+    }
+    let checksum: i32 = 0;
+    i = 0;
+    while i <s size {
+        let (found, value) = phm_get(map, ct_key_new(i, i));
+        checksum += found + ct_unbox(value!);
+        i += 1;
+    }
+    i = 0;
+    while i <s size {
+        map = phm_dissoc(map, ct_key_new(i, i));
+        i += 1;
+    }
+    checksum + phm_count(map)
+}
+
+#[export = "collections_bench_map_transient"]
+fn ct_bench_map_transient(size: i32) -> i32 {
+    let transient = phm_as_transient(phm_empty(ct_hash, ct_equal));
+    let i: i32 = 0;
+    while i <s size {
+        phmt_assoc(transient, ct_key_new(i, i), ct_box(i));
+        i += 1;
+    }
+    let map = phmt_persistent(transient);
+    let checksum: i32 = 0;
+    i = 0;
+    while i <s size {
+        let (found, value) = phm_get(map, ct_key_new(i, i));
+        checksum += found + ct_unbox(value!);
+        i += 1;
+    }
+    checksum
+}
+
+#[export = "collections_bench_vector_persistent"]
+fn ct_bench_vector_persistent(size: i32) -> i32 {
+    let vector = pv_empty();
+    let i: i32 = 0;
+    while i <s size {
+        vector = pv_push(vector, ct_box(i));
+        i += 1;
+    }
+    let checksum: i32 = 0;
+    i = 0;
+    while i <s size {
+        checksum += ct_unbox(pv_at(vector, i)!);
+        i += 1;
+    }
+    while pv_count(vector) >s (0 as i32) { vector = pv_pop(vector); }
+    checksum + pv_count(vector)
+}
+
+#[export = "collections_bench_vector_transient"]
+fn ct_bench_vector_transient(size: i32) -> i32 {
+    let transient = pv_as_transient(pv_empty());
+    let i: i32 = 0;
+    while i <s size {
+        pvt_push(transient, ct_box(i));
+        i += 1;
+    }
+    let vector = pvt_persistent(transient);
+    let checksum: i32 = 0;
+    i = 0;
+    while i <s size {
+        checksum += ct_unbox(pv_at(vector, i)!);
+        i += 1;
+    }
+    checksum
+}

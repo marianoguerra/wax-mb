@@ -49,6 +49,22 @@ test:
 test-all:
     moon test --target all
 
+# Builds generated Wax state-machine traces from MoonBit QuickCheck samples,
+# then executes the compiled WebAssembly GC module in Node.
+#
+# Test the vendorable persistent collections.
+[group('dev')]
+collections-test:
+    tools/collections-test.sh
+
+# Timing is reported, never used as a noisy CI threshold. Structural-sharing
+# and transient-ownership complexity checks live in collections-test.
+#
+# Benchmark persistent and transient collections with SIZE elements.
+[group('dev')]
+collections-bench size="10000":
+    tools/collections-bench.sh {{size}}
+
 # Run one library package's tests, e.g. `just test-pkg syntax/parser`.
 [group('dev')]
 test-pkg pkg:
@@ -121,7 +137,7 @@ update:
 
 # Check, format, unit tests, both hermetic oracles, cram -- run before committing.
 [group('gates')]
-quick: check fmt test diff cram
+quick: check fmt test collections-test diff cram
 
 # Mirrors .github/workflows/check.yml, including the two `git diff --exit-code`
 # steps -- which is how a stale `.mbti` or an unformatted file is caught.
@@ -135,6 +151,7 @@ ci:
     moon fmt
     git diff --exit-code
     moon test --target all
+    tools/collections-test.sh
     moon build --target native
     {{waxdiff}} run --oracle 1 --oracle 3 --impl {{impl}}
     tools/run-cram.sh

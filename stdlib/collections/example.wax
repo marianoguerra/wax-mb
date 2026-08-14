@@ -1,0 +1,20 @@
+// Concatenate persistent_hash_map.wax and persistent_vector.wax before this
+// file, then compile the result as one Wax module.
+
+type example_key = { id: i32 };
+
+fn example_hash(key: &eq) -> i32 { (key as &example_key).id }
+
+fn example_equal(left: &eq, right: &eq) -> i32 {
+    if (left as &example_key).id == (right as &example_key).id { 1 } else { 0 }
+}
+
+#[export]
+fn collections_example() -> i32 {
+    let key: &example_key = { id: 42 };
+    let map = phm_assoc(phm_empty(example_hash, example_equal), key, 7 as &i31);
+    let (found, value) = phm_get(map, key);
+
+    let vector = pv_push(pv_empty(), value);
+    found + (pv_at(vector, 0)! as i32_s)
+}
