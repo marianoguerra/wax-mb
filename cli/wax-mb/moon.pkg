@@ -9,6 +9,7 @@ import {
   "marianoguerra/wax/ast",
   "marianoguerra/wax/colors",
   "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/feature",
   "marianoguerra/wax/syntax/trivia",
   "marianoguerra/wax/warning",
   "marianoguerra/wax-cli/io",

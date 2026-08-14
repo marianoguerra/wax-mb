@@ -70,7 +70,7 @@ fn check(
   m : @ast.LocModule,
   opts : Options,
 ) -> Bool {
-  let session = @wax.Session::new(source=src)
+  let session = @wax.Session::new(source=src, features=opts.features)
   let _ = session.check(m, warn_unused=true)
   ignore(path)
   render_diagnostics(src, opts, session.reports())
@@ -132,7 +132,7 @@ fn compile(
   m : @ast.LocModule,
   opts : Options,
 ) -> Result[Bytes, String?] {
-  let session = @wax.Session::new(source=src)
+  let session = @wax.Session::new(source=src, features=opts.features)
   // No lints on the conversion path: a compile reports what stops it producing
   // a module, and a style warning does not. The reference draws the same line --
   // `wax f.wax -f wasm` is silent on a module `wax check` would comment on.
@@ -157,7 +157,7 @@ fn compile_text(
   opts : Options,
   trivia : @trivia.Context,
 ) -> Result[String, String?] {
-  let session = @wax.Session::new(source=src)
+  let session = @wax.Session::new(source=src, features=opts.features)
   let checked = session.check(m)
   if render_diagnostics(src, opts, session.reports()) {
     return Err(None)

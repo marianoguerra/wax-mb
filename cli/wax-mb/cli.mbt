@@ -95,6 +95,9 @@ pub(all) struct Options {
   /// files.
   inplace : Bool
   policy : @warning.Policy
+  /// The optional proposals, as `-X` left them: the defaults with each `-X`
+  /// applied in order.
+  features : @feature.Set
 }
 
 ///|
@@ -119,6 +122,10 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
   // replacing it, which is what lets a suite hide a whole group and a single
   // test re-enable the one warning it is about.
   let mut policy = env_policy()
+  // The optional proposals. Repeatable and left to right, so a later `-X` wins
+  // over an earlier one -- the reference's rule, and the one a wrapper script
+  // depends on when it appends a flag to a command line it did not write.
+  let features : Array[(@feature.Feature, Bool)] = []
   let mut i = 0
   // The first non-flag word is the command, but only when it names one --
   // `wax-mb f.wax` converts, exactly as `wax f.wax` does.
@@ -269,6 +276,18 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
         all_errors = true
         i = i + 1
       }
+      "-X" | "--feature" =>
+        match value(i) {
+          Ok(v) =>
+            match @feature.parse_spec(v) {
+              Err(msg) => return Err((BadArgs, msg))
+              Ok(spec) => {
+                features.push(spec)
+                i = i + (if consumed_inline { 1 } else { 2 })
+              }
+            }
+          Err(e) => return Err(e)
+        }
       _ =>
         if a.has_prefix("-") && a != "-" {
           return Err((BadArgs, "unknown option '\{a}'"))
@@ -290,6 +309,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
     all_errors,
     inplace,
     policy,
+    features: @feature.configure(features),
   })
 }
 
