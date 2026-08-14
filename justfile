@@ -401,19 +401,25 @@ package:
 # zip and checking that it builds on its own -- which is the step that catches a
 # package missing from the archive.
 #
-# The `cli` one CANNOT pass until `wax` of the pinned version is on the registry:
-# its extracted copy resolves the dependency from there, not from this tree. A
-# "module was not found in the registry" from that second command is expected
-# before the first release, and is not a finding.
+# Wrapped rather than run directly, for two reasons `tools/publish-dry.sh` spells
+# out: `moon publish --dry-run` exits 255 on a dry run the server ACCEPTED, and
+# the `cli` rehearsal cannot resolve `marianoguerra/wax` until it is published.
+#
+# ALWAYS -C a module. `moon publish` at the repository root publishes
+# `marianoguerra/wax-dev` -- the harness -- and `moon.mod` has no field that can
+# forbid it. It fails today only because `wax` is not on the registry; that stops
+# being true the moment it is.
 #
 # Rehearse the publish.
 [group('ship')]
 publish-dry: ci
-    moon -C lib publish --dry-run
-    moon -C cli publish --dry-run
+    tools/publish-dry.sh lib
+    tools/publish-dry.sh cli
 
 # The library first: wax-cli's manifest pins a version of it that must already
 # exist on the registry.
+#
+# `-C` on both, for the reason above: never a bare `moon publish` here.
 #
 # Publish both modules to mooncakes.io, after the full CI gate. Not reversible.
 [group('ship')]

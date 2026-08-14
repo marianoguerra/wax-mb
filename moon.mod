@@ -6,6 +6,18 @@
 // It sits at the repository root rather than in a directory of its own so that
 // `test/corpus/`, `test/golden/` and `tools/` keep the paths the justfile, the
 // Python harness and AGENTS.md all use.
+//
+// "Never published" is a rule, not a mechanism: `moon.mod` has no `private` or
+// `publish = false`, so a bare `moon publish` HERE uploads the corpus, the
+// porting tools and the alternative layout engine under this name. It fails
+// today only because `marianoguerra/wax` is not on the registry for the
+// extracted copy to resolve -- an accident that stops protecting anything the
+// moment `wax` is published. Always `moon -C lib` / `moon -C cli`, or better,
+// `just publish-dry` and `just publish`, which cannot address this module.
+//
+// The two missing manifest fields below are deliberate. `moon publish` warns
+// that `readme` and `repository` are unset; filling them in would quiet the one
+// signal that says which module is being packaged.
 name = "marianoguerra/wax-dev"
 
 version = "0.0.0"

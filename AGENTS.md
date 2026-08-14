@@ -183,6 +183,22 @@ just embed-smoke     # an AST-first consumer must not compile the front end
 just publish-dry     # the full gate, then both `moon publish --dry-run`s
 ```
 
+**Never run `moon publish` at the repository root.** With no `-C` it publishes
+`marianoguerra/wax-dev` — the corpus, the porting tools, the alternative layout
+engine — and `moon.mod` has no `private` field to forbid it. It fails today only
+because `marianoguerra/wax` is not on the registry yet, which is an accident of
+timing rather than a guard. Go through `just`, or `-C` a module by hand.
+
+`tools/publish-dry.sh` is what `publish-dry` calls, because two things about
+`moon publish --dry-run` need handling: it **exits 255 on a dry run the server
+accepted** (it reports `202 Accepted, Dry run completed successfully` and then
+`Error: moon publish failed`), and the `cli` rehearsal cannot resolve
+`marianoguerra/wax` until `lib` is published — the extracted zip reads the
+registry, not this tree. The script believes the acceptance line, tolerates the
+second case only while `wax` is genuinely absent from
+`~/.moon/registry/index/user/marianoguerra/`, and refuses to address the root
+module at all.
+
 ## Porting notes that are easy to get wrong
 
 - **Columns.** The reference emits **0-based** columns in `--error-format json`
