@@ -5,6 +5,21 @@ All notable changes to `marianoguerra/wax` and `marianoguerra/wax-cli`.
 The two modules are versioned together and released from one repository, so a
 release note here covers both unless it says otherwise.
 
+## [0.2.0] — 2026-08-14
+
+### Added
+
+- Runtime-defined immutable `jv_record` values in the vendorable Wax standard
+  library. Record factories carry a UTF-8 name, typed schema, defaults, field
+  validators and an optional whole-record validator; persistent and transient
+  updates preserve structural sharing while rejecting unknown or invalid
+  fields.
+- Recursive runtime `jv_type` descriptors for scalar values, vectors,
+  string-keyed maps, sets, exact record definitions, unions, nullable values,
+  unconstrained values and opaque `any` payloads.
+- MoonBit state-machine tests, Immutable.js-compatible conformance fixtures,
+  transient lifecycle checks and record-specific benchmarks.
+
 ## [0.1.0] — 2026-08-14
 
 The first release. Nothing was published before it, so the entries below are

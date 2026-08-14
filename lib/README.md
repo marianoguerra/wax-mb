@@ -164,7 +164,7 @@ outside it.
 
 ## Stability
 
-Version 0.1. Treated as stable, and changed only with a version bump: the `wax`
+Version 0.2. Treated as stable, and changed only with a version bump: the `wax`
 facade, `wax/compile`, `wax/ast` and `wax/ast/build`, `wax/wasm/*`, `wax/basic`,
 `wax/diagnostic`, `wax/message`, `wax/warning`, `wax/feature`, and the entry
 points `@grammar.parse_string` / `parse_recover`, `@output.render`,

@@ -23,7 +23,7 @@ name = "marianoguerra/wax-dev"
 version = "0.0.0"
 
 import {
-  "marianoguerra/wax@0.1.0",
+  "marianoguerra/wax@0.2.0",
   "moonbitlang/x@0.4.47",
   "marianoguerra/pretty-fast-pretty-printer@0.2.1",
 }

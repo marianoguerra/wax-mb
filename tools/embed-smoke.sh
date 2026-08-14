@@ -26,7 +26,7 @@ mkdir -p "$work/embed"
 cat > "$work/moon.mod" <<EOF
 name = "smoke/embed"
 version = "0.0.0"
-import { "marianoguerra/wax@0.1.0" }
+import { "marianoguerra/wax@0.2.0" }
 EOF
 
 # A path override is what makes this test the WORKING TREE rather than whatever
