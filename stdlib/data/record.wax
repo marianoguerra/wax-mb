@@ -24,6 +24,8 @@ const jv_type_kind_set = 10;
 const jv_type_kind_record = 11;
 const jv_type_kind_any = 12;
 const jv_type_kind_or = 13;
+const jv_type_kind_ordered_map = 14;
+const jv_type_kind_ordered_set = 15;
 
 type jv_record_schema_visit = fn(&?eq, &utf8_string, &jv_type, &jv_value);
 type jv_record_visit = fn(&?eq, &utf8_string, &jv_value);
@@ -60,6 +62,22 @@ fn jv_type_map(value: &jv_type) -> &jv_type {
 
 fn jv_type_set(element: &jv_type) -> &jv_type {
     let out: &jv_type_set_value = { kind: jv_type_kind_set, element };
+    out
+}
+
+fn jv_type_ordered_map(value: &jv_type) -> &jv_type {
+    let out: &jv_type_ordered_map_value = {
+        kind: jv_type_kind_ordered_map,
+        value,
+    };
+    out
+}
+
+fn jv_type_ordered_set(element: &jv_type) -> &jv_type {
+    let out: &jv_type_ordered_set_value = {
+        kind: jv_type_kind_ordered_set,
+        element,
+    };
     out
 }
 
@@ -126,6 +144,26 @@ fn jv_type_accepts(value_type: &jv_type, value: &jv_value) -> i32 {
             if is_set == 0 { return 0; }
             let state: &jv_type_validate_context = { value_type: found.element, valid: 1 };
             jv_set_each(set!, state, jv_type_validate_set_entry);
+            return state.valid;
+        }
+        found: &jv_type_ordered_map_value => {
+            let (is_map, map) = jv_get_ordered_map(value);
+            if is_map == 0 { return 0; }
+            let state: &jv_type_validate_context = {
+                value_type: found.value,
+                valid: 1,
+            };
+            jv_ordered_map_each(map!, state, jv_type_validate_map_entry);
+            return state.valid;
+        }
+        found: &jv_type_ordered_set_value => {
+            let (is_set, set) = jv_get_ordered_set(value);
+            if is_set == 0 { return 0; }
+            let state: &jv_type_validate_context = {
+                value_type: found.element,
+                valid: 1,
+            };
+            jv_ordered_set_each(set!, state, jv_type_validate_set_entry);
             return state.valid;
         }
         found: &jv_type_record_value => {

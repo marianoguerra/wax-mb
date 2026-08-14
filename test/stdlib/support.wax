@@ -56,6 +56,88 @@ fn st_assert_set(set: &jv_set_value, value: i32, present: i32) {
     st_assert(if jv_set_contains(set, jv_i32(value)) == present { 1 } else { 0 });
 }
 
+type st_order = { count: mut i32, code: mut i32, last: mut i32 };
+type st_expected_i32 = [i32];
+
+type st_expected_map_order = {
+    keys: &st_expected_i32,
+    values: &st_expected_i32,
+    index: mut i32,
+};
+
+type st_expected_set_order = {
+    values: &st_expected_i32,
+    index: mut i32,
+};
+
+fn st_ordered_map_visit(context: &?eq, _key: &utf8_string, value: &jv_value) {
+    let state = context! as &st_order;
+    let actual = jv_require_i32(value);
+    state.count = state.count + 1;
+    state.code = state.code * 10 + actual;
+    state.last = actual;
+}
+
+fn st_ordered_set_visit(context: &?eq, value: &jv_value) {
+    let state = context! as &st_order;
+    let actual = jv_require_i32(value);
+    state.count = state.count + 1;
+    state.code = state.code * 10 + actual;
+    state.last = actual;
+}
+
+fn st_assert_ordered_map_visit(
+    context: &?eq,
+    key: &utf8_string,
+    value: &jv_value,
+) {
+    let state = context! as &st_expected_map_order;
+    st_assert(if state.index <s state.keys.length() { 1 } else { 0 });
+    st_assert(utf8_equal(key, st_key(state.keys[state.index])));
+    st_assert_jv_i32(value, state.values[state.index]);
+    state.index = state.index + 1;
+}
+
+fn st_assert_ordered_set_visit(context: &?eq, value: &jv_value) {
+    let state = context! as &st_expected_set_order;
+    st_assert(if state.index <s state.values.length() { 1 } else { 0 });
+    st_assert_jv_i32(value, state.values[state.index]);
+    state.index = state.index + 1;
+}
+
+fn st_assert_ordered_map(
+    map: &jv_ordered_map_value,
+    keys: &st_expected_i32,
+    values: &st_expected_i32,
+) {
+    st_assert(if keys.length() == values.length() { 1 } else { 0 });
+    let state: &st_expected_map_order = { keys, values, index: 0 };
+    jv_ordered_map_each(map, state, st_assert_ordered_map_visit);
+    st_assert(if state.index == keys.length() { 1 } else { 0 });
+    st_assert(if state.index == jv_ordered_map_count(map) { 1 } else { 0 });
+}
+
+fn st_assert_ordered_set(set: &jv_ordered_set_value, values: &st_expected_i32) {
+    let state: &st_expected_set_order = { values, index: 0 };
+    jv_ordered_set_each(set, state, st_assert_ordered_set_visit);
+    st_assert(if state.index == values.length() { 1 } else { 0 });
+    st_assert(if state.index == jv_ordered_set_count(set) { 1 } else { 0 });
+}
+
+fn st_ordered_map_code(map: &jv_ordered_map_value) -> i32 {
+    let state: &st_order = { count: 0, code: 0, last: -1 };
+    jv_ordered_map_each(map, state, st_ordered_map_visit);
+    st_assert(if state.count == jv_ordered_map_count(map) { 1 } else { 0 });
+    state.code
+}
+
+fn st_ordered_set_code(set: &jv_ordered_set_value) -> i32 {
+    let state: &st_order = { count: 0, code: 0, last: -1 };
+    jv_ordered_set_each(set, state, st_ordered_set_visit);
+    st_assert(if state.count == jv_ordered_set_count(set) { 1 } else { 0 });
+    state.code
+}
+
 fn st_assert_record(record: &jv_record_value, field: i32, expected: i32) {
     let (found, value) = jv_record_get(record, st_key(field));
     st_assert(found);
@@ -250,6 +332,109 @@ fn st_boundaries() -> i32 {
     st_assert(if jv_set_count(nested1) == 3 { 1 } else { 0 });
 
     st_stage = 6;
+    let one = jv_i32(1);
+    let ordered_map0 = jv_ordered_map_empty();
+    let ordered_map1 = jv_ordered_map_assoc(ordered_map0, st_key(1), one);
+    let ordered_map2 = jv_ordered_map_assoc(ordered_map1, st_key(2), jv_i32(2));
+    let ordered_map3 = jv_ordered_map_assoc(ordered_map2, st_key(3), jv_i32(3));
+    st_assert(if jv_kind(ordered_map3) == jv_kind_ordered_map { 1 } else { 0 });
+    st_assert(if st_ordered_map_code(ordered_map3) == 123 { 1 } else { 0 });
+    st_assert(if jv_ordered_map_assoc(ordered_map1, st_key(1), one) == ordered_map1 { 1 } else { 0 });
+    let ordered_map4 = jv_ordered_map_assoc(ordered_map3, st_key(2), jv_i32(8));
+    st_assert(if st_ordered_map_code(ordered_map4) == 183 { 1 } else { 0 });
+    st_assert(if st_ordered_map_code(ordered_map3) == 123 { 1 } else { 0 });
+    let ordered_map5 = jv_ordered_map_assoc(
+        jv_ordered_map_dissoc(ordered_map4, st_key(2)),
+        st_key(2),
+        jv_i32(2),
+    );
+    st_assert(if st_ordered_map_code(ordered_map5) == 132 { 1 } else { 0 });
+    let (ordered_found, ordered_value) = jv_ordered_map_get(ordered_map5, st_key(2));
+    st_assert(ordered_found);
+    st_assert_jv_i32(ordered_value!, 2);
+    st_assert(if jv_ordered_map_contains(ordered_map5, st_key(9)) == 0 { 1 } else { 0 });
+    let (wrong_ordered_map, _) = jv_get_ordered_map(map2);
+    st_assert(if wrong_ordered_map == 0 { 1 } else { 0 });
+    let ordered_map_copy = jv_ordered_map_assoc(
+        jv_ordered_map_assoc(
+            jv_ordered_map_assoc(jv_ordered_map_empty(), st_key(1), jv_i32(1)),
+            st_key(3),
+            jv_i32(3),
+        ),
+        st_key(2),
+        jv_i32(2),
+    );
+    st_assert(jv_equal(ordered_map5, ordered_map_copy));
+    st_assert(if jv_hash(ordered_map5) == jv_hash(ordered_map_copy) { 1 } else { 0 });
+    let ordered_map_values = jv_set_add(
+        jv_set_add(jv_set_empty(), ordered_map5),
+        ordered_map_copy,
+    );
+    st_assert(if jv_set_count(ordered_map_values) == 1 { 1 } else { 0 });
+    st_assert(if jv_equal(ordered_map3, ordered_map5) == 0 { 1 } else { 0 });
+    st_assert(if jv_hash(ordered_map3) != jv_hash(ordered_map5) { 1 } else { 0 });
+    st_assert(if jv_equal(ordered_map3, map2) == 0 { 1 } else { 0 });
+    let transient_ordered_map = jv_ordered_map_as_transient(ordered_map3);
+    jvt_ordered_map_assoc(transient_ordered_map, st_key(2), jv_i32(8));
+    jvt_ordered_map_dissoc(transient_ordered_map, st_key(1));
+    jvt_ordered_map_assoc(transient_ordered_map, st_key(1), jv_i32(1));
+    let frozen_ordered_map = jvt_ordered_map_persistent(transient_ordered_map);
+    st_assert(if st_ordered_map_code(frozen_ordered_map) == 831 { 1 } else { 0 });
+    st_assert(if st_ordered_map_code(ordered_map3) == 123 { 1 } else { 0 });
+
+    let ordered_set1 = jv_ordered_set_add(
+        jv_ordered_set_add(jv_ordered_set_add(jv_ordered_set_empty(), jv_i32(1)), jv_i32(2)),
+        jv_i32(3),
+    );
+    st_assert(if jv_kind(ordered_set1) == jv_kind_ordered_set { 1 } else { 0 });
+    st_assert(if st_ordered_set_code(ordered_set1) == 123 { 1 } else { 0 });
+    st_assert(if jv_ordered_set_add(ordered_set1, jv_i32(2)) == ordered_set1 { 1 } else { 0 });
+    let ordered_set2 = jv_ordered_set_add(
+        jv_ordered_set_remove(ordered_set1, jv_i32(2)),
+        jv_i32(2),
+    );
+    st_assert(if st_ordered_set_code(ordered_set2) == 132 { 1 } else { 0 });
+    st_assert(if jv_equal(ordered_set1, ordered_set2) == 0 { 1 } else { 0 });
+    st_assert(if jv_hash(ordered_set1) != jv_hash(ordered_set2) { 1 } else { 0 });
+    let ordered_set_values = jv_set_add(
+        jv_set_add(jv_set_empty(), ordered_set1),
+        ordered_set2,
+    );
+    st_assert(if jv_set_count(ordered_set_values) == 2 { 1 } else { 0 });
+    let ordered_set3 = jv_ordered_set_add(
+        jv_ordered_set_add(jv_ordered_set_empty(), jv_i32(3)),
+        jv_i32(4),
+    );
+    st_assert(if st_ordered_set_code(jv_ordered_set_union(ordered_set1, ordered_set3)) == 1234 { 1 } else { 0 });
+    st_assert(if st_ordered_set_code(jv_ordered_set_intersection(ordered_set1, ordered_set3)) == 3 { 1 } else { 0 });
+    st_assert(if st_ordered_set_code(jv_ordered_set_difference(ordered_set1, ordered_set3)) == 12 { 1 } else { 0 });
+    let transient_ordered_set = jv_ordered_set_as_transient(ordered_set1);
+    jvt_ordered_set_remove(transient_ordered_set, jv_i32(2));
+    jvt_ordered_set_add(transient_ordered_set, jv_i32(4));
+    jvt_ordered_set_add(transient_ordered_set, jv_i32(2));
+    let frozen_ordered_set = jvt_ordered_set_persistent(transient_ordered_set);
+    st_assert(if st_ordered_set_code(frozen_ordered_set) == 1342 { 1 } else { 0 });
+    st_assert(if st_ordered_set_code(ordered_set1) == 123 { 1 } else { 0 });
+
+    let compacted = jv_ordered_map_empty();
+    let compact_index: i32 = 0;
+    while compact_index <s (40 as i32) {
+        compacted = jv_ordered_map_assoc(
+            compacted,
+            st_bench_key(compact_index),
+            jv_i32(compact_index),
+        );
+        compact_index += 1;
+    }
+    compact_index = 0;
+    while compact_index <s (20 as i32) {
+        compacted = jv_ordered_map_dissoc(compacted, st_bench_key(compact_index));
+        compact_index += 1;
+    }
+    st_assert(if jv_ordered_map_count(compacted) == 20 { 1 } else { 0 });
+    st_assert(if pv_count(compacted.value.entries) == 20 { 1 } else { 0 });
+
+    st_stage = 7;
     let (bad_default_status, _) = jv_record_schema_try_add(
         jv_record_schema_empty(),
         st_key(1),
@@ -340,7 +525,7 @@ fn st_boundaries() -> i32 {
     let other_definition = jv_record_type_create(utf8_from_bytes("Range"), schema2);
     st_assert(if jv_equal(record0, jv_record_default(other_definition)) == 0 { 1 } else { 0 });
 
-    st_stage = 7;
+    st_stage = 8;
     let integer_vector = jv_vector_push(jv_vector_empty(), jv_i32(1));
     let mixed_vector = jv_vector_push(integer_vector, jv_string(st_key(1)));
     st_assert(jv_type_accepts(jv_type_vector(jv_type_i32()), integer_vector));
@@ -353,6 +538,15 @@ fn st_boundaries() -> i32 {
     let mixed_set = jv_set_add(integer_set, jv_bool(1));
     st_assert(jv_type_accepts(jv_type_set(jv_type_i32()), integer_set));
     st_assert(if jv_type_accepts(jv_type_set(jv_type_i32()), mixed_set) == 0 { 1 } else { 0 });
+    st_assert(jv_type_accepts(jv_type_ordered_map(jv_type_i32()), ordered_map3));
+    st_assert(if jv_type_accepts(jv_type_ordered_map(jv_type_i32()), ordered_map4) == 1 { 1 } else { 0 });
+    st_assert(if jv_type_accepts(jv_type_ordered_map(jv_type_i32()), map2) == 0 { 1 } else { 0 });
+    let mixed_ordered_map = jv_ordered_map_assoc(ordered_map3, st_key(4), jv_bool(1));
+    st_assert(if jv_type_accepts(jv_type_ordered_map(jv_type_i32()), mixed_ordered_map) == 0 { 1 } else { 0 });
+    st_assert(jv_type_accepts(jv_type_ordered_set(jv_type_i32()), ordered_set1));
+    st_assert(if jv_type_accepts(jv_type_ordered_set(jv_type_i32()), values1) == 0 { 1 } else { 0 });
+    let mixed_ordered_set = jv_ordered_set_add(ordered_set1, jv_bool(1));
+    st_assert(if jv_type_accepts(jv_type_ordered_set(jv_type_i32()), mixed_ordered_set) == 0 { 1 } else { 0 });
     st_assert(jv_type_accepts(jv_type_optional(jv_type_string()), jv_null()));
     st_assert(jv_type_accepts(jv_type_optional(jv_type_string()), jv_string(st_key(1))));
     st_assert(jv_type_accepts(jv_type_any(), record2));
@@ -366,7 +560,7 @@ fn st_boundaries() -> i32 {
     let record5 = jvt_record_persistent(transient_record);
     st_assert_record(record5, 1, 8);
     st_assert_record(record5, 2, 12);
-    st_stage = 8;
+    st_stage = 9;
     1
 }
 
@@ -418,6 +612,56 @@ fn st_record_oracle_lenient_unknown() -> i32 {
     jv_require_i32(jv_record_at(record, st_key(1)))
 }
 
+#[export = "ordered_map_oracle_update"]
+fn st_ordered_map_oracle_update() -> i32 {
+    let map = jv_ordered_map_assoc(
+        jv_ordered_map_assoc(
+            jv_ordered_map_assoc(jv_ordered_map_empty(), st_key(1), jv_i32(1)),
+            st_key(2),
+            jv_i32(2),
+        ),
+        st_key(3),
+        jv_i32(3),
+    );
+    st_ordered_map_code(jv_ordered_map_assoc(map, st_key(2), jv_i32(8)))
+}
+
+#[export = "ordered_map_oracle_reinsert"]
+fn st_ordered_map_oracle_reinsert() -> i32 {
+    let map = jv_ordered_map_assoc(
+        jv_ordered_map_assoc(
+            jv_ordered_map_assoc(jv_ordered_map_empty(), st_key(1), jv_i32(1)),
+            st_key(2),
+            jv_i32(2),
+        ),
+        st_key(3),
+        jv_i32(3),
+    );
+    st_ordered_map_code(
+        jv_ordered_map_assoc(jv_ordered_map_dissoc(map, st_key(2)), st_key(2), jv_i32(2)),
+    )
+}
+
+#[export = "ordered_set_oracle_duplicate"]
+fn st_ordered_set_oracle_duplicate() -> i32 {
+    let set = jv_ordered_set_add(
+        jv_ordered_set_add(jv_ordered_set_add(jv_ordered_set_empty(), jv_i32(1)), jv_i32(2)),
+        jv_i32(3),
+    );
+    st_ordered_set_code(jv_ordered_set_add(set, jv_i32(2)))
+}
+
+#[export = "ordered_set_oracle_reinsert"]
+fn st_ordered_set_oracle_reinsert() -> i32 {
+    let set = jv_ordered_set_add(
+        jv_ordered_set_add(jv_ordered_set_add(jv_ordered_set_empty(), jv_i32(1)), jv_i32(2)),
+        jv_i32(3),
+    );
+    st_ordered_set_code(
+        jv_ordered_set_add(jv_ordered_set_remove(set, jv_i32(2)), jv_i32(2)),
+    )
+}
+
 #[export = "stdlib_invalid_set_transient"]
 fn st_invalid_set_transient() -> i32 {
     let value = phs_as_transient(phs_empty(wax_hash_i31_key, wax_equal_i31_key));
@@ -444,6 +688,20 @@ fn st_invalid_jv_set_transient() -> i32 {
     let value = jv_set_as_transient(jv_set_empty());
     let _ = jvt_set_persistent(value);
     jvt_set_count(value)
+}
+
+#[export = "stdlib_invalid_jv_ordered_map_transient"]
+fn st_invalid_jv_ordered_map_transient() -> i32 {
+    let value = jv_ordered_map_as_transient(jv_ordered_map_empty());
+    let _ = jvt_ordered_map_persistent(value);
+    jvt_ordered_map_count(value)
+}
+
+#[export = "stdlib_invalid_jv_ordered_set_transient"]
+fn st_invalid_jv_ordered_set_transient() -> i32 {
+    let value = jv_ordered_set_as_transient(jv_ordered_set_empty());
+    let _ = jvt_ordered_set_persistent(value);
+    jvt_ordered_set_count(value)
 }
 
 #[export = "stdlib_invalid_jv_record_transient"]
@@ -531,6 +789,50 @@ fn st_bench_transient(size: i32, rounds: i32) -> i32 {
             jv_vector_count(frozen_vector)
             + jv_map_count(frozen_map)
             + jv_set_count(frozen_set);
+        round += 1;
+    }
+    checksum
+}
+
+#[export = "stdlib_bench_ordered_persistent"]
+fn st_bench_ordered_persistent(size: i32, rounds: i32) -> i32 {
+    let checksum: i32 = 0;
+    let round: i32 = 0;
+    while round <s rounds {
+        let map = jv_ordered_map_empty();
+        let set = jv_ordered_set_empty();
+        let i: i32 = 0;
+        while i <s size {
+            let value = jv_i32(i);
+            map = jv_ordered_map_assoc(map, st_bench_key(i), value);
+            set = jv_ordered_set_add(set, value);
+            i += 1;
+        }
+        checksum += jv_ordered_map_count(map) + jv_ordered_set_count(set);
+        round += 1;
+    }
+    checksum
+}
+
+#[export = "stdlib_bench_ordered_transient"]
+fn st_bench_ordered_transient(size: i32, rounds: i32) -> i32 {
+    let checksum: i32 = 0;
+    let round: i32 = 0;
+    while round <s rounds {
+        let map = jv_ordered_map_as_transient(jv_ordered_map_empty());
+        let set = jv_ordered_set_as_transient(jv_ordered_set_empty());
+        let i: i32 = 0;
+        while i <s size {
+            let value = jv_i32(i);
+            jvt_ordered_map_assoc(map, st_bench_key(i), value);
+            jvt_ordered_set_add(set, value);
+            i += 1;
+        }
+        let frozen_map = jvt_ordered_map_persistent(map);
+        let frozen_set = jvt_ordered_set_persistent(set);
+        checksum +=
+            jv_ordered_map_count(frozen_map)
+            + jv_ordered_set_count(frozen_set);
         round += 1;
     }
     checksum

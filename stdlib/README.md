@@ -57,9 +57,11 @@ cryptographic.
 
 `data/immutable_value.wax` defines an open `jv_value` hierarchy with distinct
 null, bool, UTF-8 string, i32, i64, f32, f64, vector, string-keyed map, opaque
-`any`, and set variants. Constructors are named `jv_null`, `jv_bool`,
+`any`, set, insertion-ordered map, and insertion-ordered set variants.
+Constructors are named `jv_null`, `jv_bool`,
 `jv_string`, `jv_i32`, `jv_i64`, `jv_f32`, `jv_f64`, and `jv_any`; collection
-values begin with `jv_vector_empty`, `jv_map_empty`, and `jv_set_empty`.
+values begin with `jv_vector_empty`, `jv_map_empty`, `jv_set_empty`,
+`jv_ordered_map_empty`, and `jv_ordered_set_empty`.
 
 Each scalar has a safe `jv_get_*` accessor and a trapping `jv_require_*`
 accessor. Typed collection APIs wrap the persistent vector, map, and set so
@@ -68,7 +70,9 @@ and trap if reused after `*_persistent`.
 
 `jv_equal` and `jv_hash` are structural. Numeric variants remain distinct;
 f32/f64 compare exact bit patterns, including NaNs and signed zero. Map and set
-hashing is order-independent. Opaque `any` values compare by GC reference
+hashing is order-independent. Ordered maps and sets compare and hash in
+insertion order, and are distinct from their unordered counterparts. Opaque
+`any` values compare by GC reference
 identity when they are in the equality hierarchy. WebAssembly exposes no
 identity hash, so every `any` receives the same kind-specific hash; correctness
 is preserved, but a set containing many opaque values will have collisions.
@@ -76,6 +80,22 @@ is preserved, but a set containing many opaque values will have collisions.
 Values built through the public API are immutable and acyclic. An opaque
 `any` payload may refer to mutable application state; the value retains the
 reference but cannot make the referenced object immutable.
+
+### Ordered collections
+
+`jv_ordered_map_*` mirrors the string-keyed `jv_map_*` API and
+`jv_ordered_set_*` mirrors `jv_set_*`, including set algebra and consuming
+`jvt_ordered_*` builders. Iteration follows insertion order. Associating an
+existing map key changes its value without moving it, and adding an existing
+set member is a no-op. Removing and later reinserting a key or member appends
+it at the end.
+
+The implementation follows Immutable.js's ordered-collection organization: a
+HAMT indexes entries held in a persistent vector. Removal leaves a tombstone;
+trailing tombstones are removed immediately and sparse vectors are compacted
+without changing encounter order. Ordered operations have the same amortized
+`O(log32 N)` lookup/update shape as the underlying collections, with additional
+memory for the order index.
 
 ## Runtime-defined records
 
@@ -86,11 +106,12 @@ are declared at runtime. A `jv_record_schema` maps UTF-8 names to a runtime
 and a persistent map containing every field.
 
 Runtime types cover the scalar value kinds, unconstrained `jv_type_any`, exact
-opaque-any values, homogeneous vectors/maps/sets, exact record-definition
-references, unions, and optional values. Numeric kinds are never coerced.
-Collection validation recursively checks their contents. Type descriptors and
-record definitions are immutable DAGs in v1, so directly or mutually recursive
-record definitions are not supported.
+opaque-any values, homogeneous vectors/maps/sets, homogeneous ordered
+maps/sets, exact record-definition references, unions, and optional values.
+Numeric kinds are never coerced. Collection validation recursively checks their
+contents and distinguishes ordered variants from unordered ones. Type
+descriptors and record definitions are immutable DAGs in v1, so directly or
+mutually recursive record definitions are not supported.
 
 ```wax
 let schema = jv_record_schema_add(
@@ -130,13 +151,14 @@ and deterministic.
 
 `just stdlib-test` generates reproducible state-machine traces with MoonBit
 QuickCheck, compiles the combined sources through Wax's public API, and runs
-them in Node's WebAssembly GC runtime. MoonBit maps/arrays/sets model persistent
-updates. A fatal WHATWG `TextDecoder` independently checks generated UTF-8 byte
-sequences. Deterministic tests cover malformed encodings, numeric bit identity,
-nested values, record schemas and validators, insertion-order independence,
-structural sharing, and transient lifecycle traps. Committed fixtures exercise
-the shared default/override/reset/clear/equality behavior documented by
-Immutable.js v5; typed validation is checked against an independent generated
+them in Node's WebAssembly GC runtime. MoonBit maps and explicit encounter-order
+arrays model persistent updates. A fatal WHATWG `TextDecoder` independently
+checks generated UTF-8 byte sequences. Deterministic tests cover malformed
+encodings, numeric bit identity, nested values, record schemas and validators,
+ordered collection replacement/removal/reinsertion and algebra, structural
+sharing, compaction, and transient lifecycle traps. Committed fixtures exercise
+the behavior documented by Immutable.js v5 for records, ordered maps, and
+ordered sets; typed validation is checked against an independent generated
 state-machine model because Immutable.js records are not runtime typed.
 
 `just stdlib-bench` reports median and minimum times for UTF-8 validation/hash,
@@ -154,3 +176,10 @@ Record factory/default/reset behavior follows the public
 [Immutable.js v5 Record contract](https://immutable-js.com/docs/v5/Record/).
 Wax exposes strict and lenient constructors separately instead of silently
 ignoring unknown fields in every constructor.
+
+Ordered map and set encounter-order behavior follows the public
+[Immutable.js v5 OrderedMap](https://immutable-js.com/docs/v5/OrderedMap/) and
+[OrderedSet](https://immutable-js.com/docs/v5/OrderedSet/) contracts. The
+implementation also follows Immutable.js's hash-index plus persistent-list
+layout and its sparse-list compaction threshold; the reference is a design
+oracle and is never fetched by builds or tests.

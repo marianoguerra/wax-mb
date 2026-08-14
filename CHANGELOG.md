@@ -9,6 +9,10 @@ release note here covers both unless it says otherwise.
 
 ### Added
 
+- Insertion-ordered `jv_ordered_map` and `jv_ordered_set` variants in the
+  vendorable Wax data library, with order-sensitive equality and hashing,
+  persistent and transient updates, ordered set algebra, recursive runtime
+  type descriptors, and Immutable.js-compatible conformance fixtures.
 - Runtime-defined immutable `jv_record` values in the vendorable Wax standard
   library. Record factories carry a UTF-8 name, typed schema, defaults, field
   validators and an optional whole-record validator; persistent and transient

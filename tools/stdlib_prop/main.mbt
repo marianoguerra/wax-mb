@@ -99,6 +99,40 @@ fn emit_set_assert(out : StringBuilder, value : Int, present : Bool) -> Unit {
 }
 
 ///|
+fn emit_expected_i32(out : StringBuilder, values : Array[Int]) -> Unit {
+  out.write_string("[st_expected_i32|")
+  for index, value in values {
+    if index != 0 {
+      out.write_string(",")
+    }
+    out.write_string(value.to_string())
+  }
+  out.write_string("]")
+}
+
+///|
+fn emit_order_asserts(
+  out : StringBuilder,
+  map_keys : Array[Int],
+  map_values : @hashmap.HashMap[Int, Int],
+  set_values : Array[Int],
+  map_name? : String = "ordered_map",
+  set_name? : String = "ordered_set",
+) -> Unit {
+  out.write_string("    st_assert_ordered_map(\{map_name}, ")
+  emit_expected_i32(out, map_keys)
+  out.write_string(", ")
+  let values : Array[Int] = []
+  for key in map_keys {
+    values.push(map_values[key])
+  }
+  emit_expected_i32(out, values)
+  out.write_string(");\n    st_assert_ordered_set(\{set_name}, ")
+  emit_expected_i32(out, set_values)
+  out.write_string(");\n")
+}
+
+///|
 fn emit_property_case(
   out : StringBuilder,
   case_index : Int,
@@ -107,12 +141,17 @@ fn emit_property_case(
   let vector : Array[Int] = []
   let map : @hashmap.HashMap[Int, Int] = @hashmap.HashMap::HashMap([])
   let set : @hashmap.HashMap[Int, Int] = @hashmap.HashMap::HashMap([])
+  let ordered_map_keys : Array[Int] = []
+  let ordered_map_values : @hashmap.HashMap[Int, Int] = @hashmap.HashMap([])
+  let ordered_set_values : Array[Int] = []
   let record_values = [0, 0, 0]
   out.write_string("fn st_property_case_\{case_index}() {\n")
   out.write_string("    st_stage = \{100 + case_index};\n")
   out.write_string("    let vector = jv_vector_empty();\n")
   out.write_string("    let map = jv_map_empty();\n")
   out.write_string("    let set = jv_set_empty();\n")
+  out.write_string("    let ordered_map = jv_ordered_map_empty();\n")
+  out.write_string("    let ordered_set = jv_ordered_set_empty();\n")
   out.write_string(
     "    let record = jv_record_default(st_property_record_type());\n",
   )
@@ -162,9 +201,16 @@ fn emit_property_case(
         "    map = jv_map_assoc(map, st_key(\{key}), jv_i32(\{value}));\n",
       )
       out.write_string(
+        "    ordered_map = jv_ordered_map_assoc(ordered_map, st_key(\{key}), jv_i32(\{value}));\n",
+      )
+      out.write_string(
         "    st_assert_map(old_map_\{step}, \{key}, \{if was_present { 1 } else { 0 }}, \{old_value});\n",
       )
       map.set(key, value)
+      if !ordered_map_values.contains(key) {
+        ordered_map_keys.push(key)
+      }
+      ordered_map_values.set(key, value)
       emit_map_assert(out, key, true, value)
     } else if operation == 7 {
       let was_present = map.contains(key)
@@ -172,29 +218,50 @@ fn emit_property_case(
       out.write_string("    let old_map_\{step} = map;\n")
       out.write_string("    map = jv_map_dissoc(map, st_key(\{key}));\n")
       out.write_string(
+        "    ordered_map = jv_ordered_map_dissoc(ordered_map, st_key(\{key}));\n",
+      )
+      out.write_string(
         "    st_assert_map(old_map_\{step}, \{key}, \{if was_present { 1 } else { 0 }}, \{old_value});\n",
       )
       if was_present {
         map.remove(key)
+      }
+      if ordered_map_values.contains(key) {
+        ordered_map_values.remove(key)
+        let index = ordered_map_keys.search_by(item => item == key).unwrap()
+        ignore(ordered_map_keys.remove(index))
       }
       emit_map_assert(out, key, false, 0)
     } else if operation <= 9 {
       out.write_string("    let old_set_\{step} = set;\n")
       out.write_string("    set = jv_set_add(set, jv_i32(\{value}));\n")
       out.write_string(
+        "    ordered_set = jv_ordered_set_add(ordered_set, jv_i32(\{value}));\n",
+      )
+      out.write_string(
         "    st_assert(if jv_set_count(old_set_\{step}) == \{set.length()} { 1 } else { 0 });\n",
       )
       set.set(value, 1)
+      if ordered_set_values.search_by(item => item == value) is None {
+        ordered_set_values.push(value)
+      }
       emit_set_assert(out, value, true)
     } else if operation == 10 {
       let was_present = set.contains(value)
       out.write_string("    let old_set_\{step} = set;\n")
       out.write_string("    set = jv_set_remove(set, jv_i32(\{value}));\n")
       out.write_string(
+        "    ordered_set = jv_ordered_set_remove(ordered_set, jv_i32(\{value}));\n",
+      )
+      out.write_string(
         "    st_assert_set(old_set_\{step}, \{value}, \{if was_present { 1 } else { 0 }});\n",
       )
       if was_present {
         set.remove(value)
+      }
+      match ordered_set_values.search_by(item => item == value) {
+        Some(index) => ignore(ordered_set_values.remove(index))
+        None => ()
       }
       emit_set_assert(out, value, false)
     } else {
@@ -215,6 +282,9 @@ fn emit_property_case(
     )
     out.write_string(
       "    st_assert(if jv_set_count(set) == \{set.length()} { 1 } else { 0 });\n",
+    )
+    emit_order_asserts(
+      out, ordered_map_keys, ordered_map_values, ordered_set_values,
     )
     let record_operation = n / 13 % 6
     let record_field = n / 37 % 3
@@ -267,6 +337,63 @@ fn emit_property_case(
       "    st_assert(if jv_record_count(record) == 3 { 1 } else { 0 });\n",
     )
   }
+  out.write_string(
+    "    let transient_ordered_map = jv_ordered_map_as_transient(ordered_map);\n",
+  )
+  out.write_string(
+    "    let transient_ordered_set = jv_ordered_set_as_transient(ordered_set);\n",
+  )
+  for step in 0..<16 {
+    let raw = inputs[step]
+    let n = if raw < 0 { -raw } else { raw }
+    let key = n / 17 % 64
+    let value = n % 20001 - 10000
+    if step % 3 != 2 {
+      out.write_string(
+        "    jvt_ordered_map_assoc(transient_ordered_map, st_key(\{key}), jv_i32(\{value}));\n",
+      )
+      if !ordered_map_values.contains(key) {
+        ordered_map_keys.push(key)
+      }
+      ordered_map_values.set(key, value)
+      out.write_string(
+        "    jvt_ordered_set_add(transient_ordered_set, jv_i32(\{value}));\n",
+      )
+      if ordered_set_values.search_by(item => item == value) is None {
+        ordered_set_values.push(value)
+      }
+    } else {
+      out.write_string(
+        "    jvt_ordered_map_dissoc(transient_ordered_map, st_key(\{key}));\n",
+      )
+      if ordered_map_values.contains(key) {
+        ordered_map_values.remove(key)
+        let index = ordered_map_keys.search_by(item => item == key).unwrap()
+        ignore(ordered_map_keys.remove(index))
+      }
+      out.write_string(
+        "    jvt_ordered_set_remove(transient_ordered_set, jv_i32(\{value}));\n",
+      )
+      match ordered_set_values.search_by(item => item == value) {
+        Some(index) => ignore(ordered_set_values.remove(index))
+        None => ()
+      }
+    }
+  }
+  out.write_string(
+    "    let frozen_ordered_map = jvt_ordered_map_persistent(transient_ordered_map);\n",
+  )
+  out.write_string(
+    "    let frozen_ordered_set = jvt_ordered_set_persistent(transient_ordered_set);\n",
+  )
+  emit_order_asserts(
+    out,
+    ordered_map_keys,
+    ordered_map_values,
+    ordered_set_values,
+    map_name="frozen_ordered_map",
+    set_name="frozen_ordered_set",
+  )
   out.write_string("}\n\n")
 }
 

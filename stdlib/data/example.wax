@@ -4,6 +4,10 @@
 fn immutable_data_example() -> i32 {
     let name = utf8_from_bytes([wax_hash_bytes| 0x57, 0x61, 0x78]);
     let tags = jv_set_add(jv_set_empty(), jv_string(name));
+    let ordered_tags = jv_ordered_set_add(
+        jv_ordered_set_add(jv_ordered_set_empty(), jv_i32(7)),
+        jv_string(name),
+    );
     let numbers = jv_vector_push(jv_vector_push(jv_vector_empty(), jv_i32(7)), jv_i64(8));
     let object = jv_map_assoc(
         jv_map_assoc(jv_map_empty(), utf8_from_bytes([wax_hash_bytes| 0x6e, 0x61, 0x6d, 0x65]), jv_string(name)),
@@ -14,6 +18,11 @@ fn immutable_data_example() -> i32 {
         object,
         utf8_from_bytes([wax_hash_bytes| 0x74, 0x61, 0x67, 0x73]),
         tags,
+    );
+    let ordered_object = jv_ordered_map_assoc(
+        jv_ordered_map_assoc(jv_ordered_map_empty(), utf8_from_bytes("name"), jv_string(name)),
+        utf8_from_bytes("items"),
+        numbers,
     );
     let schema = jv_record_schema_add(
         jv_record_schema_empty(),
@@ -30,5 +39,7 @@ fn immutable_data_example() -> i32 {
     jv_map_count(object)
         + jv_vector_count(numbers)
         + jv_set_count(tags)
+        + jv_ordered_map_count(ordered_object)
+        + jv_ordered_set_count(ordered_tags)
         + jv_require_i32(jv_record_at(cell, utf8_from_bytes("value")))
 }

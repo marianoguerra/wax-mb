@@ -15,12 +15,26 @@ const recordOracle = JSON.parse(
     "utf8",
   ),
 );
-for (const oracleCase of recordOracle.cases) {
-  const actual = instance.exports[oracleCase.export]();
-  if (actual !== oracleCase.expected) {
-    throw new Error(
-      `Immutable.js Record oracle mismatch for ${oracleCase.export}: expected ${oracleCase.expected}, got ${actual}`,
-    );
+const orderedOracle = JSON.parse(
+  await readFile(
+    new URL(
+      "../test/stdlib/immutable_ordered_collections_oracle.json",
+      import.meta.url,
+    ),
+    "utf8",
+  ),
+);
+for (const [label, oracle] of [
+  ["Record", recordOracle],
+  ["ordered collection", orderedOracle],
+]) {
+  for (const oracleCase of oracle.cases) {
+    const actual = instance.exports[oracleCase.export]();
+    if (actual !== oracleCase.expected) {
+      throw new Error(
+        `Immutable.js ${label} oracle mismatch for ${oracleCase.export}: expected ${oracleCase.expected}, got ${actual}`,
+      );
+    }
   }
 }
 
@@ -61,6 +75,8 @@ for (const name of [
   "stdlib_invalid_jv_vector_transient",
   "stdlib_invalid_jv_map_transient",
   "stdlib_invalid_jv_set_transient",
+  "stdlib_invalid_jv_ordered_map_transient",
+  "stdlib_invalid_jv_ordered_set_transient",
   "stdlib_invalid_jv_record_transient",
 ]) {
   let trapped = false;
@@ -74,5 +90,5 @@ for (const name of [
 }
 
 console.log(
-  `immutable stdlib runtime checks passed (${lines.length} TextDecoder UTF-8 cases, ${recordOracle.cases.length} Immutable.js Record fixtures)`,
+  `immutable stdlib runtime checks passed (${lines.length} TextDecoder UTF-8 cases, ${recordOracle.cases.length + orderedOracle.cases.length} Immutable.js fixtures)`,
 );

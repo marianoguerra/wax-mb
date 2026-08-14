@@ -1,0 +1,14 @@
+{
+  "source": "Immutable.js 5 OrderedMap and OrderedSet documentation",
+  "version": "5",
+  "urls": [
+    "https://immutable-js.com/docs/v5/OrderedMap/",
+    "https://immutable-js.com/docs/v5/OrderedSet/"
+  ],
+  "cases": [
+    { "export": "ordered_map_oracle_update", "expected": 183 },
+    { "export": "ordered_map_oracle_reinsert", "expected": 132 },
+    { "export": "ordered_set_oracle_duplicate", "expected": 123 },
+    { "export": "ordered_set_oracle_reinsert", "expected": 132 }
+  ]
+}

@@ -17,6 +17,12 @@ const jv_kind_map = 8;
 const jv_kind_any = 9;
 const jv_kind_set = 10;
 const jv_kind_record = 11;
+const jv_kind_ordered_map = 12;
+const jv_kind_ordered_set = 13;
+
+type jvo_entry = { key: &eq, value: &?eq };
+type jvo_store = { index: &phm_map, entries: &pv_vector };
+type jvot_store = { index: &phmt_map, entries: &pvt_vector };
 
 rec {
     type jv_value = open { kind: i32 };
@@ -31,6 +37,8 @@ rec {
     type jv_map_value : jv_value = { .., value: &phm_map };
     type jv_any_value : jv_value = { .., value: &?any };
     type jv_set_value : jv_value = { .., value: &phs_set };
+    type jv_ordered_map_value : jv_value = { .., value: &jvo_store };
+    type jv_ordered_set_value : jv_value = { .., value: &jvo_store };
     type jv_record_value : jv_value = {
         ..,
         definition: &jv_record_type,
@@ -41,6 +49,8 @@ rec {
     type jv_type_vector_value : jv_type = { .., element: &jv_type };
     type jv_type_map_value : jv_type = { .., value: &jv_type };
     type jv_type_set_value : jv_type = { .., element: &jv_type };
+    type jv_type_ordered_map_value : jv_type = { .., value: &jv_type };
+    type jv_type_ordered_set_value : jv_type = { .., element: &jv_type };
     type jv_type_record_value : jv_type = {
         ..,
         definition: &jv_record_type,
@@ -78,6 +88,8 @@ type jv_set_visit = fn(&?eq, &jv_value);
 type jvt_vector = { value: &pvt_vector };
 type jvt_map = { value: &phmt_map };
 type jvt_set = { value: &phst_set };
+type jvt_ordered_map = { value: &jvot_store };
+type jvt_ordered_set = { value: &jvot_store };
 
 fn jv_null() -> &jv_value {
     let out: &jv_null_value = { kind: jv_kind_null };
@@ -237,6 +249,157 @@ fn jv_any_equal(left: &?any, right: &?any) -> i32 {
         _ => { return 0; }
     }
     unreachable;
+}
+
+// Shared insertion-order storage. The HAMT maps each key to its vector index;
+// removed entries become null tombstones until trimming or compaction.
+fn jvo_empty(hash: &phm_hash, equal: &phm_equal) -> &jvo_store {
+    { index: phm_empty(hash, equal), entries: pv_empty() }
+}
+
+fn jvo_count(store: &jvo_store) -> i32 { phm_count(store.index) }
+
+fn jvo_slot(store: &jvo_store, key: &eq) -> (i32, i32) {
+    let (found, value) = phm_get(store.index, key);
+    if found == 0 { return (0, 0); }
+    (1, value! as i32_s)
+}
+
+fn jvo_get(store: &jvo_store, key: &eq) -> (i32, &?eq) {
+    let (found, slot) = jvo_slot(store, key);
+    if found == 0 { return (0, null); }
+    let entry = pv_at(store.entries, slot)! as &jvo_entry;
+    (1, entry.value)
+}
+
+fn jvo_contains(store: &jvo_store, key: &eq) -> i32 {
+    phm_contains(store.index, key)
+}
+
+fn jvo_next(store: &jvo_store, start: i32) -> (i32, &?jvo_entry) {
+    let i = start;
+    while i <s pv_count(store.entries) {
+        let raw = pv_at(store.entries, i);
+        i += 1;
+        if raw != null { return (i, raw! as &jvo_entry); }
+    }
+    (i, null)
+}
+
+fn jvo_compact(store: &jvo_store) -> &jvo_store {
+    let slots = pv_count(store.entries);
+    let count = jvo_count(store);
+    if slots <s (32 as i32) { return store; }
+    if slots <s count * 2 { return store; }
+    let index = phm_empty(store.index.hash, store.index.equal);
+    let entries = pv_empty();
+    let cursor: i32 = 0;
+    while cursor <s slots {
+        let raw = pv_at(store.entries, cursor);
+        if raw != null {
+            let entry = raw! as &jvo_entry;
+            index = phm_assoc(index, entry.key, pv_count(entries) as &i31);
+            entries = pv_push(entries, entry);
+        }
+        cursor += 1;
+    }
+    { index, entries }
+}
+
+fn jvo_assoc(store: &jvo_store, key: &eq, value: &?eq) -> &jvo_store {
+    let (found, slot) = jvo_slot(store, key);
+    if found != 0 {
+        let old = pv_at(store.entries, slot)! as &jvo_entry;
+        if old.value == value { return store; }
+        let entry: &jvo_entry = { key: old.key, value };
+        return { index: store.index, entries: pv_assoc(store.entries, slot, entry) };
+    }
+    let slot = pv_count(store.entries);
+    let entry: &jvo_entry = { key, value };
+    {
+        index: phm_assoc(store.index, key, slot as &i31),
+        entries: pv_push(store.entries, entry),
+    }
+}
+
+fn jvo_has_trailing_tombstone(entries: &pv_vector) -> i32 {
+    if pv_count(entries) == 0 { return 0; }
+    if pv_at(entries, pv_count(entries) - 1) == null { return 1; }
+    0
+}
+
+fn jvo_dissoc(store: &jvo_store, key: &eq) -> &jvo_store {
+    let (found, slot) = jvo_slot(store, key);
+    if found == 0 { return store; }
+    let index = phm_dissoc(store.index, key);
+    let entries = pv_assoc(store.entries, slot, null);
+    while jvo_has_trailing_tombstone(entries) != 0 {
+        entries = pv_pop(entries);
+    }
+    jvo_compact({ index, entries })
+}
+
+fn jvo_as_transient(store: &jvo_store) -> &jvot_store {
+    {
+        index: phm_as_transient(store.index),
+        entries: pv_as_transient(store.entries),
+    }
+}
+
+fn jvot_count(store: &jvot_store) -> i32 { phmt_count(store.index) }
+
+fn jvot_slot(store: &jvot_store, key: &eq) -> (i32, i32) {
+    let (found, value) = phmt_get(store.index, key);
+    if found == 0 { return (0, 0); }
+    (1, value! as i32_s)
+}
+
+fn jvot_get(store: &jvot_store, key: &eq) -> (i32, &?eq) {
+    let (found, slot) = jvot_slot(store, key);
+    if found == 0 { return (0, null); }
+    let entry = pvt_at(store.entries, slot)! as &jvo_entry;
+    (1, entry.value)
+}
+
+fn jvot_contains(store: &jvot_store, key: &eq) -> i32 {
+    phmt_contains(store.index, key)
+}
+
+fn jvot_assoc(store: &jvot_store, key: &eq, value: &?eq) {
+    let (found, slot) = jvot_slot(store, key);
+    if found != 0 {
+        let old = pvt_at(store.entries, slot)! as &jvo_entry;
+        if old.value == value { return; }
+        let entry: &jvo_entry = { key: old.key, value };
+        pvt_assoc(store.entries, slot, entry);
+        return;
+    }
+    let slot = pvt_count(store.entries);
+    let entry: &jvo_entry = { key, value };
+    phmt_assoc(store.index, key, slot as &i31);
+    pvt_push(store.entries, entry);
+}
+
+fn jvot_has_trailing_tombstone(entries: &pvt_vector) -> i32 {
+    if pvt_count(entries) == 0 { return 0; }
+    if pvt_at(entries, pvt_count(entries) - 1) == null { return 1; }
+    0
+}
+
+fn jvot_dissoc(store: &jvot_store, key: &eq) {
+    let (found, slot) = jvot_slot(store, key);
+    if found == 0 { return; }
+    phmt_dissoc(store.index, key);
+    pvt_assoc(store.entries, slot, null);
+    while jvot_has_trailing_tombstone(store.entries) != 0 {
+        pvt_pop(store.entries);
+    }
+}
+
+fn jvot_persistent(store: &jvot_store) -> &jvo_store {
+    let index = phmt_persistent(store.index);
+    let entries = pvt_persistent(store.entries);
+    jvo_compact({ index, entries })
 }
 
 fn jv_vector_empty() -> &jv_vector_value {
@@ -523,6 +686,259 @@ fn jvt_set_persistent(set: &jvt_set) -> &jv_set_value {
     { kind: jv_kind_set, value: phst_persistent(set.value) }
 }
 
+fn jv_ordered_map_empty() -> &jv_ordered_map_value {
+    {
+        kind: jv_kind_ordered_map,
+        value: jvo_empty(utf8_hash_key, utf8_equal_key),
+    }
+}
+
+fn jv_get_ordered_map(value: &jv_value) -> (i32, &?jv_ordered_map_value) {
+    match value {
+        found: &jv_ordered_map_value => { return (1, found); }
+        _ => { return (0, null); }
+    }
+    unreachable;
+}
+
+fn jv_require_ordered_map(value: &jv_value) -> &jv_ordered_map_value {
+    let (found, out) = jv_get_ordered_map(value);
+    if found == 0 { unreachable; }
+    out!
+}
+
+fn jv_ordered_map_count(map: &jv_ordered_map_value) -> i32 {
+    jvo_count(map.value)
+}
+
+fn jv_ordered_map_get(
+    map: &jv_ordered_map_value,
+    key: &utf8_string,
+) -> (i32, &?jv_value) {
+    let (found, value) = jvo_get(map.value, key);
+    if found == 0 { return (0, null); }
+    (1, value! as &jv_value)
+}
+
+fn jv_ordered_map_contains(map: &jv_ordered_map_value, key: &utf8_string) -> i32 {
+    jvo_contains(map.value, key)
+}
+
+fn jv_ordered_map_assoc(
+    map: &jv_ordered_map_value,
+    key: &utf8_string,
+    value: &jv_value,
+) -> &jv_ordered_map_value {
+    let raw = jvo_assoc(map.value, key, value);
+    if raw == map.value { return map; }
+    { kind: jv_kind_ordered_map, value: raw }
+}
+
+fn jv_ordered_map_dissoc(
+    map: &jv_ordered_map_value,
+    key: &utf8_string,
+) -> &jv_ordered_map_value {
+    let raw = jvo_dissoc(map.value, key);
+    if raw == map.value { return map; }
+    { kind: jv_kind_ordered_map, value: raw }
+}
+
+fn jv_ordered_map_each(
+    map: &jv_ordered_map_value,
+    context: &?eq,
+    visit: &jv_map_visit,
+) {
+    let cursor: i32 = 0;
+    while cursor <s pv_count(map.value.entries) {
+        let (next, entry) = jvo_next(map.value, cursor);
+        cursor = next;
+        if entry != null {
+            visit(
+                context,
+                entry!.key as &utf8_string,
+                entry!.value! as &jv_value,
+            );
+        }
+    }
+}
+
+fn jv_ordered_map_as_transient(map: &jv_ordered_map_value) -> &jvt_ordered_map {
+    { value: jvo_as_transient(map.value) }
+}
+
+fn jvt_ordered_map_count(map: &jvt_ordered_map) -> i32 {
+    jvot_count(map.value)
+}
+
+fn jvt_ordered_map_get(
+    map: &jvt_ordered_map,
+    key: &utf8_string,
+) -> (i32, &?jv_value) {
+    let (found, value) = jvot_get(map.value, key);
+    if found == 0 { return (0, null); }
+    (1, value! as &jv_value)
+}
+
+fn jvt_ordered_map_contains(map: &jvt_ordered_map, key: &utf8_string) -> i32 {
+    jvot_contains(map.value, key)
+}
+
+fn jvt_ordered_map_assoc(
+    map: &jvt_ordered_map,
+    key: &utf8_string,
+    value: &jv_value,
+) {
+    jvot_assoc(map.value, key, value);
+}
+
+fn jvt_ordered_map_dissoc(map: &jvt_ordered_map, key: &utf8_string) {
+    jvot_dissoc(map.value, key);
+}
+
+fn jvt_ordered_map_persistent(map: &jvt_ordered_map) -> &jv_ordered_map_value {
+    { kind: jv_kind_ordered_map, value: jvot_persistent(map.value) }
+}
+
+fn jv_ordered_set_empty() -> &jv_ordered_set_value {
+    {
+        kind: jv_kind_ordered_set,
+        value: jvo_empty(jv_hash_key, jv_equal_key),
+    }
+}
+
+fn jv_get_ordered_set(value: &jv_value) -> (i32, &?jv_ordered_set_value) {
+    match value {
+        found: &jv_ordered_set_value => { return (1, found); }
+        _ => { return (0, null); }
+    }
+    unreachable;
+}
+
+fn jv_require_ordered_set(value: &jv_value) -> &jv_ordered_set_value {
+    let (found, out) = jv_get_ordered_set(value);
+    if found == 0 { unreachable; }
+    out!
+}
+
+fn jv_ordered_set_count(set: &jv_ordered_set_value) -> i32 {
+    jvo_count(set.value)
+}
+
+fn jv_ordered_set_contains(set: &jv_ordered_set_value, value: &jv_value) -> i32 {
+    jvo_contains(set.value, value)
+}
+
+fn jv_ordered_set_add(
+    set: &jv_ordered_set_value,
+    value: &jv_value,
+) -> &jv_ordered_set_value {
+    let raw = jvo_assoc(set.value, value, 0 as &i31);
+    if raw == set.value { return set; }
+    { kind: jv_kind_ordered_set, value: raw }
+}
+
+fn jv_ordered_set_remove(
+    set: &jv_ordered_set_value,
+    value: &jv_value,
+) -> &jv_ordered_set_value {
+    let raw = jvo_dissoc(set.value, value);
+    if raw == set.value { return set; }
+    { kind: jv_kind_ordered_set, value: raw }
+}
+
+fn jv_ordered_set_each(
+    set: &jv_ordered_set_value,
+    context: &?eq,
+    visit: &jv_set_visit,
+) {
+    let cursor: i32 = 0;
+    while cursor <s pv_count(set.value.entries) {
+        let (next, entry) = jvo_next(set.value, cursor);
+        cursor = next;
+        if entry != null { visit(context, entry!.key as &jv_value); }
+    }
+}
+
+type jv_ordered_set_union_context = { out: mut &jv_ordered_set_value };
+
+fn jv_ordered_set_union_add(context: &?eq, value: &jv_value) {
+    let state = context! as &jv_ordered_set_union_context;
+    state.out = jv_ordered_set_add(state.out, value);
+}
+
+fn jv_ordered_set_union(
+    left: &jv_ordered_set_value,
+    right: &jv_ordered_set_value,
+) -> &jv_ordered_set_value {
+    let state: &jv_ordered_set_union_context = { out: left };
+    jv_ordered_set_each(right, state, jv_ordered_set_union_add);
+    state.out
+}
+
+type jv_ordered_set_filter_context = {
+    other: &jv_ordered_set_value,
+    out: mut &jv_ordered_set_value,
+    keep_present: i32,
+};
+
+fn jv_ordered_set_filter_add(context: &?eq, value: &jv_value) {
+    let state = context! as &jv_ordered_set_filter_context;
+    let present = jv_ordered_set_contains(state.other, value);
+    if present == state.keep_present {
+        state.out = jv_ordered_set_add(state.out, value);
+    }
+}
+
+fn jv_ordered_set_intersection(
+    left: &jv_ordered_set_value,
+    right: &jv_ordered_set_value,
+) -> &jv_ordered_set_value {
+    let state: &jv_ordered_set_filter_context = {
+        other: right,
+        out: jv_ordered_set_empty(),
+        keep_present: 1,
+    };
+    jv_ordered_set_each(left, state, jv_ordered_set_filter_add);
+    state.out
+}
+
+fn jv_ordered_set_difference(
+    left: &jv_ordered_set_value,
+    right: &jv_ordered_set_value,
+) -> &jv_ordered_set_value {
+    let state: &jv_ordered_set_filter_context = {
+        other: right,
+        out: jv_ordered_set_empty(),
+        keep_present: 0,
+    };
+    jv_ordered_set_each(left, state, jv_ordered_set_filter_add);
+    state.out
+}
+
+fn jv_ordered_set_as_transient(set: &jv_ordered_set_value) -> &jvt_ordered_set {
+    { value: jvo_as_transient(set.value) }
+}
+
+fn jvt_ordered_set_count(set: &jvt_ordered_set) -> i32 {
+    jvot_count(set.value)
+}
+
+fn jvt_ordered_set_contains(set: &jvt_ordered_set, value: &jv_value) -> i32 {
+    jvot_contains(set.value, value)
+}
+
+fn jvt_ordered_set_add(set: &jvt_ordered_set, value: &jv_value) {
+    jvot_assoc(set.value, value, 0 as &i31);
+}
+
+fn jvt_ordered_set_remove(set: &jvt_ordered_set, value: &jv_value) {
+    jvot_dissoc(set.value, value);
+}
+
+fn jvt_ordered_set_persistent(set: &jvt_ordered_set) -> &jv_ordered_set_value {
+    { kind: jv_kind_ordered_set, value: jvot_persistent(set.value) }
+}
+
 type jv_map_equal_context = {
     right: &jv_map_value,
     equal: mut i32,
@@ -545,6 +961,64 @@ fn jv_set_equal_entry(context: &?eq, value: &jv_value) {
     let state = context! as &jv_set_equal_context;
     if state.equal == 0 { return; }
     if jv_set_contains(state.right, value) == 0 { state.equal = 0; }
+}
+
+fn jv_ordered_map_equal(
+    left: &jv_ordered_map_value,
+    right: &jv_ordered_map_value,
+) -> i32 {
+    if jv_ordered_map_count(left) != jv_ordered_map_count(right) { return 0; }
+    let left_cursor: i32 = 0;
+    let right_cursor: i32 = 0;
+    let matched: i32 = 0;
+    while matched <s jv_ordered_map_count(left) {
+        let (left_next, left_entry) = jvo_next(left.value, left_cursor);
+        let (right_next, right_entry) = jvo_next(right.value, right_cursor);
+        left_cursor = left_next;
+        right_cursor = right_next;
+        if left_entry == null { return 0; }
+        if right_entry == null { return 0; }
+        if utf8_equal(
+            left_entry!.key as &utf8_string,
+            right_entry!.key as &utf8_string,
+        ) == 0 {
+            return 0;
+        }
+        if jv_equal(
+            left_entry!.value! as &jv_value,
+            right_entry!.value! as &jv_value,
+        ) == 0 {
+            return 0;
+        }
+        matched += 1;
+    }
+    1
+}
+
+fn jv_ordered_set_equal(
+    left: &jv_ordered_set_value,
+    right: &jv_ordered_set_value,
+) -> i32 {
+    if jv_ordered_set_count(left) != jv_ordered_set_count(right) { return 0; }
+    let left_cursor: i32 = 0;
+    let right_cursor: i32 = 0;
+    let matched: i32 = 0;
+    while matched <s jv_ordered_set_count(left) {
+        let (left_next, left_entry) = jvo_next(left.value, left_cursor);
+        let (right_next, right_entry) = jvo_next(right.value, right_cursor);
+        left_cursor = left_next;
+        right_cursor = right_next;
+        if left_entry == null { return 0; }
+        if right_entry == null { return 0; }
+        if jv_equal(
+            left_entry!.key as &jv_value,
+            right_entry!.key as &jv_value,
+        ) == 0 {
+            return 0;
+        }
+        matched += 1;
+    }
+    1
 }
 
 fn jv_equal(left: &jv_value, right: &jv_value) -> i32 {
@@ -597,6 +1071,12 @@ fn jv_equal(left: &jv_value, right: &jv_value) -> i32 {
             jv_set_each(a, state, jv_set_equal_entry);
             return state.equal;
         }
+        a: &jv_ordered_map_value => {
+            return jv_ordered_map_equal(a, right as &jv_ordered_map_value);
+        }
+        a: &jv_ordered_set_value => {
+            return jv_ordered_set_equal(a, right as &jv_ordered_set_value);
+        }
         a: &jv_record_value => {
             return jv_record_equal(a, right as &jv_record_value);
         }
@@ -627,6 +1107,33 @@ fn jv_hash_map_entry(context: &?eq, key: &utf8_string, value: &jv_value) {
 
 fn jv_hash_set_entry(context: &?eq, value: &jv_value) {
     jv_hash_unordered_add(context! as &jv_hash_unordered_context, jv_hash(value));
+}
+
+fn jv_hash_ordered_map(value: &jv_ordered_map_value) -> i32 {
+    let state = jv_hash_tag(jv_kind_ordered_map);
+    let cursor: i32 = 0;
+    while cursor <s pv_count(value.value.entries) {
+        let (next, entry) = jvo_next(value.value, cursor);
+        cursor = next;
+        if entry != null {
+            state = wax_hash_add_i32(state, utf8_hash(entry!.key as &utf8_string));
+            state = wax_hash_add_i32(state, jv_hash(entry!.value! as &jv_value));
+        }
+    }
+    wax_hash_finalize(state, jv_ordered_map_count(value) * 8)
+}
+
+fn jv_hash_ordered_set(value: &jv_ordered_set_value) -> i32 {
+    let state = jv_hash_tag(jv_kind_ordered_set);
+    let cursor: i32 = 0;
+    while cursor <s pv_count(value.value.entries) {
+        let (next, entry) = jvo_next(value.value, cursor);
+        cursor = next;
+        if entry != null {
+            state = wax_hash_add_i32(state, jv_hash(entry!.key as &jv_value));
+        }
+    }
+    wax_hash_finalize(state, jv_ordered_set_count(value) * 4)
 }
 
 fn jv_hash(value: &jv_value) -> i32 {
@@ -681,6 +1188,8 @@ fn jv_hash(value: &jv_value) -> i32 {
             let hash = wax_hash_add_i32(jv_hash_tag(jv_kind_set), state.sum);
             return wax_hash_finalize(wax_hash_add_i32(hash, state.xor), jv_set_count(found) * 4);
         }
+        found: &jv_ordered_map_value => { return jv_hash_ordered_map(found); }
+        found: &jv_ordered_set_value => { return jv_hash_ordered_set(found); }
         found: &jv_record_value => { return jv_record_hash(found); }
         _ => { unreachable; }
     }
