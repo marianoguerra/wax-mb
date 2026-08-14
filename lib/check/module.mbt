@@ -357,6 +357,10 @@ pub fn check_module(
     warn_unused~,
   )
   declare_fields(ctx, fields)
+  // Once the whole table exists: a rec group's members may name each other, so
+  // no member's relationship to its supertype settles until every one of them
+  // has been interned.
+  check_type_definitions(ctx)
   // The module-wide attribute constraints -- one export per name, one start,
   // one module name -- which no single field can answer on its own.
   check_attributes(ctx, fields)

@@ -342,17 +342,15 @@ pub fn comptype(
       n_fieldtype(ctx, diagnostics, field).map(f => {
         @type_store.CompType::Array(f)
       })
-    // A continuation is a continuation OF a function type: `cont ct` where
-    // `ct` is itself a continuation names nothing to run.
-    Cont(idx) => {
-      if ctx.types.find_no_mark(idx.name) is Some((_, def)) &&
-        !(def.typ is Func(_)) {
-        expected_func_type(diagnostics, idx.loc)
-      }
+    // A continuation is a continuation OF a function type -- `cont ct` where
+    // `ct` is itself a continuation names nothing to run -- but that is not
+    // asked here: within a rec group the wrapped type may be declared after
+    // this one, so the answer only settles once the group is interned.
+    // `check_type_definitions` asks it, at this same span.
+    Cont(idx) =>
       resolve_type_ref(ctx, diagnostics, idx).map(r => {
         @type_store.CompType::Cont(r)
       })
-    }
   }
 }
 

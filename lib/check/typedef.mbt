@@ -315,3 +315,105 @@ fn check_descriptors(
     }
   }
 }
+
+///|
+/// Check every declared type against the supertype it names.
+///
+/// This runs over the finished type table rather than at each declaration,
+/// because a rec group's members may name each other: `a: b` can be written
+/// before `b` exists, and the answer only settles once the whole group is
+/// interned. Everything here is about the RELATIONSHIP between a type and its
+/// supertype, so the supertype reference is where each report goes -- that is
+/// what the author has to change.
+pub fn check_type_definitions(ctx : @typing_env.ModuleContext) -> Unit {
+  let info = ctx.type_context.subtyping_info()
+  for entry in ctx.type_context.types.iter_entries() {
+    let (idx, st) = entry.1
+    // A rec-group back-reference has no store index of its own yet; the member
+    // it stands for is visited under its own name.
+    guard idx is Def(id) else { continue }
+    let ty = info.get_subtype(id)
+    // A continuation type wraps a FUNCTION type and nothing else. Pointed at
+    // the wrapped type as the source wrote it, not at the continuation.
+    if ty.typ is Cont(ft) && st.typ is Cont(src) {
+      if !(info.get_subtype(ft).typ is Func(_)) {
+        expected_func_type(ctx.diagnostics, src.loc)
+      }
+    }
+    guard ty.supertype is Some(j) else { continue }
+    guard st.supertype is Some(sup) else { continue }
+    let sup_ty = info.get_subtype(j)
+    if sup_ty.final_ {
+      final_supertype(ctx.diagnostics, sup.loc, sup.name)
+      continue
+    }
+    // A descriptor is inherited, so a subtype of a described type is described
+    // too -- by a subtype of the same descriptor. It may ADD one its supertype
+    // lacks, since nothing was promised about it. Being a descriptor, on the
+    // other hand, is all or nothing: the two must describe types standing in
+    // the same relation they do.
+    let descriptor_ok = match sup_ty.descriptor {
+      None => true
+      Some(dp) =>
+        match ty.descriptor {
+          Some(ds) => @type_store.heap_subtype(info, Type(ds), Type(dp))
+          None => false
+        }
+    }
+    let describes_ok = match (ty.describes, sup_ty.describes) {
+      (None, None) => true
+      (Some(os), Some(op)) => @type_store.heap_subtype(info, Type(os), Type(op))
+      _ => false
+    }
+    if !(structurally_extends(info, ty.typ, sup_ty.typ) &&
+      descriptor_ok &&
+      describes_ok) {
+      invalid_subtype(ctx.diagnostics, sup.loc, sup.name)
+    }
+  }
+}
+
+///|
+/// Whether one composite type stands where another does.
+///
+/// A struct may ADD fields but never change one; an array's element is a field
+/// like any other; and a function's PARAMETERS go the other way round from its
+/// results, since it is the caller who supplies them and the function that
+/// hands them back. Two composites of different kinds never relate.
+fn structurally_extends(
+  info : @type_store.SubtypingInfo,
+  ty : @type_store.CompType[@type_store.Id],
+  sup : @type_store.CompType[@type_store.Id],
+) -> Bool {
+  match (ty, sup) {
+    (Func(a), Func(b)) => {
+      guard a.params.length() == b.params.length() &&
+        a.results.length() == b.results.length() else {
+        return false
+      }
+      for k, p in a.params {
+        if !@type_store.val_subtype(info, b.params[k], p) {
+          return false
+        }
+      }
+      for k, r in a.results {
+        if !@type_store.val_subtype(info, r, b.results[k]) {
+          return false
+        }
+      }
+      true
+    }
+    (Struct(fs), Struct(gs)) => {
+      guard gs.length() <= fs.length() else { return false }
+      for k, g in gs {
+        if !field_subtype(info, fs[k], g) {
+          return false
+        }
+      }
+      true
+    }
+    (Array(f), Array(g)) => field_subtype(info, f, g)
+    (Cont(a), Cont(b)) => @type_store.heap_subtype(info, Type(a), Type(b))
+    _ => false
+  }
+}

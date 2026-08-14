@@ -2181,6 +2181,40 @@ pub fn call_targets_direct_call(
 }
 
 ///|
+/// A supertype that was not declared extensible.
+pub fn final_supertype(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The type")
+    .sep(@message.ident(name))
+    .sep(@message.text("is final and cannot be extended; declare it"))
+    .sep(@message.code("open"))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
+/// A type that does not stand where its declared supertype does.
+pub fn invalid_subtype(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This type is not a valid subtype of")
+    .sep(@message.ident(name))
+    .seq(@message.text(".")),
+  )
+}
+
+///|
 /// A stack-switching receiver that is not a declared continuation.
 pub fn expected_cont_type(
   ctx : @diagnostic.Context,
