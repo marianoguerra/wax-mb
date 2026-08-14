@@ -77,6 +77,24 @@ fn ct_vector_fold(context: &?eq, index: i32, value: &?eq) {
 #[export = "collections_boundaries"]
 fn ct_boundaries() -> i32 {
     ct_stage = 1;
+    let int_map = phm_assoc(
+        phm_empty(wax_hash_i31_key, wax_equal_i31_key),
+        7 as &i31,
+        70 as &i31,
+    );
+    let (int_found, int_value) = phm_get(int_map, 7 as &i31);
+    ct_assert(if int_found == 1 { 1 } else { 0 });
+    ct_assert_value(int_value, 0, 70);
+    let bytes_a: &wax_hash_bytes = [wax_hash_bytes| 1, 2, 3];
+    let bytes_b: &wax_hash_bytes = [wax_hash_bytes| 1, 2, 3];
+    let bytes_map = phm_assoc(
+        phm_empty(wax_hash_bytes_key, wax_equal_bytes_key),
+        bytes_a,
+        80 as &i31,
+    );
+    let (bytes_found, bytes_value) = phm_get(bytes_map, bytes_b);
+    ct_assert(if bytes_found == 1 { 1 } else { 0 });
+    ct_assert_value(bytes_value, 0, 80);
     let map = phm_empty(ct_hash, ct_equal);
     let i: i32 = 0;
     while i <s (17 as i32) {

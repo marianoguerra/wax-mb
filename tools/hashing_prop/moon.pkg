@@ -1,0 +1,8 @@
+import {
+  "marianoguerra/wax",
+  "moonbitlang/core/env",
+  "moonbitlang/core/quickcheck",
+  "moonbitlang/x/fs",
+}
+
+pkgtype(kind: "executable")

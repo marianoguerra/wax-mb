@@ -1,0 +1,76 @@
+// Test-only entry points for stdlib/collections/hashing.wax.
+
+fn wax_hash_assert(condition: i32) {
+    if condition == 0 { unreachable; }
+}
+
+#[export = "hashing_boundaries"]
+fn wax_hash_boundaries() -> i32 {
+    let empty: &wax_hash_bytes = [wax_hash_bytes| 0; 0];
+    wax_hash_assert(if wax_hash_bytes_seeded(empty, 0) == 0 { 1 } else { 0 });
+    wax_hash_assert(
+        if wax_hash_bytes_seeded(empty, 42) == 0x087fcd5c { 1 } else { 0 },
+    );
+    let sentence: &wax_hash_bytes = [wax_hash_bytes|
+        84, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98, 114, 111, 119, 110, 32,
+        102, 111, 120, 32, 106, 117, 109, 112, 115, 32, 111, 118, 101, 114, 32, 116,
+        104, 101, 32, 108, 97, 122, 121, 32, 100, 111, 103,
+    ];
+    wax_hash_assert(
+        if wax_hash_bytes_seeded(sentence, 42) == 0x347ca102 { 1 } else { 0 },
+    );
+    let word: &wax_hash_bytes = [wax_hash_bytes| 1, 2, 3, 4];
+    wax_hash_assert(
+        if wax_hash_bytes_seeded(word, 17) == wax_hash_i32_seeded(0x04030201, 17) {
+            1
+        } else { 0 },
+    );
+    let word_copy: &wax_hash_bytes = [wax_hash_bytes| 1, 2, 3, 4];
+    let different: &wax_hash_bytes = [wax_hash_bytes| 1, 2, 3, 5];
+    wax_hash_assert(if wax_equal_bytes_key(word, word_copy) == 1 { 1 } else { 0 });
+    wax_hash_assert(if wax_equal_bytes_key(word, different) == 0 { 1 } else { 0 });
+    wax_hash_assert(if wax_equal_i31_key(7 as &i31, 7 as &i31) == 1 { 1 } else { 0 });
+    wax_hash_assert(if wax_equal_i31_key(7 as &i31, 8 as &i31) == 0 { 1 } else { 0 });
+    1
+}
+
+fn wax_hash_reference_bytes(case_index: i32) -> &wax_hash_bytes {
+    let length = case_index %u 257;
+    let bytes = [wax_hash_bytes| 0; length];
+    let state = 0x6d2b79f5 ^ case_index;
+    let i: i32 = 0;
+    while i <s length {
+        state = state * 1664525 + 1013904223;
+        bytes[i] = state >>u 24;
+        i += 1;
+    }
+    bytes
+}
+
+#[export = "hashing_reference_case"]
+fn wax_hash_reference_case(case_index: i32) -> i32 {
+    let seed = case_index * 0x9e3779b9;
+    wax_hash_bytes_seeded(wax_hash_reference_bytes(case_index), seed)
+}
+
+#[export = "hashing_i31_case"]
+fn wax_hash_i31_case(value: i32) -> i32 {
+    wax_hash_i32(value)
+}
+
+#[export = "hashing_bench"]
+fn wax_hash_bench(size: i32, rounds: i32) -> i32 {
+    let bytes = [wax_hash_bytes| 0; size];
+    let i: i32 = 0;
+    while i <s size {
+        bytes[i] = i * 37 + 11;
+        i += 1;
+    }
+    let checksum: i32 = 0;
+    i = 0;
+    while i <s rounds {
+        checksum ^= wax_hash_bytes_seeded(bytes, i);
+        i += 1;
+    }
+    checksum
+}

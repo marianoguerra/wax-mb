@@ -285,6 +285,8 @@ fn main raise {
     .array_with_size(steps)
     .samples(count~, size=steps, seed~)
   let out = StringBuilder::new()
+  out.write_string(@fs.read_file_to_string("stdlib/collections/hashing.wax"))
+  out.write_string("\n")
   out.write_string(
     @fs.read_file_to_string("stdlib/collections/persistent_hash_map.wax"),
   )

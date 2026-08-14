@@ -65,6 +65,21 @@ collections-test:
 collections-bench size="10000":
     tools/collections-bench.sh {{size}}
 
+# Uses published vectors, MoonBit QuickCheck, the original algorithm's C
+# implementation, and stable distribution/avalanche gates.
+#
+# Test the optional Wax hashing utilities.
+[group('dev')]
+hashing-test:
+    tools/hashing-test.sh
+
+# Report MurmurHash3 throughput; timings are intentionally not CI thresholds.
+#
+# Benchmark hashing SIZE-byte inputs for ROUNDS hashes per sample.
+[group('dev')]
+hashing-bench size="4096" rounds="2000":
+    tools/hashing-bench.sh {{size}} {{rounds}}
+
 # Run one library package's tests, e.g. `just test-pkg syntax/parser`.
 [group('dev')]
 test-pkg pkg:
@@ -137,7 +152,7 @@ update:
 
 # Check, format, unit tests, both hermetic oracles, cram -- run before committing.
 [group('gates')]
-quick: check fmt test collections-test diff cram
+quick: check fmt test collections-test hashing-test diff cram
 
 # Mirrors .github/workflows/check.yml, including the two `git diff --exit-code`
 # steps -- which is how a stale `.mbti` or an unformatted file is caught.
@@ -152,6 +167,7 @@ ci:
     git diff --exit-code
     moon test --target all
     tools/collections-test.sh
+    tools/hashing-test.sh
     moon build --target native
     {{waxdiff}} run --oracle 1 --oracle 3 --impl {{impl}}
     tools/run-cram.sh

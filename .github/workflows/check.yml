@@ -50,6 +50,9 @@ jobs:
       - name: persistent collections
         run: tools/collections-test.sh
 
+      - name: hashing utilities
+        run: tools/hashing-test.sh
+
       # Reported, never gated: it is a text search, and a library may
       # legitimately export what this repository does not call. Printing it on
       # every run is what keeps the number from drifting upwards unnoticed.
