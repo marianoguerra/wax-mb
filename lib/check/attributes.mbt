@@ -218,7 +218,7 @@ fn check_import_attributes(
 }
 
 ///|
-pub fn check_attributes(
+fn check_attributes(
   ctx : @typing_env.ModuleContext,
   fields : @ast.Module[@basic.Location],
 ) -> Unit {

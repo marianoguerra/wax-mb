@@ -14,13 +14,13 @@
 ///
 /// Synthetic names are spelled with a leading `<`, which the grammar cannot
 /// produce -- that is why the spelling was chosen.
-pub fn is_synthetic(name : String) -> Bool {
+fn is_synthetic(name : String) -> Bool {
   name.has_prefix("<")
 }
 
 ///|
 /// Record a name for an index, unless it was generated.
-pub fn note_name(into : Map[Int, Bytes], index : Int, name : String) -> Unit {
+fn note_name(into : Map[Int, Bytes], index : Int, name : String) -> Unit {
   if !is_synthetic(name) {
     into[index] = utf8_of(name)
   }
@@ -32,7 +32,7 @@ pub fn note_name(into : Map[Int, Bytes], index : Int, name : String) -> Unit {
 /// Read off the checker's own table, which is where a source name and the index
 /// it interned to are joined. A type that several names reach keeps the first,
 /// because that is the one the reference emits.
-pub fn Lowering::type_names(self : Lowering, m : @wasm_bin.Module) -> Unit {
+fn Lowering::type_names(self : Lowering, m : @wasm_bin.Module) -> Unit {
   // A NAME names its own emitted entry, not the store entry it shares with a
   // like-shaped sibling -- which is the whole reason the two indices are
   // different numbers. `by_name` holds exactly the names that reached the
@@ -66,7 +66,7 @@ pub fn Lowering::type_names(self : Lowering, m : @wasm_bin.Module) -> Unit {
 
 ///|
 /// The module's own name, if it declared one.
-pub fn Lowering::module_name(
+fn Lowering::module_name(
   self : Lowering,
   m : @wasm_bin.Module,
   fields : @ast.Module[@basic.Location],
@@ -92,7 +92,7 @@ pub fn Lowering::module_name(
 /// has no other place for, so it survives as tool-conventions metadata. `+`
 /// means "used"; the reference emits nothing else, and a repeated declaration
 /// is idempotent rather than duplicated.
-pub fn Lowering::target_features(
+fn Lowering::target_features(
   self : Lowering,
   m : @wasm_bin.Module,
   fields : @ast.Module[@basic.Location],
@@ -114,7 +114,7 @@ pub fn Lowering::target_features(
 
 ///|
 /// The optimization level `#[run_once]` names.
-pub let run_once_level : Int = 127
+let run_once_level : Int = 127
 
 ///|
 /// A function's compilation priority, if it declared one.
@@ -122,9 +122,7 @@ pub let run_once_level : Int = 127
 /// `#[priority]` orders compilation and `#[optimization]` sets the effort; the
 /// second is meaningless without the first, which is why they are one record
 /// rather than two.
-pub fn function_priority(
-  attributes : Array[@ast.Attribute],
-) -> @wasm_bin.Priority? {
+fn function_priority(attributes : Array[@ast.Attribute]) -> @wasm_bin.Priority? {
   let mut compilation : Int? = None
   let mut optimization : Int? = None
   for a in attributes {

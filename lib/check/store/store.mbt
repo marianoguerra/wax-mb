@@ -8,7 +8,7 @@
 /// user-facing diagnostic: a violation means the caller mis-normalized the
 /// group, which is the source-versus-canonical index confusion class, and is
 /// rejected rather than left to silently corrupt the subtyping relation.
-pub suberror MalformedRecGroup {
+suberror MalformedRecGroup {
   /// A `Rec` back-reference that does not name a member of this group.
   BackReferenceOutOfGroup(Int, Int)
   /// A `Def` naming a type that is not defined yet -- including one in this

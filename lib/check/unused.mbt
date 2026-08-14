@@ -35,7 +35,7 @@ fn externally_reachable(attributes : Array[@ast.Attribute]) -> Bool {
 ///
 /// Run after the body is typed, since that is when the reads are known, and
 /// before the next function's, so the diagnostics stay in source order.
-pub fn warn_unused_in_function(ctx : @typing_env.ModuleContext) -> Unit {
+fn warn_unused_in_function(ctx : @typing_env.ModuleContext) -> Unit {
   guard ctx.warn_unused else { return }
   for name in ctx.local_decls {
     if !ctx.read_locals.contains(name.loc.start.cnum) && !intentional(name.name) {
@@ -141,7 +141,7 @@ fn live_types(
 
 ///|
 /// Report every module field nothing that can run refers to.
-pub fn warn_unused_fields(
+fn warn_unused_fields(
   ctx : @typing_env.ModuleContext,
   fields : @ast.Module[@basic.Location],
 ) -> Unit {

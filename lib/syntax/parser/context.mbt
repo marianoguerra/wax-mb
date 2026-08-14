@@ -44,7 +44,7 @@ let parenthesized : Set[(Int, Int)] = Set([], capacity=64)
 
 ///|
 /// Record that `i` was written inside parentheses.
-pub fn mark_parenthesized(i : Instr[Location]) -> Instr[Location] {
+fn mark_parenthesized(i : Instr[Location]) -> Instr[Location] {
   parenthesized.add((i.info.start.cnum, i.info.end.cnum))
   i
 }
@@ -95,7 +95,7 @@ fn reject_chained_comparison(
 /// list is required" -- where the token stream is fine but what it says is not.
 /// Their message text is hand-written in the reference, so unlike the automaton
 /// messages it can be reproduced exactly.
-pub suberror SyntaxError {
+suberror SyntaxError {
   SyntaxError(
     loc~ : Location,
     message~ : String,
@@ -124,7 +124,7 @@ let semantic_error : Ref[SyntaxError?] = @ref.new(None)
 /// The returned value is never used for anything: the driver discards the whole
 /// tree whenever an error was recorded. It exists only because the action has
 /// to return something of the right type.
-pub fn[T] fail_at(
+fn[T] fail_at(
   loc : Location,
   message : String,
   default~ : T,
@@ -139,7 +139,7 @@ pub fn[T] fail_at(
 
 ///|
 /// Record a syntax error where the action has nothing to return.
-pub fn record_error(
+fn record_error(
   loc : Location,
   message : String,
   hint? : String? = None,
@@ -152,13 +152,13 @@ pub fn record_error(
 
 ///|
 /// The semantic error the last parse recorded, if it hit one.
-pub fn taken_error() -> SyntaxError? {
+fn taken_error() -> SyntaxError? {
   semantic_error.val
 }
 
 ///|
 /// Build a location from a MoonYacc `$loc`-style position pair.
-pub fn loc_of(p : (Position, Position)) -> Location {
+fn loc_of(p : (Position, Position)) -> Location {
   { start: p.0, end: p.1 }
 }
 
@@ -170,7 +170,7 @@ pub fn loc_of(p : (Position, Position)) -> Location {
 ///
 /// A freshly parsed instruction carries no hints (a hint attribute fills them
 /// in afterwards) and no `expected` type (that is a decompiler-only channel).
-pub fn with_loc(
+fn with_loc(
   p : (Position, Position),
   desc : InstrDesc[Location],
 ) -> Instr[Location] {
@@ -182,7 +182,7 @@ pub fn with_loc(
 ///|
 /// Build any other located node -- a module field, an identifier, a body -- and
 /// register its span.
-pub fn[T] annot(p : (Position, Position), desc : T) -> Annotated[T, Location] {
+fn[T] annot(p : (Position, Position), desc : T) -> Annotated[T, Location] {
   let info = loc_of(p)
   context.val.record_pos(info)
   { desc, info }
@@ -194,7 +194,7 @@ pub fn[T] annot(p : (Position, Position), desc : T) -> Annotated[T, Location] {
 /// Used where a branch of a conditional group must keep its own
 /// `#[if] { ... }` span, marker included, rather than only the combined span of
 /// the pair -- the editor's dead-branch dimming locates a single branch by it.
-pub fn[T] respan(
+fn[T] respan(
   a : Annotated[T, Location],
   p : (Position, Position),
 ) -> Annotated[T, Location] {
@@ -203,7 +203,7 @@ pub fn[T] respan(
 
 ///|
 /// The signature of a block that did not state one.
-pub fn blocktype(bt : FuncType?) -> FuncType {
+fn blocktype(bt : FuncType?) -> FuncType {
   match bt {
     Some(t) => t
     None => { params: [], results: [] }
@@ -216,7 +216,7 @@ pub fn blocktype(bt : FuncType?) -> FuncType {
 /// The operator gets a span of its own (`oploc`, its token) rather than only
 /// the whole expression's, so a comment written between an operand and the
 /// operator attaches where it was written.
-pub fn binop(
+fn binop(
   sloc : (Position, Position),
   oploc : (Position, Position),
   op : @ast.BinOp,
@@ -228,7 +228,7 @@ pub fn binop(
 }
 
 ///|
-pub fn unop(
+fn unop(
   sloc : (Position, Position),
   oploc : (Position, Position),
   op : @ast.UnOp,

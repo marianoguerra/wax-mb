@@ -18,7 +18,7 @@
 /// takes its own slot, because that is what the module holds when both
 /// branches are lowered side by side for the text form, and each records where
 /// it was written so a reference can be answered from the site that asks.
-pub struct Space {
+struct Space {
   by_name : Map[String, Array[(Int, @basic.Location)]]
   mut next : Int
 }
@@ -30,7 +30,7 @@ pub fn Space::new() -> Space {
 
 ///|
 /// Assign the next index to `name`, and return it.
-pub fn Space::assign(self : Space, name : String, loc : @basic.Location) -> Int {
+fn Space::assign(self : Space, name : String, loc : @basic.Location) -> Int {
   let i = self.next
   self.next = i + 1
   match self.by_name.get(name) {
@@ -100,7 +100,7 @@ pub fn Space::length(self : Space) -> Int {
 
 ///|
 /// Every index space of one module.
-pub struct Indices {
+struct Indices {
   funcs : Space
   globals : Space
   memories : Space
@@ -108,13 +108,6 @@ pub struct Indices {
   tags : Space
   datas : Space
   elems : Space
-  /// How many of each space are IMPORTS, which the format requires to come
-  /// first. Kept because a definition's index is its position AFTER them.
-  mut imported_funcs : Int
-  mut imported_globals : Int
-  mut imported_memories : Int
-  mut imported_tables : Int
-  mut imported_tags : Int
 }
 
 ///|
@@ -127,11 +120,6 @@ pub fn Indices::new() -> Indices {
     tags: Space::new(),
     datas: Space::new(),
     elems: Space::new(),
-    imported_funcs: 0,
-    imported_globals: 0,
-    imported_memories: 0,
-    imported_tables: 0,
-    imported_tags: 0,
   }
 }
 
@@ -143,7 +131,7 @@ pub fn Indices::new() -> Indices {
 /// indices and the second claims the rest. Doing it in one pass would give a
 /// definition written above an import the lower index, which is the one thing
 /// the binary format does not allow.
-pub fn assign_indices(
+fn assign_indices(
   ctx : @typing_env.ModuleContext,
   fields : @ast.Module[@basic.Location],
 ) -> Indices {
@@ -178,11 +166,6 @@ pub fn assign_indices(
       _ => ()
     }
   })
-  idx.imported_funcs = idx.funcs.length()
-  idx.imported_globals = idx.globals.length()
-  idx.imported_memories = idx.memories.length()
-  idx.imported_tables = idx.tables.length()
-  idx.imported_tags = idx.tags.length()
   @typing.walk_fields(ctx, fields, field => {
     match field.desc {
       Func(name~, ..) => {

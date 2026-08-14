@@ -9,7 +9,7 @@
 
 ///|
 /// A completed lex: the tokens, any diagnostics, and the collected trivia.
-pub struct LexResult {
+pub(all) struct LexResult {
   tokens : @tokens.Triples
   errors : Array[Report]
   trivia : @trivia.Context

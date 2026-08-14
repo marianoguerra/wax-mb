@@ -12,7 +12,7 @@
 /// is what the name is already taken by. The two need not agree -- a `memory m`
 /// and a `table m` share one name space -- and hearing "a memory named 'm' is
 /// already bound" at the table is the whole answer.
-pub fn name_already_bound(
+fn name_already_bound(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,

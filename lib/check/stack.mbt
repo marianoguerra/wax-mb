@@ -38,7 +38,7 @@ pub(all) enum Stack {
 /// The placeholder cell recorded alongside lets the hole that ends up consuming
 /// it report at its own location, rather than the popping code needing to know
 /// how the missing values are distributed.
-pub(all) struct MissingBatch {
+struct MissingBatch {
   mut hole_reported : Bool
   hole_actual : Int
   hole_expected : Int
@@ -300,14 +300,14 @@ pub fn leftovers(st : Stack) -> (Array[@basic.Location], Bool) {
 /// construct, where a missing argument belongs.
 ///
 /// One character wide, not empty: a caret has to sit on something.
-pub fn loc_first_char(loc : @basic.Location) -> @basic.Location {
+fn loc_first_char(loc : @basic.Location) -> @basic.Location {
   { start: loc.start, end: { ..loc.start, cnum: loc.start.cnum + 1 } }
 }
 
 ///|
 /// The span of the LAST CHARACTER of `loc` -- the closing bracket, where a
 /// missing result belongs.
-pub fn loc_last_char(loc : @basic.Location) -> @basic.Location {
+fn loc_last_char(loc : @basic.Location) -> @basic.Location {
   { start: { ..loc.end, cnum: loc.end.cnum - 1 }, end: loc.end }
 }
 

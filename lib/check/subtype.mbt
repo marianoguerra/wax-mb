@@ -11,7 +11,7 @@
 ///|
 /// The part of `t1` that `t2` does not already admit -- used to narrow a
 /// nullable reference once null has been ruled out.
-pub fn diff_ref_type(
+fn diff_ref_type(
   t1 : @wasm_types.RefType[@ast.Ident],
   t2 : @wasm_types.RefType[@ast.Ident],
 ) -> @wasm_types.RefType[@ast.Ident] {
@@ -55,7 +55,7 @@ pub fn field_subtype(
 
 ///|
 /// Is this the result cell of a block whose type is still being inferred?
-pub fn is_inferring(ty : @infer.Cell[@infer.InferredType]) -> Bool {
+fn is_inferring(ty : @infer.Cell[@infer.InferredType]) -> Bool {
   ty.get() is Collecting(_)
 }
 
@@ -71,7 +71,7 @@ pub fn is_inferring(ty : @infer.Cell[@infer.InferredType]) -> Bool {
 ///
 /// With no declared result the `Collecting` cell would leak out as a value, so
 /// the caller keeps the operand's own type instead.
-pub fn resolve_declared(
+fn resolve_declared(
   ty : @infer.Cell[@infer.InferredType],
 ) -> @infer.Cell[@infer.InferredType] {
   for cur = ty {

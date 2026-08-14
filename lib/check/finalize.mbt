@@ -23,7 +23,7 @@
 /// an i32, one too large for that an i64, a float an f64. `Unknown` and `Error`
 /// take i32 as well -- there is nothing to go on, and i32 is what the reader
 /// will expect to see.
-pub fn resolve_omitted_valtype(
+fn resolve_omitted_valtype(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ty : @infer.Cell[@infer.InferredType],
@@ -65,7 +65,7 @@ pub fn resolve_omitted_valtype(
 ///|
 /// The width a flexible type would take on its own, with nothing to constrain
 /// it. `None` for anything already committed.
-pub fn flexible_default_internal(
+fn flexible_default_internal(
   ty : @infer.InferredType,
 ) -> @wasm_types.ValType[@type_store.Id]? {
   match ty {
@@ -83,7 +83,7 @@ pub fn flexible_default_internal(
 /// literals infers, say, i64 only because something in the surrounding text
 /// pinned them -- delete the annotation and a re-parse defaults them to i32,
 /// and the block's type changes. The annotation is then load-bearing and stays.
-pub fn natural_width_forces_annotation(
+fn natural_width_forces_annotation(
   natural : Array[@infer.InferredType],
   inferred : @infer.Cell[@infer.InferredType]?,
 ) -> Bool {
@@ -103,7 +103,7 @@ pub fn natural_width_forces_annotation(
 ///
 /// The packed and unknown cases resolve to i32 there; everything else keeps
 /// whatever standalone type it has.
-pub fn exact_reparse_internal(
+fn exact_reparse_internal(
   ty : @infer.Cell[@infer.InferredType],
 ) -> @wasm_types.ValType[@type_store.Id]? {
   match ty.get() {
@@ -117,7 +117,7 @@ pub fn exact_reparse_internal(
 ///
 /// A value with no re-parse type at all cannot contradict anything, so it
 /// answers yes.
-pub fn exact_reparse_matches(
+fn exact_reparse_matches(
   result : @wasm_types.ValType[@type_store.Id],
   ty : @infer.Cell[@infer.InferredType],
 ) -> Bool {
@@ -129,7 +129,7 @@ pub fn exact_reparse_matches(
 
 ///|
 /// The natural types of everything that reached a block's exit, snapshotted.
-pub fn collected_natural(
+fn collected_natural(
   collected : Array[(@basic.Location?, @infer.Cell[@infer.InferredType])],
 ) -> Array[@infer.InferredType] {
   collected.map(e => e.1.get())

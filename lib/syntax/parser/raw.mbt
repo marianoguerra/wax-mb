@@ -10,7 +10,7 @@
 
 ///|
 /// A statement as parsed, before conditional groups are paired.
-pub(all) enum RawStmt {
+priv enum RawStmt {
   Plain(Instr[Location])
   /// An empty `;` statement.
   ///
@@ -81,7 +81,7 @@ fn pair_stmts(l : ArrayView[RawStmt]) -> Array[Instr[Location]] {
 
 ///|
 /// Strip empty statements, then pair.
-pub fn process_stmts(l : Array[RawStmt]) -> Array[Instr[Location]] {
+fn process_stmts(l : Array[RawStmt]) -> Array[Instr[Location]] {
   let kept : Array[RawStmt] = []
   for s in l {
     if !(s is Semi) {
@@ -93,7 +93,7 @@ pub fn process_stmts(l : Array[RawStmt]) -> Array[Instr[Location]] {
 
 ///|
 /// A located list of module fields, the payload of a module-level conditional.
-pub type LocatedFields = Annotated[
+type LocatedFields = Annotated[
   Array[Annotated[ModuleField[Location], Location]],
   Location,
 ]
@@ -104,7 +104,7 @@ pub type LocatedFields = Annotated[
 /// Braces are mandatory here, so nesting is expressed by the braces -- a nested
 /// `#[if]` lives inside a branch's field list -- and pairing is plain
 /// adjacency, with no dangling-else search.
-pub(all) enum RawField {
+priv enum RawField {
   FPlain(Annotated[ModuleField[Location], Location])
   FIf((Position, Position), Cond, LocatedFields)
   FElse((Position, Position), LocatedFields)
@@ -112,7 +112,7 @@ pub(all) enum RawField {
 
 ///|
 /// Pair adjacent `#[if]`/`#[else]` field markers into `Conditional` fields.
-pub fn lower_fields(
+fn lower_fields(
   l : Array[RawField],
 ) -> Array[Annotated[ModuleField[Location], Location]] {
   let out : Array[Annotated[ModuleField[Location], Location]] = []
@@ -167,7 +167,7 @@ pub fn lower_fields(
 /// When there are attributes the field's span is WIDENED to cover them, so
 /// comments and blank lines written before the attributes attach to the field
 /// rather than to an attribute's inner expression.
-pub fn attributed(
+fn attributed(
   p : (Position, Position),
   attributes : Attributes,
   build : (Attributes) -> Annotated[ModuleField[Location], Location],

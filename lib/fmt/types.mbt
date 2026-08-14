@@ -13,7 +13,7 @@ pub fn[Info] Ctx::heaptype(self : Ctx[Info], t : @ast.HeapType) -> Unit {
 }
 
 ///|
-pub fn[Info] Ctx::reftype(self : Ctx[Info], t : @ast.RefType) -> Unit {
+fn[Info] Ctx::reftype(self : Ctx[Info], t : @ast.RefType) -> Unit {
   // The `!` exact marker sits between the `&`/`&?` sigil and the type name.
   self.punct(
     match (t.nullable, t.typ) {
@@ -41,7 +41,7 @@ pub fn[Info] Ctx::valtype(self : Ctx[Info], t : @ast.ValType) -> Unit {
 ///|
 /// A result type: a bare type when there is exactly one and parentheses are not
 /// forced, otherwise a parenthesised list.
-pub fn[Info] Ctx::tuple(
+fn[Info] Ctx::tuple(
   self : Ctx[Info],
   always_paren : Bool,
   l : Array[@ast.ValType],
@@ -54,7 +54,7 @@ pub fn[Info] Ctx::tuple(
 }
 
 ///|
-pub fn[Info] Ctx::simple_pat(self : Ctx[Info], p : @ast.Ident?) -> Unit {
+fn[Info] Ctx::simple_pat(self : Ctx[Info], p : @ast.Ident?) -> Unit {
   match p {
     // Anchored at the identifier's own span, so a comment trailing the name --
     // before a parameter's `: type` -- attaches to it.
@@ -64,7 +64,7 @@ pub fn[Info] Ctx::simple_pat(self : Ctx[Info], p : @ast.Ident?) -> Unit {
 }
 
 ///|
-pub fn[Info, T] Ctx::key_value(
+fn[Info, T] Ctx::key_value(
   self : Ctx[Info],
   key : String,
   value : T,
@@ -79,7 +79,7 @@ pub fn[Info, T] Ctx::key_value(
 }
 
 ///|
-pub fn[Info] Ctx::typed_pat(
+fn[Info] Ctx::typed_pat(
   self : Ctx[Info],
   pat : @ast.Ident?,
   opt_typ : @ast.ValType?,
@@ -99,7 +99,7 @@ pub fn[Info] Ctx::typed_pat(
 
 ///|
 /// A function signature's parameters and results, without the `fn`.
-pub fn[Info] Ctx::raw_functype(self : Ctx[Info], ty : @ast.FuncType) -> Unit {
+fn[Info] Ctx::raw_functype(self : Ctx[Info], ty : @ast.FuncType) -> Unit {
   self.arg_list(ty.params, p => {
     let (id, t) = p.desc
     // Anchored at the whole parameter, so a trailing comment attaches to it
@@ -124,7 +124,7 @@ pub fn[Info] Ctx::raw_functype(self : Ctx[Info], ty : @ast.FuncType) -> Unit {
 }
 
 ///|
-pub fn[Info] Ctx::functype(self : Ctx[Info], ty : @ast.FuncType) -> Unit {
+fn[Info] Ctx::functype(self : Ctx[Info], ty : @ast.FuncType) -> Unit {
   self.p.box(indent=indent_level, () => {
     self.kw("fn")
     self.raw_functype(ty)
@@ -132,7 +132,7 @@ pub fn[Info] Ctx::functype(self : Ctx[Info], ty : @ast.FuncType) -> Unit {
 }
 
 ///|
-pub fn[Info] Ctx::blocktype(self : Ctx[Info], ty : @ast.FuncType) -> Unit {
+fn[Info] Ctx::blocktype(self : Ctx[Info], ty : @ast.FuncType) -> Unit {
   if ty.params.length() == 0 && ty.results.length() == 1 {
     self.valtype(ty.results[0])
   } else {
@@ -141,10 +141,7 @@ pub fn[Info] Ctx::blocktype(self : Ctx[Info], ty : @ast.FuncType) -> Unit {
 }
 
 ///|
-pub fn[Info] Ctx::packedtype(
-  self : Ctx[Info],
-  t : @wasm_types.PackedType,
-) -> Unit {
+fn[Info] Ctx::packedtype(self : Ctx[Info], t : @wasm_types.PackedType) -> Unit {
   self.typ(
     match t {
       I8 => "i8"
@@ -154,7 +151,7 @@ pub fn[Info] Ctx::packedtype(
 }
 
 ///|
-pub fn[Info] Ctx::storagetype(self : Ctx[Info], t : @ast.StorageType) -> Unit {
+fn[Info] Ctx::storagetype(self : Ctx[Info], t : @ast.StorageType) -> Unit {
   match t {
     Value(v) => self.valtype(v)
     Packed(p) => self.packedtype(p)
@@ -163,7 +160,7 @@ pub fn[Info] Ctx::storagetype(self : Ctx[Info], t : @ast.StorageType) -> Unit {
 
 ///|
 /// The bare name of a numeric-literal type suffix: `1i32` -> `"i32"`.
-pub fn suffix_string(t : @ast.StorageType) -> String {
+fn suffix_string(t : @ast.StorageType) -> String {
   match t {
     Packed(I8) => "i8"
     Packed(I16) => "i16"
@@ -178,7 +175,7 @@ pub fn suffix_string(t : @ast.StorageType) -> String {
 }
 
 ///|
-pub fn[Info] Ctx::fieldtype(self : Ctx[Info], f : @ast.FieldType) -> Unit {
+fn[Info] Ctx::fieldtype(self : Ctx[Info], f : @ast.FieldType) -> Unit {
   if f.mut_ {
     self.p.box(indent=indent_level, () => {
       self.kw("mut")

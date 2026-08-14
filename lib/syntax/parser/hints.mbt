@@ -8,7 +8,7 @@
 ///|
 /// What a hint attribute asks for, before it has been checked against the
 /// instruction it prefixes.
-pub(all) enum HintSetter {
+enum HintSetter {
   Branch(Bool)
   Freq(Int)
   Targets(Array[(Ident, Int)])
@@ -16,11 +16,11 @@ pub(all) enum HintSetter {
 
 ///|
 /// `metadata.code.instr_freq`: never optimize.
-pub let never_opt : Int = 0
+let never_opt : Int = 0
 
 ///|
 /// `metadata.code.instr_freq`: always optimize.
-pub let always_opt : Int = 127
+let always_opt : Int = 127
 
 ///|
 /// Encode an executions-per-call ratio as the section's offset base-2
@@ -28,7 +28,7 @@ pub let always_opt : Int = 127
 ///
 /// Clamped to [1, 64]: 0 and 127 are the reserved never/always values, which
 /// have their own attributes.
-pub fn freq_of_ratio(r : Double) -> Int {
+fn freq_of_ratio(r : Double) -> Int {
   if r <= 0.0 {
     1
   } else {
@@ -46,7 +46,7 @@ pub fn freq_of_ratio(r : Double) -> Int {
 ///|
 /// A call-target frequency is written as a fraction of 1 and stored as a whole
 /// percent, which is what the section holds.
-pub fn target_percent(p : (Position, Position), n : String) -> Int {
+fn target_percent(p : (Position, Position), n : String) -> Int {
   let f = @string.parse_double(n) catch {
     _ =>
       fail_at(
@@ -63,7 +63,7 @@ pub fn target_percent(p : (Position, Position), n : String) -> Int {
 
 ///|
 /// Recover which hint an attribute stands for.
-pub fn hint_of_attr(p : (Position, Position), a : @ast.Attribute) -> HintSetter {
+fn hint_of_attr(p : (Position, Position), a : @ast.Attribute) -> HintSetter {
   fn bad() -> HintSetter {
     fail_at(
       loc_of(p),
@@ -94,7 +94,7 @@ pub fn hint_of_attr(p : (Position, Position), a : @ast.Attribute) -> HintSetter 
 /// carry, so it has its own production. The name is an ordinary IDENT -- the
 /// `(` after it is what selects that production -- so it is checked here rather
 /// than by the lexer.
-pub fn targets_of_attr(
+fn targets_of_attr(
   p : (Position, Position),
   name : String,
   l : Array[(Ident, Int)],
@@ -166,7 +166,7 @@ fn is_targets_target(d : InstrDesc[Location]) -> Bool {
 /// operator form, where a tighter sub-expression exists that it could have been
 /// meant for. On a block or a branch the placement is simply wrong and
 /// parentheses would not change what the hint lands on.
-pub fn hinted(
+fn hinted(
   aloc : (Position, Position),
   setters : Array[HintSetter],
   i : Instr[Location],

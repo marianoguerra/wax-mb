@@ -18,10 +18,6 @@ pub fn is_int64(String) -> Bool
 
 pub fn is_int8(String) -> Bool
 
-pub fn parse_double(String) -> Double?
-
-pub fn parse_int32(String) -> Int?
-
 pub fn parse_int64(String) -> Int64?
 
 // Errors

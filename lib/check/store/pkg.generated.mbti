@@ -14,10 +14,7 @@ pub fn ref_subtype(SubtypingInfo, @types.RefType[Id], @types.RefType[Id]) -> Boo
 pub fn val_subtype(SubtypingInfo, @types.ValType[Id], @types.ValType[Id]) -> Bool
 
 // Errors
-pub suberror MalformedRecGroup {
-  BackReferenceOutOfGroup(Int, Int)
-  UndefinedReference(Int)
-} derive(Eq, @debug.Debug)
+type MalformedRecGroup derive(Eq, @debug.Debug)
 pub impl Show for MalformedRecGroup
 
 // Types and methods
@@ -71,10 +68,6 @@ pub fn TypeStore::new() -> Self
 pub fn TypeStore::subtyping_info(Self) -> SubtypingInfo
 
 // Type aliases
-pub type Internal = SubType[Id]
-
-pub type Normalized = SubType[RefIndex]
-
 pub type RecType[Idx] = Array[SubType[Idx]]
 
 // Traits

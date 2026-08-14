@@ -70,7 +70,7 @@ pub impl Show for LowerError with fn output(self, logger) {
 
 ///|
 /// What the lowering needs to know while walking one module.
-pub struct Lowering {
+struct Lowering {
   ctx : @typing_env.ModuleContext
   store : @type_store.TypeStore
   indices : Indices
@@ -172,7 +172,7 @@ pub struct Lowering {
 
 ///|
 /// Index every function type in the store by its shape.
-pub fn functype_index(
+fn functype_index(
   store : @type_store.TypeStore,
   layout : TypeLayout,
 ) -> Map[
@@ -202,7 +202,7 @@ pub fn functype_index(
 
 ///|
 /// Index every source type definition by the index it interned to.
-pub fn source_type_index(
+fn source_type_index(
   ctx : @typing_env.ModuleContext,
   layout : TypeLayout,
 ) -> Map[Int, @ast.SubType] {
@@ -228,7 +228,7 @@ pub fn source_type_index(
 
 ///|
 /// The branch depth of a label, counting outward from the innermost.
-pub fn Lowering::depth_of(self : Lowering, name : String) -> Int? {
+fn Lowering::depth_of(self : Lowering, name : String) -> Int? {
   let n = self.labels.length()
   for k = n - 1; k >= 0; k = k - 1 {
     if self.labels[k] is Some(l) && l == name {
@@ -251,7 +251,7 @@ pub fn Lowering::depth_of(self : Lowering, name : String) -> Int? {
 /// rt1` check the instruction carries would fail whenever the target is in
 /// another hierarchy. `None` here means "no determinable source", and the
 /// caller falls back to the target, which is always valid against itself.
-pub fn node_last_reftype(
+fn node_last_reftype(
   i : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> @wasm_types.RefType[Int]? {
   let tys = i.info.0
@@ -272,9 +272,7 @@ pub fn node_last_reftype(
 /// A bottom-heap operand has no usable heap type, so the cast target stands in
 /// for it -- but a nullable such operand is not a subtype of a non-null target,
 /// so its nullability has to carry over or the module is rejected.
-pub fn node_last_nullable(
-  i : @ast.Instr[@typing_env.InferredAnnotation],
-) -> Bool {
+fn node_last_nullable(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
   let tys = i.info.0
   guard tys.length() > 0 else { return false }
   guard @typing_env.standalone_valtype(tys[tys.length() - 1]) is Some(v) else {
@@ -288,7 +286,7 @@ pub fn node_last_nullable(
 ///
 /// `None` when the node produced no single value, or one that never resolved --
 /// the caller then raises, because an opcode cannot be chosen without it.
-pub fn node_valtype(
+fn node_valtype(
   i : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> @wasm_types.ValType[Int]? {
   guard i.info.0.length() == 1 else { return None }
@@ -304,7 +302,7 @@ pub fn node_valtype(
 /// The annotation carries the type twice: the NAME the source form kept and
 /// the interned id. The name is the better answer where there is one, because
 /// interning collapses distinct declarations and the emitted section does not.
-pub fn inferred_valtype(v : @infer.InferredValType) -> @wasm_types.ValType[Int] {
+fn inferred_valtype(v : @infer.InferredValType) -> @wasm_types.ValType[Int] {
   match (v.typ, v.internal) {
     (Ref({ typ: Type(n), .. }), Ref(r)) =>
       Ref({
@@ -335,7 +333,7 @@ fn store_id_of(h : @wasm_types.HeapType[@type_store.Id]) -> Int {
 /// The synthetic labels a lowering invents have to avoid these as well as the
 /// enclosing ones: a nested block that already takes the name would capture a
 /// branch meant for the synthetic one, and the two are only told apart by name.
-pub fn labels_within(
+fn labels_within(
   instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
 ) -> Array[String] {
   let out : Array[String] = []
@@ -370,7 +368,7 @@ pub fn labels_within(
 /// collision gets a suffix.
 /// `first` is the number whose name is the BARE base -- 1 for the loop series,
 /// where the reference counts from one, and 0 for the arm and catch series.
-pub fn fresh_name(taken : Array[String], base : String, first : Int) -> String {
+fn fresh_name(taken : Array[String], base : String, first : Int) -> String {
   let mut k = first
   while true {
     let name = if k == first { base } else { base + k.to_string() }
@@ -384,7 +382,7 @@ pub fn fresh_name(taken : Array[String], base : String, first : Int) -> String {
 
 ///|
 /// Every label name currently in scope, innermost last.
-pub fn Lowering::enclosing_labels(self : Lowering) -> Array[String] {
+fn Lowering::enclosing_labels(self : Lowering) -> Array[String] {
   let out : Array[String] = []
   for l in self.labels {
     if l is Some(name) {

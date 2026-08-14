@@ -11,7 +11,7 @@
 
 ///|
 /// Report every non-constant part of an initializer expression.
-pub fn check_constant_instruction(
+fn check_constant_instruction(
   ctx : @typing_env.ModuleContext,
   i : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> Unit {

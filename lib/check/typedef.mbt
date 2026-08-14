@@ -24,7 +24,7 @@
 /// intrinsic, and neither can be shadowed. These are the value types, the
 /// abstract heap types, and the `atomic` intrinsic namespace; `cont` is a
 /// keyword and so cannot be written as a name at all.
-pub let reserved_type_names : Array[String] = [
+let reserved_type_names : Array[String] = [
   "i32", "i64", "f32", "f64", "v128", "any", "array", "eq", "exn", "extern", "func",
   "i31", "nocont", "noexn", "noextern", "nofunc", "none", "struct", "atomic",
 ]
@@ -51,7 +51,7 @@ fn defined_before(current : Int, r : @type_store.RefIndex) -> Bool {
 ///
 /// `descriptor` and `describes` carry no such restriction: they refer mutually
 /// within the group by design, which is the whole shape of a descriptor pair.
-pub fn n_subtype(
+fn n_subtype(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   current : Int,
@@ -98,7 +98,7 @@ pub fn n_subtype(
 /// targets alive only if the member itself is kept alive. A rec group nothing
 /// names is dead as a whole, cycle and all, which is what stops two types that
 /// only name each other from propping one another up.
-pub fn n_rectype(
+fn n_rectype(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   group : Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]],
@@ -136,7 +136,7 @@ pub fn n_rectype(
 /// Returns a fresh array: the parsed AST keeps its sentinel, because the
 /// formatter and the decompiler have to write back what was written, while the
 /// interned type and the name table get the expanded fields.
-pub fn expand_splices(
+fn expand_splices(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   group : Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]],
@@ -325,7 +325,7 @@ fn check_descriptors(
 /// interned. Everything here is about the RELATIONSHIP between a type and its
 /// supertype, so the supertype reference is where each report goes -- that is
 /// what the author has to change.
-pub fn check_type_definitions(ctx : @typing_env.ModuleContext) -> Unit {
+fn check_type_definitions(ctx : @typing_env.ModuleContext) -> Unit {
   let info = ctx.type_context.subtyping_info()
   for entry in ctx.type_context.types.iter_entries() {
     let (idx, st) = entry.1

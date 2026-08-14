@@ -12,55 +12,15 @@ import {
 }
 
 // Values
-pub let always_opt : Int
-
-pub fn[Info] array_element_precedence(@ast.Ident?, Bool, @ast.Instr[Info]) -> Prec
-
 pub fn binop_kind(@ast.BinOp) -> BinopKind
 
-pub fn binop_str(@ast.BinOp) -> String
-
-pub fn char_literal(Char) -> String
-
-pub fn cond_op_string(@types.CmpOp) -> String
-
-pub fn cond_to_string(@types.Cond) -> String
-
 pub fn confusing_precedence(BinopKind, BinopKind) -> Bool
-
-pub fn[Info] get_prec(@ast.Instr[Info]) -> Prec
-
-pub let indent_level : Int
-
-pub fn[Info] is_block(@ast.Instr[Info]) -> Bool
-
-pub fn need_blocktype(@ast.FuncType) -> Bool
-
-pub let never_opt : Int
-
-pub fn ocaml_escaped(Bytes) -> String
-
-pub fn prec_op(@ast.BinOp) -> (Prec, Prec, Prec)
 
 pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context, theme? : @colors.Theme) -> String
 
 pub fn render_with(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context, theme? : @colors.Theme, lay~ : ((@printer.Printer) -> Unit) -> String) -> String
 
 pub fn run_string((@printer.Printer) -> Unit) -> String
-
-pub fn[Info] simple_inline_instr(@ast.Instr[Info]) -> Bool
-
-pub fn[Info] starts_with_block(@ast.Instr[Info]) -> Bool
-
-pub fn[Info] starts_with_block_prec(Prec, @ast.Instr[Info]) -> Bool
-
-pub fn string_literal(Bytes) -> String
-
-pub fn suffix_string(@types.StorageType[@ast.Ident]) -> String
-
-pub fn unop_str(@ast.UnOp) -> String
-
-pub fn vec_shape_name(@types.V128Shape) -> String
 
 pub let width : Int
 
@@ -82,74 +42,21 @@ pub struct Ctx[Info] {
   collect : @trivia.Locations?
   locate : (Info) -> @basic.Location?
 }
-pub fn[Info, T] Ctx::arg_list(Self[Info], Array[T], (T) -> Unit) -> Unit
-pub fn[Info] Ctx::atomic_node(Self[Info], @basic.Location?, () -> Unit) -> Unit
-pub fn[Info] Ctx::attr(Self[Info], String) -> Unit
-pub fn Ctx::attribute_(Self[@basic.Location], @ast.Attribute) -> Unit
-pub fn[Info] Ctx::block_label(Self[Info], @ast.Ident?) -> Unit
-pub fn[Info] Ctx::blocktype(Self[Info], @ast.FuncType) -> Unit
-pub fn[Info] Ctx::casttype(Self[Info], @ast.CastType) -> Unit
 pub fn[Info] Ctx::comptype(Self[Info], @ast.CompType) -> Unit
-pub fn[Info] Ctx::constant(Self[Info], String) -> Unit
 pub fn[Info] Ctx::cut(Self[Info]) -> Unit
-pub fn[Info] Ctx::fieldtype(Self[Info], @types.MutType[@types.StorageType[@ast.Ident]]) -> Unit
-pub fn[Info] Ctx::functype(Self[Info], @ast.FuncType) -> Unit
-pub fn[Info] Ctx::get_trivia(Self[Info], @basic.Location?) -> @trivia.Associated
 pub fn[Info] Ctx::heaptype(Self[Info], @types.HeapType[@ast.Ident]) -> Unit
 pub fn[Info] Ctx::ident(Self[Info], String) -> Unit
-pub fn Ctx::inner_attribute(Self[@basic.Location], @ast.Attribute) -> Unit
 pub fn Ctx::instr(Self[@basic.Location], Prec, @ast.Instr[@basic.Location]) -> Unit
-pub fn[Info, T] Ctx::key_value(Self[Info], String, T, (T) -> Unit) -> Unit
-pub fn[Info] Ctx::kw(Self[Info], String) -> Unit
-pub fn[Info, T] Ctx::list(Self[Info], Array[T], (T) -> Unit, sep? : () -> Unit) -> Unit
-pub fn[Info, T] Ctx::list_commasep(Self[Info], Array[T], (T) -> Unit) -> Unit
-pub fn[Info, T] Ctx::list_commasep_trailing(Self[Info], Array[T], (T) -> Unit) -> Unit
-pub fn Ctx::module_(Self[@basic.Location], Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@trivia.Entry]) -> Unit
-pub fn Ctx::modulefield(Self[@basic.Location], @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]) -> Unit
 pub fn Ctx::new(@printer.Printer, trivia~ : @trivia.Table, collect? : @trivia.Locations?, locate? : (@basic.Location) -> @basic.Location?, theme? : @colors.Theme) -> Self[@basic.Location]
 pub fn[Info] Ctx::newline(Self[Info]) -> Unit
 pub fn[Info] Ctx::op(Self[Info], String) -> Unit
-pub fn[Info] Ctx::packedtype(Self[Info], @types.PackedType) -> Unit
-pub fn[Info, T] Ctx::paren_list(Self[Info], Array[T], (T) -> Unit) -> Unit
-pub fn[Info] Ctx::parenthesized(Self[Info], Prec, Prec, () -> Unit) -> Unit
-pub fn[Info] Ctx::print_trivia(Self[Info], Array[@trivia.Entry]) -> Unit
-pub fn[Info] Ctx::punct(Self[Info], String) -> Unit
-pub fn[Info] Ctx::raw_functype(Self[Info], @ast.FuncType) -> Unit
-pub fn Ctx::rectype(Self[@basic.Location], Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Unit
-pub fn[Info] Ctx::reftype(Self[Info], @types.RefType[@ast.Ident]) -> Unit
-pub fn[Info] Ctx::semicolon(Self[Info]) -> Unit
-pub fn[Info] Ctx::simple_pat(Self[Info], @ast.Ident?) -> Unit
 pub fn[Info] Ctx::space(Self[Info]) -> Unit
-pub fn[Info] Ctx::storagetype(Self[Info], @types.StorageType[@ast.Ident]) -> Unit
-pub fn[Info] Ctx::str(Self[Info], String) -> Unit
 pub fn[Info] Ctx::styled(Self[Info], @colors.Style, String) -> Unit
-pub fn[Info] Ctx::styled_as(Self[Info], @colors.Style, Int, String) -> Unit
 pub fn Ctx::subtype(Self[@basic.Location], @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]) -> Unit
-pub fn[Info, T] Ctx::trailing_comma(Self[Info], Array[T]) -> Unit
-pub fn[Info] Ctx::tuple(Self[Info], Bool, Array[@types.ValType[@ast.Ident]]) -> Unit
 pub fn[Info] Ctx::typ(Self[Info], String) -> Unit
-pub fn[Info] Ctx::typed_pat(Self[Info], @ast.Ident?, @types.ValType[@ast.Ident]?) -> Unit
 pub fn[Info] Ctx::valtype(Self[Info], @types.ValType[@ast.Ident]) -> Unit
-pub fn[Info] Ctx::with_style(Self[Info], @colors.Style, () -> Unit) -> Unit
 
-pub(all) enum Prec {
-  Instruction
-  Branch
-  Assignement
-  Select
-  Comparison
-  LogicalOr
-  LogicalXor
-  LogicalAnd
-  Shift
-  Addition
-  Multiplication
-  Cast
-  UnaryPrefix
-  UnaryPostfix
-  CallAndFieldAccess
-  Atom
-} derive(Compare, Eq, @debug.Debug)
+type Prec derive(Compare, Eq, @debug.Debug)
 
 // Type aliases
 

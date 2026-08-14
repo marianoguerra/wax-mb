@@ -21,7 +21,7 @@
 /// The stack a function body runs on starts empty and must end empty. Same for
 /// a block: `Operands::with_empty` is what keeps a block's operands from
 /// leaking in or out, and this adds the report.
-pub fn[A] with_empty_stack(
+fn[A] with_empty_stack(
   ops : Operands,
   diagnostics : @diagnostic.Context,
   location : @basic.Location,
@@ -39,7 +39,7 @@ pub fn[A] with_empty_stack(
 /// reference to itself, so the unused-declaration lint can still flag a
 /// function nothing calls. The type name it yields IS a reference, and is
 /// marked as one.
-pub fn declared_functype(
+fn declared_functype(
   ctx : @typing_env.ModuleContext,
   name : @ast.Ident,
 ) -> @ast.FuncType? {
@@ -67,7 +67,7 @@ pub fn declared_functype(
 ///
 /// There is nowhere for an argument to come from and nowhere for a result to
 /// go: the start function is called by the host on instantiation.
-pub fn check_start_signature(
+fn check_start_signature(
   ctx : @typing_env.ModuleContext,
   name : @ast.Ident,
   attributes : Array[@ast.Attribute],

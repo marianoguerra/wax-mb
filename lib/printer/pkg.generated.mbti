@@ -23,32 +23,10 @@ pub(all) enum BreakStrength {
 } derive(Eq, @debug.Debug)
 pub fn BreakStrength::strength(Self) -> Int
 
-pub struct Engine {
-  width : Int
-  out : StringBuilder
-  max_indent : Int
-  mut col : Int
-  mut emitted : Bool
-  mut pend_line : (Int, Bool)?
-  mut pend_flat : BreakStrength?
-  frames : Array[Frame]
-  queue : Array[Token]
-  mut qhd : Int
-  mut skip_depth : Int
-  sc : ScanState
-  mut scan_at_end : Bool
-  mut discarding : Bool
-  mut record : Array[Token]?
-}
-pub fn Engine::contents(Self) -> String
-pub fn Engine::feed(Self, Token) -> Unit
-pub fn Engine::finish_stream(Self) -> Unit
+type Engine
 pub fn Engine::new(width? : Int) -> Self
 
-pub(all) struct Frame {
-  findent : Int
-  fmode : Mode
-} derive(Eq, @debug.Debug)
+type Frame derive(Eq, @debug.Debug)
 
 pub(all) enum GKind {
   GBox
@@ -75,8 +53,6 @@ pub fn Printer::blank_line(Self) -> Unit
 pub fn Printer::box(Self, () -> Unit, skip_space? : Bool, indent? : Int) -> Unit
 pub fn Printer::cut(Self) -> Unit
 pub fn Printer::defer_eol(Self, () -> Unit) -> Unit
-pub fn Printer::finalize(Self) -> Unit
-pub fn Printer::force_eol(Self) -> Unit
 pub fn Printer::has_pending_eol(Self) -> Bool
 pub fn Printer::hbox(Self, () -> Unit, skip_space? : Bool) -> Unit
 pub fn Printer::hovbox(Self, () -> Unit, skip_space? : Bool, indent? : Int) -> Unit
@@ -91,13 +67,7 @@ pub fn Printer::string_as(Self, Int, String) -> Unit
 pub fn Printer::vbox(Self, () -> Unit, skip_space? : Bool, indent? : Int) -> Unit
 pub fn Printer::with_held_eol(Self, () -> Unit) -> Unit
 
-pub(all) enum ScanResult {
-  Fits
-  Nofit
-  Susp
-} derive(Eq, @debug.Debug)
-
-type ScanState
+type ScanResult derive(Eq, @debug.Debug)
 
 pub(all) enum Token {
   TText(Int, String)

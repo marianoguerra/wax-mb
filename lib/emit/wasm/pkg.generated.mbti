@@ -8,94 +8,10 @@ import {
   "marianoguerra/wax/check/infer",
   "marianoguerra/wax/check/store",
   "marianoguerra/wax/wasm/bin",
-  "marianoguerra/wax/wasm/simd",
-  "marianoguerra/wax/wasm/types",
 }
 
 // Values
-pub fn assign_indices(@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Indices
-
-pub fn binary_intrinsic(String, @types.ValType[Int]?) -> @bin.Instruction?
-
-pub fn binop_instruction(@ast.BinOp, @types.ValType[Int]) -> @bin.Instruction?
-
-pub fn construct_name(@ast.InstrDesc[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> String
-
-pub fn emitted_named_index(String, Int) -> Int
-
-pub fn emitted_shape_index(Array[@types.ValType[Int]], Array[@types.ValType[Int]]) -> Int?
-
-pub fn emitted_type_index(Int) -> Int
-
-pub fn fresh_name(Array[String], String, Int) -> String
-
-pub fn function_priority(Array[@ast.Attribute]) -> @bin.Priority?
-
-pub fn functype_index(@store.TypeStore, TypeLayout) -> Map[(Array[@types.ValType[Int]], Array[@types.ValType[Int]]), Int]
-
-pub fn guards_at(Array[@bin.CondGroup], @basic.Location) -> Array[(Int, Bool)]
-
-pub fn hierarchy_conversion(@types.HeapType[Int], @types.HeapType[Int]) -> @bin.Instruction?
-
-pub fn inferred_valtype(@infer.InferredValType) -> @types.ValType[Int]
-
-pub fn is_any_hierarchy(@types.HeapType[Int]) -> Bool
-
-pub fn is_extern_hierarchy(@types.HeapType[Int]) -> Bool
-
-pub fn is_packed(@types.MutType[@types.StorageType[@store.Id]]) -> Bool
-
-pub fn is_synthetic(String) -> Bool
-
-pub fn labels_within(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]]) -> Array[String]
-
-pub fn load_instruction(String, Int, Int, Int64, (@ast.NumType, @types.Signage)?) -> @bin.Instruction?
-
 pub fn lower_module(@env.ModuleContext, @store.TypeStore, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]], keep_conditionals? : Bool) -> @bin.Module raise LowerError
-
-pub fn lower_reftype(@types.RefType[@store.Id]) -> @types.RefType[Int]
-
-pub fn lower_valtype(@types.ValType[@store.Id]) -> @types.ValType[Int]
-
-pub fn natural_align(String) -> Int
-
-pub fn node_last_nullable(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Bool
-
-pub fn node_last_reftype(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> @types.RefType[Int]?
-
-pub fn node_type_index(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Int?
-
-pub fn node_valtype(@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> @types.ValType[Int]?
-
-pub fn note_name(Map[Int, Bytes], Int, String) -> Unit
-
-pub fn numeric_cast(@types.ValType[Int], @types.ValType[Int]) -> Array[@bin.Instruction]?
-
-pub fn parse_f32(String, @basic.Location) -> Float raise LowerError
-
-pub fn parse_f64(String, @basic.Location) -> Double raise LowerError
-
-pub fn parse_float_bits(String, Bool, @basic.Location) -> Double raise LowerError
-
-pub fn parse_i32(String, @basic.Location) -> Int raise LowerError
-
-pub fn parse_i64(String, @basic.Location) -> Int64 raise LowerError
-
-pub let run_once_level : Int
-
-pub fn signed_cast(@types.ValType[Int], @ast.NumType, @types.Signage, Bool) -> Array[@bin.Instruction]?
-
-pub fn source_type_index(@env.ModuleContext, TypeLayout) -> Map[Int, @ast.SubType]
-
-pub fn store_instruction(String, Int, Int, Int64, @types.ValType[Int]?) -> @bin.Instruction?
-
-pub fn store_type_index(Int) -> Int
-
-pub fn type_layout(@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @store.TypeStore) -> TypeLayout
-
-pub fn unary_instruction(String, @types.ValType[Int]?) -> @bin.Instruction?
-
-pub fn vector_bytes(@simd.Shape, Array[String], @basic.Location) -> Bytes raise LowerError
 
 // Errors
 pub suberror LowerError {
@@ -107,84 +23,17 @@ pub suberror LowerError {
 pub impl Show for LowerError
 
 // Types and methods
-pub struct Indices {
-  funcs : Space
-  globals : Space
-  memories : Space
-  tables : Space
-  tags : Space
-  datas : Space
-  elems : Space
-  mut imported_funcs : Int
-  mut imported_globals : Int
-  mut imported_memories : Int
-  mut imported_tables : Int
-  mut imported_tags : Int
-}
+type Indices
 pub fn Indices::new() -> Self
 
-pub struct Lowering {
-  ctx : @env.ModuleContext
-  store : @store.TypeStore
-  indices : Indices
-  layout : TypeLayout
-  mut locals : Map[String, Int]
-  mut local_types : Array[@types.ValType[Int]]
-  entry_locs : Map[Int, @basic.Location]
-  conditionals : Array[@bin.CondGroup]
-  keep_conditionals : Bool
-  mut pending_start : (Int, @ast.Attribute)?
-  mut body_conditionals : Array[@bin.CondGroup]
-  mut spans : Array[@bin.Span]
-  mut nested_spans : Array[Array[@bin.Span]]
-  mut binding_slots : Map[Int, Int]
-  mut claimed : Map[String, Int]
-  mut local_names : Map[Int, Bytes]
-  mut label_names : Map[Int, Bytes]
-  mut label_counter : Int
-  mut pending_handlers : Array[@ast.OnClause]
-  func_refs_in_body : Array[String]
-  func_refs_outside : Array[String]
-  mut in_body : Bool
-  mut labels : Array[String?]
-  source_types : Map[Int, @ast.SubType]
-  functypes : Map[(Array[@types.ValType[Int]], Array[@types.ValType[Int]]), Int]
-}
-pub fn Lowering::array_element_of(Self, @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location) -> (Int, @types.MutType[@types.StorageType[@store.Id]]) raise LowerError
-pub fn Lowering::depth_of(Self, String) -> Int?
-pub fn Lowering::enclosing_labels(Self) -> Array[String]
+type Lowering
 pub fn Lowering::instr(Self, Array[@bin.Instruction], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Unit raise LowerError
-pub fn Lowering::memarg(Self, @ast.Ident, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @basic.Location) -> (Int, Int64) raise LowerError
-pub fn Lowering::memarg_natural(Self, Int, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @basic.Location) -> (Int, Int64) raise LowerError
-pub fn Lowering::module_name(Self, @bin.Module, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
-pub fn Lowering::struct_fields_of(Self, @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location) -> (Int, Array[@types.MutType[@types.StorageType[@store.Id]]]) raise LowerError
-pub fn Lowering::target_features(Self, @bin.Module, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
-pub fn Lowering::type_names(Self, @bin.Module) -> Unit
 
-pub struct Space {
-  by_name : Map[String, Array[(Int, @basic.Location)]]
-  mut next : Int
-}
-pub fn Space::assign(Self, String, @basic.Location) -> Int
+type Space
 pub fn Space::get(Self, String) -> Int?
 pub fn Space::length(Self) -> Int
 pub fn Space::new() -> Self
 pub fn Space::resolve(Self, String, Array[(Int, Bool)], (@basic.Location) -> Array[(Int, Bool)]) -> Int?
-
-pub struct TypeLayout {
-  by_name : Map[String, Int]
-  by_store : Map[Int, Int]
-  store_of : Array[Int]
-  types : Array[@bin.SubType]
-  groups : Array[@bin.RecGroup]
-  pending : Array[@bin.SubType]
-  written : Map[String, @ast.SubType]
-  declared : Array[(@ast.SubType, Int)]
-  slot_names : Map[Int, String]
-  aliases : Map[String, Int]
-  declared_slots : Map[Int, Bool]
-  referenced : Map[Int, Bool]
-}
 
 // Type aliases
 

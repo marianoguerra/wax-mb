@@ -29,18 +29,18 @@ pub fn mem_natural_align(meth : String) -> Int {
 ///|
 /// The unsigned 64-bit value of an integer literal, or `None` when it is not an
 /// integer literal or does not fit.
-pub fn int_literal_u64(desc : @ast.InstrDesc[@basic.Location]) -> UInt64? {
+fn int_literal_u64(desc : @ast.InstrDesc[@basic.Location]) -> UInt64? {
   guard desc is Int(s) else { return None }
   @number.parse_int64(s).map(v => v.reinterpret_as_uint64())
 }
 
 ///|
 /// One past the largest offset a 32-bit memory can address.
-pub let max_offset_i32_exclusive : UInt64 = 0x1_0000_0000UL
+let max_offset_i32_exclusive : UInt64 = 0x1_0000_0000UL
 
 ///|
 /// The widest alignment any access has -- a v128 lane load.
-pub let max_align : UInt64 = 16UL
+let max_align : UInt64 = 16UL
 
 ///|
 /// Validate the `align` and `offset` immediates of a memory access.
@@ -144,7 +144,7 @@ pub fn mem_lane_bound(natural_align : Int) -> Int {
 ///|
 /// A memory access's arguments split into stack operands and labelled
 /// immediates.
-pub struct MemArgs {
+priv struct MemArgs {
   positional : Array[@ast.Instr[@basic.Location]]
   labelled : Array[(@ast.Ident, @ast.Instr[@basic.Location])]
 }
@@ -156,9 +156,7 @@ pub struct MemArgs {
 /// A positional argument AFTER a labelled one is reported and kept positional:
 /// the author meant it as an operand, and dropping it would cascade into an
 /// arity complaint about something they did write.
-pub fn split_labelled_args(
-  args : Array[@ast.Instr[@basic.Location]],
-) -> MemArgs {
+fn split_labelled_args(args : Array[@ast.Instr[@basic.Location]]) -> MemArgs {
   let positional : Array[@ast.Instr[@basic.Location]] = []
   let labelled : Array[(@ast.Ident, @ast.Instr[@basic.Location])] = []
   for a in args {
@@ -176,7 +174,7 @@ pub fn split_labelled_args(
 ///
 /// A non-literal value is reported HERE and the pair dropped, so `check_memarg`
 /// -- which would also fail to read it -- does not say the same thing again.
-pub fn take_labels(
+fn take_labels(
   diagnostics : @diagnostic.Context,
   allowed : Array[String],
   labelled : Array[(@ast.Ident, @ast.Instr[@basic.Location])],
@@ -221,7 +219,7 @@ pub fn take_labels(
 /// integer literals and no more than the immediate count. Otherwise they are an
 /// ordinary arity mistake, and reading a local as an alignment would cascade
 /// into a bogus memarg complaint on top of it.
-pub fn mem_immediates(
+fn mem_immediates(
   diagnostics : @diagnostic.Context,
   location : @basic.Location,
   example : String,

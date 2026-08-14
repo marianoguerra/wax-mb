@@ -15,7 +15,7 @@
 /// afterwards.
 ///
 /// `positive` picks the `#[if]` branch; its negation is the `#[else]`.
-pub fn[A] with_cond(
+fn[A] with_cond(
   ctx : @typing_env.ModuleContext,
   location : @basic.Location,
   cond : @wasm_types.Cond,
@@ -89,7 +89,7 @@ fn internal_functype(
 ///
 /// Compared in the store's internal form, so two spellings of one type -- a
 /// name and its definition -- compare equal.
-pub fn check_inline_type(
+fn check_inline_type(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   location : @basic.Location,
@@ -168,7 +168,7 @@ fn fundecl_typ(
 ///
 /// A duplicate registers nothing -- the first entry stands, and `exists` has
 /// already reported the clash.
-pub fn register_function(
+fn register_function(
   ctx : @typing_env.ModuleContext,
   name : @ast.Ident,
   typ : @ast.Ident?,
@@ -198,7 +198,7 @@ pub fn register_function(
 /// Unlike a function, a tag keeps its SOURCE function type rather than an
 /// interned index: a `throw` checks its operands against the written parameter
 /// types, and the diagnostic wants to name them as written.
-pub fn register_tag(
+fn register_tag(
   ctx : @typing_env.ModuleContext,
   name : @ast.Ident,
   typ : @ast.Ident?,
@@ -396,7 +396,7 @@ pub fn[Info] declare_fields(
 ///
 /// Identifiers never contain a comma, so joining on one cannot make two
 /// different sets collide.
-pub fn field_set_key(names : Array[String]) -> String {
+fn field_set_key(names : Array[String]) -> String {
   let sorted = names.copy()
   sorted.sort()
   let out : Array[String] = []
@@ -435,51 +435,7 @@ pub fn index_structs_by_fields(ctx : @typing_env.ModuleContext) -> Unit {
 /// Unwritable, so it cannot collide with a source name; canonical, so a user
 /// type declared as `array(mut i8)` interns to the same index and a string
 /// literal is a genuine use of it.
-pub let string_type_name : String = "<string>"
-
-///|
-/// Whether any instruction in the module is a string literal.
-///
-/// The canonical byte array is registered only when something builds one. An
-/// unconditional registration would put a type in the store that nothing names,
-/// and the store IS the type section -- so the module would carry a type it
-/// never uses and every index after it would shift.
-pub fn[Info] uses_string_literal(fields : @ast.Module[Info]) -> Bool {
-  let mut found = false
-  fn scan(instrs : Array[@ast.Instr[Info]]) -> Unit {
-    for i in instrs {
-      i.iter_instr(node => if node.desc is Str(_, _) { found = true })
-    }
-  }
-
-  fn walk(
-    fs : Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]],
-  ) -> Unit {
-    for f in fs {
-      match f.desc {
-        Func(body~, ..) => scan(body.1)
-        Global(def~, ..) => scan([def])
-        Table(init~, ..) => if init is Some(e) { scan([e]) }
-        Elem(init~, ..) => scan(init)
-        Memory(data~, ..) =>
-          for d in data {
-            scan([d.offset])
-          }
-        Data(mode~, ..) => if mode is Active(_, off) { scan([off]) }
-        Conditional(then_fields~, else_fields~, ..) => {
-          walk(then_fields.desc)
-          if else_fields is Some(e) {
-            walk(e.desc)
-          }
-        }
-        _ => ()
-      }
-    }
-  }
-
-  walk(fields)
-  found
-}
+let string_type_name : String = "<string>"
 
 ///|
 /// Intern an inline function signature, so it has an index to be named by.
@@ -487,7 +443,7 @@ pub fn[Info] uses_string_literal(fields : @ast.Module[Info]) -> Bool {
 /// The generated name is unwritable, so it collides with nothing; what matters
 /// is the TYPE it interns to, which a structurally identical declaration
 /// elsewhere shares.
-pub fn intern_functype(
+fn intern_functype(
   ctx : @typing_env.ModuleContext,
   owner : @ast.Ident,
   sign : @ast.FuncType,
@@ -518,7 +474,7 @@ pub fn intern_functype(
 
 ///|
 /// Register the canonical `mut i8` array that a bare string literal builds.
-pub fn register_string_type(ctx : @typing_env.ModuleContext) -> Unit {
+fn register_string_type(ctx : @typing_env.ModuleContext) -> Unit {
   // Once per module. Called on demand, from every nameless literal, so without
   // this the second one would report the name as already bound -- which is a
   // true statement about a declaration nobody wrote.

@@ -71,7 +71,7 @@ fn Printer::drop_trailing_break(self : Printer) -> BreakStrength? {
 
 ///|
 /// Emit a deferred end-of-line comment, if one is waiting.
-pub fn Printer::force_eol(self : Printer) -> Unit {
+fn Printer::force_eol(self : Printer) -> Unit {
   match self.pending_eol {
     None => ()
     Some(emit_comment) => {
@@ -279,7 +279,7 @@ pub fn Printer::hbox(
 ///
 /// A trailing break is left pending and never fed, so it is dropped -- no
 /// trailing whitespace.
-pub fn Printer::finalize(self : Printer) -> Unit {
+fn Printer::finalize(self : Printer) -> Unit {
   self.force_eol()
   self.engine.finish_stream()
 }

@@ -215,7 +215,7 @@ pub fn set_suggestions(
 /// type used as a cast target -- has a generated name beginning with `<`. The
 /// name keeps lookups working, but a diagnostic renders the structure instead,
 /// because the name means nothing to the reader.
-pub fn inline_comptype(
+fn inline_comptype(
   ctx : @typing_env.ModuleContext,
   name : @ast.Ident,
 ) -> @ast.CompType? {
@@ -298,7 +298,7 @@ fn cell_of(ty : @infer.InferredValType?) -> @infer.Cell[@infer.InferredType] {
 ///
 /// Narrower again than an assignment's: only a local can be tee'd, because the
 /// value has to stay on the stack afterwards and only a local supports that.
-pub fn local_suggestions(
+fn local_suggestions(
   ctx : @typing_env.ModuleContext,
   name : String,
 ) -> Array[String] {
@@ -440,7 +440,7 @@ pub fn declare_local(
 /// cascade into every use of the local. An `Unknown` one is additionally
 /// reported: unlike `Error` it has not been complained about yet, and a binding
 /// whose type nobody can name is worth saying out loud.
-pub fn bound_value_type(
+fn bound_value_type(
   ctx : @typing_env.ModuleContext,
   location : @basic.Location,
   result_ty : @infer.Cell[@infer.InferredType],
@@ -465,7 +465,7 @@ pub fn bound_value_type(
 ///
 /// Pure: it reads the name's type out of the locals and globals and records
 /// nothing, because it runs as a GUARD, before anything has been typed.
-pub fn receiver_is_ref(
+fn receiver_is_ref(
   ctx : @typing_env.ModuleContext,
   recv : @ast.Instr[@basic.Location],
 ) -> Bool {
@@ -491,7 +491,7 @@ pub fn receiver_is_ref(
 /// Pure like `receiver_is_ref`, and for the same reason: it gates a bulk-method
 /// call before anything has been typed, so a struct with a field named `fill` or
 /// `copy` is left to the indirect-call path.
-pub fn receiver_is_array_ref(
+fn receiver_is_array_ref(
   ctx : @typing_env.ModuleContext,
   recv : @ast.Instr[@basic.Location],
 ) -> Bool {
@@ -526,7 +526,7 @@ pub fn receiver_is_array_ref(
 /// thing twice. But naming a memory in `m.load(..)` really is using it, and the
 /// unused-declaration lint has no other way to know -- so the use is recorded
 /// here, separately from the resolution.
-pub fn[A] note_use(
+fn[A] note_use(
   ctx : @typing_env.ModuleContext,
   tbl : @typing_env.Tbl[A],
   name : @ast.Ident,
@@ -540,7 +540,7 @@ pub fn[A] note_use(
 /// `W32` is not narrow enough to matter here: an `i64` reading 32 bits is the
 /// only case, and it has the same absent sign-extending form, but the reference
 /// asks only about the 8- and 16-bit ones.
-pub fn atomic_narrow_load_width(
+fn atomic_narrow_load_width(
   ctx : @typing_env.ModuleContext,
   e : @ast.Instr[@basic.Location],
 ) -> @atomics.Width? {

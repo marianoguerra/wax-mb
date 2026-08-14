@@ -37,13 +37,13 @@ pub struct Table {
 ///
 /// Keying on offsets alone is deliberate: it is cheap to hash and compare, and
 /// the filename is the same for every span in one parse.
-pub(all) struct SpanKey {
+struct SpanKey {
   start : Int
   end : Int
 } derive(Eq, Hash, Compare, Debug)
 
 ///|
-pub fn key_of(loc : @basic.Location) -> SpanKey {
+fn key_of(loc : @basic.Location) -> SpanKey {
   { start: loc.start.cnum, end: loc.end.cnum }
 }
 

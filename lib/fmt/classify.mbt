@@ -3,7 +3,7 @@
 
 ///|
 /// The precedence an instruction produces.
-pub fn[Info] get_prec(i : @ast.Instr[Info]) -> Prec {
+fn[Info] get_prec(i : @ast.Instr[Info]) -> Prec {
   // A hint attribute is parsed at the LOOSEST precedence -- it takes the whole
   // expression that follows it -- so a hinted instruction in a tighter context
   // must be parenthesised however tightly its own desc would bind.
@@ -80,7 +80,7 @@ pub fn[Info] get_prec(i : @ast.Instr[Info]) -> Prec {
 
 ///|
 /// Whether this instruction is one of the brace-delimited forms.
-pub fn[Info] is_block(i : @ast.Instr[Info]) -> Bool {
+fn[Info] is_block(i : @ast.Instr[Info]) -> Bool {
   match i.desc {
     Block(..)
     | Loop(..)
@@ -103,7 +103,7 @@ pub fn[Info] is_block(i : @ast.Instr[Info]) -> Bool {
 /// expression, so such a statement needs disambiguating. This walks down the
 /// leftmost operand -- the token actually emitted first -- rather than looking
 /// only at the outermost node.
-pub fn[Info] starts_with_block_prec(prec : Prec, i : @ast.Instr[Info]) -> Bool {
+fn[Info] starts_with_block_prec(prec : Prec, i : @ast.Instr[Info]) -> Bool {
   let actual = get_prec(i)
   // A hinted instruction starts with its attribute's `#`, not with a brace, so
   // it needs none of the disambiguation.
@@ -156,7 +156,7 @@ pub fn[Info] starts_with_block_prec(prec : Prec, i : @ast.Instr[Info]) -> Bool {
 }
 
 ///|
-pub fn[Info] starts_with_block(i : @ast.Instr[Info]) -> Bool {
+fn[Info] starts_with_block(i : @ast.Instr[Info]) -> Bool {
   starts_with_block_prec(Instruction, i)
 }
 
@@ -165,7 +165,7 @@ pub fn[Info] starts_with_block(i : @ast.Instr[Info]) -> Bool {
 ///
 /// `[a | b]` would read as a typed array literal, so a bare `a | b` in first
 /// position is printed as an atom (parenthesised) to keep the two apart.
-pub fn[Info] array_element_precedence(
+fn[Info] array_element_precedence(
   nm : @ast.Ident?,
   first : Bool,
   i : @ast.Instr[Info],
@@ -186,7 +186,7 @@ pub fn[Info] array_element_precedence(
 }
 
 ///|
-pub fn cond_op_string(op : @wasm_types.CmpOp) -> String {
+fn cond_op_string(op : @wasm_types.CmpOp) -> String {
   match op {
     Eq => "="
     Ne => "!="
@@ -203,7 +203,7 @@ pub fn cond_op_string(op : @wasm_types.CmpOp) -> String {
 /// Rendered to a string rather than through the printer: a condition never
 /// wraps, and it appears inside an attribute where the printer's boxes would
 /// have nothing to decide.
-pub fn cond_to_string(c : @wasm_types.Cond) -> String {
+fn cond_to_string(c : @wasm_types.Cond) -> String {
   match c {
     Var(v) => v.desc
     Str(s) => ocaml_escaped(s.desc)
@@ -230,7 +230,7 @@ fn cond_list(l : Array[@wasm_types.Cond]) -> String {
 ///
 /// A name or a literal only: anything with structure gets the broken-out form
 /// so the brackets do not have to hold a multi-line expression.
-pub fn[Info] simple_inline_instr(i : @ast.Instr[Info]) -> Bool {
+fn[Info] simple_inline_instr(i : @ast.Instr[Info]) -> Bool {
   match i.desc {
     Get(_) | Path(_) | Char(_) | Str(_) | Int(_) | Float(_) => true
     _ => false
@@ -244,7 +244,7 @@ pub fn[Info] simple_inline_instr(i : @ast.Instr[Info]) -> Bool {
 /// NOT `escape_string`: this is a different escaping dialect, with `\b` among
 /// the named escapes and DECIMAL `\ddd` -- three digits, always -- for
 /// anything else outside printable ASCII.
-pub fn ocaml_escaped(b : Bytes) -> String {
+fn ocaml_escaped(b : Bytes) -> String {
   let out = StringBuilder::new()
   out.write_char('"')
   for byte in b {

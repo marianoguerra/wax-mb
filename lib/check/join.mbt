@@ -15,7 +15,7 @@
 /// Passed in rather than computed here because it is the reference-hierarchy
 /// lub, which needs the type table; every other case in the join is decided by
 /// the flexible-literal lattice alone.
-pub type ValLub = (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?
+type ValLub = (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?
 
 ///|
 /// The common type of two values reaching one exit, or `None` if they have

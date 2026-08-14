@@ -27,7 +27,7 @@
 /// `Unknown` is the sentinel for "no context"; a `Collecting` cell is a block
 /// result still being inferred, and checking a value against it would discard
 /// the value rather than constrain it. Neither is an expectation.
-pub fn has_expectation(expected : @infer.Cell[@infer.InferredType]) -> Bool {
+fn has_expectation(expected : @infer.Cell[@infer.InferredType]) -> Bool {
   match expected.get() {
     Unknown | Collecting(_) => false
     _ => true
@@ -40,9 +40,7 @@ pub fn has_expectation(expected : @infer.Cell[@infer.InferredType]) -> Bool {
 /// This is the whole input to name inference: a construction can only take its
 /// type from the context when the context pins a NAMED type. An abstract
 /// reference (`&any`, `&struct`) names nothing to construct.
-pub fn exact_named_type(
-  expected : @infer.Cell[@infer.InferredType],
-) -> @ast.Ident? {
+fn exact_named_type(expected : @infer.Cell[@infer.InferredType]) -> @ast.Ident? {
   match expected.get() {
     Valtype({ typ: Ref({ typ: Type(n) | Exact(n), .. }), .. }) => Some(n)
     _ => None
@@ -174,7 +172,7 @@ pub fn Checker::check(
 ///
 /// The two are not interchangeable. A block that annotates its result means it;
 /// one that does not is asking the context, and there is now a context to ask.
-pub fn context_result_cell(
+fn context_result_cell(
   ctx : @typing_env.ModuleContext,
   typ : @ast.FuncType,
   expected : @infer.Cell[@infer.InferredType],
@@ -417,7 +415,7 @@ fn Checker::want(
 /// synthesized and then recorded against the cell, because that recording is
 /// what the target's type will be made of. Checking against it would discard the
 /// value instead.
-pub fn Checker::check_against(
+fn Checker::check_against(
   self : Checker,
   expected : Array[@infer.Cell[@infer.InferredType]],
   e : @ast.Instr[@basic.Location],

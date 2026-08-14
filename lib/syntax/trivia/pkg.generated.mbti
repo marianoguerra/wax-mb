@@ -14,8 +14,6 @@ pub fn drop_trailing_blank_lines(Array[Entry]) -> Array[Entry]
 
 pub let empty_assoc : Associated
 
-pub fn key_of(@basic.Location) -> SpanKey
-
 // Errors
 
 // Types and methods
@@ -52,10 +50,7 @@ pub fn Locations::contains(Self, @basic.Location) -> Bool
 pub fn Locations::mark(Self, @basic.Location) -> Unit
 pub fn Locations::new() -> Self
 
-pub(all) struct SpanKey {
-  start : Int
-  end : Int
-} derive(Compare, Eq, Hash, @debug.Debug)
+type SpanKey derive(Compare, Eq, Hash, @debug.Debug)
 
 pub struct Table {
   entries : Map[SpanKey, Associated]

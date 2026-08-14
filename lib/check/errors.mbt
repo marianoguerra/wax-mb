@@ -12,7 +12,7 @@
 ///
 /// Reported rather than fatal: checking continues, so one disabled feature does
 /// not hide every error after it.
-pub fn feature_disabled(
+fn feature_disabled(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   feature : @feature.Feature,
@@ -34,7 +34,7 @@ pub fn feature_disabled(
 ///
 /// Carries the other one as a related label, because "which other one" is the
 /// first thing anyone asks.
-pub fn duplicated_field(
+fn duplicated_field(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,
@@ -52,7 +52,7 @@ pub fn duplicated_field(
 
 ///|
 /// Two parameters of one function sharing a name.
-pub fn duplicated_parameter(
+fn duplicated_parameter(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,
@@ -77,7 +77,7 @@ pub fn duplicated_parameter(
 /// with `Error`, so nothing downstream cascades either way. A genuine underflow
 /// in intact code still surfaces on a clean re-check once the syntax errors are
 /// fixed.
-pub fn short_stack(
+fn short_stack(
   ctx : @diagnostic.Context,
   kind : StackKind,
   location : @basic.Location,
@@ -107,7 +107,7 @@ pub fn short_stack(
 ///|
 /// An argument of the wrong type, reported against the instruction because the
 /// value itself has no span worth pointing at.
-pub fn type_mismatch(
+fn type_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   current : Int,
@@ -130,7 +130,7 @@ pub fn type_mismatch(
 ///|
 /// A value of the wrong type, reported at the value -- which is where the
 /// reader can do something about it.
-pub fn expression_type_mismatch(
+fn expression_type_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   provided : @infer.Cell[@infer.InferredType],
@@ -160,7 +160,7 @@ pub fn expression_type_mismatch(
 /// A caret per value rather than one on the enclosing construct, which may be
 /// the whole function: the reader needs to know WHICH values, and a span around
 /// all of them says nothing.
-pub fn leftover_values(
+fn leftover_values(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   related : Array[@diagnostic.Label],
@@ -185,7 +185,7 @@ pub fn leftover_values(
 /// They are still real values -- they just carry an error-recovery placeholder
 /// location rather than a source span -- so name the construct and list what is
 /// there instead of saying nothing.
-pub fn non_empty_stack(
+fn non_empty_stack(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   rendered : String,
@@ -202,7 +202,7 @@ pub fn non_empty_stack(
 ///|
 /// A table whose elements have no value to start as, and nothing to fill it
 /// with.
-pub fn non_nullable_table(
+fn non_nullable_table(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -220,7 +220,7 @@ pub fn non_nullable_table(
 ///
 /// Only a non-nullable reference can be in this state: everything else has a
 /// zero value to start as.
-pub fn uninitialized_local(
+fn uninitialized_local(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -256,7 +256,7 @@ fn did_you_mean(suggestions : Array[String]) -> @message.Message? {
 /// leaving a placeholder -- so the report is a cascade from a syntax error the
 /// caller has already told the reader about. The use still recovers as an
 /// error, so nothing downstream cascades either.
-pub fn unbound_name(
+fn unbound_name(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   kind : String,
@@ -279,7 +279,7 @@ pub fn unbound_name(
 
 ///|
 /// A write to something that cannot be written.
-pub fn immutable(
+fn immutable(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   what : String,
@@ -295,7 +295,7 @@ pub fn immutable(
 
 ///|
 /// A write to something that is not a variable at all -- a function, say.
-pub fn not_assignable(
+fn not_assignable(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -309,7 +309,7 @@ pub fn not_assignable(
 
 ///|
 /// An operator applied to operands it has no meaning for.
-pub fn binop_type_mismatch(
+fn binop_type_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   ty1 : @infer.Cell[@infer.InferredType],
@@ -328,7 +328,7 @@ pub fn binop_type_mismatch(
 
 ///|
 /// An instruction given the wrong number of operands.
-pub fn operand_count_mismatch(
+fn operand_count_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   expected~ : Int,
@@ -350,7 +350,7 @@ pub fn operand_count_mismatch(
 ///
 /// The counterpart of `operand_count_mismatch` on the other side: that one is
 /// about what an instruction was GIVEN, this about what it PRODUCED.
-pub fn value_count_mismatch(
+fn value_count_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   expected~ : Int,
@@ -373,7 +373,7 @@ pub fn value_count_mismatch(
 /// Used where two values disagree and the reader needs to see both -- the
 /// message says what went wrong, and each label says what that particular value
 /// was.
-pub fn typed_branch_label(
+fn typed_branch_label(
   location : @basic.Location,
   ty : @infer.Cell[@infer.InferredType],
 ) -> @diagnostic.Label {
@@ -382,7 +382,7 @@ pub fn typed_branch_label(
 
 ///|
 /// Values reaching one block exit that have no common type.
-pub fn block_exit_type_mismatch(
+fn block_exit_type_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   loc1 : @basic.Location,
@@ -406,7 +406,7 @@ pub fn block_exit_type_mismatch(
 /// `T::` extends to declared types, so the `::` left-hand side is one namespace
 /// shared by the intrinsics and user types -- and the built-ins have to stay
 /// unambiguous there.
-pub fn reserved_type_name(
+fn reserved_type_name(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -420,7 +420,7 @@ pub fn reserved_type_name(
 
 ///|
 /// A `..` splice in a struct that inherits from nothing.
-pub fn splice_without_supertype(
+fn splice_without_supertype(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -437,7 +437,7 @@ pub fn splice_without_supertype(
 ///|
 /// A `..` splice whose supertype is not a struct, so there are no fields to
 /// inherit.
-pub fn splice_non_struct(
+fn splice_non_struct(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -457,7 +457,7 @@ pub fn splice_non_struct(
 ///
 /// The two types have to name each other, and a reference out of the group
 /// cannot be reciprocated -- the type it names was already closed.
-pub fn descriptor_outside_rec_group(
+fn descriptor_outside_rec_group(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   described~ : Bool,
@@ -473,7 +473,7 @@ pub fn descriptor_outside_rec_group(
 
 ///|
 /// One half of a descriptor pair without the other.
-pub fn descriptor_not_reciprocal(
+fn descriptor_not_reciprocal(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   described~ : Bool,
@@ -493,7 +493,7 @@ pub fn descriptor_not_reciprocal(
 
 ///|
 /// A descriptor declared before the type it describes.
-pub fn forward_use_of_described(
+fn forward_use_of_described(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -506,7 +506,7 @@ pub fn forward_use_of_described(
 
 ///|
 /// A descriptor clause on something that is not a struct.
-pub fn descriptor_not_struct(
+fn descriptor_not_struct(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   described~ : Bool,
@@ -522,7 +522,7 @@ pub fn descriptor_not_struct(
 
 ///|
 /// A declaration naming a type that is not a function type.
-pub fn expected_func_type(
+fn expected_func_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -531,7 +531,7 @@ pub fn expected_func_type(
 
 ///|
 /// A declaration giving both a type name and an inline signature that disagree.
-pub fn inline_function_type_mismatch(
+fn inline_function_type_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -549,7 +549,7 @@ pub fn inline_function_type_mismatch(
 ///
 /// There is nowhere for an argument to come from and nowhere for a result to
 /// go: the host calls it on instantiation.
-pub fn start_function_signature(
+fn start_function_signature(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -569,7 +569,7 @@ pub fn start_function_signature(
 /// operand or auto-closing a construct at EOF. Both callers recover with
 /// `Error`, so nothing downstream cascades either way, and a genuine arity
 /// mistake in intact code still surfaces on a clean re-check.
-pub fn not_an_expression(
+fn not_an_expression(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   n : Int,
@@ -588,7 +588,7 @@ pub fn not_an_expression(
 
 ///|
 /// An `if` that must produce a value but has no `else`.
-pub fn if_without_else(
+fn if_without_else(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -607,7 +607,7 @@ pub fn if_without_else(
 /// A block used as an expression that declares parameters.
 ///
 /// Expression position has no stack for them to come from.
-pub fn parameterized_block_expression(
+fn parameterized_block_expression(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -623,7 +623,7 @@ pub fn parameterized_block_expression(
 ///|
 /// A `br_if` value that stays on the stack with a type the block's inferred
 /// result does not match exactly.
-pub fn br_if_result_mismatch(
+fn br_if_result_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   loc : @basic.Location,
@@ -646,7 +646,7 @@ pub fn br_if_result_mismatch(
 
 ///|
 /// A name used where a struct type is required.
-pub fn expected_struct_type(
+fn expected_struct_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -655,7 +655,7 @@ pub fn expected_struct_type(
 
 ///|
 /// A name used where an array type is required.
-pub fn expected_array_type(
+fn expected_array_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -664,7 +664,7 @@ pub fn expected_array_type(
 
 ///|
 /// A memory offset or alignment that does not fit a 64-bit unsigned integer.
-pub fn memory_immediate_too_large(
+fn memory_immediate_too_large(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -679,7 +679,7 @@ pub fn memory_immediate_too_large(
 
 ///|
 /// A memory offset past what the address type can reach.
-pub fn memory_offset_too_large(
+fn memory_offset_too_large(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   max_offset : UInt64,
@@ -700,7 +700,7 @@ pub fn memory_offset_too_large(
 
 ///|
 /// An alignment claiming more than the access can use.
-pub fn memory_align_too_large(
+fn memory_align_too_large(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   natural : Int,
@@ -716,7 +716,7 @@ pub fn memory_align_too_large(
 
 ///|
 /// An alignment that is not a power of two.
-pub fn bad_memory_align(
+fn bad_memory_align(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -729,7 +729,7 @@ pub fn bad_memory_align(
 
 ///|
 /// A lane index outside the shape's lanes.
-pub fn invalid_lane_index(
+fn invalid_lane_index(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   max_lane : Int,
@@ -745,7 +745,7 @@ pub fn invalid_lane_index(
 
 ///|
 /// A lane index that is not a literal.
-pub fn integer_literal_required(
+fn integer_literal_required(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -758,7 +758,7 @@ pub fn integer_literal_required(
 
 ///|
 /// A lane-taking memory access written without its `lane:` immediate.
-pub fn missing_lane_immediate(
+fn missing_lane_immediate(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -775,7 +775,7 @@ pub fn missing_lane_immediate(
 
 ///|
 /// A qualified intrinsic name used as a value rather than called.
-pub fn intrinsic_not_called(
+fn intrinsic_not_called(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   ns : String,
@@ -793,7 +793,7 @@ pub fn intrinsic_not_called(
 ///|
 /// A labelled argument outside a memory access, which is the only place they
 /// mean anything.
-pub fn labelled_argument_not_allowed(
+fn labelled_argument_not_allowed(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -811,7 +811,7 @@ pub fn labelled_argument_not_allowed(
 
 ///|
 /// A `select` whose two branches have no type in common.
-pub fn select_type_mismatch(
+fn select_type_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   loc1 : @basic.Location,
@@ -834,7 +834,7 @@ pub fn select_type_mismatch(
 ///
 /// A tag describes what is thrown, and a throw does not return, so there is
 /// nothing for a result to be.
-pub fn tag_with_results(
+fn tag_with_results(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -847,7 +847,7 @@ pub fn tag_with_results(
 
 ///|
 /// A value whose type nobody can name, where one is needed.
-pub fn unknown_operand_type(
+fn unknown_operand_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -862,7 +862,7 @@ pub fn unknown_operand_type(
 
 ///|
 /// A field name the receiver's struct type does not declare.
-pub fn missing_field(
+fn missing_field(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -878,7 +878,7 @@ pub fn missing_field(
 
 ///|
 /// A field access on something that is not a struct.
-pub fn expected_struct(
+fn expected_struct(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -887,7 +887,7 @@ pub fn expected_struct(
 
 ///|
 /// An index into something that is not an array.
-pub fn expected_array(
+fn expected_array(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -899,7 +899,7 @@ pub fn expected_array(
 ///
 /// `x.sqrt` is almost always `x.sqrt()` mistyped, and saying so is more useful
 /// than "there is no field named sqrt".
-pub fn method_needs_parentheses(
+fn method_needs_parentheses(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   meth : String,
@@ -920,7 +920,7 @@ pub fn method_needs_parentheses(
 
 ///|
 /// A struct literal whose type cannot be worked out.
-pub fn cannot_infer_struct_type(
+fn cannot_infer_struct_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -937,7 +937,7 @@ pub fn cannot_infer_struct_type(
 
 ///|
 /// A struct literal with the wrong number of fields.
-pub fn field_count_mismatch(
+fn field_count_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   expected~ : Int,
@@ -960,7 +960,7 @@ pub fn field_count_mismatch(
 /// Reported once for the TYPE, not once per field: the construction as a whole
 /// is what cannot be written, and naming every offending field would be a list
 /// where one sentence does.
-pub fn not_defaultable(
+fn not_defaultable(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -973,7 +973,7 @@ pub fn not_defaultable(
 
 ///|
 /// An array literal whose type cannot be worked out.
-pub fn cannot_infer_array_type(
+fn cannot_infer_array_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -993,7 +993,7 @@ pub fn cannot_infer_array_type(
 ///
 /// Universal: it is true of the code whatever configuration is being built, so
 /// it is reported once rather than per configuration.
-pub fn cast_always_fails(
+fn cast_always_fails(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   is_test~ : Bool,
@@ -1015,7 +1015,7 @@ pub fn cast_always_fails(
 
 ///|
 /// A cast or test whose answer is already known the other way.
-pub fn redundant_cast(
+fn redundant_cast(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   is_test~ : Bool,
@@ -1037,16 +1037,13 @@ pub fn redundant_cast(
 
 ///|
 /// A non-null assertion on something that is not a reference.
-pub fn expected_ref(
-  ctx : @diagnostic.Context,
-  location : @basic.Location,
-) -> Unit {
+fn expected_ref(ctx : @diagnostic.Context, location : @basic.Location) -> Unit {
   ctx.report(location, Error, @message.text("Expected reference."))
 }
 
 ///|
 /// A string building an `i16` array that is not valid Unicode.
-pub fn string_not_unicode(
+fn string_not_unicode(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1062,7 +1059,7 @@ pub fn string_not_unicode(
 ///|
 /// A string literal building an array of something other than bytes or
 /// 16-bit code units.
-pub fn invalid_string_element_type(
+fn invalid_string_element_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1075,7 +1072,7 @@ pub fn invalid_string_element_type(
 
 ///|
 /// A segment whose elements do not fit the array being built from it.
-pub fn incompatible_element_type(
+fn incompatible_element_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   provided : @infer.Cell[@infer.InferredType],
@@ -1094,7 +1091,7 @@ pub fn incompatible_element_type(
 
 ///|
 /// A descriptor instruction on a type that declares no descriptor.
-pub fn type_without_descriptor(
+fn type_without_descriptor(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1109,7 +1106,7 @@ pub fn type_without_descriptor(
 
 ///|
 /// A catch clause whose payload does not fit the handler's branch target.
-pub fn catch_target_mismatch(
+fn catch_target_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   provided : @infer.Cell[@infer.InferredType],
@@ -1131,7 +1128,7 @@ pub fn catch_target_mismatch(
 ///
 /// The labels become distinct blocks in the lowering and key the arm bodies, so
 /// two arms with one label would build a single block and lose the other body.
-pub fn dispatch_duplicate_arm(
+fn dispatch_duplicate_arm(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,
@@ -1149,7 +1146,7 @@ pub fn dispatch_duplicate_arm(
 
 ///|
 /// A continuation type used as a cast target.
-pub fn invalid_cast_type(
+fn invalid_cast_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1162,7 +1159,7 @@ pub fn invalid_cast_type(
 
 ///|
 /// A cast between types in different hierarchies, which share no value.
-pub fn invalid_cast(
+fn invalid_cast(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   ty : @infer.Cell[@infer.InferredType],
@@ -1178,16 +1175,13 @@ pub fn invalid_cast(
 
 ///|
 /// A call whose callee is not a function.
-pub fn expected_func(
-  ctx : @diagnostic.Context,
-  location : @basic.Location,
-) -> Unit {
+fn expected_func(ctx : @diagnostic.Context, location : @basic.Location) -> Unit {
   ctx.report(location, Error, @message.text("Expected function."))
 }
 
 ///|
 /// An argument label the callee does not take.
-pub fn unknown_argument_label(
+fn unknown_argument_label(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -1205,7 +1199,7 @@ pub fn unknown_argument_label(
 
 ///|
 /// One argument label given twice.
-pub fn duplicate_argument_label(
+fn duplicate_argument_label(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,
@@ -1224,7 +1218,7 @@ pub fn duplicate_argument_label(
 ///|
 /// A memory immediate written positionally, in the syntax that predates the
 /// labels.
-pub fn positional_memory_immediate(
+fn positional_memory_immediate(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   example : String,
@@ -1242,7 +1236,7 @@ pub fn positional_memory_immediate(
 
 ///|
 /// A management call whose method and argument shape match nothing.
-pub fn invalid_management_call(
+fn invalid_management_call(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   meth : String,
@@ -1261,7 +1255,7 @@ pub fn invalid_management_call(
 ///
 /// Unlike an ordinary access, where the alignment is a promise the engine may
 /// ignore, an atomic one must be exactly aligned to be atomic at all.
-pub fn atomic_alignment(
+fn atomic_alignment(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   natural : Int,
@@ -1279,7 +1273,7 @@ pub fn atomic_alignment(
 
 ///|
 /// A stack-switching instruction whose continuation types do not line up.
-pub fn stack_switching_type_mismatch(
+fn stack_switching_type_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   descr : String,
@@ -1295,7 +1289,7 @@ pub fn stack_switching_type_mismatch(
 
 ///|
 /// An `on` clause attached to something other than a resume.
-pub fn on_clause_context(
+fn on_clause_context(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1315,7 +1309,7 @@ pub fn on_clause_context(
 
 ///|
 /// An instruction method called on a receiver that has no such operation.
-pub fn invalid_method_receiver(
+fn invalid_method_receiver(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   ty : @infer.Cell[@infer.InferredType],
@@ -1331,7 +1325,7 @@ pub fn invalid_method_receiver(
 
 ///|
 /// A qualified name that names no intrinsic.
-pub fn unknown_intrinsic(
+fn unknown_intrinsic(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   ns : String,
@@ -1348,7 +1342,7 @@ pub fn unknown_intrinsic(
 
 ///|
 /// A vector-constant lane that does not fit the shape's width.
-pub fn lane_value_out_of_range(
+fn lane_value_out_of_range(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   bits : Int,
@@ -1364,7 +1358,7 @@ pub fn lane_value_out_of_range(
 
 ///|
 /// A vector-constant lane that is not a numeric literal.
-pub fn number_literal_required(
+fn number_literal_required(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1381,7 +1375,7 @@ pub fn number_literal_required(
 /// Anchored at the METHOD rather than the call expression: a chained
 /// `c.switch().switch()` would otherwise report both at the column the chain
 /// starts in, two identical messages one on top of the other.
-pub fn switch_needs_tag(
+fn switch_needs_tag(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1397,7 +1391,7 @@ pub fn switch_needs_tag(
 
 ///|
 /// A `resume_throw` written without the tag it raises.
-pub fn resume_throw_needs_tag(
+fn resume_throw_needs_tag(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1412,7 +1406,7 @@ pub fn resume_throw_needs_tag(
 
 ///|
 /// An `array.copy` between arrays whose elements do not line up.
-pub fn incompatible_array_elements(
+fn incompatible_array_elements(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1427,7 +1421,7 @@ pub fn incompatible_array_elements(
 
 ///|
 /// A `#![feature = "..."]` naming something that is not a feature.
-pub fn unknown_feature(
+fn unknown_feature(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -1445,7 +1439,7 @@ pub fn unknown_feature(
 
 ///|
 /// A feature the module declares and the command line turned off.
-pub fn feature_conflict(
+fn feature_conflict(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   feature : @feature.Feature,
@@ -1470,7 +1464,7 @@ pub fn feature_conflict(
 ///
 /// It states a fact about the WHOLE module, resolved before any branch is
 /// specialized, so a guarded one would leave every construct it gates erroring.
-pub fn feature_declaration_in_conditional(
+fn feature_declaration_in_conditional(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1489,7 +1483,7 @@ pub fn feature_declaration_in_conditional(
 
 ///|
 /// Likewise for the module name.
-pub fn module_name_in_conditional(
+fn module_name_in_conditional(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1511,7 +1505,7 @@ pub fn module_name_in_conditional(
 ///
 /// A stack-switching operation hands control away by its own means; a tail call
 /// is a different mechanism and cannot wrap one.
-pub fn become_on_stack_switching(
+fn become_on_stack_switching(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1530,7 +1524,7 @@ pub fn become_on_stack_switching(
 /// The quick fix is a zero-width edit inserting `_` at the name's start: a
 /// leading underscore is how the language says "deliberately unused", so the fix
 /// and the exemption are the same convention seen from two sides.
-pub fn unused_local(
+fn unused_local(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -1554,7 +1548,7 @@ pub fn unused_local(
 /// is written as a prefix -- `'l: do { .. }` -- and the whole prefix, colon and
 /// following space included, is what has to go. That span can only be found by
 /// reading the source, so the fix is offered only when the context carries it.
-pub fn unused_label(
+fn unused_label(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -1604,7 +1598,7 @@ pub fn unused_label(
 
 ///|
 /// A module field defined but never referenced, exported, or started.
-pub fn unused_field(
+fn unused_field(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   kind : String,
@@ -1624,7 +1618,7 @@ pub fn unused_field(
 
 ///|
 /// An imported field never referenced, exported, or started.
-pub fn unused_import(
+fn unused_import(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   kind : String,
@@ -1644,7 +1638,7 @@ pub fn unused_import(
 
 ///|
 /// A mutable global nothing ever assigns.
-pub fn unnecessary_mut(
+fn unnecessary_mut(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -1663,10 +1657,7 @@ pub fn unnecessary_mut(
 
 ///|
 /// A side-effect-free expression whose result is computed and then dropped.
-pub fn unused_result(
-  ctx : @diagnostic.Context,
-  location : @basic.Location,
-) -> Unit {
+fn unused_result(ctx : @diagnostic.Context, location : @basic.Location) -> Unit {
   ctx.report(
     location,
     Warning,
@@ -1680,7 +1671,7 @@ pub fn unused_result(
 
 ///|
 /// A comparison whose answer does not depend on its variable operand.
-pub fn tautological_comparison(
+fn tautological_comparison(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   value : Bool,
@@ -1698,7 +1689,7 @@ pub fn tautological_comparison(
 
 ///|
 /// A trapping float-to-integer conversion of a constant that is out of range.
-pub fn conversion_out_of_range(
+fn conversion_out_of_range(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1715,7 +1706,7 @@ pub fn conversion_out_of_range(
 
 ///|
 /// A condition whose value is decided before it is ever evaluated.
-pub fn constant_condition(
+fn constant_condition(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   value : Bool,
@@ -1733,7 +1724,7 @@ pub fn constant_condition(
 
 ///|
 /// An operation that does nothing -- a variable written back to itself.
-pub fn redundant_operation(
+fn redundant_operation(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   message : @message.Message,
@@ -1754,7 +1745,7 @@ pub fn redundant_operation(
 /// picks one -- so a trapping or effectful operation in the branch not taken
 /// still happens. The primary caret is on the operation; the secondary explains
 /// why it runs at all.
-pub fn eager_select(
+fn eager_select(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   select : @basic.Location,
@@ -1788,7 +1779,7 @@ pub fn eager_select(
 ///
 /// Anchored at the unreachable statement, with a secondary caret pointing back
 /// at the instruction that took control away -- which is the one to look at.
-pub fn dead_code(
+fn dead_code(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   diverged_at : @basic.Location,
@@ -1814,7 +1805,7 @@ pub fn dead_code(
 /// Wasm masks the count modulo the width, so the shift silently becomes a
 /// different one -- which is very unlikely to be what was meant. The hint says
 /// what it actually shifts by.
-pub fn shift_overflow(
+fn shift_overflow(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   width : Int,
@@ -1847,7 +1838,7 @@ pub fn shift_overflow(
 
 ///|
 /// An integer division or remainder by a constant zero.
-pub fn division_by_zero(
+fn division_by_zero(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -1865,7 +1856,7 @@ pub fn division_by_zero(
 ///
 /// These reorder how the text DISPLAYS without changing a byte of it, so what a
 /// reader sees and what runs can differ -- the "Trojan Source" attack.
-pub fn confusable_unicode(
+fn confusable_unicode(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   codepoint : Int,
@@ -1894,7 +1885,7 @@ pub fn confusable_unicode(
 /// The printer parenthesises exactly these mixes, so re-printed or decompiled
 /// Wax stays quiet under the lint -- which is the property that makes it safe to
 /// have at all.
-pub fn precedence(
+fn precedence(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   inner : @basic.Location,
@@ -1925,7 +1916,7 @@ pub fn precedence(
 
 ///|
 /// Two exports of the same name.
-pub fn duplicated_export(
+fn duplicated_export(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,
@@ -1945,7 +1936,7 @@ pub fn duplicated_export(
 
 ///|
 /// More than one start function in one configuration.
-pub fn multiple_start(
+fn multiple_start(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,
@@ -1962,7 +1953,7 @@ pub fn multiple_start(
 
 ///|
 /// More than one module name annotation.
-pub fn multiple_module(
+fn multiple_module(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,
@@ -1979,7 +1970,7 @@ pub fn multiple_module(
 
 ///|
 /// A memory or table whose size exceeds what its address type can index.
-pub fn limit_too_large(
+fn limit_too_large(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   kind : String,
@@ -1998,7 +1989,7 @@ pub fn limit_too_large(
 
 ///|
 /// A maximum size below the minimum.
-pub fn limit_mismatch(
+fn limit_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   kind : String,
@@ -2014,7 +2005,7 @@ pub fn limit_mismatch(
 
 ///|
 /// A page size that is neither the default nor one byte.
-pub fn invalid_page_size(
+fn invalid_page_size(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -2027,7 +2018,7 @@ pub fn invalid_page_size(
 
 ///|
 /// A shared memory with no maximum.
-pub fn shared_memory_without_max(
+fn shared_memory_without_max(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -2040,7 +2031,7 @@ pub fn shared_memory_without_max(
 
 ///|
 /// An annotation this port does not know.
-pub fn unknown_annotation(
+fn unknown_annotation(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -2057,7 +2048,7 @@ pub fn unknown_annotation(
 ///|
 /// An annotation whose value is the wrong shape, or missing, or present when
 /// it should not be.
-pub fn annotation_value_mismatch(
+fn annotation_value_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -2076,7 +2067,7 @@ pub fn annotation_value_mismatch(
 
 ///|
 /// An annotation on an entity it means nothing for.
-pub fn annotation_not_allowed(
+fn annotation_not_allowed(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -2092,7 +2083,7 @@ pub fn annotation_not_allowed(
 
 ///|
 /// A conditional guard on an annotation that cannot be conditional.
-pub fn guard_not_allowed(
+fn guard_not_allowed(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -2110,7 +2101,7 @@ pub fn guard_not_allowed(
 
 ///|
 /// A second import-name annotation on one declaration.
-pub fn multiple_import(
+fn multiple_import(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,
@@ -2130,7 +2121,7 @@ pub fn multiple_import(
 
 ///|
 /// An optimization priority with no compilation priority to sit beside.
-pub fn priority_required(
+fn priority_required(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   which : String,
@@ -2148,7 +2139,7 @@ pub fn priority_required(
 
 ///|
 /// Both spellings of an optimization priority on one function.
-pub fn conflicting_optimization(
+fn conflicting_optimization(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   prev_loc : @basic.Location,
@@ -2167,7 +2158,7 @@ pub fn conflicting_optimization(
 
 ///|
 /// A call-target hint on a call whose target is already known.
-pub fn call_targets_direct_call(
+fn call_targets_direct_call(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -2182,7 +2173,7 @@ pub fn call_targets_direct_call(
 
 ///|
 /// A supertype that was not declared extensible.
-pub fn final_supertype(
+fn final_supertype(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -2200,7 +2191,7 @@ pub fn final_supertype(
 
 ///|
 /// A type that does not stand where its declared supertype does.
-pub fn invalid_subtype(
+fn invalid_subtype(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
@@ -2216,7 +2207,7 @@ pub fn invalid_subtype(
 
 ///|
 /// A stack-switching receiver that is not a declared continuation.
-pub fn expected_cont_type(
+fn expected_cont_type(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -2235,7 +2226,7 @@ pub fn expected_cont_type(
 /// The instruction carries its continuation type as an IMMEDIATE, so an
 /// abstract reference leaves nothing to write there -- and there is no way to
 /// recover it, since a continuation reference cannot be narrowed by a cast.
-pub fn abstract_cont_receiver(
+fn abstract_cont_receiver(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -2251,7 +2242,7 @@ pub fn abstract_cont_receiver(
 ///|
 /// A hole standing where the construct evaluates its operand in a block of its
 /// own, whose stack the pending values never reach.
-pub fn hole_in_control_operand(
+fn hole_in_control_operand(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   construct : String,
@@ -2274,10 +2265,7 @@ pub fn hole_in_control_operand(
 ///
 /// Anchored at the VALUE, not at the hole: the hole is the intent, the value is
 /// what makes it unencodable, and moving the value is the fix.
-pub fn before_hole(
-  ctx : @diagnostic.Context,
-  location : @basic.Location,
-) -> Unit {
+fn before_hole(ctx : @diagnostic.Context, location : @basic.Location) -> Unit {
   ctx.report(
     location,
     Error,
@@ -2289,7 +2277,7 @@ pub fn before_hole(
 
 ///|
 /// Call-target frequencies that add up to more than everything.
-pub fn call_targets_over_100(
+fn call_targets_over_100(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   total : Int,
@@ -2310,7 +2298,7 @@ pub fn call_targets_over_100(
 
 ///|
 /// A cast to a continuation type that is not already a no-op.
-pub fn cont_cast_not_ascription(
+fn cont_cast_not_ascription(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -2330,7 +2318,7 @@ pub fn cont_cast_not_ascription(
 
 ///|
 /// An initializer expression wasm cannot evaluate before the module runs.
-pub fn constant_expression_required(
+fn constant_expression_required(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -2343,7 +2331,7 @@ pub fn constant_expression_required(
 
 ///|
 /// An initializer reading a global that has no value yet.
-pub fn constant_global_required(
+fn constant_global_required(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {
@@ -2359,7 +2347,7 @@ pub fn constant_global_required(
 ///
 /// Only the zero-extending `_u` instructions exist, so the alternative -- load
 /// unsigned, then sign-extend -- is spelled out rather than left to the reader.
-pub fn atomic_signed_load(
+fn atomic_signed_load(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   cast : String,
@@ -2381,7 +2369,7 @@ pub fn atomic_signed_load(
 ///
 /// Branches are transparent and mutually exclusive, so a name bound in one
 /// would leak past the conditional and clash with the other.
-pub fn let_in_conditional(
+fn let_in_conditional(
   ctx : @diagnostic.Context,
   location : @basic.Location,
 ) -> Unit {

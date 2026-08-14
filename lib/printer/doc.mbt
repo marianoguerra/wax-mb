@@ -78,7 +78,7 @@ pub(all) enum Mode {
 
 ///|
 /// A live layout frame: where breaks indent to, and how they behave.
-pub(all) struct Frame {
+struct Frame {
   findent : Int
   fmode : Mode
 } derive(Eq, Debug)
@@ -89,7 +89,7 @@ pub(all) struct Frame {
 /// `Susp` means the scan ran out of buffered input and parked its state, to be
 /// resumed on the next fed token -- so each buffered token is scanned once
 /// rather than re-scanned from scratch.
-pub(all) enum ScanResult {
+enum ScanResult {
   Fits
   Nofit
   Susp

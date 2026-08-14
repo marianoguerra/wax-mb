@@ -96,11 +96,11 @@ pub(all) enum MemberReceiver {
 
 ///|
 /// A struct or array field's type, as the AST spells it.
-pub type FieldType = @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]
+type FieldType = @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]
 
 ///|
 /// A struct's fields, named and typed, as a type definition declares them.
-pub type StructFields = Array[
+type StructFields = Array[
   @basic.Annotated[(@ast.Ident, FieldType), @basic.Location],
 ]
 

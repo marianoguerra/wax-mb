@@ -23,7 +23,7 @@
 ///
 /// An identity pair yields `Some([])`: the cast is real in the source -- it
 /// pins a width the checker used -- and nothing at all in the output.
-pub fn numeric_cast(
+fn numeric_cast(
   from : @wasm_types.ValType[Int],
   to : @wasm_types.ValType[Int],
 ) -> Array[@wasm_bin.Instruction]? {
@@ -56,7 +56,7 @@ pub fn numeric_cast(
 /// `strict` is the trapping form; without it the saturating one. They differ
 /// only at the edges, which is exactly where a wrong choice is hardest to
 /// notice.
-pub fn signed_cast(
+fn signed_cast(
   from : @wasm_types.ValType[Int],
   to : @ast.NumType,
   signage : @wasm_types.Signage,
@@ -94,41 +94,6 @@ pub fn signed_cast(
     // A narrowing needs no sign: the bits are simply dropped.
     (I64, I32, _, _) => Some([I32WrapI64])
     _ => None
-  }
-}
-
-///|
-/// Whether a heap type belongs to the `extern` hierarchy.
-pub fn is_extern_hierarchy(h : @wasm_types.HeapType[Int]) -> Bool {
-  h is (Extern | NoExtern)
-}
-
-///|
-/// Whether a heap type belongs to the `any` hierarchy.
-pub fn is_any_hierarchy(h : @wasm_types.HeapType[Int]) -> Bool {
-  match h {
-    Any | Eq | I31 | Struct | Array | None_ | Type(_) | Exact(_) => true
-    _ => false
-  }
-}
-
-///|
-/// The instruction that crosses between the `any` and `extern` hierarchies.
-///
-/// `e as &extern` is NOT a `ref.cast`. The two hierarchies share no value, so a
-/// cast between them could only ever trap -- what the source means is the
-/// lossless conversion, which never fails and is a different opcode. Reading it
-/// as a cast produces a module that validates and traps on every call.
-pub fn hierarchy_conversion(
-  from : @wasm_types.HeapType[Int],
-  to : @wasm_types.HeapType[Int],
-) -> @wasm_bin.Instruction? {
-  if is_any_hierarchy(from) && is_extern_hierarchy(to) {
-    Some(ExternConvertAny)
-  } else if is_extern_hierarchy(from) && is_any_hierarchy(to) {
-    Some(AnyConvertExtern)
-  } else {
-    None
   }
 }
 

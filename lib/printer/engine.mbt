@@ -13,7 +13,7 @@
 /// distinguishes a GHv group open (which resolves to a frame) from a Fill
 /// break (which resolves to a separator); the rest are the parked loop
 /// variables.
-struct ScanState {
+priv struct ScanState {
   mut active : Bool
   mut ghv : Bool
   mut base : Int
@@ -27,7 +27,7 @@ struct ScanState {
 
 ///|
 /// The engine.
-pub struct Engine {
+struct Engine {
   width : Int
   out : StringBuilder
   /// How far breaks may indent, so deeply nested code does not march off the
@@ -443,7 +443,7 @@ fn Engine::advance(self : Engine, at_end~ : Bool) -> Unit {
 
 ///|
 /// Push one token.
-pub fn Engine::feed(self : Engine, tok : Token) -> Unit {
+fn Engine::feed(self : Engine, tok : Token) -> Unit {
   match self.record {
     Some(r) => r.push(tok)
     None => ()
@@ -457,12 +457,12 @@ pub fn Engine::feed(self : Engine, tok : Token) -> Unit {
 
 ///|
 /// Signal end of input and drain the tail.
-pub fn Engine::finish_stream(self : Engine) -> Unit {
+fn Engine::finish_stream(self : Engine) -> Unit {
   self.advance(at_end=true)
 }
 
 ///|
 /// The laid-out text.
-pub fn Engine::contents(self : Engine) -> String {
+fn Engine::contents(self : Engine) -> String {
   self.out.to_string()
 }

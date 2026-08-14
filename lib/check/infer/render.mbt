@@ -10,7 +10,7 @@
 ///|
 /// Render an inferred type through the formatter's context, so it picks up the
 /// diagnostic's colour theme and width.
-pub fn[Info] render(ctx : @output.Ctx[Info], cell : Cell[InferredType]) -> Unit {
+fn[Info] render(ctx : @output.Ctx[Info], cell : Cell[InferredType]) -> Unit {
   match cell.get() {
     // A block result still under inference renders as the annotation being
     // tested -- the type a mismatched reader was checked against -- not `any`.

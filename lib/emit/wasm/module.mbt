@@ -975,7 +975,7 @@ fn Lowering::resolve(
 
 ///|
 /// The conditional frames a source position stands inside, outermost first.
-pub fn guards_at(
+fn guards_at(
   conds : Array[@wasm_bin.CondGroup],
   loc : @basic.Location,
 ) -> Array[(Int, Bool)] {

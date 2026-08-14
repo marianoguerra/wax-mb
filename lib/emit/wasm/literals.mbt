@@ -13,7 +13,7 @@
 /// Read UNSIGNED on a signed-parse failure, because a hex literal past 2^63 is
 /// written as a bit pattern rather than a negative number, and that pattern is
 /// what the encoder emits.
-pub fn parse_i64(s : String, loc : @basic.Location) -> Int64 raise LowerError {
+fn parse_i64(s : String, loc : @basic.Location) -> Int64 raise LowerError {
   let cleaned = s.split("_").join("")
   @string.parse_int64(cleaned) catch {
     _ =>
@@ -25,30 +25,13 @@ pub fn parse_i64(s : String, loc : @basic.Location) -> Int64 raise LowerError {
 
 ///|
 /// The same, truncated to the 32 bits an `i32.const` carries.
-pub fn parse_i32(s : String, loc : @basic.Location) -> Int raise LowerError {
+fn parse_i32(s : String, loc : @basic.Location) -> Int raise LowerError {
   parse_i64(s, loc).to_int()
 }
 
 ///|
-/// A wax float literal as a double.
-pub fn parse_f64(s : String, loc : @basic.Location) -> Double raise LowerError {
-  let cleaned = s.split("_").join("")
-  @string.parse_double(cleaned) catch {
-    _ =>
-      // An integer literal in a float position, and the `nan:0x..` payload form,
-      // both reach here; the first parses as an integer, the second does not
-      // survive a double at all and is not lowered yet.
-      @string.parse_int64(cleaned).to_double() catch {
-        _ => raise NotLowered("float literal spelling", loc)
-      }
-  }
-}
-
-///|
 /// A readable name for an instruction, for the "not lowered" report.
-pub fn construct_name(
-  d : @ast.InstrDesc[@typing_env.InferredAnnotation],
-) -> String {
+fn construct_name(d : @ast.InstrDesc[@typing_env.InferredAnnotation]) -> String {
   match d {
     Block(..) | Loop(..) => "block"
     While(..) => "while"
@@ -107,7 +90,7 @@ pub fn construct_name(
 ///
 /// So the bits are assembled here rather than parsed: for these two forms there
 /// is nothing to parse them INTO that would keep them.
-pub fn parse_float_bits(
+fn parse_float_bits(
   s : String,
   wide : Bool,
   loc : @basic.Location,
@@ -147,7 +130,7 @@ pub fn parse_float_bits(
 /// conversion does to a signalling NaN. The payload the source wrote is then
 /// silently not the payload emitted -- `nan:0x12345` becomes `nan:0x412345` --
 /// which is precisely the bit pattern these literals exist to name.
-pub fn parse_f32(s : String, loc : @basic.Location) -> Float raise LowerError {
+fn parse_f32(s : String, loc : @basic.Location) -> Float raise LowerError {
   let cleaned = s.split("_").join("")
   let (negative, body) = if cleaned.has_prefix("-") {
     (true, cleaned[1:].to_owned())

@@ -38,7 +38,7 @@ pub(all) enum Origin {
 /// and not the name, which is the key this is stored under. It is here because
 /// a clash reports what the name is already taken BY, and the two declarations
 /// need not be of the same kind: memories and tables share one name space.
-pub(all) struct Declaration {
+struct Declaration {
   kind : String
   loc : @basic.Location
   cond : @cond.T
@@ -93,7 +93,7 @@ fn Namespace::conflict(self : Namespace, name : String) -> Declaration? {
 /// The declaration is recorded EITHER WAY. Dropping it would leave every later
 /// use of the name reading as unbound, turning one duplicate into a report per
 /// use -- the same cascade the poison entries elsewhere exist to prevent.
-pub fn Namespace::register(
+fn Namespace::register(
   self : Namespace,
   diagnostics : @diagnostic.Context,
   kind : String,
@@ -279,7 +279,7 @@ pub fn[A] Tbl::visible(self : Tbl[A], name : String) -> Array[A] {
 /// something rather than to nothing.
 ///
 /// Each search runs newest first: a later declaration shadows an earlier one.
-pub fn[A] Tbl::select(self : Tbl[A], name : String) -> A? {
+fn[A] Tbl::select(self : Tbl[A], name : String) -> A? {
   let here = self.names.cond.val
   guard self.entries.get(name) is Some(l) else { return None }
   guard !l.is_empty() else { return None }

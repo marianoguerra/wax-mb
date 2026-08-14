@@ -6,19 +6,6 @@
 // on the 13k lines that build it.
 
 ///|
-/// What a node carries once the checker has resolved it: the storage types of
-/// the values it leaves on the stack, and its span.
-///
-/// This is the ENTIRE interface between the checker and the code generator. The
-/// lowering reads it at ~105 sites to pick opcodes -- `i32.add` against
-/// `f64.add` against `i64.add` -- and nothing else about the checker's work
-/// crosses that line.
-pub type TypedAnnotation = (
-  Array[@wasm_types.StorageType[@ast.Ident]?],
-  @basic.Location,
-)
-
-///|
 /// The same annotation before resolution, with the inference cells intact.
 ///
 /// Resolution collapses distinctions the cells still hold: a flexible numeric
@@ -60,7 +47,7 @@ pub(all) struct Reference {
 ///|
 /// Where references are recorded for go-to-definition, or `None` outside the
 /// editor -- so an ordinary compile pays nothing for the feature.
-pub type ResolveSink = Array[Reference]?
+type ResolveSink = Array[Reference]?
 
 ///|
 /// Is this a real source span, rather than a synthesized node's?
@@ -68,12 +55,12 @@ pub type ResolveSink = Array[Reference]?
 /// A synthesized node -- an interned function type looked up for a call, a
 /// desugared construct -- carries the dummy span, whose offset is the `-1`
 /// sentinel rather than `0`. Only genuine source references are recorded.
-pub fn is_source(l : @basic.Location) -> Bool {
+fn is_source(l : @basic.Location) -> Bool {
   l.start.cnum >= 0
 }
 
 ///|
-pub fn same_span(a : @basic.Location, b : @basic.Location) -> Bool {
+fn same_span(a : @basic.Location, b : @basic.Location) -> Bool {
   a.start.cnum == b.start.cnum && a.end.cnum == b.end.cnum
 }
 
@@ -102,7 +89,7 @@ pub fn[Info] expression_type_opt(
 /// `None_` is a built-in abstract bottom heap type, so its internal form
 /// carries no index into the type store and needs no context to build -- which
 /// is what lets this be a plain value where the checker's own path threads one.
-pub fn ref_none_valtype(nullable~ : Bool) -> @infer.InferredValType {
+fn ref_none_valtype(nullable~ : Bool) -> @infer.InferredValType {
   {
     typ: Ref({ nullable, typ: None_ }),
     internal: Ref({ nullable, typ: None_ }),

@@ -76,7 +76,7 @@ let storagetype_tbl : Map[String, @wasm_types.StorageType[Ident]] = {
 }
 
 ///|
-pub fn heap_type_of(t : Ident) -> @wasm_types.HeapType[Ident] {
+fn heap_type_of(t : Ident) -> @wasm_types.HeapType[Ident] {
   match absheaptype_tbl.get(t.name) {
     Some(h) => h
     None => Type(t)
@@ -84,7 +84,7 @@ pub fn heap_type_of(t : Ident) -> @wasm_types.HeapType[Ident] {
 }
 
 ///|
-pub fn value_type_of(
+fn value_type_of(
   p : (Position, Position),
   t : String,
 ) -> @wasm_types.ValType[Ident] {
@@ -96,7 +96,7 @@ pub fn value_type_of(
 }
 
 ///|
-pub fn cast_type_of(p : (Position, Position), t : String) -> @ast.CastType {
+fn cast_type_of(p : (Position, Position), t : String) -> @ast.CastType {
   match valtype_tbl.get(t) {
     Some(v) => Value(v)
     None =>
@@ -113,7 +113,7 @@ pub fn cast_type_of(p : (Position, Position), t : String) -> @ast.CastType {
 }
 
 ///|
-pub fn storage_type_of(
+fn storage_type_of(
   p : (Position, Position),
   t : String,
 ) -> @wasm_types.StorageType[Ident] {
@@ -133,7 +133,7 @@ pub fn storage_type_of(
 ///
 /// Only a concrete named type can be exact: `&!any` is meaningless, since the
 /// abstract types are not describable.
-pub fn make_exact(
+fn make_exact(
   p : (Position, Position),
   typ : @wasm_types.HeapType[Ident],
 ) -> @wasm_types.HeapType[Ident] {
@@ -145,7 +145,7 @@ pub fn make_exact(
 
 ///|
 /// The scalar storage type named by a data-segment numeric run, `[f32: ...]`.
-pub fn scalar_storagetype(
+fn scalar_storagetype(
   p : (Position, Position),
   t : Ident,
 ) -> @wasm_types.StorageType[Ident] {
@@ -167,7 +167,7 @@ pub fn scalar_storagetype(
 
 ///|
 /// The vector shape named by a v128 run element, `i32x4(...)`.
-pub fn vec_shape(p : (Position, Position), s : Ident) -> @wasm_types.V128Shape {
+fn vec_shape(p : (Position, Position), s : Ident) -> @wasm_types.V128Shape {
   match s.name {
     "i8x16" => I8x16
     "i16x8" => I16x8
@@ -192,7 +192,7 @@ pub fn vec_shape(p : (Position, Position), s : Ident) -> @wasm_types.V128Shape {
 /// signature. The message names the exact repair, so a quick fix is derived
 /// from it: a zero-width insertion of `()` right after the name or type
 /// reference, which is where an empty parameter list belongs.
-pub fn decl_sign(
+fn decl_sign(
   p : (Position, Position),
   t : Ident?,
   sign : FuncType?,
@@ -214,7 +214,7 @@ pub fn decl_sign(
 /// Used for memory and table limits. A table64 bound may exceed Int64.max, so
 /// the full unsigned range is parsed. Range is checked FIRST so an out-of-range
 /// literal surfaces as a recoverable syntax error rather than a crash.
-pub fn u64_of_int_literal(p : (Position, Position), n : String) -> UInt64 {
+fn u64_of_int_literal(p : (Position, Position), n : String) -> UInt64 {
   let cleaned = n.replace_all(old="_", new="")
   // `parse_uint64` understands the 0x prefix itself when base is 0.
   @string.parse_uint64(cleaned, base=0) catch {
@@ -241,7 +241,7 @@ pub fn u64_of_int_literal(p : (Position, Position), n : String) -> UInt64 {
 /// to Int first: a literal above Int.max would overflow the narrowing. A power
 /// of two has a single set bit, and its log2 is that bit's position, which
 /// always fits an Int.
-pub fn page_size_log2(p : (Position, Position), n : String) -> Int {
+fn page_size_log2(p : (Position, Position), n : String) -> Int {
   let v = u64_of_int_literal(p, n)
   if v != 0UL && (v & (v - 1UL)) == 0UL {
     let mut x = v
@@ -258,7 +258,7 @@ pub fn page_size_log2(p : (Position, Position), n : String) -> Int {
 
 ///|
 /// The address type of a memory or table, `i32` or `i64`.
-pub fn address_type_of(
+fn address_type_of(
   p : (Position, Position),
   t : String,
 ) -> @wasm_types.AddressType {
@@ -280,7 +280,7 @@ pub fn address_type_of(
 ///
 /// Guarded so an over-long component surfaces as a recoverable syntax error
 /// rather than a crash.
-pub fn int_of_version_component(p : (Position, Position), s : String) -> Int {
+fn int_of_version_component(p : (Position, Position), s : String) -> Int {
   @string.parse_int(s) catch {
     _ =>
       fail_at(
@@ -296,7 +296,7 @@ pub fn int_of_version_component(p : (Position, Position), s : String) -> Int {
 ///
 /// Elements are tagged by their shape as they are parsed; the wrong kind for
 /// the run's element type is a syntax error rather than a silent coercion.
-pub fn data_run(
+fn data_run(
   p : (Position, Position),
   t : Ident,
   items : Array[DataRunItem],
@@ -337,7 +337,7 @@ pub fn data_run(
 ///|
 /// One element of a data run, before it has been checked against the run's
 /// element type.
-pub(all) enum DataRunItem {
+priv enum DataRunItem {
   Num(Annotated[String, Location])
   Vec(Annotated[@wasm_types.V128, Location])
 }

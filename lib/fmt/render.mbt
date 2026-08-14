@@ -46,7 +46,7 @@ pub fn render_with(
 
 ///|
 /// Print a module's fields, then any trailing trivia no field owned.
-pub fn Ctx::module_(
+fn Ctx::module_(
   self : Ctx[@basic.Location],
   m : @ast.LocModule,
   tail : Array[@trivia.Entry],

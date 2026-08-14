@@ -14,7 +14,7 @@
 /// `<` has no opcode, and neither does a signed shift of a float. The caller
 /// raises rather than guessing, since a plausible substitute would be a module
 /// that validates and computes something else.
-pub fn binop_instruction(
+fn binop_instruction(
   op : @ast.BinOp,
   ty : @wasm_types.ValType[Int],
 ) -> @wasm_bin.Instruction? {
@@ -131,7 +131,7 @@ fn f64_binop(op : @ast.BinOp) -> @wasm_bin.Instruction? {
 ///
 /// The METHOD fixes the family and the RECEIVER fixes the width -- `clz` is one
 /// name over `i32.clz` and `i64.clz`, and only the receiver's type says which.
-pub fn unary_instruction(
+fn unary_instruction(
   meth : String,
   recv : @wasm_types.ValType[Int]?,
 ) -> @wasm_bin.Instruction? {
@@ -174,7 +174,7 @@ pub fn unary_instruction(
 
 ///|
 /// The instruction a two-operand scalar method becomes.
-pub fn binary_intrinsic(
+fn binary_intrinsic(
   meth : String,
   recv : @wasm_types.ValType[Int]?,
 ) -> @wasm_bin.Instruction? {

@@ -850,28 +850,6 @@ fn Ctx::instr_desc(
 }
 
 ///|
-/// A character literal.
-///
-/// Escaped by the same all-or-nothing rule as a string, with `x` hex prefixes:
-/// `escape_string` is what decides, not a hand-rolled table.
-pub fn char_literal(c : Char) -> String {
-  // A char is a SCALAR, so it contributes its UTF-8 encoding -- the same bytes
-  // the lexer would have produced for it inside a string.
-  let (_, body) = @unicode.escape_string(
-    @utf8.encode(c.to_string()),
-    hex_prefix="x",
-  )
-  "'" + body + "'"
-}
-
-///|
-/// A string literal, from its raw bytes.
-pub fn string_literal(s : Bytes) -> String {
-  let (_, body) = @unicode.escape_string(s, hex_prefix="x")
-  "\"" + body + "\""
-}
-
-///|
 /// The hint attributes prefixing an instruction.
 fn Ctx::hint_attrs(
   self : Ctx[@basic.Location],
@@ -923,11 +901,11 @@ fn Ctx::hint_attrs(
 
 ///|
 /// `metadata.code.instr_freq`: never optimize.
-pub let never_opt : Int = 0
+let never_opt : Int = 0
 
 ///|
 /// `metadata.code.instr_freq`: always optimize.
-pub let always_opt : Int = 127
+let always_opt : Int = 127
 
 ///|
 /// Decode a frequency byte back to the ratio it stands for.

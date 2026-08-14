@@ -13,7 +13,7 @@
 ///
 /// A bottom reference has no values, so a cast FROM one is not a mistake: it is
 /// how a value that stands for nothing gets a type at all.
-pub fn is_bottom_heaptype(h : @wasm_types.HeapType[@ast.Ident]) -> Bool {
+fn is_bottom_heaptype(h : @wasm_types.HeapType[@ast.Ident]) -> Bool {
   match h {
     None_ | NoFunc | NoExtern | NoExn | NoCont => true
     _ => false
@@ -143,7 +143,7 @@ pub fn is_cont_heaptype(
 /// what its operand has to be a reference into for the question to mean
 /// anything. `None` when the type name does not resolve -- already reported by
 /// the lookup, which is the reporting one on purpose.
-pub fn top_heap_type(
+fn top_heap_type(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   t : @wasm_types.HeapType[@ast.Ident],
@@ -178,7 +178,7 @@ pub fn top_heap_type(
 /// the block being branched to would infer a type too narrow to accept what
 /// actually arrives. Wasm derives the residual from the instruction's
 /// immediates, so this has to as well.
-pub fn conditional_cast_types(
+fn conditional_cast_types(
   ctx : @typing_env.ModuleContext,
   location : @basic.Location,
   operand : @infer.Cell[@infer.InferredType],
@@ -270,7 +270,7 @@ pub fn conditional_cast_types(
 /// to reject -- a `LargeInt` to anything but a number or an i31/extern box, and
 /// a reference to a numeric type -- are kept, because they have to be reached
 /// BEFORE the catch-alls below them.
-pub fn value_cast(
+fn value_cast(
   ctx : @typing_env.ModuleContext,
   operand : @infer.Cell[@infer.InferredType],
   target : @infer.InferredValType,
@@ -401,7 +401,7 @@ pub fn value_cast(
 /// which.
 /// As for a plain cast, grounding and the verdict are one act, and the
 /// rejecting side is a default rather than a list.
-pub fn signed_cast(
+fn signed_cast(
   ctx : @typing_env.ModuleContext,
   operand : @infer.Cell[@infer.InferredType],
   target : @ast.NumType,

@@ -178,7 +178,7 @@ fn comparable(
 /// The merging is why this mutates rather than returning a verdict: an operand
 /// left `Unknown` would be lowered at the i32 default while the result was
 /// pinned to another width, which is an incoherent instruction.
-pub fn type_binop(
+fn type_binop(
   info : @type_store.SubtypingInfo,
   diagnostics : @diagnostic.Context,
   op : @basic.Annotated[@ast.BinOp, @basic.Location],
@@ -341,7 +341,7 @@ pub fn type_binop(
 /// too. A disconnected result cell would let the operand stay `Unknown` and
 /// lower at the i32 default while the result was pinned to another width: an
 /// `i32.sub` annotated as an f64 negation.
-pub fn type_unop(
+fn type_unop(
   diagnostics : @diagnostic.Context,
   op : @basic.Annotated[@ast.UnOp, @basic.Location],
   location : @basic.Location,

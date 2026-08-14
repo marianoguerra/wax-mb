@@ -11,7 +11,7 @@
 
 ///|
 /// The natural alignment, as a power of two, of an access of this width.
-pub fn natural_align(meth : String) -> Int {
+fn natural_align(meth : String) -> Int {
   match meth {
     "load8" | "store8" => 0
     "load16" | "store16" => 1
@@ -26,7 +26,7 @@ pub fn natural_align(meth : String) -> Int {
 /// They arrive as `Labelled` nodes among the arguments -- kept there by the
 /// checker precisely so the code generator can read them -- and default to the
 /// natural alignment and a zero offset when unwritten.
-pub fn Lowering::memarg(
+fn Lowering::memarg(
   self : Lowering,
   meth : @ast.Ident,
   args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
@@ -38,7 +38,7 @@ pub fn Lowering::memarg(
 ///|
 /// The same, for an access whose natural alignment is not read off a scalar
 /// method name -- the vector accesses, whose widths the SIMD registry knows.
-pub fn Lowering::memarg_natural(
+fn Lowering::memarg_natural(
   self : Lowering,
   natural : Int,
   args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
@@ -87,7 +87,7 @@ fn log2_exact(n : Int64, loc : @basic.Location) -> Int raise LowerError {
 /// `as_` is the type a following cast asks for, and the sign it asks for; with
 /// no cast the narrow loads zero-extend into an i32, which is what a bare
 /// `load8` means.
-pub fn load_instruction(
+fn load_instruction(
   meth : String,
   mem : Int,
   align : Int,
@@ -120,7 +120,7 @@ pub fn load_instruction(
 ///|
 /// The instruction a store becomes. A store has no signedness: it writes the low
 /// bytes of whatever it is given.
-pub fn store_instruction(
+fn store_instruction(
   meth : String,
   mem : Int,
   align : Int,

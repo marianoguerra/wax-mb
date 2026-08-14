@@ -19,7 +19,7 @@
 /// The narrow loads produce `Int8` / `Int16` rather than i32 for the same
 /// reason a packed field read does: the value IS an i32, but remembering how
 /// narrow it was lets the lowering pick the signed or unsigned opcode.
-pub fn mem_load_result(meth : String) -> @infer.InferredType? {
+fn mem_load_result(meth : String) -> @infer.InferredType? {
   match meth {
     "load8" => Some(Int8)
     "load16" => Some(Int16)
@@ -33,7 +33,7 @@ pub fn mem_load_result(meth : String) -> @infer.InferredType? {
 
 ///|
 /// Whether a method name is a memory store.
-pub fn mem_store_method(meth : String) -> Bool {
+fn mem_store_method(meth : String) -> Bool {
   match meth {
     "store8" | "store16" | "store32" | "store64" | "storef32" | "storef64" =>
       true
@@ -43,7 +43,7 @@ pub fn mem_store_method(meth : String) -> Bool {
 
 ///|
 /// Whether a method name is a plain memory access -- a load or a store.
-pub fn is_mem_method(meth : String) -> Bool {
+fn is_mem_method(meth : String) -> Bool {
   mem_load_result(meth) is Some(_) || mem_store_method(meth)
 }
 
@@ -52,7 +52,7 @@ pub fn is_mem_method(meth : String) -> Bool {
 ///
 /// The same five names serve both, which is exactly why the receiver decides:
 /// `size` on a memory counts pages, `size` on a table counts elements.
-pub fn is_mgmt_method(meth : String) -> Bool {
+fn is_mgmt_method(meth : String) -> Bool {
   match meth {
     "size" | "grow" | "fill" | "copy" | "init" => true
     _ => false
@@ -162,7 +162,7 @@ pub fn functype_matches(
 /// They matter to the FIELD-access arm as much as to the call arm: `x.sqrt`
 /// without parentheses is almost always `x.sqrt()` mistyped, and saying that is
 /// more useful than "there is no field named sqrt".
-pub fn is_unary_method(m : String) -> Bool {
+fn is_unary_method(m : String) -> Bool {
   match m {
     "clz"
     | "ctz"
@@ -187,7 +187,7 @@ pub fn is_unary_method(m : String) -> Bool {
 ///
 /// One hop rather than the two `cont_functype` makes: this starts from the
 /// SOURCE name, where that one starts from a resolved heap type.
-pub fn lookup_cont_inner(
+fn lookup_cont_inner(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
@@ -213,7 +213,7 @@ pub fn lookup_cont_inner(
 /// to validate a handler's contract is a use the join cannot re-derive, so the
 /// declared annotation under test is what answers -- and the caller marks it
 /// needed, since dropping it would lose the type this check relied on.
-pub fn internal_of_inferred(
+fn internal_of_inferred(
   ty : @infer.Cell[@infer.InferredType],
 ) -> @wasm_types.ValType[@type_store.Id]? {
   match ty.get() {
@@ -232,7 +232,7 @@ pub fn internal_of_inferred(
 /// and producing what the resume itself produces. That last part is the whole
 /// point of the construct: the handler gets a continuation it can resume to
 /// carry on where the suspend left off.
-pub fn check_resume_handlers(
+fn check_resume_handlers(
   ctx : @typing_env.ModuleContext,
   result_types : Array[@wasm_types.ValType[@ast.Ident]],
   handlers : Array[@ast.OnClause],

@@ -19,22 +19,6 @@ pub fn source_slice(source : String?, loc : @basic.Location) -> String? {
 }
 
 ///|
-/// The span running from one position to another.
-pub fn span(start : @basic.Position, end_ : @basic.Position) -> @basic.Location {
-  { start, end: end_ }
-}
-
-///|
-/// The edit that removes a span.
-///
-/// Every removal-style suggestion builds this: a redundant annotation, a punned
-/// field's `: x`, a construction or block or `if` result type, a redundant
-/// cast.
-pub fn deletion_edit(loc : @basic.Location) -> @diagnostic.Edit {
-  { loc, new_text: "" }
-}
-
-///|
 /// The source with every comment blanked to spaces, newlines kept.
 ///
 /// The source-scanning suggestions look for a delimiter -- a `:`, a `|`, a

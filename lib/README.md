@@ -165,9 +165,14 @@ facade, `wax/compile`, `wax/ast` and `wax/ast/build`, `wax/wasm/*`, `wax/basic`,
 points `@grammar.parse_string` / `parse_recover`, `@output.render`,
 `@typing.check_module` and `@to_wasm.lower_module`.
 
-Everything else is 0.x-mutable. The type checker in particular exports far more
-than it means to; `tools/api_audit.py` in the repository reports exactly what,
-and that surface is being narrowed rather than widened.
+Everything else is 0.x-mutable.
+
+Before the first release the surface was cut from 1117 public names to 684 —
+`wax/check` alone from 349 to 103 — on one rule: a name nothing outside its own
+package referenced was not a promise, whatever it was doing in a `.mbti`.
+What is left in the checker is mostly reached by its own tests.
+`tools/api_audit.py` in the repository reports the remainder, and that surface
+is being narrowed rather than widened.
 
 ## Licence
 

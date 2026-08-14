@@ -57,21 +57,21 @@ pub fn TypeContext::invalidate(self : TypeContext) -> Unit {
 /// name stays bound so its uses do not cascade into unbound-name reports,
 /// mirroring the wasm validator's poisoned index entries. The bool is whether a
 /// reference to it is exact -- a defined function, or an exact import.
-pub type FunctionEntry = (@type_store.Id, String, Bool)?
+type FunctionEntry = (@type_store.Id, String, Bool)?
 
 ///|
 /// A global's entry: whether it is mutable, and its type.
 ///
 /// The type is `None` for a global whose initializer failed to type -- a poison
 /// global, read as an error to avoid cascades, exactly as for a local.
-pub type GlobalEntry = (Bool, @infer.InferredValType?)
+type GlobalEntry = (Bool, @infer.InferredValType?)
 
 ///|
 /// A local's entry: its type, and where it was bound.
 ///
 /// The span is for go-to-definition. The type is `None` when the initializer
 /// failed to type -- an error-recovery poison local.
-pub type LocalEntry = (@infer.InferredValType?, @basic.Location)
+type LocalEntry = (@infer.InferredValType?, @basic.Location)
 
 ///|
 /// One enclosing control frame: the label it can be branched to by, and the

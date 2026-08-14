@@ -33,7 +33,7 @@
 /// still type-checks and the reader gets one clear error instead of a cascade.
 /// The flag says the operand was replaced, for a caller with a follow-up check
 /// that the replacement would answer wrongly.
-pub fn reject_control_holes(
+fn reject_control_holes(
   ctx : @typing_env.ModuleContext,
   construct : String,
   role : String,
@@ -64,7 +64,7 @@ priv struct HoleOrder {
 ///
 /// A statement with no hole in it anywhere cannot fail this, which is worth the
 /// early test: the walk is otherwise run over every statement of every body.
-pub fn check_hole_order(
+fn check_hole_order(
   ctx : @typing_env.ModuleContext,
   node : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> Unit {

@@ -116,18 +116,18 @@ pub(all) struct SubType[Idx] {
 /// other.
 pub type RecType[Idx] = Array[SubType[Idx]]
 
-///|
-/// The internal, fully resolved form: every reference is a canonical index.
-pub type Internal = SubType[Id]
-
-///|
-/// The form `add_rectype` takes: like `Internal`, but a reference may also name
-/// a member of the group being registered, by position. That is what lets a
-/// group dedup regardless of where it lands in the store.
-pub type Normalized = SubType[RefIndex]
-
 // ============================================================
-// Mapping between the two
+// Mapping between the two forms
+//
+// `SubType[Id]` is the internal, fully resolved form: every reference is a
+// canonical index. `SubType[RefIndex]` is the form `add_rectype` takes -- the
+// same thing, except that a reference may also name a member of the group
+// being registered, by position. That is what lets a group dedup regardless of
+// where it lands in the store.
+//
+// Both were once spelled as named aliases here. Nothing referred to them, so
+// they were two more names in the contract saying what the two index types
+// already say.
 // ============================================================
 
 ///|

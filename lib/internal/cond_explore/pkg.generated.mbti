@@ -10,8 +10,6 @@ import {
 // Values
 pub fn[Cfg] check_all(@diagnostic.Context, specialize~ : (@cond.Env, @cond.T, (@cond.T) -> Unit, (@cond.T) -> Unit) -> Cfg, check~ : (@diagnostic.Context, Cfg) -> Unit, truncation_location? : @basic.Location?, explain? : ((@cond.Env, @cond.T) -> String?)?) -> Unit
 
-pub let max_configurations : Int
-
 // Errors
 
 // Types and methods

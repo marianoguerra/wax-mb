@@ -149,7 +149,7 @@ pub fn field_has_default(
 ///
 /// The index is what the lowering emits; the name is what the reader wrote.
 /// Returning both is why this exists rather than a plain search.
-pub fn find_field(
+fn find_field(
   fields : Array[
     @basic.Annotated[
       (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
@@ -174,7 +174,7 @@ pub fn find_field(
 /// `struct.new` really does yield an exact reference -- it allocates that type
 /// and no subtype -- but exact reference types are part of that proposal, so
 /// without it the plain inexact reference is what can be written down.
-pub fn construction_result(
+fn construction_result(
   ctx : @typing_env.ModuleContext,
   name : @ast.Ident,
 ) -> @infer.Cell[@infer.InferredType]? {
@@ -192,7 +192,7 @@ pub fn construction_result(
 ///
 /// Needed because an `i16` array holds code UNITS rather than bytes, so what
 /// goes into it has to be text and not an arbitrary blob.
-pub fn is_valid_utf8(b : Bytes) -> Bool {
+fn is_valid_utf8(b : Bytes) -> Bool {
   let n = b.length()
   let mut i = 0
   while i < n {
@@ -248,7 +248,7 @@ pub fn is_valid_utf8(b : Bytes) -> Bool {
 ///
 /// The segment supplies the values, so its element type must be a SUBTYPE of
 /// what the array holds -- the usual direction for anything being stored.
-pub fn check_elem_subtype(
+fn check_elem_subtype(
   ctx : @typing_env.ModuleContext,
   location : @basic.Location,
   src : @wasm_types.RefType[@ast.Ident],
@@ -283,7 +283,7 @@ pub fn check_elem_subtype(
 ///
 /// Exactness carries through. An exact descriptor identifies exactly one
 /// described type, so the result is exact too.
-pub fn descriptor_reftype(
+fn descriptor_reftype(
   ctx : @typing_env.ModuleContext,
   location : @basic.Location,
   nullable~ : Bool,

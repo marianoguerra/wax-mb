@@ -58,7 +58,7 @@ pub fn Ctx::subtype(
 }
 
 ///|
-pub fn Ctx::rectype(
+fn Ctx::rectype(
   self : Ctx[@basic.Location],
   members : Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]],
 ) -> Unit {
@@ -123,13 +123,13 @@ fn Ctx::attribute_gen(
 }
 
 ///|
-pub fn Ctx::attribute_(self : Ctx[@basic.Location], a : @ast.Attribute) -> Unit {
+fn Ctx::attribute_(self : Ctx[@basic.Location], a : @ast.Attribute) -> Unit {
   self.attribute_gen("#[", a)
 }
 
 ///|
 /// A module-level inner attribute, `#![module = "name"]`.
-pub fn Ctx::inner_attribute(
+fn Ctx::inner_attribute(
   self : Ctx[@basic.Location],
   a : @ast.Attribute,
 ) -> Unit {
@@ -185,7 +185,7 @@ fn Ctx::data_bytes(self : Ctx[@basic.Location], s : Bytes) -> Unit {
 }
 
 ///|
-pub fn vec_shape_name(s : @wasm_types.V128Shape) -> String {
+fn vec_shape_name(s : @wasm_types.V128Shape) -> String {
   s.to_str()
 }
 

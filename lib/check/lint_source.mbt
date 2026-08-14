@@ -16,7 +16,7 @@
 /// `--40` becomes a runtime subtraction. `Pos` is transparent. Folding anything
 /// deeper here would make the lint fire where the emitted code has no constant
 /// at all.
-pub fn int_operand_value(e : @ast.Instr[@basic.Location]) -> Int64? {
+fn int_operand_value(e : @ast.Instr[@basic.Location]) -> Int64? {
   match e.desc {
     Int(s) => int_literal_value(s)
     UnOpI(op, inner) =>
@@ -49,7 +49,7 @@ fn int_literal_value(s : String) -> Int64? {
 /// A STRICT float-to-integer conversion lowers to `trunc`, which traps out of
 /// range; its saturating form and every numeric widen, narrow and convert are
 /// total. A reference cast may trap and is conservatively treated as partial.
-pub fn cast_is_total(c : @ast.CastType) -> Bool {
+fn cast_is_total(c : @ast.CastType) -> Bool {
   match c {
     Signed(typ~, strict~, ..) =>
       match typ {
@@ -63,7 +63,7 @@ pub fn cast_is_total(c : @ast.CastType) -> Bool {
 
 ///|
 /// Whether a method computes its result and does nothing else.
-pub fn is_pure_unary_method(m : String) -> Bool {
+fn is_pure_unary_method(m : String) -> Bool {
   match m {
     "clz"
     | "ctz"
@@ -84,7 +84,7 @@ pub fn is_pure_unary_method(m : String) -> Bool {
 
 ///|
 /// Likewise for the two-operand methods.
-pub fn is_pure_binary_method(m : String) -> Bool {
+fn is_pure_binary_method(m : String) -> Bool {
   match m {
     "rotl" | "rotr" | "min" | "max" | "copysign" => true
     _ => false
@@ -184,7 +184,7 @@ fn lint_condition(
 /// Every arm here is a recursion; the ones that also report are `Let` (a drop
 /// whose value is computed for nothing), `Set` (a variable written back to
 /// itself), and the three that carry a condition.
-pub fn lint_source(
+fn lint_source(
   ctx : @typing_env.ModuleContext,
   i : @ast.Instr[@basic.Location],
 ) -> Unit {
@@ -340,7 +340,7 @@ pub fn lint_source(
 /// choosing -- so anything here runs whichever way the condition goes. Pure
 /// operators are descended into, because their operands run too; a nested
 /// CONTROL construct guards its own sub-expressions, so the walk stops there.
-pub fn find_eager_hazard(e : @ast.Instr[@basic.Location]) -> @basic.Location? {
+fn find_eager_hazard(e : @ast.Instr[@basic.Location]) -> @basic.Location? {
   fn descend(l : Array[@ast.Instr[@basic.Location]]) -> @basic.Location? {
     for x in l {
       if find_eager_hazard(x) is Some(loc) {
@@ -429,7 +429,7 @@ pub fn find_eager_hazard(e : @ast.Instr[@basic.Location]) -> @basic.Location? {
 /// DECLARATIONS and the checker only ever sees them one scope at a time. Only
 /// the block-like forms carry a label; the function's own is not among them,
 /// since it is bound by the frame rather than declared in the body.
-pub fn collect_labels(
+fn collect_labels(
   instrs : Array[@ast.Instr[@basic.Location]],
 ) -> Array[@ast.Ident] {
   let out : Array[@ast.Ident] = []
@@ -490,7 +490,7 @@ fn shift_count(e : @ast.Instr[@basic.Location]) -> Int64? {
 /// DEFERRED until typing finishes: the width comes from the result cell, and a
 /// later context can still widen it -- `1 << 40` typed `i64` is fine, typed
 /// `i32` is not. Only a genuinely unconstrained operand falls back to a default.
-pub fn lint_shift(
+fn lint_shift(
   ctx : @typing_env.ModuleContext,
   op : @basic.Annotated[@ast.BinOp, @basic.Location],
   result : @infer.Cell[@infer.InferredType],
@@ -513,7 +513,7 @@ pub fn lint_shift(
 /// Report an integer division or remainder by a constant zero.
 ///
 /// `Div(None)` is float division, which does not trap on a zero divisor.
-pub fn lint_division(
+fn lint_division(
   ctx : @typing_env.ModuleContext,
   op : @basic.Annotated[@ast.BinOp, @basic.Location],
   rhs : @ast.Instr[@basic.Location],
@@ -573,7 +573,7 @@ fn float_operand_value(e : @ast.Instr[@basic.Location]) -> Double? {
 /// saturating forms clamp. The bounds are exact powers of two, so a value is
 /// flagged only when it is definitely outside -- never one the float type
 /// cannot represent exactly enough to be sure about.
-pub fn lint_conversion(
+fn lint_conversion(
   ctx : @typing_env.ModuleContext,
   location : @basic.Location,
   target : @ast.CastType,
@@ -611,7 +611,7 @@ pub fn lint_conversion(
 /// `Eq`/`Ne` carry no signage, so a self-comparison needs a concrete integer
 /// operand to be flagged: a float `a == a` is FALSE when `a` is NaN, and
 /// reference identity is a different question.
-pub fn lint_comparison(
+fn lint_comparison(
   ctx : @typing_env.ModuleContext,
   op : @basic.Annotated[@ast.BinOp, @basic.Location],
   l : @ast.Instr[@typing_env.InferredAnnotation],
@@ -652,7 +652,7 @@ pub fn lint_comparison(
 
 ///|
 /// Run and clear the lints that were waiting for their result cells to settle.
-pub fn flush_deferred_lints(ctx : @typing_env.ModuleContext) -> Unit {
+fn flush_deferred_lints(ctx : @typing_env.ModuleContext) -> Unit {
   for f in ctx.deferred_lints {
     f()
   }

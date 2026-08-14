@@ -10,7 +10,7 @@
 ///
 /// `pub(all)` only because MoonBit will not let a public struct hold a private
 /// type; nothing outside builds one.
-pub(all) enum State[A] {
+enum State[A] {
   Link(Cell[A])
   Root(A)
 }

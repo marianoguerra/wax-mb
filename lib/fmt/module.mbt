@@ -1,7 +1,7 @@
 // Module-field printing.
 
 ///|
-pub fn Ctx::modulefield(
+fn Ctx::modulefield(
   self : Ctx[@basic.Location],
   field : @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location],
 ) -> Unit {

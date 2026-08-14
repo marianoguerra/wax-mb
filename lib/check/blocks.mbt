@@ -19,7 +19,7 @@
 ///
 /// A block with several results is never inferred -- inference is for the forms
 /// that carry at most one -- so anything but a lone result answers `None`.
-pub fn declared_result(
+fn declared_result(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   typ : @ast.FuncType,
@@ -55,7 +55,7 @@ pub fn fresh_collecting(
 /// of one that was dropped, which must be re-inferred to write back -- or
 /// `simplify` is converting from wasm, where a redundant annotation is exactly
 /// what inference exists to remove.
-pub fn infer_block_applies(
+fn infer_block_applies(
   ctx : @typing_env.ModuleContext,
   typ : @ast.FuncType,
 ) -> Bool {
@@ -81,7 +81,7 @@ pub fn infer_block_applies(
 ///     exit, just as a declared one is. An unreachable exit needs no value:
 ///     nothing reaches the exit that way.
 ///   * Anything else is left alone, for the leftover report to speak about.
-pub fn collect_exit(
+fn collect_exit(
   ops : Operands,
   cs : @infer.Collecting,
   diagnostics : @diagnostic.Context,
@@ -262,7 +262,7 @@ pub fn missing_else_ok(
 /// the tag's parameters, a `_ref` catch appends the `&exn` itself so the
 /// handler can rethrow, a catch-all delivers nothing, and a catch-all `_ref`
 /// delivers only the exception.
-pub fn check_trytable_catches(
+fn check_trytable_catches(
   ctx : @typing_env.ModuleContext,
   catches : Array[@ast.Catch],
 ) -> Unit {

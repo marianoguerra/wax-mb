@@ -4,12 +4,17 @@ package "marianoguerra/wax-cli/wax-mb"
 import {
   "marianoguerra/wax/colors",
   "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/feature",
   "marianoguerra/wax/warning",
   "moonbitlang/core/debug",
 }
 
 // Values
 pub fn parse_args(Array[String]) -> Result[Options, (Status, String)]
+
+pub fn prog() -> String
+
+pub fn set_prog_name(String) -> Unit
 
 // Errors
 
@@ -32,6 +37,7 @@ pub(all) struct Options {
   all_errors : Bool
   inplace : Bool
   policy : @warning.Policy
+  features : @feature.Set
 }
 
 pub(all) enum Status {

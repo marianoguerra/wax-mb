@@ -30,7 +30,7 @@ let type_remap : Ref[Map[Int, Int]] = { val: Map([]) }
 
 ///|
 /// The emitted index a store index became.
-pub fn emitted_type_index(store_index : Int) -> Int {
+fn emitted_type_index(store_index : Int) -> Int {
   match type_remap.val.get(store_index) {
     Some(i) => i
     None => store_index
@@ -43,7 +43,7 @@ let store_remap : Ref[Array[Int]] = { val: [] }
 
 ///|
 /// The store index behind an emitted one.
-pub fn store_type_index(emitted : Int) -> Int {
+fn store_type_index(emitted : Int) -> Int {
   let m = store_remap.val
   if emitted >= 0 && emitted < m.length() {
     m[emitted]
@@ -65,7 +65,7 @@ let current_layout : Ref[TypeLayout?] = { val: None }
 /// it, and then it gets one of its own rather than borrowing the like-shaped
 /// declaration it interned with: the reference materialises it too, and the
 /// index is observable.
-pub fn emitted_named_index(name : String, store_index : Int) -> Int {
+fn emitted_named_index(name : String, store_index : Int) -> Int {
   guard current_layout.val is Some(layout) else {
     return emitted_type_index(store_index)
   }
@@ -137,7 +137,7 @@ fn named_index(layout : TypeLayout, name : String, store_index : Int) -> Int {
 /// its signature by shape rather than by name, and nothing may have interned
 /// that shape: it is not a declaration, and no function has it. The entry it
 /// then needs is a real type in the section, appended like any other.
-pub fn emitted_shape_index(
+fn emitted_shape_index(
   params : Array[@wasm_types.ValType[Int]],
   results : Array[@wasm_types.ValType[Int]],
 ) -> Int? {
@@ -162,7 +162,7 @@ pub fn emitted_shape_index(
 
 ///|
 /// Where each type name lands in the emitted section.
-pub struct TypeLayout {
+priv struct TypeLayout {
   /// Emitted index for a declared name.
   by_name : Map[String, Int]
   /// Emitted index for a store index: the FIRST declaration of that shape,
@@ -200,7 +200,7 @@ pub struct TypeLayout {
 
 ///|
 /// Lay out the type section from the source's declarations, then the rest.
-pub fn type_layout(
+fn type_layout(
   ctx : @typing_env.ModuleContext,
   source : @ast.Module[@basic.Location],
   store : @type_store.TypeStore,
@@ -564,7 +564,7 @@ fn lower_comptype(
 
 ///|
 /// A value type with its type references flattened to indices.
-pub fn lower_valtype(
+fn lower_valtype(
   v : @wasm_types.ValType[@type_store.Id],
 ) -> @wasm_types.ValType[Int] {
   match v {
@@ -578,7 +578,7 @@ pub fn lower_valtype(
 }
 
 ///|
-pub fn lower_reftype(
+fn lower_reftype(
   r : @wasm_types.RefType[@type_store.Id],
 ) -> @wasm_types.RefType[Int] {
   { nullable: r.nullable, typ: lower_heaptype(r.typ) }

@@ -3222,7 +3222,7 @@ fn Checker::tag_payload(
 /// `None` only when recovery from an error inside it produced something else,
 /// in which case the caller keeps the original rather than crashing on a shape
 /// nobody promised.
-pub fn peel_while(
+fn peel_while(
   typed : Array[@ast.Instr[@typing_env.InferredAnnotation]],
   stepped~ : Bool,
   labelled~ : Bool,
@@ -3263,29 +3263,6 @@ pub fn peel_while(
 }
 
 ///|
-/// Check a run of instructions as STATEMENTS, pushing what each leaves.
-///
-/// This is the only place values reach the operand stack, and that distinction
-/// is the one the checker turns on. An instruction checked as a STATEMENT
-/// leaves its results for the next one; an instruction checked as an OPERAND
-/// hands its type back through its annotation and touches no stack. Pushing
-/// inside `statement` itself -- which is what this used to do -- left every
-/// consumed operand behind, and a `while`'s condition showed up as a value
-/// remaining on the stack.
-pub fn Checker::statements(
-  self : Checker,
-  instrs : Array[@ast.Instr[@basic.Location]],
-) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
-  let out : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
-  for s in instrs {
-    let c = self.statement(s)
-    self.ops.push_results(s.info, c.info.0)
-    out.push(c)
-  }
-  out
-}
-
-///|
 /// Peel a checked `dispatch` lowering back to its index and arm bodies.
 ///
 /// The lowering nests one block per arm, each holding the block for the
@@ -3293,7 +3270,7 @@ pub fn Checker::statements(
 /// the centre. So descending from the outside walks the arms in reverse, and
 /// the last arm's body is the trailing code after the outermost block rather
 /// than inside anything.
-pub fn peel_dispatch(
+fn peel_dispatch(
   typed : Array[@ast.Instr[@typing_env.InferredAnnotation]],
   arm_count : Int,
 ) -> (
@@ -3367,7 +3344,7 @@ fn Checker::non_null_of(
 /// then that arm's body. So descending from the escape block meets the arms in
 /// REVERSE source order, and the innermost block holds the threaded test chain
 /// with the scrutinee at its bottom.
-pub fn peel_match(
+fn peel_match(
   typed : Array[@ast.Instr[@typing_env.InferredAnnotation]],
   arm_count : Int,
 ) -> (

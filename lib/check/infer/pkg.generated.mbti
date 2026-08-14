@@ -5,7 +5,6 @@ import {
   "marianoguerra/wax/ast",
   "marianoguerra/wax/basic",
   "marianoguerra/wax/check/store",
-  "marianoguerra/wax/fmt",
   "marianoguerra/wax/wasm/types",
 }
 
@@ -27,8 +26,6 @@ pub let i64_cell : Cell[InferredType]
 pub let i64_valtype : InferredValType
 
 pub fn is_unknown_or_error(Cell[InferredType]) -> Bool
-
-pub fn[Info] render(@fmt.Ctx[Info], Cell[InferredType]) -> Unit
 
 pub fn[A] same_cell(Cell[A], Cell[A]) -> Bool
 
@@ -75,10 +72,7 @@ pub(all) struct InferredValType {
   anon_comptype : @ast.CompType?
 } derive(Eq)
 
-pub(all) enum State[A] {
-  Link(Cell[A])
-  Root(A)
-}
+type State[A]
 
 // Type aliases
 

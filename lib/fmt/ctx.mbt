@@ -16,7 +16,7 @@ pub let width : Int = 100
 
 ///|
 /// The indentation step.
-pub let indent_level : Int = 4
+let indent_level : Int = 4
 
 ///|
 /// The printing context.
@@ -67,7 +67,7 @@ pub fn[Info] Ctx::styled(self : Ctx[Info], style : Style, s : String) -> Unit {
 /// An escaped string literal is the case that needs it: its printed form is
 /// longer than the value it stands for, and the printed form is what occupies
 /// columns.
-pub fn[Info] Ctx::styled_as(
+fn[Info] Ctx::styled_as(
   self : Ctx[Info],
   style : Style,
   len : Int,
@@ -89,7 +89,7 @@ pub fn[Info] Ctx::styled_as(
 
 ///|
 /// Run `f` with every styled atom forced to `style`.
-pub fn[Info] Ctx::with_style(
+fn[Info] Ctx::with_style(
   self : Ctx[Info],
   style : Style,
   f : () -> Unit,
@@ -101,7 +101,7 @@ pub fn[Info] Ctx::with_style(
 }
 
 ///|
-pub fn[Info] Ctx::punct(self : Ctx[Info], s : String) -> Unit {
+fn[Info] Ctx::punct(self : Ctx[Info], s : String) -> Unit {
   self.styled(Punctuation, s)
 }
 
@@ -111,7 +111,7 @@ pub fn[Info] Ctx::op(self : Ctx[Info], s : String) -> Unit {
 }
 
 ///|
-pub fn[Info] Ctx::kw(self : Ctx[Info], s : String) -> Unit {
+fn[Info] Ctx::kw(self : Ctx[Info], s : String) -> Unit {
   self.styled(Keyword, s)
 }
 
@@ -126,17 +126,17 @@ pub fn[Info] Ctx::ident(self : Ctx[Info], s : String) -> Unit {
 }
 
 ///|
-pub fn[Info] Ctx::constant(self : Ctx[Info], s : String) -> Unit {
+fn[Info] Ctx::constant(self : Ctx[Info], s : String) -> Unit {
   self.styled(Constant, s)
 }
 
 ///|
-pub fn[Info] Ctx::attr(self : Ctx[Info], s : String) -> Unit {
+fn[Info] Ctx::attr(self : Ctx[Info], s : String) -> Unit {
   self.styled(Attribute, s)
 }
 
 ///|
-pub fn[Info] Ctx::str(self : Ctx[Info], s : String) -> Unit {
+fn[Info] Ctx::str(self : Ctx[Info], s : String) -> Unit {
   self.styled(Str, s)
 }
 
@@ -145,7 +145,7 @@ pub fn[Info] Ctx::str(self : Ctx[Info], s : String) -> Unit {
 /// sits before the comment (`const x = v; // c`) rather than dangling on its
 /// own line after it -- as the block-statement `;` and list `,` separators
 /// already do.
-pub fn[Info] Ctx::semicolon(self : Ctx[Info]) -> Unit {
+fn[Info] Ctx::semicolon(self : Ctx[Info]) -> Unit {
   self.p.with_held_eol(() => self.punct(";"))
 }
 

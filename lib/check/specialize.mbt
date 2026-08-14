@@ -315,7 +315,7 @@ fn Configuring::fields(
 
 ///|
 /// Specialize `fields` under `assumption`, producing a conditional-free module.
-pub fn specialize_fields(
+fn specialize_fields(
   env : @cond.Env,
   diagnostics : @diagnostic.Context,
   assumption : @cond.T,
@@ -340,7 +340,7 @@ pub fn specialize_fields(
 /// code either way, and treating it as a configuration would only hide the
 /// checks on the guard itself -- the specializer strips a guard once it has
 /// chosen, so a guard written where it is not allowed would go unreported.
-pub fn module_has_conditional(fields : @ast.Module[@basic.Location]) -> Bool {
+fn module_has_conditional(fields : @ast.Module[@basic.Location]) -> Bool {
   fn in_instr(i : @ast.Instr[@basic.Location]) -> Bool {
     if i.desc is IfAnnotation(..) {
       return true
@@ -368,7 +368,7 @@ pub fn module_has_conditional(fields : @ast.Module[@basic.Location]) -> Bool {
 /// Branches are transparent and mutually exclusive: a name bound in one would
 /// leak past the conditional and clash with the other branch. An anonymous
 /// `_ = e` binds nothing, so it is allowed.
-pub fn check_let_bindings(
+fn check_let_bindings(
   diagnostics : @diagnostic.Context,
   fields : @ast.Module[@basic.Location],
 ) -> Unit {
@@ -432,7 +432,7 @@ pub fn check_let_bindings(
 /// A fresh type store per configuration, because a configuration declares its
 /// own types: the branches may not agree on what a name means, and one
 /// configuration's registrations must not be visible to the next.
-pub fn check_configurations(
+fn check_configurations(
   diagnostics : @diagnostic.Context,
   store : @type_store.TypeStore,
   features : @feature.Set,

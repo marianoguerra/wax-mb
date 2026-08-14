@@ -15,11 +15,11 @@
 /// The span is the whole argument's, not the value's, because a value inside a
 /// multi-result call has no span of its own -- and pointing at the argument is
 /// what the reader can act on anyway.
-pub type Supplied = (@infer.Cell[@infer.InferredType], @basic.Location)
+type Supplied = (@infer.Cell[@infer.InferredType], @basic.Location)
 
 ///|
 /// Every value a list of operands supplies, in order.
-pub fn flatten_operands(
+fn flatten_operands(
   args : Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)],
 ) -> Array[Supplied] {
   let out : Array[Supplied] = []
@@ -40,7 +40,7 @@ pub fn flatten_operands(
 /// value is RECORDED there with its own branch site -- so a later join failure
 /// can point at the branch that delivered the wrong thing rather than at the
 /// join.
-pub fn check_subtype(
+fn check_subtype(
   info : @type_store.SubtypingInfo,
   diagnostics : @diagnostic.Context,
   location : @basic.Location,

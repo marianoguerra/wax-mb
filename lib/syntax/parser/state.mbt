@@ -280,7 +280,7 @@ pub fn enclosing_opener(
 /// state, which is what "can the parser accept a `;` here" has to mean --
 /// after a complete statement the `;` is shiftable only once the statement has
 /// been reduced.
-pub fn acceptable(stack : Array[Int], symbol : Int) -> Bool {
+fn acceptable(stack : Array[Int], symbol : Int) -> Bool {
   shift_sim(stack, symbol) is Some(_)
 }
 
@@ -292,7 +292,7 @@ pub fn acceptable(stack : Array[Int], symbol : Int) -> Bool {
 /// the acceptability test AND as the "what if" recovery needs: whether
 /// inserting a `;` would let the offending token through is a question about
 /// the stack AFTER the `;`.
-pub fn shift_sim(stack : Array[Int], symbol : Int) -> Array[Int]? {
+fn shift_sim(stack : Array[Int], symbol : Int) -> Array[Int]? {
   let s = stack.copy()
   // Every step either answers or pops at least one cell and pushes one goto,
   // and the automaton has no reduction cycles -- the fuel is a backstop
@@ -344,7 +344,7 @@ pub fn shift_sim(stack : Array[Int], symbol : Int) -> Array[Int]? {
 /// without an exception to catch. The generated `error()` builds exactly this
 /// set, so it is asked rather than reimplemented: it raises, and the raise is
 /// caught for the payload.
-pub fn expected_at(stack : Array[Int]) -> Array[TokenKind] {
+fn expected_at(stack : Array[Int]) -> Array[TokenKind] {
   let mut cells : @list.List[Int] = @list.empty()
   for s in stack {
     cells = @list.cons(s, cells)

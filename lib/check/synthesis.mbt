@@ -426,7 +426,7 @@ fn Checker::if_expression_fallback(
 /// BLOCK resolves its own type, so it is synthesized instead, and its natural
 /// type is what joins. Anything else -- a plain statement, a parameterized
 /// block, a scalar `?:` -- is neither, and stays on the statement path.
-pub fn classify_trailing(
+fn classify_trailing(
   ctx : @typing_env.ModuleContext,
   desc : @ast.InstrDesc[@basic.Location],
 ) -> (Bool, Bool) {
@@ -472,7 +472,7 @@ pub fn classify_trailing(
 ///|
 /// Whether an instruction is a bare `null`, however many casts are wrapped
 /// around it.
-pub fn is_null_initializer(i : @ast.Instr[@basic.Location]) -> Bool {
+fn is_null_initializer(i : @ast.Instr[@basic.Location]) -> Bool {
   match i.desc {
     Null => true
     Cast(e, _) => is_null_initializer(e)

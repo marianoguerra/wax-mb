@@ -51,7 +51,7 @@ pub fn max_table_size(address_type : @wasm_types.AddressType) -> UInt64 {
 /// `page_size_log2` is `None` for a table and for a memory that did not write
 /// one; a memory that did may only say 1 byte or the default 64KiB, since those
 /// are the two the proposal admits.
-pub fn check_limits(
+fn check_limits(
   ctx : @typing_env.ModuleContext,
   location : @basic.Location,
   kind : String,

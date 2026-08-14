@@ -9,7 +9,6 @@ import {
   "marianoguerra/wax/check/store",
   "marianoguerra/wax/diagnostic",
   "marianoguerra/wax/feature",
-  "marianoguerra/wax/message",
   "marianoguerra/wax/wasm/atomics",
   "marianoguerra/wax/wasm/simd",
   "marianoguerra/wax/wasm/types",
@@ -24,51 +23,17 @@ pub fn apply_declared_features(@diagnostic.Context, @feature.Set, Array[@basic.A
 
 pub fn assign_target(@env.ModuleContext, @ast.Ident, ResolvedVar, compound? : Bool) -> Unit
 
-pub fn atomic_alignment(@diagnostic.Context, @basic.Location, Int) -> Unit
-
-pub fn bad_memory_align(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn become_on_stack_switching(@diagnostic.Context, @basic.Location) -> Unit
-
 pub fn bind_local(@env.ModuleContext, @ast.Ident, @infer.InferredValType?) -> Unit
-
-pub fn binop_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
-
-pub fn block_exit_type_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn block_signature(@env.TypeContext, @diagnostic.Context, @ast.FuncType) -> (Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]])?
 
-pub fn bound_value_type(@env.ModuleContext, @basic.Location, @infer.Cell[@infer.InferredType]) -> @infer.InferredValType?
-
-pub fn br_if_result_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
-
 pub fn branch_target(@env.ModuleContext, @ast.Ident) -> Array[@infer.Cell[@infer.InferredType]]
 
-pub fn cannot_infer_array_type(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn cannot_infer_struct_type(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn cast_always_fails(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
-
-pub fn cast_is_total(@ast.CastType) -> Bool
-
-pub fn catch_target_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
-
-pub fn check_attributes(@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
-
-pub fn check_elem_subtype(@env.ModuleContext, @basic.Location, @types.RefType[@ast.Ident], @types.RefType[@ast.Ident]) -> Unit
-
-pub fn check_fields(@env.ModuleContext, Operands, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]]
-
 pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
-
-pub fn check_inline_type(@env.TypeContext, @diagnostic.Context, @basic.Location, @ast.FuncType, @ast.FuncType?) -> Unit
 
 pub fn check_int_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
 pub fn check_lane_immediate(@diagnostic.Context, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]) -> Unit
-
-pub fn check_limits(@env.ModuleContext, @basic.Location, String, @types.AddressType, (UInt64, UInt64?)?, page_size_log2? : Int?, shared? : Bool) -> Unit
 
 pub fn check_memarg(@diagnostic.Context, @types.AddressType, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?) -> Unit
 
@@ -78,143 +43,37 @@ pub fn check_num_concrete(@diagnostic.Context, @basic.Location, @infer.Cell[@inf
 
 pub fn check_operands(@store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], Array[@infer.Cell[@infer.InferredType]]) -> Unit
 
-pub fn check_resume_handlers(@env.ModuleContext, Array[@types.ValType[@ast.Ident]], Array[@ast.OnClause]) -> Unit
-
-pub fn check_start_signature(@env.ModuleContext, @ast.Ident, Array[@ast.Attribute], @ast.FuncType) -> Unit
-
-pub fn check_subtype(@store.SubtypingInfo, @diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], pin? : Bool, expected_at? : @basic.Location?) -> Unit
-
 pub fn check_subtypes(@store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], pin? : Bool) -> Unit
-
-pub fn check_trytable_catches(@env.ModuleContext, Array[@ast.Catch]) -> Unit
-
-pub fn check_unique_param_names(@diagnostic.Context, Array[@basic.Annotated[(@ast.Ident?, @types.ValType[@ast.Ident]), @basic.Location]]) -> Unit
 
 pub fn checked_block(@env.ModuleContext, Operands, @basic.Location, @ast.Ident?, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], () -> Unit) -> Unit
 
 pub fn classify_method_call(@env.ModuleContext, @ast.Ident, String) -> MethodCall
 
-pub fn classify_trailing(@env.ModuleContext, @ast.InstrDesc[@basic.Location]) -> (Bool, Bool)
-
-pub fn collect_exit(Operands, @infer.Collecting, @diagnostic.Context, @basic.Location) -> Unit
-
 pub fn collect_into(@env.ModuleContext, Operands, @basic.Location, @ast.Ident?, @infer.Collecting, @infer.Cell[@infer.InferredType], () -> Unit, branch_target? : Array[@infer.Cell[@infer.InferredType]]?) -> Unit
-
-pub fn collect_labels(Array[@ast.Instr[@basic.Location]]) -> Array[@ast.Ident]
-
-pub fn collected_natural(Array[(@basic.Location?, @infer.Cell[@infer.InferredType])]) -> Array[@infer.InferredType]
 
 pub fn comptype(@env.TypeContext, @diagnostic.Context, @ast.CompType) -> @store.CompType[@store.RefIndex]?
 
-pub fn conditional_cast_types(@env.ModuleContext, @basic.Location, @infer.Cell[@infer.InferredType], @types.RefType[@ast.Ident]) -> (@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType])?
-
-pub fn confusable_unicode(@diagnostic.Context, @basic.Location, Int) -> Unit
-
-pub fn constant_condition(@diagnostic.Context, @basic.Location, Bool) -> Unit
-
-pub fn construction_result(@env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.InferredType]?
-
 pub fn cont_functype(@store.SubtypingInfo, @types.HeapType[@store.Id]) -> @store.FuncType[@store.Id]?
-
-pub fn context_result_cell(@env.ModuleContext, @ast.FuncType, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
-
-pub fn dead_code(@diagnostic.Context, @basic.Location, @basic.Location) -> Unit
 
 pub fn[Info] declare_fields(@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Unit
 
 pub fn declare_local(@env.ModuleContext, @ast.Ident, @types.ValType[@ast.Ident]) -> Unit
 
-pub fn declared_functype(@env.ModuleContext, @ast.Ident) -> @ast.FuncType?
-
-pub fn declared_result(@env.TypeContext, @diagnostic.Context, @ast.FuncType) -> @infer.Cell[@infer.InferredType]?
-
 pub fn deliver_to_branch_target(@store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]]) -> Array[@infer.Cell[@infer.InferredType]]
-
-pub fn descriptor_not_reciprocal(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
-
-pub fn descriptor_not_struct(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
-
-pub fn descriptor_outside_rec_group(@diagnostic.Context, @basic.Location, described~ : Bool) -> Unit
-
-pub fn descriptor_reftype(@env.ModuleContext, @basic.Location, nullable~ : Bool, @infer.Cell[@infer.InferredType]) -> @types.RefType[@ast.Ident]?
-
-pub fn diff_ref_type(@types.RefType[@ast.Ident], @types.RefType[@ast.Ident]) -> @types.RefType[@ast.Ident]
-
-pub fn dispatch_duplicate_arm(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
-
-pub fn division_by_zero(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn duplicate_argument_label(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
-
-pub fn duplicated_export(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
-
-pub fn duplicated_field(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
-
-pub fn duplicated_parameter(@diagnostic.Context, @basic.Location, @basic.Location, String) -> Unit
-
-pub fn eager_select(@diagnostic.Context, @basic.Location, @basic.Location) -> Unit
 
 pub fn enter_function_scope(@env.ModuleContext, @ast.Ident, @ast.FuncType?, Array[@ast.Attribute], label_decls? : Array[@ast.Ident], assigned_locals? : Map[String, Unit]) -> Array[@infer.Cell[@infer.InferredType]]
 
-pub fn exact_named_type(@infer.Cell[@infer.InferredType]) -> @ast.Ident?
-
-pub fn exact_reparse_internal(@infer.Cell[@infer.InferredType]) -> @types.ValType[@store.Id]?
-
-pub fn exact_reparse_matches(@types.ValType[@store.Id], @infer.Cell[@infer.InferredType]) -> Bool
-
-pub fn expand_splices(@env.TypeContext, @diagnostic.Context, Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]
-
-pub fn expected_array(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn expected_array_type(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn expected_func(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn expected_func_type(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn expected_ref(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn expected_struct(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn expected_struct_type(@diagnostic.Context, @basic.Location) -> Unit
-
 pub fn expression_type(@env.ModuleContext, (Array[@infer.Cell[@infer.InferredType]], @basic.Location)) -> @infer.Cell[@infer.InferredType]
-
-pub fn expression_type_mismatch(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], expected_at? : @basic.Location?) -> Unit
-
-pub fn feature_conflict(@diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
-
-pub fn feature_declaration_in_conditional(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn feature_disabled(@diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
-
-pub fn field_count_mismatch(@diagnostic.Context, @basic.Location, expected~ : Int, provided~ : Int) -> Unit
 
 pub fn field_has_default(@types.MutType[@types.StorageType[@ast.Ident]]) -> Bool
 
 pub fn field_read_type(@env.TypeContext, @diagnostic.Context, @types.MutType[@types.StorageType[@ast.Ident]]) -> @infer.Cell[@infer.InferredType]?
 
-pub fn field_set_key(Array[String]) -> String
-
 pub fn field_subtype(@store.SubtypingInfo, @types.MutType[@types.StorageType[@store.Id]], @types.MutType[@types.StorageType[@store.Id]]) -> Bool
 
 pub fn finalize_inferred(@env.ModuleContext, @ast.FuncType, @infer.Cell[@infer.InferredType]?, needed? : Bool, exacts? : Array[(@basic.Location?, @infer.Cell[@infer.InferredType])], natural? : Array[@infer.InferredType], location? : @basic.Location?) -> (Array[@infer.Cell[@infer.InferredType]], @ast.FuncType)
 
-pub fn[A] find(@env.Tbl[A], @diagnostic.Context, @ast.Ident) -> A?
-
-pub fn find_eager_hazard(@ast.Instr[@basic.Location]) -> @basic.Location?
-
-pub fn find_field(Array[@basic.Annotated[(@ast.Ident, @types.MutType[@types.StorageType[@ast.Ident]]), @basic.Location]], String) -> (Int, @types.MutType[@types.StorageType[@ast.Ident]])?
-
-pub fn flatten_operands(Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Array[(@infer.Cell[@infer.InferredType], @basic.Location)]
-
-pub fn flexible_default_internal(@infer.InferredType) -> @types.ValType[@store.Id]?
-
 pub fn float_literal_lattice(String) -> @infer.InferredType
-
-pub fn flush_deferred_lints(@env.ModuleContext) -> Unit
-
-pub fn forward_use_of_described(@diagnostic.Context, @basic.Location) -> Unit
 
 pub fn fresh_collecting(@infer.Cell[@infer.InferredType]?, needed? : Bool) -> (@infer.Collecting, @infer.Cell[@infer.InferredType])
 
@@ -224,77 +83,23 @@ pub fn get_suggestions(@env.ModuleContext, String) -> Array[String]
 
 pub fn get_type_definition(@env.TypeContext, @diagnostic.Context, @ast.Ident) -> @ast.SubType?
 
-pub fn ground_signed_cast(@infer.Cell[@infer.InferredType], @ast.NumType) -> Unit
-
-pub fn ground_value_cast(@infer.Cell[@infer.InferredType], @types.ValType[@store.Id]) -> Unit
-
-pub fn has_expectation(@infer.Cell[@infer.InferredType]) -> Bool
-
 pub fn heap_lub(@env.TypeContext, @types.HeapType[@ast.Ident], @types.HeapType[@ast.Ident]) -> @types.HeapType[@ast.Ident]?
 
 pub fn heaptype(@env.TypeContext, @diagnostic.Context, @types.HeapType[@ast.Ident]) -> @types.HeapType[@store.Id]?
 
 pub fn hex_u64(UInt64) -> String
 
-pub fn if_without_else(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn immediate_supertype(@ast.SubType) -> @types.HeapType[@ast.Ident]
-
-pub fn immutable(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn incompatible_array_elements(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn incompatible_element_type(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
-
 pub fn index_structs_by_fields(@env.ModuleContext) -> Unit
-
-pub fn infer_block_applies(@env.ModuleContext, @ast.FuncType) -> Bool
 
 pub fn infer_result(@env.ModuleContext, @basic.Location, @infer.Collecting, (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn infer_struct_by_fields(@env.ModuleContext, Array[@ast.Ident]) -> @ast.Ident?
 
-pub fn inferred_lub(@env.TypeContext, @diagnostic.Context) -> (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?
-
-pub fn inline_comptype(@env.ModuleContext, @ast.Ident) -> @ast.CompType?
-
-pub fn inline_function_type_mismatch(@diagnostic.Context, @basic.Location) -> Unit
-
 pub fn int_literal_lattice(String) -> @infer.InferredType
-
-pub fn int_literal_u64(@ast.InstrDesc[@basic.Location]) -> UInt64?
-
-pub fn int_operand_value(@ast.Instr[@basic.Location]) -> Int64?
-
-pub fn integer_literal_required(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn intern_functype(@env.ModuleContext, @ast.Ident, @ast.FuncType) -> Unit
-
-pub fn internal_of_inferred(@infer.Cell[@infer.InferredType]) -> @types.ValType[@store.Id]?
 
 pub fn internalize(@env.TypeContext, @diagnostic.Context, @types.ValType[@ast.Ident], inline? : @ast.CompType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn internalize_valtype(@env.TypeContext, @diagnostic.Context, @types.ValType[@ast.Ident]) -> @infer.InferredValType?
-
-pub fn intrinsic_not_called(@diagnostic.Context, @basic.Location, String, String) -> Unit
-
-pub fn invalid_cast(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
-
-pub fn invalid_cast_type(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn invalid_lane_index(@diagnostic.Context, @basic.Location, Int) -> Unit
-
-pub fn invalid_management_call(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn invalid_method_receiver(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
-
-pub fn invalid_page_size(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn invalid_string_element_type(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn is_binary_method(String) -> Bool
-
-pub fn is_bottom_heaptype(@types.HeapType[@ast.Ident]) -> Bool
 
 pub fn is_cont_heaptype(@env.TypeContext, @types.HeapType[@ast.Ident]) -> Bool
 
@@ -302,65 +107,23 @@ pub fn is_defaultable(@types.ValType[@ast.Ident]) -> Bool
 
 pub fn is_effectless(@ast.Instr[@basic.Location]) -> Bool
 
-pub fn is_inferring(@infer.Cell[@infer.InferredType]) -> Bool
-
-pub fn is_mem_method(String) -> Bool
-
-pub fn is_mgmt_method(String) -> Bool
-
-pub fn is_null_initializer(@ast.Instr[@basic.Location]) -> Bool
-
-pub fn is_pure_binary_method(String) -> Bool
-
-pub fn is_pure_unary_method(String) -> Bool
-
-pub fn is_unary_method(String) -> Bool
-
-pub fn is_valid_utf8(Bytes) -> Bool
-
 pub fn join_collected(@diagnostic.Context, @basic.Location, Array[(@basic.Location?, @infer.Cell[@infer.InferredType])], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
 pub fn label_in_scope(@env.ModuleContext, @ast.Ident) -> Bool
 
-pub fn labelled_argument_not_allowed(@diagnostic.Context, @basic.Location) -> Unit
-
 pub fn lane_bound(@simd.Imm) -> Int?
-
-pub fn lane_value_out_of_range(@diagnostic.Context, @basic.Location, Int) -> Unit
 
 pub fn leave_function_scope(@env.ModuleContext) -> Unit
 
-pub fn leftover_values(@diagnostic.Context, @basic.Location, Array[@diagnostic.Label]) -> Unit
-
 pub fn leftovers(Stack) -> (Array[@basic.Location], Bool)
-
-pub fn limit_mismatch(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn limit_too_large(@diagnostic.Context, @basic.Location, String, UInt64) -> Unit
-
-pub fn lint_confusable(@diagnostic.Context, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
-
-pub fn lint_division(@env.ModuleContext, @basic.Annotated[@ast.BinOp, @basic.Location], @ast.Instr[@basic.Location]) -> Unit
 
 pub fn lint_ref_cast(@env.ModuleContext, @basic.Location, is_test~ : Bool, @infer.InferredType, @infer.InferredType, operand_location? : @basic.Location?) -> Unit
 
-pub fn lint_shift(@env.ModuleContext, @basic.Annotated[@ast.BinOp, @basic.Location], @infer.Cell[@infer.InferredType], @ast.Instr[@basic.Location]) -> Unit
-
-pub fn lint_source(@env.ModuleContext, @ast.Instr[@basic.Location]) -> Unit
-
 pub fn literal_type(@ast.InstrDesc[@basic.Location]) -> @infer.InferredType?
 
-pub fn loc_first_char(@basic.Location) -> @basic.Location
-
-pub fn loc_last_char(@basic.Location) -> @basic.Location
-
-pub fn local_suggestions(@env.ModuleContext, String) -> Array[String]
-
 pub fn lookup_array_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @types.MutType[@types.StorageType[@ast.Ident]]?
-
-pub fn lookup_cont_inner(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @ast.Ident?
 
 pub fn lookup_func_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @ast.FuncType?
 
@@ -368,107 +131,21 @@ pub fn lookup_struct_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, loc
 
 pub fn mark_initialized(@env.ModuleContext, String) -> Unit
 
-pub let max_align : UInt64
-
 pub fn max_memory_size(@types.AddressType, Int?) -> UInt64
-
-pub let max_offset_i32_exclusive : UInt64
 
 pub fn max_table_size(@types.AddressType) -> UInt64
 
-pub fn mem_immediates(@diagnostic.Context, @basic.Location, String, Int, has_lane~ : Bool, Map[String, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]], Array[@ast.Instr[@basic.Location]]) -> (@basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?)
-
 pub fn mem_lane_bound(Int) -> Int
-
-pub fn mem_load_result(String) -> @infer.InferredType?
 
 pub fn mem_natural_align(String) -> Int
 
-pub fn mem_store_method(String) -> Bool
-
-pub fn memory_align_too_large(@diagnostic.Context, @basic.Location, Int) -> Unit
-
-pub fn memory_immediate_too_large(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn memory_offset_too_large(@diagnostic.Context, @basic.Location, UInt64) -> Unit
-
 pub fn memory_receiver(@env.ModuleContext, @ast.Ident) -> Bool
 
-pub fn method_needs_parentheses(@diagnostic.Context, @basic.Location, String) -> Unit
-
 pub fn missing_else_ok(@store.SubtypingInfo, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]]) -> Bool
-
-pub fn missing_field(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn missing_lane_immediate(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn module_name_in_conditional(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn multiple_module(@diagnostic.Context, @basic.Location, @basic.Location) -> Unit
-
-pub fn multiple_start(@diagnostic.Context, @basic.Location, @basic.Location) -> Unit
-
-pub fn n_fieldtype(@env.TypeContext, @diagnostic.Context, @types.MutType[@types.StorageType[@ast.Ident]]) -> @types.MutType[@types.StorageType[@store.RefIndex]]?
 
 pub fn n_functype(@env.TypeContext, @diagnostic.Context, @ast.FuncType) -> @store.FuncType[@store.RefIndex]?
 
 pub fn n_heaptype(@env.TypeContext, @diagnostic.Context, @types.HeapType[@ast.Ident]) -> @types.HeapType[@store.RefIndex]?
-
-pub fn n_rectype(@env.TypeContext, @diagnostic.Context, Array[@basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]]) -> Array[@store.SubType[@store.RefIndex]]?
-
-pub fn n_reftype(@env.TypeContext, @diagnostic.Context, @types.RefType[@ast.Ident]) -> @types.RefType[@store.RefIndex]?
-
-pub fn n_storagetype(@env.TypeContext, @diagnostic.Context, @types.StorageType[@ast.Ident]) -> @types.StorageType[@store.RefIndex]?
-
-pub fn n_subtype(@env.TypeContext, @diagnostic.Context, Int, @ast.SubType) -> @store.SubType[@store.RefIndex]?
-
-pub fn n_valtype(@env.TypeContext, @diagnostic.Context, @types.ValType[@ast.Ident]) -> @types.ValType[@store.RefIndex]?
-
-pub fn natural_width_forces_annotation(Array[@infer.InferredType], @infer.Cell[@infer.InferredType]?) -> Bool
-
-pub fn non_empty_stack(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn not_an_expression(@diagnostic.Context, @basic.Location, Int) -> Unit
-
-pub fn not_assignable(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn not_defaultable(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn[A] note_use(@env.ModuleContext, @env.Tbl[A], @ast.Ident) -> Unit
-
-pub fn number_literal_required(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn on_clause_context(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn operand_count_mismatch(@diagnostic.Context, @basic.Location, expected~ : Int, provided~ : Int) -> Unit
-
-pub fn parameterized_block_expression(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn peel_dispatch(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], Int) -> (@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], Array[Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]]])?
-
-pub fn peel_match(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], Int) -> (Array[Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]]], Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]?)?
-
-pub fn peel_while(Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]], stepped~ : Bool, labelled~ : Bool) -> (@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]?, Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]])?
-
-pub fn positional_memory_immediate(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn precedence(@diagnostic.Context, @basic.Location, @basic.Location, String, String, edit? : @diagnostic.Edit?) -> Unit
-
-pub fn receiver_is_array_ref(@env.ModuleContext, @ast.Instr[@basic.Location]) -> Bool
-
-pub fn receiver_is_ref(@env.ModuleContext, @ast.Instr[@basic.Location]) -> Bool
-
-pub fn redundant_cast(@diagnostic.Context, @basic.Location, is_test~ : Bool) -> Unit
-
-pub fn redundant_operation(@diagnostic.Context, @basic.Location, @message.Message) -> Unit
-
-pub fn reftype(@env.TypeContext, @diagnostic.Context, @types.RefType[@ast.Ident]) -> @types.RefType[@store.Id]?
-
-pub fn register_function(@env.ModuleContext, @ast.Ident, @ast.Ident?, @ast.FuncType?, exact~ : Bool, import_~ : Bool) -> Unit
-
-pub fn register_string_type(@env.ModuleContext) -> Unit
-
-pub fn register_tag(@env.ModuleContext, @ast.Ident, @ast.Ident?, @ast.FuncType?) -> Unit
 
 pub fn render_stack(Stack) -> String
 
@@ -480,121 +157,33 @@ pub fn report_missing_hole(Operands, @diagnostic.Context, @basic.Location, @infe
 
 pub fn report_uninitialized(@env.ModuleContext, @ast.Ident) -> Unit
 
-pub fn require_feature(@env.TypeContext, @diagnostic.Context, @basic.Location, @feature.Feature) -> Unit
-
-pub fn reserved_type_name(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub let reserved_type_names : Array[String]
-
-pub fn resolve_declared(@infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
-
-pub fn resolve_omitted_valtype(@env.TypeContext, @diagnostic.Context, @infer.Cell[@infer.InferredType]) -> @infer.InferredValType?
-
 pub fn resolve_type_name(@env.TypeContext, @diagnostic.Context, @ast.Ident) -> @store.Id?
-
-pub fn resolve_type_ref(@env.TypeContext, @diagnostic.Context, @ast.Ident) -> @store.RefIndex?
 
 pub fn resolve_variable(@env.ModuleContext, @ast.Ident) -> ResolvedVar
 
-pub fn resume_throw_needs_tag(@diagnostic.Context, @basic.Location) -> Unit
-
 pub fn segment_receiver(@env.ModuleContext, @ast.Ident) -> Bool
-
-pub fn select_type_mismatch(@diagnostic.Context, @basic.Location, @basic.Location, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn set_suggestions(@env.ModuleContext, String) -> Array[String]
 
-pub fn shared_memory_without_max(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn shift_overflow(@diagnostic.Context, @basic.Location, Int, Int64) -> Unit
-
-pub fn short_stack(@diagnostic.Context, StackKind, @basic.Location, Int, Int) -> Unit
-
-pub fn splice_non_struct(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn splice_without_supertype(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn split_labelled_args(Array[@ast.Instr[@basic.Location]]) -> MemArgs
-
-pub fn stack_switching_type_mismatch(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn start_function_signature(@diagnostic.Context, @basic.Location) -> Unit
-
 pub fn storage_subtype(@store.SubtypingInfo, @types.StorageType[@store.Id], @types.StorageType[@store.Id]) -> Bool
-
-pub fn string_not_unicode(@diagnostic.Context, @basic.Location) -> Unit
-
-pub let string_type_name : String
 
 pub fn subtype(@store.SubtypingInfo, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType], location? : @basic.Location?, pin? : Bool) -> Bool
 
-pub fn switch_needs_tag(@diagnostic.Context, @basic.Location) -> Unit
-
 pub fn table_receiver(@env.ModuleContext, @ast.Ident) -> Bool
-
-pub fn tag_with_results(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn take_labels(@diagnostic.Context, Array[String], Array[(@ast.Ident, @ast.Instr[@basic.Location])]) -> Map[String, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]]
 
 pub fn tee_target(@env.ModuleContext, @ast.Ident, ResolvedVar, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
-pub fn type_binop(@store.SubtypingInfo, @diagnostic.Context, @basic.Annotated[@ast.BinOp, @basic.Location], @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
-
 pub fn type_get(@env.ModuleContext, @ast.Ident) -> @infer.Cell[@infer.InferredType]
-
-pub fn type_mismatch(@diagnostic.Context, @basic.Location, Int, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn[A] type_trailing_operand(@env.ModuleContext, () -> A) -> (A, () -> Unit)
 
-pub fn type_unop(@diagnostic.Context, @basic.Annotated[@ast.UnOp, @basic.Location], @basic.Location, @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
-
-pub fn type_without_descriptor(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn typed_branch_label(@basic.Location, @infer.Cell[@infer.InferredType]) -> @diagnostic.Label
-
-pub fn unbound_name(@diagnostic.Context, @basic.Location, String, String, suggestions? : Array[String]) -> Unit
-
-pub fn uninitialized_local(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn unknown_argument_label(@diagnostic.Context, @basic.Location, String, suggestions? : Array[String]) -> Unit
-
-pub fn unknown_feature(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn unknown_intrinsic(@diagnostic.Context, @basic.Location, String, String) -> Unit
-
-pub fn unknown_operand_type(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn unnecessary_mut(@diagnostic.Context, @basic.Location, String) -> Unit
-
 pub fn unpack_type(@types.MutType[@types.StorageType[@ast.Ident]]) -> @types.ValType[@ast.Ident]
-
-pub fn unused_field(@diagnostic.Context, @basic.Location, String, String) -> Unit
-
-pub fn unused_import(@diagnostic.Context, @basic.Location, String, String) -> Unit
-
-pub fn unused_label(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn unused_local(@diagnostic.Context, @basic.Location, String) -> Unit
-
-pub fn unused_result(@diagnostic.Context, @basic.Location) -> Unit
-
-pub fn[Info] uses_string_literal(Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Bool
 
 pub fn val_lub(@env.TypeContext, @types.ValType[@ast.Ident], @types.ValType[@ast.Ident]) -> @types.ValType[@ast.Ident]?
 
 pub fn valtype(@env.TypeContext, @diagnostic.Context, @types.ValType[@ast.Ident]) -> @types.ValType[@store.Id]?
 
-pub fn value_count_mismatch(@diagnostic.Context, @basic.Location, expected~ : Int, provided~ : Int) -> Unit
-
 pub fn[Info] walk_fields(@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]], (@basic.Annotated[@ast.ModuleField[Info], @basic.Location]) -> Unit) -> Unit
-
-pub fn warn_unused_fields(@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Unit
-
-pub fn warn_unused_in_function(@env.ModuleContext) -> Unit
-
-pub fn[A] with_cond(@env.ModuleContext, @basic.Location, @types.Cond, Bool, () -> A) -> A
-
-pub fn[A] with_empty_stack(Operands, @diagnostic.Context, @basic.Location, () -> A) -> A
 
 // Errors
 
@@ -605,17 +194,10 @@ pub struct Checker {
   unpeeled : Map[String, Int]
 }
 pub fn Checker::check(Self, @infer.Cell[@infer.InferredType], @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
-pub fn Checker::check_against(Self, Array[@infer.Cell[@infer.InferredType]], @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::expression(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::gaps(Self) -> Array[(String, Int)]
 pub fn Checker::new(@env.ModuleContext, Operands) -> Self
 pub fn Checker::statement(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
-pub fn Checker::statements(Self, Array[@ast.Instr[@basic.Location]]) -> Array[@ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]]
-
-pub struct MemArgs {
-  positional : Array[@ast.Instr[@basic.Location]]
-  labelled : Array[(@ast.Ident, @ast.Instr[@basic.Location])]
-}
 
 pub(all) enum MethodCall {
   Atomic(@atomics.Family)
@@ -627,11 +209,7 @@ pub(all) enum MethodCall {
   Ordinary
 } derive(Eq)
 
-pub(all) struct MissingBatch {
-  mut hole_reported : Bool
-  hole_actual : Int
-  hole_expected : Int
-}
+type MissingBatch
 
 pub struct Operands {
   mut stack : Stack
@@ -669,8 +247,5 @@ pub(all) enum StackKind {
 } derive(Eq, @debug.Debug)
 
 // Type aliases
-pub type Supplied = (@infer.Cell[@infer.InferredType], @basic.Location)
-
-pub type ValLub = (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?
 
 // Traits

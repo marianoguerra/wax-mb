@@ -24,7 +24,7 @@
 /// Suggestions come from every name the table knows, not only those visible
 /// under the current assumption: a name declared in another `#[if]` branch is
 /// still a plausible thing the author meant.
-pub fn[A] find(
+fn[A] find(
   tbl : @typing_env.Tbl[A],
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
@@ -60,7 +60,7 @@ pub fn get_type_definition(
 ///|
 /// How a source reference appears inside a rec group being registered: a `Def`
 /// for a type already in the store, a `Rec` for one this very group defines.
-pub fn resolve_type_ref(
+fn resolve_type_ref(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
@@ -89,7 +89,7 @@ pub fn resolve_type_name(
 ///
 /// Checking continues either way, so one disabled feature does not swallow
 /// every error after it.
-pub fn require_feature(
+fn require_feature(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   location : @basic.Location,
@@ -142,7 +142,7 @@ pub fn heaptype(
 }
 
 ///|
-pub fn reftype(
+fn reftype(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   r : @wasm_types.RefType[@ast.Ident],
@@ -210,7 +210,7 @@ pub fn n_heaptype(
 }
 
 ///|
-pub fn n_reftype(
+fn n_reftype(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   r : @wasm_types.RefType[@ast.Ident],
@@ -221,7 +221,7 @@ pub fn n_reftype(
 }
 
 ///|
-pub fn n_valtype(
+fn n_valtype(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ty : @wasm_types.ValType[@ast.Ident],
@@ -238,7 +238,7 @@ pub fn n_valtype(
 }
 
 ///|
-pub fn n_storagetype(
+fn n_storagetype(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ty : @wasm_types.StorageType[@ast.Ident],
@@ -251,7 +251,7 @@ pub fn n_storagetype(
 }
 
 ///|
-pub fn n_fieldtype(
+fn n_fieldtype(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   ty : @wasm_types.FieldType[@ast.Ident],
@@ -301,7 +301,7 @@ pub fn n_functype(
 
 ///|
 /// Report any parameter name used twice, at its second occurrence.
-pub fn check_unique_param_names(
+fn check_unique_param_names(
   diagnostics : @diagnostic.Context,
   params : Array[
     @basic.Annotated[

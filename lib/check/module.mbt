@@ -19,7 +19,7 @@
 ///   * Globals are checked and registered one at a time, so an initializer
 ///     sees exactly what precedes it.
 ///   * Everything else follows, by which point every global is in scope.
-pub fn check_fields(
+fn check_fields(
   ctx : @typing_env.ModuleContext,
   ops : Operands,
   fields : @ast.Module[@basic.Location],

@@ -19,9 +19,7 @@
 ///
 /// A declared supertype if there is one; otherwise the abstract type its shape
 /// puts it beneath.
-pub fn immediate_supertype(
-  s : @ast.SubType,
-) -> @wasm_types.HeapType[@ast.Ident] {
+fn immediate_supertype(s : @ast.SubType) -> @wasm_types.HeapType[@ast.Ident] {
   match (s.supertype, s.typ) {
     (Some(t), _) => Type(t)
     (None, Struct(_)) => Struct
@@ -215,7 +213,7 @@ pub fn val_lub(
 ///
 /// This is the function `join_value_types` takes as a parameter, and the reason
 /// it takes one: the fold itself needs no type table, and only this does.
-pub fn inferred_lub(
+fn inferred_lub(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
 ) -> ValLub {

@@ -16,12 +16,6 @@ pub fn parse_int64(s : String) -> Int64? {
 }
 
 ///|
-/// As `parse_int64`, for 32 bits.
-pub fn parse_int32(s : String) -> Int? {
-  parse_integer(s, 32).map(v => v.to_int())
-}
-
-///|
 /// The magnitude and sign of an integer literal, or `None` if it does not fit
 /// `width` bits under either the signed or the unsigned reading.
 fn parse_integer(s : String, width : Int) -> UInt64? {

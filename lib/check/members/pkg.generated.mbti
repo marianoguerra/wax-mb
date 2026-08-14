@@ -49,8 +49,5 @@ pub(all) struct ValueMethod {
 } derive(Eq, @debug.Debug)
 
 // Type aliases
-pub type FieldType = @types.MutType[@types.StorageType[@ast.Ident]]
-
-pub type StructFields = Array[@basic.Annotated[(@ast.Ident, @types.MutType[@types.StorageType[@ast.Ident]]), @basic.Location]]
 
 // Traits

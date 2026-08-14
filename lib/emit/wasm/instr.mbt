@@ -1677,7 +1677,7 @@ fn Lowering::path_intrinsic(
 
 ///|
 /// The 16 bytes of a vector, from its lanes as written.
-pub fn vector_bytes(
+fn vector_bytes(
   shape : @simd.Shape,
   texts : Array[String],
   loc : @basic.Location,

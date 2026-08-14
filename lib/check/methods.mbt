@@ -33,7 +33,7 @@ fn Checker::is_binary_intrinsic(
 
 ///|
 /// Whether a method name is a scalar binary instruction.
-pub fn is_binary_method(m : String) -> Bool {
+fn is_binary_method(m : String) -> Bool {
   match m {
     "rotl" | "rotr" | "copysign" | "min" | "max" => true
     _ => false

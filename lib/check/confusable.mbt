@@ -91,7 +91,7 @@ fn check_data(
 
 ///|
 /// Walk a module reporting every string that hides one of these characters.
-pub fn lint_confusable(
+fn lint_confusable(
   diagnostics : @diagnostic.Context,
   fields : @ast.Module[@basic.Location],
 ) -> Unit {

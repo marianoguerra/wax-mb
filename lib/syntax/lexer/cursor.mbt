@@ -126,6 +126,6 @@ pub fn Cursor::eat(self : Cursor, s : String) -> Unit {
 
 ///|
 /// The source text between two UTF-16 indices.
-pub fn Cursor::slice(self : Cursor, from : Int, to : Int) -> String {
+fn Cursor::slice(self : Cursor, from : Int, to : Int) -> String {
   self.src[from:to].to_owned()
 }

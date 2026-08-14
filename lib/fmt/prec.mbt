@@ -7,7 +7,7 @@
 // parentheses while `(1 + 2) * 3` regains them.
 
 ///|
-pub fn binop_str(op : @ast.BinOp) -> String {
+fn binop_str(op : @ast.BinOp) -> String {
   match op {
     Add => "+"
     Sub => "-"
@@ -41,7 +41,7 @@ pub fn binop_str(op : @ast.BinOp) -> String {
 }
 
 ///|
-pub fn unop_str(op : @ast.UnOp) -> String {
+fn unop_str(op : @ast.UnOp) -> String {
   match op {
     Neg => "-"
     Pos => "+"
@@ -53,7 +53,7 @@ pub fn unop_str(op : @ast.UnOp) -> String {
 /// Binding strength, weakest first.
 ///
 /// Ordered so a plain comparison decides whether parentheses are needed.
-pub(all) enum Prec {
+enum Prec {
   Instruction
   Branch
   Assignement
@@ -100,7 +100,7 @@ fn Prec::rank(self : Prec) -> Int {
 /// The asymmetry is what encodes associativity: `Add` accepts `Addition` on the
 /// left but demands `Multiplication` on the right, so `1 - (2 - 3)` keeps its
 /// parentheses while `(1 - 2) - 3` loses them.
-pub fn prec_op(op : @ast.BinOp) -> (Prec, Prec, Prec) {
+fn prec_op(op : @ast.BinOp) -> (Prec, Prec, Prec) {
   match op {
     Add | Sub => (Addition, Addition, Multiplication)
     Mul | Div(_) | Rem(_) => (Multiplication, Multiplication, Cast)
@@ -119,7 +119,7 @@ pub fn prec_op(op : @ast.BinOp) -> (Prec, Prec, Prec) {
 ///|
 /// Wrap `g` in parentheses when the context demands more binding strength than
 /// the node provides.
-pub fn[Info] Ctx::parenthesized(
+fn[Info] Ctx::parenthesized(
   self : Ctx[Info],
   expected : Prec,
   actual : Prec,
@@ -140,7 +140,7 @@ pub fn[Info] Ctx::parenthesized(
 }
 
 ///|
-pub fn[Info] Ctx::block_label(self : Ctx[Info], label : @ast.Ident?) -> Unit {
+fn[Info] Ctx::block_label(self : Ctx[Info], label : @ast.Ident?) -> Unit {
   match label {
     Some(l) => {
       self.ident("'")
@@ -153,12 +153,12 @@ pub fn[Info] Ctx::block_label(self : Ctx[Info], label : @ast.Ident?) -> Unit {
 }
 
 ///|
-pub fn need_blocktype(bt : @ast.FuncType) -> Bool {
+fn need_blocktype(bt : @ast.FuncType) -> Bool {
   bt.params.length() > 0 || bt.results.length() > 0
 }
 
 ///|
-pub fn[Info] Ctx::casttype(self : Ctx[Info], ty : @ast.CastType) -> Unit {
+fn[Info] Ctx::casttype(self : Ctx[Info], ty : @ast.CastType) -> Unit {
   match ty {
     Value(v) => self.valtype(v)
     Func(nullable~, sign~) => {

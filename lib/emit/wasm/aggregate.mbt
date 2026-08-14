@@ -18,7 +18,7 @@
 ///
 /// `None` when the node produced no reference, or one to an abstract heap type
 /// -- neither of which any of these instructions can take.
-pub fn node_type_index(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Int? {
+fn node_type_index(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Int? {
   match node_valtype(i) {
     Some(Ref({ typ: Type(t) | Exact(t), .. })) => Some(t)
     _ => None
@@ -27,7 +27,7 @@ pub fn node_type_index(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Int? {
 
 ///|
 /// The fields of the struct a node's value refers to, in declared order.
-pub fn Lowering::struct_fields_of(
+fn Lowering::struct_fields_of(
   self : Lowering,
   i : @ast.Instr[@typing_env.InferredAnnotation],
   loc : @basic.Location,
@@ -46,7 +46,7 @@ pub fn Lowering::struct_fields_of(
 
 ///|
 /// The element type of the array a node's value refers to.
-pub fn Lowering::array_element_of(
+fn Lowering::array_element_of(
   self : Lowering,
   i : @ast.Instr[@typing_env.InferredAnnotation],
   loc : @basic.Location,
@@ -83,7 +83,7 @@ fn index_id(
 
 ///|
 /// Whether a field is packed, and so needs a signed or unsigned read.
-pub fn is_packed(
+fn is_packed(
   f : @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]],
 ) -> Bool {
   f.typ is Packed(_)

@@ -19,7 +19,7 @@
 /// optional. Hitting it is reported rather than passed over: a truncated
 /// exploration has checked a subset, and saying so is the difference between
 /// "no errors" and "no errors found so far".
-pub let max_configurations : Int = 4096
+let max_configurations : Int = 4096
 
 ///|
 /// One diagnostic, and the assumption under which it is reachable.

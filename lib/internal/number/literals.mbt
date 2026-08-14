@@ -6,7 +6,7 @@
 /// Handles what the format spells and `@strconv.parse_double` does not: hex
 /// significands, `inf`, `nan`, `nan:0x...`, and an overflowing decimal, which
 /// is infinity rather than an error.
-pub fn parse_double(s : String) -> Double? {
+fn parse_double(s : String) -> Double? {
   let (sign, body) = split_sign(s)
   if body.has_prefix("nan:") {
     return match parse_nan_payload(body) {
