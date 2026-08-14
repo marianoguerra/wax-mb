@@ -450,7 +450,8 @@ publish-dry: ci
     tools/publish-dry.sh cli
 
 # The library first: wax-cli's manifest pins a version of it that must already
-# exist on the registry.
+# exist on the registry. Refresh the registry after publishing the library so
+# the CLI build plan can resolve that exact newly-published version.
 #
 # `-C` on both, for the reason above: never a bare `moon publish` here.
 #
@@ -458,6 +459,7 @@ publish-dry: ci
 [group('ship')]
 publish: ci
     moon -C lib publish
+    moon update
     moon -C cli publish
 
 # Serve the API documentation at http://127.0.0.1:3000.
