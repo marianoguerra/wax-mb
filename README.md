@@ -47,7 +47,7 @@ name that has to stay public.
 
 **Without it.** A code generator that builds `@ast` values itself imports
 `marianoguerra/wax/compile` and `marianoguerra/wax/ast/build` instead, and never
-compiles the lexer, the token table or the generated LR parser — about 8k lines.
+compiles the lexer, the token table or the generated LR parser — about 15k lines.
 `just embed-smoke` is that claim, tested: it builds such a consumer outside the
 workspace and fails if the parser turns up in its build tree. A generator that
 has no source spans of its own to thread should mint them with

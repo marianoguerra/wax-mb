@@ -34,14 +34,17 @@ order it makes sense to do it.
   back-end half of `misc.ml`, which belongs with task 15
 - [x] 9. `members` — the method and intrinsic table *(the checker-facing half)*
 - [x] 10. `infer` — inference cells and the numeric-literal lattice *(done before 9; see there)*
-- [ ] 11. `typing_env` — symbol tables
-- [ ] 12. `typing` — the checker
-- [ ] 13. `typing_lint` / `typing_suggest` — the warnings and quick fixes
-- [ ] 14. Flip the oracle policy to `full`
+- [x] 11. `typing_env` — symbol tables *(now `lib/check/env`)*
+- [x] 12. `typing` — the checker *(now `lib/check`)*
+- [ ] 13. `typing_lint` / `typing_suggest` — 16 of the 23 warnings are emitted;
+  `CompoundAssignment`, `FieldPunning`, `GeneratedName`, `NamingConflict`,
+  `RedundantAnnotation`, `ReservedWordRename` and `TruncatedCoverage` are not
+- [x] 14. Flip the oracle policy to `full`
 
 **Phase 7 — the back end and the conversions**
 
-- [ ] 15. `to_wasm` + `text_to_binary` — emit wasm, and switch Oracle 2 to `--native`
+- [x] 15a. `to_wasm` — emit wasm *(now `lib/emit/wasm`)*
+- [ ] 15b. `text_to_binary` — the CLI still refuses any input format but `wax`
 - [ ] 16. `validation` — the wasm validator
 - [ ] 17. `from_wasm` — the decompiler, which unlocks most of the cram suite
 
@@ -49,21 +52,30 @@ order it makes sense to do it.
 
 ## Where things stand
 
+Measured 2026-08-14, at the first release.
+
 | | |
 |---|---|
-| MoonBit source | ~37k lines across 20 packages (`basic` `tokens` `lexer` `trivia` `wasm_types` `ast` `grammar` `unicode` `colors` `message` `warning` `printer` `output` `diagnostic` `infer` `members` `spell` `feature` `io` `cmd/wax-mb`) |
-| Oracle 1 — reprint parity | 1903 / 1903 byte-exact, idempotence gated alongside |
-| Oracle 2 — same wasm | 1592 / 1592 identical binaries |
-| Oracle 3 — same errors | 2114 / 2114 on severity, file, spans, offsets, exit code |
-| Unit tests | 195 |
-| Message drift | 64 entries: 28 message text, 19 related labels, 16 span (the 6 exempted files), 1 edit |
+| MoonBit source | 64.5k lines across 36 packages — 63.7k in `lib/`'s 34, of which 6.6k is the generated LR table, and 835 in `cli/`'s 2 — plus 14.8k of tests |
+| Public API | 685 names in `lib/`; `tools/api_audit.py` reports which are unreferenced |
+| Oracle 1 — reprint parity | 1907 pass, 0 fail, 212 skip; idempotence gated alongside |
+| Oracle 2 — same wasm, via the reference | 1576 pass, 20 fail, 523 skip (`just diff-all`) |
+| Oracle 2 — same wasm, our own back end | 1577 pass, 19 fail, 523 skip (`just diff-native`) — one better than the route through the reference |
+| Oracle 3 — same errors | 2117 pass, **2 fail**, on severity, file, spans, offsets, exit code |
+| Oracle 4 — same WAT | reported, not gated; see `test/report/wat-drift.md` |
+| Unit tests | 502, on all four backends |
+| Message drift | 67 entries, in `test/report/message-drift.md` |
 | Upstream findings | 12, in `test/UPSTREAM-FINDINGS.md` |
-| Cram tests in scope | 3 of 328; the other 325 are listed with reasons in `test/cram-scope.md` |
-| Corpus | 2114 files: 2112 collected, 2 adopted fuzz finds |
+| Cram tests | 72 of 331 in scope: 62 pass, 10 known-failing in `tools/run-cram.sh` |
+| Corpus | 2119 files: 2117 collected, 2 adopted fuzz finds |
 
-The three oracles are the gate for everything below. Any task that changes
-behaviour has to leave them green, and `tools/waxdiff.py run --impl tools/wax-mb`
-is the one command that says so.
+Oracles 1 and 3 are the gate for everything below, and **oracle 3 is currently
+red**: `cram/block-exit-mismatch__br-no-fall-through.wax` (see task 12) and
+`cram/match__err_scrut.wax`, where the reference emits its "Expected reference."
+twice, the second time with no location at all. Any task that changes behaviour
+has to leave the count no worse, and
+`tools/waxdiff.py run --oracle 1 --oracle 3 --impl tools/wax-mb` is the one
+command that says so.
 
 ---
 
@@ -765,9 +777,12 @@ nine modules that **no task lists and this port does not have**, and
 
 **Task 8b is done.** Nothing blocks `typing_env` any more.
 
-## 11. `typing_env` — symbol tables
+## 11. `typing_env` — symbol tables — done
 
-**Blocked on 8b** — `module_context` holds a `Wax_wasm.Types.t`, a
+**Done**, as `lib/check/env`. What follows is the plan as it was written; the
+recovery-mode interaction it flags is the part that mattered.
+
+**Was blocked on 8b** — `module_context` holds a `Wax_wasm.Types.t`, a
 `Cond_solver.t` and a `Feature.set`; two of the three are not ported yet.
 
 **Summary.** Scopes and bindings: locals, labels, globals, functions, types,
@@ -784,7 +799,12 @@ it starts mattering.
 
 ---
 
-## 12. `typing` — the checker
+## 12. `typing` — the checker — done
+
+**Done**, as `lib/check` (36 files). It was decomposed roughly as planned, but
+NOT gated by an intermediate oracle scope: the `type-bad` bucket was flipped in
+one move once the checker reached it, and the residual is two files rather than
+a partial scope. See task 14.
 
 **Summary.** 13,286 lines, roughly **3× the entire front end**. Treat it as its
 own project with its own phase plan, not as one task.
@@ -806,7 +826,15 @@ in `test/golden/index.json`; `wax/docs/src/` for the language semantics.
 
 ---
 
-## 13. `typing_lint` / `typing_suggest` — the warnings and quick fixes
+## 13. `typing_lint` / `typing_suggest` — the warnings and quick fixes — partly done
+
+**16 of the 23 warnings are emitted** by `lib/check`. The seven that are not:
+`CompoundAssignment`, `FieldPunning`, `GeneratedName`, `NamingConflict`,
+`RedundantAnnotation`, `ReservedWordRename`, `TruncatedCoverage`. Four entries
+in `tools/run-cram.sh`'s `KNOWN_FAILING` are the cram-side view of that gap
+(`new-lints-wax`, the two `redundant-*-float`, `suggestions`). The reuse this
+section predicted did happen: `lint_source.mbt` calls
+`@output.confusing_precedence`, the same function the printer parenthesises by.
 
 **Summary.** The 23 named warnings and the three machine-applicable
 suggestions. The `warning` package — names, groups, `-W` policy, default
@@ -830,7 +858,11 @@ unblocks.
 
 ---
 
-## 14. Flip the oracle policy to `full`
+## 14. Flip the oracle policy to `full` — done
+
+**Done.** `test/oracle-policy.json` reads `"scope": "full"`. It was a one-key
+change, as designed. Two files fail under it and are listed in
+`test/report/failures.md`; the intermediate scope below was never needed.
 
 **Summary.** The Phase 6 finish line. `test/oracle-policy.json` already
 contains a `full` scope: `type-bad` becomes a positive error-parity test and
@@ -845,7 +877,12 @@ back in Phase 0, and it should be a genuinely small commit.
 
 ---
 
-## 15. `to_wasm` + `text_to_binary` — emit wasm
+## 15. `to_wasm` + `text_to_binary` — emit wasm — half done
+
+**`to_wasm` is done**, as `lib/emit/wasm`, and the `--oracle2-route native`
+flag this section asks for was built: `just diff-native` runs it, `just diff`
+still runs the via-reference route. **`text_to_binary` is not**: the CLI
+refuses any input format but `wax`, so there is no wat-to-wasm path.
 
 **Summary.** The code generator. Oracle 2 currently proves our *printed Wax*
 round-trips to identical wasm by routing it through the reference back end. A

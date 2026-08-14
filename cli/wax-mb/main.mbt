@@ -219,7 +219,7 @@ fn run(argv : Array[String]) -> Status {
   if opts.command is Convert && not_implemented_format(opts.output_format) {
     @io.eprintln(
       prog() +
-      "output format '\{opts.output_format}' is not implemented (only 'wax' and 'wasm')",
+      "output format '\{opts.output_format}' is not implemented (only 'wax', 'wasm' and 'wat')",
     )
     return Usage
   }

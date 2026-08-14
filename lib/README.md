@@ -77,8 +77,8 @@ holds syntax errors.
 This is the path a code generator wants, and the reason the module is laid out
 the way it is. Import `marianoguerra/wax/compile` rather than
 `marianoguerra/wax`, and **the lexer, the token table and the generated LR
-parser are never compiled** — about 8k lines, most of it a table nobody wrote by
-hand.
+parser are never compiled** — about 15k lines, most of it a table nobody wrote
+by hand.
 
 `marianoguerra/wax/ast/build` has smart constructors for the module fields;
 anything it does not cover is a plain `@ast` value written out by hand, and the
@@ -172,7 +172,7 @@ points `@grammar.parse_string` / `parse_recover`, `@output.render`,
 
 Everything else is 0.x-mutable.
 
-Before the first release the surface was cut from 1117 public names to 684 —
+Before the first release the surface was cut from 1117 public names to 685 —
 `wax/check` alone from 349 to 103 — on one rule: a name nothing outside its own
 package referenced was not a promise, whatever it was doing in a `.mbti`.
 What is left in the checker is mostly reached by its own tests.

@@ -4,7 +4,7 @@
 // and the generated LR parser. A consumer that builds `@ast` values itself and
 // only wants to check and emit them imports `marianoguerra/wax/compile`
 // instead, and never compiles any of it. That distinction is the whole point of
-// how this module is laid out; see README.mbt.md.
+// how this module is laid out; see README.md.
 import {
   "marianoguerra/wax/colors",
   "marianoguerra/wax/compile",

@@ -142,7 +142,7 @@ is the point: it shows exactly what upstream's behaviour change was.
 instead of the engine ported from `printer.ml`. Only the layout is swapped: both
 are driven by the same `@printer.Printer`, whose token stream is
 engine-independent, so `just ppdiff` compares them on the same document over the
-same corpus. All 1903 modules come out byte-identical, and `ppdiff` exits
+same corpus. All 1907 modules come out byte-identical, and `ppdiff` exits
 non-zero if that stops being true. `printer_pp/README.md` says what it took, and
 which parts of the reconciliation the corpus does not exercise.
 

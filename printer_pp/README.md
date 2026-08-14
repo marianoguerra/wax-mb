@@ -31,9 +31,9 @@ just ppdiff
 ## The result
 
 ```
-files scanned:   2114
-modules parsed:  1903
-identical:       1903
+files scanned:   2119
+modules parsed:  1907
+identical:       1907
 differing:       0
 agreement:       100%
 ```
@@ -44,7 +44,7 @@ the two engines. `ppdiff` exits non-zero if that ever stops being true.
 That is a statement about this corpus, not a theorem. The two engines are not
 the same algorithm — one streams with bounded lookahead, the other builds a tree
 and renders it in a pass — and they are reconciled by the lowering below rather
-than by construction. What the number says is that on 1903 real modules the
+than by construction. What the number says is that on 1907 real modules the
 reconciliation is complete.
 
 ## What it took
