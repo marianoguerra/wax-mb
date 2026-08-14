@@ -125,7 +125,7 @@ test "the checker annotates every node it reaches" {
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
     content=(
-      #|nodes 181187 poisoned 0 files 1907 clean 1727
+      #|nodes 181185 poisoned 0 files 1907 clean 1726
     ),
   )
   let top : Array[(String, Int)] = []
@@ -138,7 +138,7 @@ test "the checker annotates every node it reaches" {
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),
     content=(
       #|31 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
-      #|22 This cast always traps: the value can never have this type.
+      #|24 This cast always traps: the value can never have this type.
       #|17 This type test is always true: the value already has this type.
       #|7 This expression occurs before a hole '_'.
       #|6 Cannot infer the struct type here; add an explicit type, as in '{T| ..}'.

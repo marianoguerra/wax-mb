@@ -1053,77 +1053,93 @@ pub fn Checker::statement(
       if ctx.warn_unused {
         lint_conversion(ctx, loc, target, operand)
       }
-      let ty = match target {
-        // `e as t` for a value type: the result IS the target, and a reference
-        // target is worth linting -- it can be impossible or pointless before
-        // it is ever run.
-        Value(v) => {
-          let want = internalize(ctx.type_context, ctx.diagnostics, v)
-          // The operand's type as it stands BEFORE the cast settles it to the
-          // target: what the lint below has to judge, and what the "cannot be
-          // cast" report names.
-          let natural_before = natural.get()
-          // A continuation carries no RTT, so there is no `ref.cast` into one:
-          // `e as &k` with a continuation target is a compile-time ASCRIPTION,
-          // and is accepted exactly when it lowers to no instruction at all.
-          // Not the castability test below, which admits runtime downcasts.
-          let cont_target = v is Ref(t) &&
-            is_cont_heaptype(ctx.type_context, t.typ)
-          if cont_target {
-            // ASKED, not applied: `subtype` settles inference cells as a side
-            // effect, and this is a question about the operand's type, not a
-            // constraint on it. Pinning here changed the bytes of two files
-            // whose operand is polymorphic dead code.
-            if want is Some(w) &&
-              !subtype(ctx.type_context.subtyping_info(), natural, w, pin=false) {
-              cont_cast_not_ascription(ctx.diagnostics, loc)
-            }
+      // `e as t` for a value type: the result IS the target, and a reference
+      // target is worth linting -- it can be impossible or pointless before it
+      // is ever run. The second component says the cast names no instruction.
+      fn value_target(
+        v : @wasm_types.ValType[@ast.Ident],
+        inline : @ast.CompType?,
+      ) -> (@infer.Cell[@infer.InferredType], Bool) {
+        let want = internalize(ctx.type_context, ctx.diagnostics, v, inline~)
+        let mut failed = false
+        // The operand's type as it stands BEFORE the cast settles it to the
+        // target: what the lint below has to judge, and what the "cannot be
+        // cast" report names.
+        let natural_before = natural.get()
+        // A continuation carries no RTT, so there is no `ref.cast` into one:
+        // `e as &k` with a continuation target is a compile-time ASCRIPTION,
+        // and is accepted exactly when it lowers to no instruction at all.
+        // Not the castability test below, which admits runtime downcasts.
+        let cont_target = v is Ref(t) &&
+          is_cont_heaptype(ctx.type_context, t.typ)
+        if cont_target {
+          // ASKED, not applied: `subtype` settles inference cells as a side
+          // effect, and this is a question about the operand's type, not a
+          // constraint on it. Pinning here changed the bytes of two files
+          // whose operand is polymorphic dead code.
+          if want is Some(w) &&
+            !subtype(ctx.type_context.subtyping_info(), natural, w, pin=false) {
+            cont_cast_not_ascription(ctx.diagnostics, loc)
           }
-          // Settle a still-flexible operand at the type the cast names, BEFORE
-          // the result type is decided: a literal has no width of its own, and
-          // the cast is what says which one it takes. The same act answers
-          // whether the cast lowers to anything at all.
-          if !cont_target && want is Some(w) && w.get() is Valtype(target) {
-            if !value_cast(ctx, natural, target) {
-              invalid_cast(
-                ctx.diagnostics,
-                operand.info,
-                @infer.Cell::make(natural_before),
-              )
-              cast_failed = true
-            }
-          }
-          // A continuation target's "redundant" upcast is the intended use --
-          // it is an ascription, and saying so of every one would be noise.
-          if !cont_target && want is Some(w) {
-            lint_ref_cast(
-              ctx,
-              loc,
-              is_test=false,
-              natural_before,
-              w.get(),
-              operand_location=Some(operand.info),
+        }
+        // Settle a still-flexible operand at the type the cast names, BEFORE
+        // the result type is decided: a literal has no width of its own, and
+        // the cast is what says which one it takes. The same act answers
+        // whether the cast lowers to anything at all.
+        if !cont_target && want is Some(w) && w.get() is Valtype(target) {
+          if !value_cast(ctx, natural, target) {
+            invalid_cast(
+              ctx.diagnostics,
+              operand.info,
+              @infer.Cell::make(natural_before),
             )
+            failed = true
           }
+        }
+        // A continuation target's "redundant" upcast is the intended use --
+        // it is an ascription, and saying so of every one would be noise.
+        if !cont_target && want is Some(w) {
+          lint_ref_cast(
+            ctx,
+            loc,
+            is_test=false,
+            natural_before,
+            w.get(),
+            operand_location=Some(operand.info),
+          )
+        }
+        (
           match want {
             Some(w) => w
             None => @infer.Cell::make(@infer.InferredType::Error)
+          },
+          failed,
+        )
+      }
+
+      let ty = match target {
+        Value(v) => {
+          let (c, failed) = value_target(v, None)
+          if failed {
+            cast_failed = true
           }
+          c
         }
-        // `e as &fn(..)` mints a function type for the target.
+        // `e as &fn(..)` mints a function type for the target and then IS a
+        // reference cast like any other: the signature rides along so the
+        // result renders as `&fn(..)` rather than as the synthetic name.
         Func(nullable~, sign~) =>
           match self.inline_functype(loc, sign) {
-            Some(name) =>
-              match
-                internalize(
-                  ctx.type_context,
-                  ctx.diagnostics,
-                  Ref({ nullable, typ: Type(name) }),
-                  inline=Some(Func(sign)),
-                ) {
-                Some(c) => c
-                None => @infer.Cell::make(@infer.InferredType::Error)
+            Some(name) => {
+              let (c, failed) = value_target(
+                Ref({ nullable, typ: Type(name) }),
+                Some(Func(sign)),
+              )
+              if failed {
+                cast_failed = true
               }
+              c
+            }
             None => @infer.Cell::make(@infer.InferredType::Error)
           }
         // `e as i32_s` and friends: a numeric conversion, whose result is the
