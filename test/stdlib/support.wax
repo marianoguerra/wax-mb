@@ -56,6 +56,50 @@ fn st_assert_set(set: &jv_set_value, value: i32, present: i32) {
     st_assert(if jv_set_contains(set, jv_i32(value)) == present { 1 } else { 0 });
 }
 
+fn st_assert_record(record: &jv_record_value, field: i32, expected: i32) {
+    let (found, value) = jv_record_get(record, st_key(field));
+    st_assert(found);
+    st_assert_jv_i32(value!, expected);
+}
+
+fn st_nonnegative_field(_context: &?eq, value: &jv_value) -> i32 {
+    let (found, actual) = jv_get_i32(value);
+    if found == 0 { return 0; }
+    if actual <s (0 as i32) { return 0; }
+    1
+}
+
+fn st_ordered_record(_context: &?eq, record: &jv_record_value) -> i32 {
+    let left = jv_require_i32(jv_record_at(record, st_key(1)));
+    let right = jv_require_i32(jv_record_at(record, st_key(2)));
+    if left <=s right { 1 } else { 0 }
+}
+
+fn st_property_record_type() -> &jv_record_type {
+    let schema = jv_record_schema_add(
+        jv_record_schema_add(
+            jv_record_schema_add(jv_record_schema_empty(), st_key(1), jv_type_i32(), jv_i32(0)),
+            st_key(2),
+            jv_type_i32(),
+            jv_i32(0),
+        ),
+        st_key(3),
+        jv_type_i32(),
+        jv_i32(0),
+    );
+    jv_record_type_create(utf8_from_bytes("PropertyRecord"), schema)
+}
+
+fn st_oracle_record_type() -> &jv_record_type {
+    let schema = jv_record_schema_add(
+        jv_record_schema_add(jv_record_schema_empty(), st_key(1), jv_type_i32(), jv_i32(0)),
+        st_key(2),
+        jv_type_i32(),
+        jv_i32(0),
+    );
+    jv_record_type_create(utf8_from_bytes("Point"), schema)
+}
+
 type st_codepoints = {
     count: mut i32,
     sum: mut i32,
@@ -204,8 +248,174 @@ fn st_boundaries() -> i32 {
     let values3 = jvt_set_persistent(ts);
     st_assert(if jv_set_count(values3) == 4 { 1 } else { 0 });
     st_assert(if jv_set_count(nested1) == 3 { 1 } else { 0 });
+
     st_stage = 6;
+    let (bad_default_status, _) = jv_record_schema_try_add(
+        jv_record_schema_empty(),
+        st_key(1),
+        jv_type_i32(),
+        jv_string(st_key(1)),
+    );
+    st_assert(if bad_default_status == jv_record_type_mismatch { 1 } else { 0 });
+    let (invalid_default_status, _) = jv_record_schema_try_add_validated(
+        jv_record_schema_empty(),
+        st_key(1),
+        jv_type_i32(),
+        jv_i32(-1),
+        null,
+        st_nonnegative_field,
+    );
+    st_assert(if invalid_default_status == jv_record_field_invalid { 1 } else { 0 });
+    let schema1 = jv_record_schema_add_validated(
+        jv_record_schema_empty(),
+        st_key(1),
+        jv_type_i32(),
+        jv_i32(0),
+        null,
+        st_nonnegative_field,
+    );
+    let (duplicate_status, _) = jv_record_schema_try_add(
+        schema1,
+        st_key(1),
+        jv_type_i32(),
+        jv_i32(0),
+    );
+    st_assert(if duplicate_status == jv_record_duplicate_field { 1 } else { 0 });
+    let schema2 = jv_record_schema_add(schema1, st_key(2), jv_type_i32(), jv_i32(10));
+    let definition = jv_record_type_create_validated(
+        utf8_from_bytes("Range"),
+        schema2,
+        null,
+        st_ordered_record,
+    );
+    st_assert(utf8_equal(jv_record_type_name(definition), utf8_from_bytes("Range")));
+    st_assert(if jv_record_schema_count(jv_record_type_schema(definition)) == 2 { 1 } else { 0 });
+    let record0 = jv_record_default(definition);
+    st_assert(if jv_kind(record0) == jv_kind_record { 1 } else { 0 });
+    st_assert(if jv_record_count(record0) == 2 { 1 } else { 0 });
+    st_assert_record(record0, 1, 0);
+    st_assert_record(record0, 2, 10);
+    st_assert(if jv_record_has_field(record0, st_key(9)) == 0 { 1 } else { 0 });
+    let (unknown_status, _) = jv_record_try_set(record0, st_key(9), jv_i32(1));
+    st_assert(if unknown_status == jv_record_unknown_field { 1 } else { 0 });
+    let (mismatch_status, _) = jv_record_try_set(record0, st_key(1), jv_bool(1));
+    st_assert(if mismatch_status == jv_record_type_mismatch { 1 } else { 0 });
+    let (field_status, _) = jv_record_try_set(record0, st_key(1), jv_i32(-1));
+    st_assert(if field_status == jv_record_field_invalid { 1 } else { 0 });
+    let record1 = jv_record_set(record0, st_key(1), jv_i32(5));
+    st_assert_record(record0, 1, 0);
+    st_assert_record(record1, 1, 5);
+    st_assert(if jv_record_set(record1, st_key(1), jv_i32(5)) == record1 { 1 } else { 0 });
+    let (record_status, _) = jv_record_try_set(record1, st_key(1), jv_i32(20));
+    st_assert(if record_status == jv_record_value_invalid { 1 } else { 0 });
+    let coordinated = jv_map_assoc(
+        jv_map_assoc(jv_map_empty(), st_key(1), jv_i32(20)),
+        st_key(2),
+        jv_i32(30),
+    );
+    let record2 = jv_record_merge(record1, coordinated);
+    st_assert_record(record2, 1, 20);
+    st_assert_record(record2, 2, 30);
+    st_assert(if jv_record_merge(record2, jv_record_to_map(record2)) == record2 { 1 } else { 0 });
+    let record3 = jv_record_reset(record2, st_key(1));
+    st_assert_record(record3, 1, 0);
+    let record4 = jv_record_clear(record2);
+    st_assert_record(record4, 1, 0);
+    st_assert_record(record4, 2, 10);
+    let unknown_overrides = jv_map_assoc(jv_map_empty(), st_key(9), jv_i32(99));
+    let (strict_status, strict_field, _) = jv_record_try_from_map(definition, unknown_overrides);
+    st_assert(if strict_status == jv_record_unknown_field { 1 } else { 0 });
+    st_assert(utf8_equal(strict_field!, st_key(9)));
+    let lenient = jv_record_from_map_lenient(definition, unknown_overrides);
+    st_assert(jv_equal(lenient, record0));
+    let record_copy = jv_record_from_map(definition, jv_record_to_map(record2));
+    st_assert(jv_equal(record2, record_copy));
+    st_assert(if jv_hash(record2) == jv_hash(record_copy) { 1 } else { 0 });
+    let record_set = jv_set_add(jv_set_add(jv_set_empty(), record2), record_copy);
+    st_assert(if jv_set_count(record_set) == 1 { 1 } else { 0 });
+    st_assert(jv_set_contains(record_set, record_copy));
+    let record_map1 = jv_map_assoc(jv_map_empty(), st_key(1), record2);
+    let record_map2 = jv_map_assoc(jv_map_empty(), st_key(1), record_copy);
+    st_assert(jv_equal(record_map1, record_map2));
+    let other_definition = jv_record_type_create(utf8_from_bytes("Range"), schema2);
+    st_assert(if jv_equal(record0, jv_record_default(other_definition)) == 0 { 1 } else { 0 });
+
+    st_stage = 7;
+    let integer_vector = jv_vector_push(jv_vector_empty(), jv_i32(1));
+    let mixed_vector = jv_vector_push(integer_vector, jv_string(st_key(1)));
+    st_assert(jv_type_accepts(jv_type_vector(jv_type_i32()), integer_vector));
+    st_assert(if jv_type_accepts(jv_type_vector(jv_type_i32()), mixed_vector) == 0 { 1 } else { 0 });
+    let integer_map = jv_map_assoc(jv_map_empty(), st_key(1), jv_i32(1));
+    let mixed_map = jv_map_assoc(integer_map, st_key(2), jv_bool(1));
+    st_assert(jv_type_accepts(jv_type_map(jv_type_i32()), integer_map));
+    st_assert(if jv_type_accepts(jv_type_map(jv_type_i32()), mixed_map) == 0 { 1 } else { 0 });
+    let integer_set = jv_set_add(jv_set_empty(), jv_i32(1));
+    let mixed_set = jv_set_add(integer_set, jv_bool(1));
+    st_assert(jv_type_accepts(jv_type_set(jv_type_i32()), integer_set));
+    st_assert(if jv_type_accepts(jv_type_set(jv_type_i32()), mixed_set) == 0 { 1 } else { 0 });
+    st_assert(jv_type_accepts(jv_type_optional(jv_type_string()), jv_null()));
+    st_assert(jv_type_accepts(jv_type_optional(jv_type_string()), jv_string(st_key(1))));
+    st_assert(jv_type_accepts(jv_type_any(), record2));
+    st_assert(jv_type_accepts(jv_type_opaque(), jv_any(payload)));
+    st_assert(if jv_type_accepts(jv_type_opaque(), record2) == 0 { 1 } else { 0 });
+    st_assert(jv_type_accepts(jv_type_record(definition), record2));
+    st_assert(if jv_type_accepts(jv_type_record(other_definition), record2) == 0 { 1 } else { 0 });
+    let transient_record = jv_record_as_transient(record1);
+    jvt_record_set(transient_record, st_key(1), jv_i32(8));
+    jvt_record_set(transient_record, st_key(2), jv_i32(12));
+    let record5 = jvt_record_persistent(transient_record);
+    st_assert_record(record5, 1, 8);
+    st_assert_record(record5, 2, 12);
+    st_stage = 8;
     1
+}
+
+#[export = "record_oracle_default"]
+fn st_record_oracle_default() -> i32 {
+    jv_require_i32(jv_record_at(jv_record_default(st_oracle_record_type()), st_key(1)))
+}
+
+#[export = "record_oracle_override"]
+fn st_record_oracle_override() -> i32 {
+    let definition = st_oracle_record_type();
+    let record = jv_record_from_map(
+        definition,
+        jv_map_assoc(jv_map_empty(), st_key(1), jv_i32(7)),
+    );
+    jv_require_i32(jv_record_at(record, st_key(1)))
+}
+
+#[export = "record_oracle_reset"]
+fn st_record_oracle_reset() -> i32 {
+    let definition = st_oracle_record_type();
+    let record = jv_record_set(jv_record_default(definition), st_key(1), jv_i32(7));
+    jv_require_i32(jv_record_at(jv_record_reset(record, st_key(1)), st_key(1)))
+}
+
+#[export = "record_oracle_clear"]
+fn st_record_oracle_clear() -> i32 {
+    let definition = st_oracle_record_type();
+    let record = jv_record_set(jv_record_default(definition), st_key(1), jv_i32(7));
+    jv_require_i32(jv_record_at(jv_record_clear(record), st_key(1)))
+}
+
+#[export = "record_oracle_value_equal"]
+fn st_record_oracle_value_equal() -> i32 {
+    let definition = st_oracle_record_type();
+    jv_equal(
+        jv_record_set(jv_record_default(definition), st_key(1), jv_i32(7)),
+        jv_record_from_map(definition, jv_map_assoc(jv_map_empty(), st_key(1), jv_i32(7))),
+    )
+}
+
+#[export = "record_oracle_lenient_unknown"]
+fn st_record_oracle_lenient_unknown() -> i32 {
+    let definition = st_oracle_record_type();
+    let record = jv_record_from_map_lenient(
+        definition,
+        jv_map_assoc(jv_map_empty(), st_key(9), jv_i32(9)),
+    );
+    jv_require_i32(jv_record_at(record, st_key(1)))
 }
 
 #[export = "stdlib_invalid_set_transient"]
@@ -234,6 +444,27 @@ fn st_invalid_jv_set_transient() -> i32 {
     let value = jv_set_as_transient(jv_set_empty());
     let _ = jvt_set_persistent(value);
     jvt_set_count(value)
+}
+
+#[export = "stdlib_invalid_jv_record_transient"]
+fn st_invalid_jv_record_transient() -> i32 {
+    let schema = jv_record_schema_add(
+        jv_record_schema_add(jv_record_schema_empty(), st_key(1), jv_type_i32(), jv_i32(0)),
+        st_key(2),
+        jv_type_i32(),
+        jv_i32(10),
+    );
+    let definition = jv_record_type_create_validated(
+        utf8_from_bytes("Range"),
+        schema,
+        null,
+        st_ordered_record,
+    );
+    let value = jv_record_as_transient(jv_record_default(definition));
+    jvt_record_set(value, st_key(1), jv_i32(20));
+    let (status, _) = jvt_record_try_persistent(value);
+    st_assert(if status == jv_record_value_invalid { 1 } else { 0 });
+    jvt_record_count(value)
 }
 
 #[export = "stdlib_bench_utf8"]
@@ -300,6 +531,43 @@ fn st_bench_transient(size: i32, rounds: i32) -> i32 {
             jv_vector_count(frozen_vector)
             + jv_map_count(frozen_map)
             + jv_set_count(frozen_set);
+        round += 1;
+    }
+    checksum
+}
+
+#[export = "stdlib_bench_record_persistent"]
+fn st_bench_record_persistent(size: i32, rounds: i32) -> i32 {
+    let definition = st_property_record_type();
+    let checksum: i32 = 0;
+    let round: i32 = 0;
+    while round <s rounds {
+        let record = jv_record_default(definition);
+        let i: i32 = 0;
+        while i <s size {
+            record = jv_record_set(record, st_key(i %s 3 + 1), jv_i32(i));
+            i += 1;
+        }
+        checksum += jv_require_i32(jv_record_at(record, st_key((size - 1) %s 3 + 1)));
+        round += 1;
+    }
+    checksum
+}
+
+#[export = "stdlib_bench_record_transient"]
+fn st_bench_record_transient(size: i32, rounds: i32) -> i32 {
+    let definition = st_property_record_type();
+    let checksum: i32 = 0;
+    let round: i32 = 0;
+    while round <s rounds {
+        let record = jv_record_as_transient(jv_record_default(definition));
+        let i: i32 = 0;
+        while i <s size {
+            jvt_record_set(record, st_key(i %s 3 + 1), jv_i32(i));
+            i += 1;
+        }
+        let frozen = jvt_record_persistent(record);
+        checksum += jv_require_i32(jv_record_at(frozen, st_key((size - 1) %s 3 + 1)));
         round += 1;
     }
     checksum

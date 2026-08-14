@@ -2,7 +2,8 @@
 //
 // Concatenate hashing.wax, persistent_hash_map.wax,
 // persistent_hash_set.wax, persistent_vector.wax, and text/utf8.wax before
-// this file. Values constructed through this API are non-null and acyclic.
+// this file, then concatenate data/record.wax. Values constructed through this
+// API are non-null and acyclic.
 
 const jv_kind_null = 0;
 const jv_kind_bool = 1;
@@ -15,6 +16,7 @@ const jv_kind_vector = 7;
 const jv_kind_map = 8;
 const jv_kind_any = 9;
 const jv_kind_set = 10;
+const jv_kind_record = 11;
 
 rec {
     type jv_value = open { kind: i32 };
@@ -29,7 +31,45 @@ rec {
     type jv_map_value : jv_value = { .., value: &phm_map };
     type jv_any_value : jv_value = { .., value: &?any };
     type jv_set_value : jv_value = { .., value: &phs_set };
+    type jv_record_value : jv_value = {
+        ..,
+        definition: &jv_record_type,
+        values: &phm_map,
+    };
+    type jv_type = open { kind: i32 };
+    type jv_type_scalar : jv_type = { .. };
+    type jv_type_vector_value : jv_type = { .., element: &jv_type };
+    type jv_type_map_value : jv_type = { .., value: &jv_type };
+    type jv_type_set_value : jv_type = { .., element: &jv_type };
+    type jv_type_record_value : jv_type = {
+        ..,
+        definition: &jv_record_type,
+    };
+    type jv_type_or_value : jv_type = {
+        ..,
+        left: &jv_type,
+        right: &jv_type,
+    };
+    type jv_record_field = {
+        value_type: &jv_type,
+        default_value: &jv_value,
+        validator_context: &?eq,
+        validator: &func,
+    };
+    type jv_record_schema = {
+        fields: &phm_map,
+        defaults: &phm_map,
+    };
+    type jv_record_type = {
+        name: &utf8_string,
+        schema: &jv_record_schema,
+        validator_context: &?eq,
+        validator: &func,
+    };
 }
+
+type jv_field_validator = fn(&?eq, &jv_value) -> i32;
+type jv_record_validator = fn(&?eq, &jv_record_value) -> i32;
 
 type jv_vector_visit = fn(&?eq, i32, &jv_value);
 type jv_map_visit = fn(&?eq, &utf8_string, &jv_value);
@@ -557,6 +597,9 @@ fn jv_equal(left: &jv_value, right: &jv_value) -> i32 {
             jv_set_each(a, state, jv_set_equal_entry);
             return state.equal;
         }
+        a: &jv_record_value => {
+            return jv_record_equal(a, right as &jv_record_value);
+        }
         _ => { unreachable; }
     }
     unreachable;
@@ -638,6 +681,7 @@ fn jv_hash(value: &jv_value) -> i32 {
             let hash = wax_hash_add_i32(jv_hash_tag(jv_kind_set), state.sum);
             return wax_hash_finalize(wax_hash_add_i32(hash, state.xor), jv_set_count(found) * 4);
         }
+        found: &jv_record_value => { return jv_record_hash(found); }
         _ => { unreachable; }
     }
     unreachable;

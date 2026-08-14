@@ -107,11 +107,15 @@ fn emit_property_case(
   let vector : Array[Int] = []
   let map : @hashmap.HashMap[Int, Int] = @hashmap.HashMap::HashMap([])
   let set : @hashmap.HashMap[Int, Int] = @hashmap.HashMap::HashMap([])
+  let record_values = [0, 0, 0]
   out.write_string("fn st_property_case_\{case_index}() {\n")
   out.write_string("    st_stage = \{100 + case_index};\n")
   out.write_string("    let vector = jv_vector_empty();\n")
   out.write_string("    let map = jv_map_empty();\n")
   out.write_string("    let set = jv_set_empty();\n")
+  out.write_string(
+    "    let record = jv_record_default(st_property_record_type());\n",
+  )
   for step, raw in inputs {
     let n = if raw < 0 { -raw } else { raw }
     let operation = n % 12
@@ -212,6 +216,56 @@ fn emit_property_case(
     out.write_string(
       "    st_assert(if jv_set_count(set) == \{set.length()} { 1 } else { 0 });\n",
     )
+    let record_operation = n / 13 % 6
+    let record_field = n / 37 % 3
+    let field_key = record_field + 1
+    if record_operation <= 2 {
+      let old_value = record_values[record_field]
+      out.write_string("    let old_record_\{step} = record;\n")
+      out.write_string(
+        "    let (record_status_\{step}, record_out_\{step}) = jv_record_try_set(record, st_key(\{field_key}), jv_i32(\{value}));\n",
+      )
+      out.write_string(
+        "    st_assert(if record_status_\{step} == jv_record_ok { 1 } else { 0 });\n",
+      )
+      out.write_string("    record = record_out_\{step}!;\n")
+      out.write_string(
+        "    st_assert_record(old_record_\{step}, \{field_key}, \{old_value});\n",
+      )
+      record_values[record_field] = value
+    } else if record_operation == 3 {
+      let old_value = record_values[record_field]
+      out.write_string("    let old_record_\{step} = record;\n")
+      out.write_string(
+        "    record = jv_record_reset(record, st_key(\{field_key}));\n",
+      )
+      out.write_string(
+        "    st_assert_record(old_record_\{step}, \{field_key}, \{old_value});\n",
+      )
+      record_values[record_field] = 0
+    } else if record_operation == 4 {
+      out.write_string(
+        "    let (record_status_\{step}, _) = jv_record_try_set(record, st_key(\{field_key}), jv_bool(1));\n",
+      )
+      out.write_string(
+        "    st_assert(if record_status_\{step} == jv_record_type_mismatch { 1 } else { 0 });\n",
+      )
+    } else {
+      out.write_string(
+        "    let (record_status_\{step}, _) = jv_record_try_set(record, st_key(63), jv_i32(\{value}));\n",
+      )
+      out.write_string(
+        "    st_assert(if record_status_\{step} == jv_record_unknown_field { 1 } else { 0 });\n",
+      )
+    }
+    for index, expected in record_values {
+      out.write_string(
+        "    st_assert_record(record, \{index + 1}, \{expected});\n",
+      )
+    }
+    out.write_string(
+      "    st_assert(if jv_record_count(record) == 3 { 1 } else { 0 });\n",
+    )
   }
   out.write_string("}\n\n")
 }
@@ -222,8 +276,8 @@ fn append_sources(out : StringBuilder) -> Unit raise {
     path in [
       "stdlib/collections/hashing.wax", "stdlib/collections/persistent_hash_map.wax",
       "stdlib/collections/persistent_hash_set.wax", "stdlib/collections/persistent_vector.wax",
-      "stdlib/text/utf8.wax", "stdlib/data/immutable_value.wax", "test/stdlib/support.wax",
-      "stdlib/data/example.wax",
+      "stdlib/text/utf8.wax", "stdlib/data/immutable_value.wax", "stdlib/data/record.wax",
+      "test/stdlib/support.wax", "stdlib/data/example.wax",
     ] {
     out.write_string(@fs.read_file_to_string(path))
     out.write_string("\n")
@@ -260,10 +314,14 @@ fn main raise {
   let bytes = match
     @wax.compile_string(source, fname="generated-stdlib-properties.wax") {
     Ok(bytes) => bytes
-    Err(diagnostics) =>
+    Err(diagnostics) => {
+      for diagnostic in diagnostics {
+        println(@message.to_plain_string(diagnostic.message))
+      }
       abort(
         "generated Wax stdlib module was rejected (\{diagnostics.length()} diagnostics)",
       )
+    }
   }
   @fs.write_bytes_to_file(args[1], bytes)
   println(

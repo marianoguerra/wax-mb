@@ -19,6 +19,7 @@ Concatenate the files in this order:
 4. `persistent_vector.wax`
 5. `utf8.wax`
 6. `immutable_value.wax`
+7. `record.wax`
 
 The `text`, `collections`, and `all` profiles copy the corresponding subsets.
 The older `tools/vendor-collections.sh` remains available for collection-only
@@ -76,6 +77,55 @@ Values built through the public API are immutable and acyclic. An opaque
 `any` payload may refer to mutable application state; the value retains the
 reference but cannot make the referenced object immutable.
 
+## Runtime-defined records
+
+`data/record.wax` adds `jv_record_value`, a named immutable record whose fields
+are declared at runtime. A `jv_record_schema` maps UTF-8 names to a runtime
+`jv_type`, a valid default, and an optional validator callback. A finalized
+`jv_record_type` acts as a factory; instances store only the factory reference
+and a persistent map containing every field.
+
+Runtime types cover the scalar value kinds, unconstrained `jv_type_any`, exact
+opaque-any values, homogeneous vectors/maps/sets, exact record-definition
+references, unions, and optional values. Numeric kinds are never coerced.
+Collection validation recursively checks their contents. Type descriptors and
+record definitions are immutable DAGs in v1, so directly or mutually recursive
+record definitions are not supported.
+
+```wax
+let schema = jv_record_schema_add(
+    jv_record_schema_add(
+        jv_record_schema_empty(),
+        utf8_from_bytes("x"),
+        jv_type_i32(),
+        jv_i32(0),
+    ),
+    utf8_from_bytes("label"),
+    jv_type_optional(jv_type_string()),
+    jv_null(),
+);
+let point_type = jv_record_type_create(utf8_from_bytes("Point"), schema);
+let point = jv_record_set(
+    jv_record_default(point_type),
+    utf8_from_bytes("x"),
+    jv_i32(7),
+);
+```
+
+`jv_record_try_set`, strict/lenient construction, merge, reset, clear,
+iteration, and `jvt_record` transient batching preserve the definition and
+validate changes. Stable `jv_record_*` status constants distinguish unknown or
+duplicate fields, type mismatches, field-validator failures, and whole-record
+validator failures. The corresponding trapping functions are conveniences for
+inputs the caller already knows are valid. A transient freeze is consuming even
+when its whole-record validator rejects the result.
+
+Record equality requires definition identity as well as equal values. Names are
+descriptive and are not registered globally. Since WebAssembly has no identity
+hash, same-name definitions with equal maps can have the same hash while still
+being unequal. Validator callbacks take an explicit context and must be pure
+and deterministic.
+
 ## Verification
 
 `just stdlib-test` generates reproducible state-machine traces with MoonBit
@@ -83,12 +133,15 @@ QuickCheck, compiles the combined sources through Wax's public API, and runs
 them in Node's WebAssembly GC runtime. MoonBit maps/arrays/sets model persistent
 updates. A fatal WHATWG `TextDecoder` independently checks generated UTF-8 byte
 sequences. Deterministic tests cover malformed encodings, numeric bit identity,
-nested values, insertion-order independence, structural sharing, and transient
-lifecycle traps.
+nested values, record schemas and validators, insertion-order independence,
+structural sharing, and transient lifecycle traps. Committed fixtures exercise
+the shared default/override/reset/clear/equality behavior documented by
+Immutable.js v5; typed validation is checked against an independent generated
+state-machine model because Immutable.js records are not runtime typed.
 
-`just stdlib-bench` reports median and minimum times for UTF-8 validation/hash
-and persistent/transient value construction. Timings are informational rather
-than pass/fail thresholds.
+`just stdlib-bench` reports median and minimum times for UTF-8 validation/hash,
+persistent/transient value construction, and record updates. Timings are
+informational rather than pass/fail thresholds.
 
 The validator implements the well-formed byte ranges in
 [Unicode Standard Table 3-7](https://www.unicode.org/versions/latest/ch03.pdf).
@@ -96,3 +149,8 @@ The general set follows the established map-with-sentinel organization of
 [Clojure's PersistentHashSet](https://github.com/clojure/clojure/blob/master/src/jvm/clojure/lang/PersistentHashSet.java),
 adapted to the existing Wax HAMT. These references are design oracles only and
 are never fetched by builds or tests.
+
+Record factory/default/reset behavior follows the public
+[Immutable.js v5 Record contract](https://immutable-js.com/docs/v5/Record/).
+Wax exposes strict and lenient constructors separately instead of silently
+ignoring unknown fields in every constructor.

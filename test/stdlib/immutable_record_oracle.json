@@ -1,0 +1,13 @@
+{
+  "source": "Immutable.js 5 Record documentation",
+  "version": "5",
+  "url": "https://immutable-js.com/docs/v5/Record/",
+  "cases": [
+    { "export": "record_oracle_default", "expected": 0 },
+    { "export": "record_oracle_override", "expected": 7 },
+    { "export": "record_oracle_reset", "expected": 0 },
+    { "export": "record_oracle_clear", "expected": 0 },
+    { "export": "record_oracle_value_equal", "expected": 1 },
+    { "export": "record_oracle_lenient_unknown", "expected": 0 }
+  ]
+}

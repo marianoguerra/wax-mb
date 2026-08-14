@@ -1,5 +1,6 @@
 import {
   "marianoguerra/wax",
+  "marianoguerra/wax/message",
   "moonbitlang/core/env",
   "moonbitlang/core/hashmap",
   "moonbitlang/core/quickcheck",

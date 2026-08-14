@@ -40,6 +40,8 @@ for (const [label, name, args] of [
   ["UTF-8 validate/hash", "stdlib_bench_utf8", [size, rounds]],
   ["persistent value build", "stdlib_bench_persistent", [size, rounds]],
   ["transient value build", "stdlib_bench_transient", [size, rounds]],
+  ["persistent record set", "stdlib_bench_record_persistent", [size, rounds]],
+  ["transient record set", "stdlib_bench_record_transient", [size, rounds]],
 ]) {
   const result = measure(name, args);
   console.log(

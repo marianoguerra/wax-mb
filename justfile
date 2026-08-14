@@ -83,12 +83,12 @@ hashing-bench size="4096" rounds="2000":
 # Uses MoonBit state-machine models and a WHATWG TextDecoder UTF-8 oracle,
 # then runs the generated Wax module in Node's WebAssembly GC runtime.
 #
-# Test immutable strings, values, persistent sets, and jv_set.
+# Test immutable strings, values, persistent sets, jv_set, and runtime records.
 [group('dev')]
 stdlib-test:
     tools/stdlib-test.sh
 
-# Report UTF-8 and immutable-value construction timings without gating on
+# Report UTF-8, immutable-value, and record timings without gating on
 # machine-dependent thresholds.
 #
 # Benchmark the immutable stdlib with SIZE items for ROUNDS builds.

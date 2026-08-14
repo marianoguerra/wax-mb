@@ -9,6 +9,21 @@ if (!wasmPath || !casesPath) {
 const bytes = await readFile(wasmPath);
 const { instance } = await WebAssembly.instantiate(bytes, {});
 
+const recordOracle = JSON.parse(
+  await readFile(
+    new URL("../test/stdlib/immutable_record_oracle.json", import.meta.url),
+    "utf8",
+  ),
+);
+for (const oracleCase of recordOracle.cases) {
+  const actual = instance.exports[oracleCase.export]();
+  if (actual !== oracleCase.expected) {
+    throw new Error(
+      `Immutable.js Record oracle mismatch for ${oracleCase.export}: expected ${oracleCase.expected}, got ${actual}`,
+    );
+  }
+}
+
 for (const name of ["stdlib_boundaries", "stdlib_properties"]) {
   let result;
   try {
@@ -46,6 +61,7 @@ for (const name of [
   "stdlib_invalid_jv_vector_transient",
   "stdlib_invalid_jv_map_transient",
   "stdlib_invalid_jv_set_transient",
+  "stdlib_invalid_jv_record_transient",
 ]) {
   let trapped = false;
   try {
@@ -58,5 +74,5 @@ for (const name of [
 }
 
 console.log(
-  `immutable stdlib runtime checks passed (${lines.length} TextDecoder UTF-8 oracle cases)`,
+  `immutable stdlib runtime checks passed (${lines.length} TextDecoder UTF-8 cases, ${recordOracle.cases.length} Immutable.js Record fixtures)`,
 );

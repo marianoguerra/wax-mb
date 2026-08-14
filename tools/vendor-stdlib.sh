@@ -32,6 +32,7 @@ copy_data() {
   copy_collections
   install -m 0644 "$repo_dir/stdlib/text/utf8.wax" "$target_dir/"
   install -m 0644 "$repo_dir/stdlib/data/immutable_value.wax" "$target_dir/"
+  install -m 0644 "$repo_dir/stdlib/data/record.wax" "$target_dir/"
 }
 
 case "$selection" in
