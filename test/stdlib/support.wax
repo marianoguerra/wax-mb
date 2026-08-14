@@ -1,0 +1,306 @@
+// Test adapter for the vendorable Wax standard-library sources.
+
+fn st_assert(condition: i32) {
+    if condition == 0 { unreachable; }
+}
+
+fn st_assert_utf8(bytes: &wax_hash_bytes, expected: i32) {
+    let (valid, _) = utf8_try_from_bytes(bytes);
+    st_assert(if valid == expected { 1 } else { 0 });
+}
+
+let st_stage: i32 = 0;
+
+#[export = "stdlib_stage"]
+fn st_get_stage() -> i32 { st_stage }
+
+fn st_key(value: i32) -> &utf8_string {
+    utf8_from_bytes(
+        [wax_hash_bytes|
+            65 + (value /s 26) %s 26,
+            65 + value %s 26,
+        ],
+    )
+}
+
+fn st_bench_key(value: i32) -> &utf8_string {
+    utf8_from_bytes(
+        [wax_hash_bytes|
+            65 + (value /s 17576) %s 26,
+            65 + (value /s 676) %s 26,
+            65 + (value /s 26) %s 26,
+            65 + value %s 26,
+        ],
+    )
+}
+
+fn st_assert_jv_i32(value: &jv_value, expected: i32) {
+    let (found, actual) = jv_get_i32(value);
+    st_assert(found);
+    st_assert(if actual == expected { 1 } else { 0 });
+}
+
+fn st_assert_vector(vector: &jv_vector_value, index: i32, expected: i32) {
+    let (found, value) = jv_vector_get(vector, index);
+    st_assert(found);
+    st_assert_jv_i32(value!, expected);
+}
+
+fn st_assert_map(map: &jv_map_value, key: i32, present: i32, expected: i32) {
+    let (found, value) = jv_map_get(map, st_key(key));
+    st_assert(if found == present { 1 } else { 0 });
+    if found != 0 { st_assert_jv_i32(value!, expected); }
+}
+
+fn st_assert_set(set: &jv_set_value, value: i32, present: i32) {
+    st_assert(if jv_set_contains(set, jv_i32(value)) == present { 1 } else { 0 });
+}
+
+type st_codepoints = {
+    count: mut i32,
+    sum: mut i32,
+    offsets: mut i32,
+};
+
+fn st_visit_codepoint(context: &?eq, index: i32, offset: i32, scalar: i32) {
+    let out = context! as &st_codepoints;
+    out.count = out.count + 1;
+    out.sum = out.sum + scalar;
+    out.offsets = out.offsets + index + offset;
+}
+
+type st_payload = { id: i32 };
+
+#[export = "stdlib_boundaries"]
+fn st_boundaries() -> i32 {
+    st_stage = 1;
+    let source = [wax_hash_bytes| 0x41, 0xc3, 0xa9, 0xf0, 0x9f, 0x98, 0x80];
+    let text = utf8_from_bytes(source);
+    let literal = utf8_from_bytes("Wax");
+    st_assert(utf8_equal(literal, utf8_from_bytes([wax_hash_bytes| 0x57, 0x61, 0x78])));
+    st_assert(if utf8_byte_length(text) == 7 { 1 } else { 0 });
+    st_assert(if utf8_codepoint_length(text) == 3 { 1 } else { 0 });
+    source[0] = 0x42;
+    st_assert(if utf8_at_byte(text, 0) == 0x41 { 1 } else { 0 });
+    let copied = utf8_copy_bytes(text);
+    copied[0] = 0x43;
+    st_assert(if utf8_at_byte(text, 0) == 0x41 { 1 } else { 0 });
+    let same = utf8_from_bytes([wax_hash_bytes| 0x41, 0xc3, 0xa9, 0xf0, 0x9f, 0x98, 0x80]);
+    st_assert(utf8_equal(text, same));
+    st_assert(if utf8_hash(text) == utf8_hash(same) { 1 } else { 0 });
+    st_assert(if utf8_compare(utf8_from_bytes([wax_hash_bytes| 0x61]), utf8_from_bytes([wax_hash_bytes| 0x62])) <s (0 as i32) { 1 } else { 0 });
+    let (bad_boundary, _) = utf8_try_slice_bytes(text, 2, 1);
+    st_assert(if bad_boundary == 0 { 1 } else { 0 });
+    let slice = utf8_slice_bytes(text, 1, 2);
+    st_assert(utf8_equal(slice, utf8_from_bytes([wax_hash_bytes| 0xc3, 0xa9])));
+    let joined = utf8_concat(slice, utf8_from_bytes([wax_hash_bytes| 0x21]));
+    st_assert(utf8_equal(joined, utf8_from_bytes([wax_hash_bytes| 0xc3, 0xa9, 0x21])));
+    let points: &st_codepoints = { count: 0, sum: 0, offsets: 0 };
+    utf8_each_codepoint(text, points, st_visit_codepoint);
+    st_assert(if points.count == 3 { 1 } else { 0 });
+    st_assert(if points.sum == 0x1f72a { 1 } else { 0 });
+    st_assert(if points.offsets == 7 { 1 } else { 0 });
+    let (overlong, _) = utf8_try_from_bytes([wax_hash_bytes| 0xc0, 0x80]);
+    let (surrogate, _) = utf8_try_from_bytes([wax_hash_bytes| 0xed, 0xa0, 0x80]);
+    let (too_large, _) = utf8_try_from_bytes([wax_hash_bytes| 0xf4, 0x90, 0x80, 0x80]);
+    st_assert(if overlong + surrogate + too_large == 0 { 1 } else { 0 });
+    st_assert_utf8([wax_hash_bytes|], 1);
+    st_assert_utf8([wax_hash_bytes| 0x00, 0x7f], 1);
+    st_assert_utf8([wax_hash_bytes| 0xc2, 0x80, 0xdf, 0xbf], 1);
+    st_assert_utf8([wax_hash_bytes| 0xe0, 0xa0, 0x80, 0xed, 0x9f, 0xbf], 1);
+    st_assert_utf8([wax_hash_bytes| 0xee, 0x80, 0x80, 0xef, 0xbf, 0xbf], 1);
+    st_assert_utf8([wax_hash_bytes| 0xf0, 0x90, 0x80, 0x80], 1);
+    st_assert_utf8([wax_hash_bytes| 0xf4, 0x8f, 0xbf, 0xbf], 1);
+    st_assert_utf8([wax_hash_bytes| 0x80], 0);
+    st_assert_utf8([wax_hash_bytes| 0xc2], 0);
+    st_assert_utf8([wax_hash_bytes| 0xe0, 0xa0], 0);
+    st_assert_utf8([wax_hash_bytes| 0xf0, 0x90, 0x80], 0);
+    st_assert_utf8([wax_hash_bytes| 0xc2, 0x41], 0);
+    st_assert_utf8([wax_hash_bytes| 0xe0, 0x80, 0x80], 0);
+    st_assert_utf8([wax_hash_bytes| 0xf0, 0x80, 0x80, 0x80], 0);
+    st_assert_utf8([wax_hash_bytes| 0xf5, 0x80, 0x80, 0x80], 0);
+    st_assert_utf8([wax_hash_bytes| 0xff], 0);
+
+    st_stage = 2;
+    let base_set = phs_empty(wax_hash_i31_key, wax_equal_i31_key);
+    let set_a = phs_add(phs_add(phs_add(base_set, 1 as &i31), 2 as &i31), null);
+    let set_b = phs_add(phs_add(phs_empty(wax_hash_i31_key, wax_equal_i31_key), 2 as &i31), 3 as &i31);
+    st_assert(if phs_count(set_a) == 3 { 1 } else { 0 });
+    st_assert(phs_contains(set_a, null));
+    st_assert(if phs_count(phs_union(set_a, set_b)) == 4 { 1 } else { 0 });
+    st_assert(if phs_count(phs_intersection(set_a, set_b)) == 1 { 1 } else { 0 });
+    st_assert(if phs_count(phs_difference(set_a, set_b)) == 2 { 1 } else { 0 });
+    st_assert(if phs_add(set_a, 1 as &i31) == set_a { 1 } else { 0 });
+    st_assert(if phs_remove(set_a, 9 as &i31) == set_a { 1 } else { 0 });
+    let transient_set = phs_as_transient(set_a);
+    phst_add(transient_set, 4 as &i31);
+    phst_remove(transient_set, null);
+    let frozen_set = phst_persistent(transient_set);
+    st_assert(if phs_count(frozen_set) == 3 { 1 } else { 0 });
+    st_assert(if phs_count(set_a) == 3 { 1 } else { 0 });
+
+    st_stage = 3;
+    st_assert(if jv_kind(jv_null()) == jv_kind_null { 1 } else { 0 });
+    st_assert(if jv_require_bool(jv_bool(99)) == 1 { 1 } else { 0 });
+    st_assert_jv_i32(jv_i32(-2147483647), -2147483647);
+    st_assert(if jv_require_i64(jv_i64(0x123456789abcdef0)) == 0x123456789abcdef0 { 1 } else { 0 });
+    let nan32: f32 = (0x7fc01234).from_bits();
+    let nan64: f64 = (0x7ff8000000001234).from_bits();
+    st_assert(jv_equal(jv_f32(nan32), jv_f32(nan32)));
+    st_assert(jv_equal(jv_f64(nan64), jv_f64(nan64)));
+    st_assert(if jv_equal(jv_f32(0.0), jv_f32((-2147483648).from_bits())) == 0 { 1 } else { 0 });
+    st_assert(if jv_equal(jv_i32(1), jv_i64(1)) == 0 { 1 } else { 0 });
+    let payload: &st_payload = { id: 7 };
+    let payload2: &st_payload = { id: 7 };
+    st_assert(jv_equal(jv_any(payload), jv_any(payload)));
+    st_assert(if jv_equal(jv_any(payload), jv_any(payload2)) == 0 { 1 } else { 0 });
+    st_assert(if jv_hash(jv_any(payload)) == jv_hash(jv_any(payload2)) { 1 } else { 0 });
+    let (any_found, any_null) = jv_get_any(jv_any(null));
+    st_assert(if any_found == 1 { jv_any_equal(any_null, null) } else { 0 });
+    let opaque_set = jv_set_add(jv_set_add(jv_set_empty(), jv_any(payload)), jv_any(payload2));
+    st_assert(if jv_set_count(opaque_set) == 2 { 1 } else { 0 });
+
+    st_stage = 4;
+    let vector0 = jv_vector_empty();
+    let vector1 = jv_vector_push(jv_vector_push(vector0, jv_i32(10)), jv_string(st_key(1)));
+    st_assert(if jv_vector_count(vector0) == 0 { 1 } else { 0 });
+    st_assert_vector(vector1, 0, 10);
+    let vector2 = jv_vector_assoc(vector1, 0, jv_i32(20));
+    st_assert_vector(vector1, 0, 10);
+    st_assert_vector(vector2, 0, 20);
+    let tv = jv_vector_as_transient(vector2);
+    jvt_vector_push(tv, jv_null());
+    let vector3 = jvt_vector_persistent(tv);
+    st_assert(if jv_vector_count(vector3) == 3 { 1 } else { 0 });
+
+    let map0 = jv_map_empty();
+    let map1 = jv_map_assoc(map0, st_key(1), jv_i32(11));
+    let map2 = jv_map_assoc(map1, st_key(2), vector3);
+    st_assert_map(map1, 1, 1, 11);
+    st_assert_map(map0, 1, 0, 0);
+    st_assert(if jv_map_contains(map2, st_key(2)) == 1 { 1 } else { 0 });
+    let map_reverse = jv_map_assoc(jv_map_assoc(jv_map_empty(), st_key(2), vector3), st_key(1), jv_i32(11));
+    st_assert(jv_equal(map2, map_reverse));
+    st_assert(if jv_hash(map2) == jv_hash(map_reverse) { 1 } else { 0 });
+    let tm = jv_map_as_transient(map2);
+    jvt_map_assoc(tm, st_key(3), jv_bool(1));
+    jvt_map_dissoc(tm, st_key(1));
+    let map3 = jvt_map_persistent(tm);
+    st_assert(if jv_map_count(map3) == 2 { 1 } else { 0 });
+    st_assert(if jv_map_count(map2) == 2 { 1 } else { 0 });
+
+    st_stage = 5;
+    let values1 = jv_set_add(jv_set_add(jv_set_empty(), jv_i32(1)), jv_i32(2));
+    let values2 = jv_set_add(jv_set_add(jv_set_empty(), jv_i32(2)), jv_i32(1));
+    st_assert(jv_equal(values1, values2));
+    st_assert(if jv_hash(values1) == jv_hash(values2) { 1 } else { 0 });
+    st_assert_set(values1, 1, 1);
+    st_assert_set(jv_set_remove(values1, jv_i32(1)), 1, 0);
+    let nested1 = jv_set_add(values1, map2);
+    let nested2 = jv_set_add(values2, map_reverse);
+    st_assert(jv_equal(nested1, nested2));
+    let ts = jv_set_as_transient(nested1);
+    jvt_set_add(ts, jv_string(st_key(9)));
+    let values3 = jvt_set_persistent(ts);
+    st_assert(if jv_set_count(values3) == 4 { 1 } else { 0 });
+    st_assert(if jv_set_count(nested1) == 3 { 1 } else { 0 });
+    st_stage = 6;
+    1
+}
+
+#[export = "stdlib_invalid_set_transient"]
+fn st_invalid_set_transient() -> i32 {
+    let value = phs_as_transient(phs_empty(wax_hash_i31_key, wax_equal_i31_key));
+    let _ = phst_persistent(value);
+    phst_count(value)
+}
+
+#[export = "stdlib_invalid_jv_vector_transient"]
+fn st_invalid_jv_vector_transient() -> i32 {
+    let value = jv_vector_as_transient(jv_vector_empty());
+    let _ = jvt_vector_persistent(value);
+    jvt_vector_count(value)
+}
+
+#[export = "stdlib_invalid_jv_map_transient"]
+fn st_invalid_jv_map_transient() -> i32 {
+    let value = jv_map_as_transient(jv_map_empty());
+    let _ = jvt_map_persistent(value);
+    jvt_map_count(value)
+}
+
+#[export = "stdlib_invalid_jv_set_transient"]
+fn st_invalid_jv_set_transient() -> i32 {
+    let value = jv_set_as_transient(jv_set_empty());
+    let _ = jvt_set_persistent(value);
+    jvt_set_count(value)
+}
+
+#[export = "stdlib_bench_utf8"]
+fn st_bench_utf8(size: i32, rounds: i32) -> i32 {
+    let bytes = [wax_hash_bytes| 0x61; size];
+    let i: i32 = 0;
+    while i <s size {
+        bytes[i] = 0x61 + i %s 26;
+        i += 1;
+    }
+    let checksum: i32 = 0;
+    let round: i32 = 0;
+    while round <s rounds {
+        let text = utf8_from_bytes(bytes);
+        checksum ^= utf8_hash(text);
+        checksum += utf8_codepoint_length(text);
+        round += 1;
+    }
+    checksum
+}
+
+#[export = "stdlib_bench_persistent"]
+fn st_bench_persistent(size: i32, rounds: i32) -> i32 {
+    let checksum: i32 = 0;
+    let round: i32 = 0;
+    while round <s rounds {
+        let vector = jv_vector_empty();
+        let map = jv_map_empty();
+        let set = jv_set_empty();
+        let i: i32 = 0;
+        while i <s size {
+            let value = jv_i32(i);
+            vector = jv_vector_push(vector, value);
+            map = jv_map_assoc(map, st_bench_key(i), value);
+            set = jv_set_add(set, value);
+            i += 1;
+        }
+        checksum += jv_vector_count(vector) + jv_map_count(map) + jv_set_count(set);
+        round += 1;
+    }
+    checksum
+}
+
+#[export = "stdlib_bench_transient"]
+fn st_bench_transient(size: i32, rounds: i32) -> i32 {
+    let checksum: i32 = 0;
+    let round: i32 = 0;
+    while round <s rounds {
+        let vector = jv_vector_as_transient(jv_vector_empty());
+        let map = jv_map_as_transient(jv_map_empty());
+        let set = jv_set_as_transient(jv_set_empty());
+        let i: i32 = 0;
+        while i <s size {
+            let value = jv_i32(i);
+            jvt_vector_push(vector, value);
+            jvt_map_assoc(map, st_bench_key(i), value);
+            jvt_set_add(set, value);
+            i += 1;
+        }
+        let frozen_vector = jvt_vector_persistent(vector);
+        let frozen_map = jvt_map_persistent(map);
+        let frozen_set = jvt_set_persistent(set);
+        checksum +=
+            jv_vector_count(frozen_vector)
+            + jv_map_count(frozen_map)
+            + jv_set_count(frozen_set);
+        round += 1;
+    }
+    checksum
+}

@@ -80,6 +80,22 @@ hashing-test:
 hashing-bench size="4096" rounds="2000":
     tools/hashing-bench.sh {{size}} {{rounds}}
 
+# Uses MoonBit state-machine models and a WHATWG TextDecoder UTF-8 oracle,
+# then runs the generated Wax module in Node's WebAssembly GC runtime.
+#
+# Test immutable strings, values, persistent sets, and jv_set.
+[group('dev')]
+stdlib-test:
+    tools/stdlib-test.sh
+
+# Report UTF-8 and immutable-value construction timings without gating on
+# machine-dependent thresholds.
+#
+# Benchmark the immutable stdlib with SIZE items for ROUNDS builds.
+[group('dev')]
+stdlib-bench size="10000" rounds="5":
+    tools/stdlib-bench.sh {{size}} {{rounds}}
+
 # Run one library package's tests, e.g. `just test-pkg syntax/parser`.
 [group('dev')]
 test-pkg pkg:
@@ -152,7 +168,7 @@ update:
 
 # Check, format, unit tests, both hermetic oracles, cram -- run before committing.
 [group('gates')]
-quick: check fmt test collections-test hashing-test diff cram
+quick: check fmt test collections-test hashing-test stdlib-test diff cram
 
 # Mirrors .github/workflows/check.yml, including the two `git diff --exit-code`
 # steps -- which is how a stale `.mbti` or an unformatted file is caught.
@@ -168,6 +184,7 @@ ci:
     moon test --target all
     tools/collections-test.sh
     tools/hashing-test.sh
+    tools/stdlib-test.sh
     moon build --target native
     {{waxdiff}} run --oracle 1 --oracle 3 --impl {{impl}}
     tools/run-cram.sh

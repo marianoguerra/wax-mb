@@ -2,9 +2,9 @@
 
 This directory is a source-distributed collection library for Wax programs. It
 contains optional hashing policies, a persistent hash map implemented as a
-32-way HAMT, and a persistent vector implemented as a 32-way trie with a tail.
-Both collections support persistent path-copying operations and single-owner
-transient batches.
+32-way HAMT, a persistent hash set wrapping that HAMT, and a persistent vector
+implemented as a 32-way trie with a tail. The collections support persistent
+path-copying operations and single-owner transient batches.
 
 Wax currently has neither source imports nor a package manager, so these are
 deliberately standalone `.wax` files with collision-resistant prefixes. Copy
@@ -128,6 +128,22 @@ The transient equivalents are `pv_as_transient`, `pvt_count/get/at`,
 `pvt_push`, `pvt_assoc`, `pvt_pop`, and `pvt_persistent`. A transient has a
 32-slot mutable tail and edit-owned trie paths, then freezes to an exact-sized
 persistent tail.
+
+## Hash set API
+
+`persistent_hash_set.wax` is concatenated after `persistent_hash_map.wax` and
+uses a private marker as each backing-map value:
+
+```wax
+phs_empty(hash, equal) -> &phs_set
+phs_count/contains/add/remove(...)
+phs_each(set, context, visit)
+phs_union/intersection/difference(left, right) -> &phs_set
+```
+
+Set algebra uses the left operand's key policy; combine sets created with
+compatible hash/equality callbacks. Transient equivalents use the `phst_`
+prefix and retain the map's trap-after-freeze lifecycle.
 
 ## Verification
 
