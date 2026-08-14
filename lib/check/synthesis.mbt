@@ -522,26 +522,31 @@ fn Checker::block_contents(
         (false, false) => false
         _ => true
       })
+    // Read BEFORE the results go on: what says control was lost is the stack
+    // this instruction CONSUMED down to, not the one its own value then sits
+    // on. A `br` inside dead code leaves the polymorphic stack exposed only
+    // until the next value is pushed onto it.
+    let mut lost_control = false
     if routed && is_inferring(results[0]) {
       let c = self.expression(s)
+      lost_control = self.ops.stack is Unreachable
       self.ops.push_results(s.info, c.info.0)
       out.push(c)
     } else if routed {
       let c = self.check(results[0], s)
+      lost_control = self.ops.stack is Unreachable
       self.ops.push_results(s.info, results)
       out.push(c)
     } else {
       let c = self.statement(s)
+      lost_control = self.ops.stack is Unreachable
       self.ops.push_results(s.info, c.info.0)
       out.push(c)
     }
     // The hole-order check runs on the finished statement, which is where its
     // operands are in emission order and their types are known.
     check_hole_order(self.ctx, out[out.length() - 1])
-    if self.ctx.warn_unused &&
-      reachable_before &&
-      self.ops.stack is Unreachable &&
-      k + 1 < n {
+    if self.ctx.warn_unused && reachable_before && lost_control && k + 1 < n {
       dead_code(self.ctx.diagnostics, instrs[k + 1].info, s.info)
     }
   }
