@@ -27,7 +27,7 @@ fn scan_string(cur : Cursor, fail : (LexError, Location) -> Unit) -> Token? {
     if c == '"' {
       cur.bump() |> ignore
       let loc = cur.span(start)
-      return Some(STRING({ desc: buf.to_bytes(), info: loc }))
+      return Some(STRING({ desc: buf.to_bytes(), info: loc, }))
     }
     if c == '\\' {
       if !scan_escape(cur, buf, fail) {

@@ -25,7 +25,7 @@ struct Space {
 
 ///|
 pub fn Space::new() -> Space {
-  { by_name: Map([]), next: 0 }
+  { by_name: Map([]), next: 0, }
 }
 
 ///|

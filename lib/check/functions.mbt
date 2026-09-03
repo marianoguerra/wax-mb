@@ -49,7 +49,7 @@ fn declared_functype(
   guard ctx.functions.find_no_mark(name.name) is Some(Some((_, tname, _))) else {
     return None
   }
-  guard find(ctx.types, ctx.diagnostics, { name: tname, loc: name.loc })
+  guard find(ctx.types, ctx.diagnostics, { name: tname, loc: name.loc, })
     is Some((_, def)) else {
     return None
   }

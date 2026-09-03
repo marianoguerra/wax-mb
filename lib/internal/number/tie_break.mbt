@@ -84,7 +84,7 @@ fn exact_hex(body : String) -> Exact? {
     }
   }
   // Each fractional hex digit is four binary places.
-  Some({ mantissa, base: 2, exponent: exp - frac_digits * 4 })
+  Some({ mantissa, base: 2, exponent: exp - frac_digits * 4, })
 }
 
 ///|
@@ -136,7 +136,7 @@ fn exact_decimal(body : String) -> Exact? {
       exp = -exp
     }
   }
-  Some({ mantissa, base: 10, exponent: exp - frac_digits })
+  Some({ mantissa, base: 10, exponent: exp - frac_digits, })
 }
 
 ///|

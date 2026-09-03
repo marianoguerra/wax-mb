@@ -104,7 +104,7 @@ pub fn[Cfg] check_all(
       match errors.get(k) {
         Some(existing) => existing.reach = @cond.or_(existing.reach, full)
         None => {
-          errors[k] = { diagnostic: d, reach: full }
+          errors[k] = { diagnostic: d, reach: full, }
           order.push(k)
         }
       }

@@ -27,6 +27,8 @@ fn name_already_bound(
     .sep(@message.text("named"))
     .sep(@message.ident(name))
     .sep(@message.text("is already bound.")),
-    related=[{ loc: prev_loc, message: @message.text("previously bound here") }],
+    related=[
+      { loc: prev_loc, message: @message.text("previously bound here"), },
+    ],
   )
 }

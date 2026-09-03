@@ -96,7 +96,7 @@ fn sketch_all(xs : Array[@ast.Instr[@basic.Location]]) -> String {
 ///|
 /// A fresh label, as the typer would mint one.
 fn fresh(name : String) -> @ast.Ident {
-  { name, loc: @basic.dummy_loc }
+  { name, loc: @basic.dummy_loc, }
 }
 
 ///|

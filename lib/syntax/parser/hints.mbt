@@ -201,7 +201,7 @@ fn hinted(
             hint~,
           )
         }
-        hints = { ..hints, branch: Some({ value: b, loc: span }) }
+        hints = { ..hints, branch: Some({ value: b, loc: span, }), }
       }
       Freq(f) => {
         if !is_freq_target(i.desc) {
@@ -212,7 +212,7 @@ fn hinted(
             hint~,
           )
         }
-        hints = { ..hints, freq: Some({ value: f, loc: span }) }
+        hints = { ..hints, freq: Some({ value: f, loc: span, }), }
       }
       Targets(l) => {
         if !is_targets_target(i.desc) {
@@ -223,7 +223,7 @@ fn hinted(
             hint~,
           )
         }
-        hints = { ..hints, targets: Some({ value: l, loc: span }) }
+        hints = { ..hints, targets: Some({ value: l, loc: span, }), }
       }
     }
   }

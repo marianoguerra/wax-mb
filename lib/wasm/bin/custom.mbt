@@ -224,7 +224,7 @@ priv struct CodeHints {
 
 ///|
 fn CodeHints::new() -> CodeHints {
-  { branch: [], freq: [], targets: [], priorities: [] }
+  { branch: [], freq: [], targets: [], priorities: [], }
 }
 
 ///|
@@ -248,7 +248,7 @@ fn CodeHints::take(
       }
     }
     if !entries.is_empty() {
-      into.push({ funcidx, entries })
+      into.push({ funcidx, entries, })
     }
   }
 
@@ -258,6 +258,6 @@ fn CodeHints::take(
   // A priority is about the function, not an instruction, so it is recorded at
   // offset 0 -- the position that means "the function itself".
   if priority is Some(p) {
-    self.priorities.push({ funcidx, entries: [(0, priority_payload(p))] })
+    self.priorities.push({ funcidx, entries: [(0, priority_payload(p))], })
   }
 }

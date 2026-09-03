@@ -88,7 +88,7 @@ fn check_fields(
   ] = []
   for k in 0..<total {
     if typed.get(k) is Some(desc) && spans.get(k) is Some(info) {
-      out.push({ desc, info })
+      out.push({ desc, info, })
     }
   }
   out
@@ -266,7 +266,7 @@ fn check_field(
         want(d.offset, o, at, field.info)
         check_constant_instruction(ctx, o)
         (
-          { data_name: d.data_name, offset: o, init: d.init } :
+          { data_name: d.data_name, offset: o, init: d.init, } :
           @ast.MemData[@typing_env.InferredAnnotation])
       })
       Some(

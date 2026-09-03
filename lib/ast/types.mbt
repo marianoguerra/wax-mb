@@ -76,7 +76,7 @@ pub fn is_splice_field(f : Annotated[(Ident, FieldType), Location]) -> Bool {
 /// Build the `..` splice sentinel at the given span.
 pub fn splice_field(loc : Location) -> Annotated[(Ident, FieldType), Location] {
   {
-    desc: ({ name: splice_field_name, loc }, { mut_: false, typ: Value(I32) }),
+    desc: ({ name: splice_field_name, loc, }, { mut_: false, typ: Value(I32), }),
     info: loc,
   }
 }
@@ -224,7 +224,7 @@ pub(all) struct Hints {
 ///|
 /// An instruction with no hints, which is what everything carries unless an
 /// attribute says otherwise.
-pub let no_hints : Hints = { branch: None, freq: None, targets: None }
+pub let no_hints : Hints = { branch: None, freq: None, targets: None, }
 
 ///|
 pub fn Hints::is_empty(self : Hints) -> Bool {

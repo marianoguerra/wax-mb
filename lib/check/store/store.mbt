@@ -49,7 +49,7 @@ pub struct TypeStore {
 
 ///|
 pub fn TypeStore::new() -> TypeStore {
-  { interned: {}, last_index: 0, groups: [] }
+  { interned: {}, last_index: 0, groups: [], }
 }
 
 ///|
@@ -118,7 +118,7 @@ pub fn TypeStore::add_rectype(
 fn resolve_ref(base : Int, r : RefIndex) -> Id {
   match r {
     Def(id) => id
-    Rec(pos) => { index: base + pos }
+    Rec(pos) => { index: base + pos, }
   }
 }
 
@@ -144,7 +144,7 @@ pub fn TypeStore::subtyping_info(self : TypeStore) -> SubtypingInfo {
       out.push(st.map(r => resolve_ref(base, r)))
     }
   }
-  { subtypes: out }
+  { subtypes: out, }
 }
 
 ///|

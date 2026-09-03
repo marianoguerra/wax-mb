@@ -42,8 +42,8 @@ test "only the two errors with hints carry them" {
 ///|
 test "a lexical error becomes an error-severity report with no fix" {
   let loc : @basic.Location = {
-    start: { fname: "p.wax", lnum: 1, bol: 0, cnum: 9 },
-    end: { fname: "p.wax", lnum: 1, bol: 0, cnum: 10 },
+    start: { fname: "p.wax", lnum: 1, bol: 0, cnum: 9, },
+    end: { fname: "p.wax", lnum: 1, bol: 0, cnum: 10, },
   }
   let r = @lexer.LexError::UnexpectedChar("$").to_report(loc)
   assert_eq(r.severity, Error)

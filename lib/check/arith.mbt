@@ -142,7 +142,7 @@ pub fn check_num_concrete(
 /// Both lower to `ref.eq` -- `!=` is the same instruction negated -- so both
 /// take the same operands.
 fn eqref() -> @wasm_types.ValType[@type_store.Id] {
-  Ref({ nullable: true, typ: Eq })
+  Ref({ nullable: true, typ: Eq, })
 }
 
 ///|
@@ -231,7 +231,7 @@ fn type_binop(
           Null =>
             ty1.set(
               Valtype({
-                typ: Ref({ nullable: true, typ: Eq }),
+                typ: Ref({ nullable: true, typ: Eq, }),
                 internal: eqref(),
                 anon_comptype: None,
               }),

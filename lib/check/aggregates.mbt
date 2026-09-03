@@ -182,7 +182,7 @@ fn construction_result(
   internalize(
     ctx.type_context,
     ctx.diagnostics,
-    Ref({ nullable: false, typ: if exact { Exact(name) } else { Type(name) } }),
+    Ref({ nullable: false, typ: if exact { Exact(name) } else { Type(name) }, }),
     inline=inline_comptype(ctx, name),
   )
 }
@@ -296,7 +296,7 @@ fn descriptor_reftype(
           let exact = yt is Exact(_)
           Some(
             (
-              { nullable, typ: if exact { Exact(x) } else { Type(x) } } :
+              { nullable, typ: if exact { Exact(x) } else { Type(x) }, } :
               @wasm_types.RefType[@ast.Ident]),
           )
         }

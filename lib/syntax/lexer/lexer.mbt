@@ -60,7 +60,7 @@ pub fn tokens_from_string(
       None => break // an error was recorded; stop.
     }
   }
-  { tokens: toks, errors, trivia: ctx }
+  { tokens: toks, errors, trivia: ctx, }
 }
 
 ///|

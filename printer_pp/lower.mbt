@@ -84,14 +84,14 @@ fn atoms(
   for n in items {
     match n {
       Nop => ()
-      Text(w, s) => out.push({ kind: ATxt(w, s), hidden })
-      Brk(s) => out.push({ kind: ABrk(s, ind), hidden })
+      Text(w, s) => out.push({ kind: ATxt(w, s), hidden, })
+      Brk(s) => out.push({ kind: ABrk(s, ind), hidden, })
       Nest(n, body) => atoms(body, ind + n, mode, out, hidden~)
       IfBroken(body) =>
         if mode is Brkm {
           atoms(body, ind, mode, out, hidden=true)
         }
-      Group(k, id, body) => out.push({ kind: AGrp(k, id, body), hidden })
+      Group(k, id, body) => out.push({ kind: AGrp(k, id, body), hidden, })
     }
   }
 }
@@ -427,7 +427,7 @@ fn mode_code_of(kind : @printer.GKind) -> Int {
 pub fn to_doc(tokens : Array[@printer.Token]) -> @pp.Doc {
   let root = tree(tokens)
   prune(root)
-  lay(root, Brkm, 0, { flat: Map([]), docs: Map([]) })
+  lay(root, Brkm, 0, { flat: Map([]), docs: Map([]), })
 }
 
 ///|

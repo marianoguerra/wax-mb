@@ -136,7 +136,7 @@ fn fold_body(
         while e > at + 1 && takes_nothing(body[e - 1]) {
           e = e - 1
         }
-        { start: at, head: at, end: e, loc: @basic.dummy_loc }
+        { start: at, head: at, end: e, loc: @basic.dummy_loc, }
       }
     }
     bounds.push(b)
@@ -185,11 +185,11 @@ fn fold_body(
     if hs > start && hs < end - 1 {
       for j in hs..<(end - 1) {
         inner = [
-          { head: body[j], operands: inner, bodies: [], loc: bounds[k].loc },
+          { head: body[j], operands: inner, bodies: [], loc: bounds[k].loc, },
         ]
       }
     }
-    out[k] = { head, operands: inner, bodies, loc: bounds[k].loc }
+    out[k] = { head, operands: inner, bodies, loc: bounds[k].loc, }
   }
   out
 }

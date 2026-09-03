@@ -81,9 +81,9 @@ fn check_xid(
       @xid.is_xid_continue(code)
     }
     if !ok {
-      let p0 : Position = { ..start, cnum: byte }
-      let p1 : Position = { ..start, cnum: byte + width }
-      return Some((text[i:i + units].to_owned(), { start: p0, end: p1 }))
+      let p0 : Position = { ..start, cnum: byte, }
+      let p1 : Position = { ..start, cnum: byte + width, }
+      return Some((text[i:i + units].to_owned(), { start: p0, end: p1, }))
     }
     first = false
     byte += width

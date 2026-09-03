@@ -14,7 +14,7 @@ pub fn ident(
   name : String,
   at? : @basic.Location = @basic.dummy_loc,
 ) -> @ast.Ident {
-  { name, loc: at }
+  { name, loc: at, }
 }
 
 ///|
@@ -26,7 +26,7 @@ pub fn field(
   f : @ast.ModuleField[@basic.Location],
   at? : @basic.Location = @basic.dummy_loc,
 ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
-  { desc: f, info: at }
+  { desc: f, info: at, }
 }
 
 ///|
@@ -44,7 +44,7 @@ pub fn func_type(
     params: params.map(p => {
       let (name, typ) = p
       (
-        { desc: (name.map(n => ident(n, at~)), typ), info: at } :
+        { desc: (name.map(n => ident(n, at~)), typ), info: at, } :
         @basic.Annotated[
           (@ast.Ident?, @wasm_types.ValType[@ast.Ident]),
           @basic.Location,
@@ -109,7 +109,7 @@ pub fn rec_group(
       types.map(t => {
         let (name, sub) = t
         (
-          { desc: (ident(name, at~), sub), info: at } :
+          { desc: (ident(name, at~), sub), info: at, } :
           @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location])
       }),
     ),
@@ -145,7 +145,7 @@ pub fn import_func(
     attributes,
   }
   field(
-    Import(module_={ desc: @utf8.encode(module_), info: at }, decl={
+    Import(module_={ desc: @utf8.encode(module_), info: at, }, decl={
       desc: decl,
       info: at,
     }),

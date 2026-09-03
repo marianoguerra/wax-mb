@@ -13,12 +13,12 @@ fn loc() -> @basic.Location {
 
 ///|
 fn var_(name : String) -> @wasm_types.Cond {
-  Var({ desc: name, info: loc() })
+  Var({ desc: name, info: loc(), })
 }
 
 ///|
 fn str_(s : String) -> @wasm_types.Cond {
-  Str({ desc: @utf8.encode(s), info: loc() })
+  Str({ desc: @utf8.encode(s), info: loc(), })
 }
 
 ///|

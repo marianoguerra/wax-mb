@@ -156,8 +156,8 @@ pub fn join_value_types(
 /// named heap type to a store index.
 fn nullable_of(r : @wasm_types.RefType[@ast.Ident]) -> @infer.InferredValType {
   {
-    typ: Ref({ nullable: true, typ: r.typ }),
-    internal: Ref({ nullable: true, typ: None_ }),
+    typ: Ref({ nullable: true, typ: r.typ, }),
+    internal: Ref({ nullable: true, typ: None_, }),
     anon_comptype: None,
   }
 }

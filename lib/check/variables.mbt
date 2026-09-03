@@ -250,7 +250,7 @@ pub fn type_get(
     }
     Global(_, ty) => cell_of(ty)
     FuncRef(id, type_name, exact) => {
-      let name : @ast.Ident = { name: type_name, loc: @basic.dummy_loc }
+      let name : @ast.Ident = { name: type_name, loc: @basic.dummy_loc, }
       let typ : @wasm_types.HeapType[@ast.Ident] = if exact {
         Exact(name)
       } else {
@@ -263,8 +263,8 @@ pub fn type_get(
       }
       @infer.Cell::make(
         Valtype({
-          typ: Ref({ nullable: false, typ }),
-          internal: Ref({ nullable: false, typ: internal }),
+          typ: Ref({ nullable: false, typ, }),
+          internal: Ref({ nullable: false, typ: internal, }),
           anon_comptype: inline_comptype(ctx, name),
         }),
       )

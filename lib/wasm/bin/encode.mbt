@@ -57,13 +57,13 @@ priv struct BinaryWriter {
 
 ///|
 fn BinaryWriter::new() -> BinaryWriter {
-  { buf: @buffer.Buffer::Buffer(), sink: None }
+  { buf: @buffer.Buffer::Buffer(), sink: None, }
 }
 
 ///|
 /// A writer that collects the hints of the instructions written into it.
 fn BinaryWriter::new_with_sink(sink : Array[(Int, InstrHints)]) -> BinaryWriter {
-  { buf: @buffer.Buffer::Buffer(), sink: Some(sink) }
+  { buf: @buffer.Buffer::Buffer(), sink: Some(sink), }
 }
 
 ///|

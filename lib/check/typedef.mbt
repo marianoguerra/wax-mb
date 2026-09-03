@@ -87,7 +87,7 @@ fn n_subtype(
 
   guard clause(st.descriptor) is Some(descriptor) else { return None }
   guard clause(st.describes) is Some(describes) else { return None }
-  Some({ final_: st.final_, supertype, descriptor, describes, typ })
+  Some({ final_: st.final_, supertype, descriptor, describes, typ, })
 }
 
 ///|
@@ -195,7 +195,7 @@ fn expand_splices(
       // the written fields keeps the rest of the definition checkable.
       None => delta
     }
-    expanded[i] = { ..elt, desc: (name, { ..sub, typ: Struct(fields_) }) }
+    expanded[i] = { ..elt, desc: (name, { ..sub, typ: Struct(fields_), }), }
   }
   expanded
 }
@@ -257,7 +257,7 @@ pub fn add_type(
     // stored here too, or the source-level walkers would follow the cyclic edge
     // and loop. The error was already reported.
     let typ = if resolved[i].supertype is None {
-      { ..typ, supertype: None }
+      { ..typ, supertype: None, }
     } else {
       typ
     }

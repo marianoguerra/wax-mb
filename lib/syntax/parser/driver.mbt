@@ -41,7 +41,7 @@ pub fn parse_string(src : String, fname? : String = "") -> ParseResult {
       Some(report) => [report]
       None => lexed.errors
     }
-    return { module_: None, errors, trivia: ctx }
+    return { module_: None, errors, trivia: ctx, }
   }
   let module_ = parse(lexed.tokens) catch {
     e => {
@@ -54,13 +54,13 @@ pub fn parse_string(src : String, fname? : String = "") -> ParseResult {
       let report : @basic.Report = match taken_error() {
         Some(SyntaxError(loc~, message~, hint~, fix~)) =>
           if loc.start.cnum < syntax.loc.start.cnum {
-            { ..@basic.Report::error(loc, message), hint, edit: fix }
+            { ..@basic.Report::error(loc, message), hint, edit: fix, }
           } else {
             syntax
           }
         None => syntax
       }
-      return { module_: None, errors: [report], trivia: ctx }
+      return { module_: None, errors: [report], trivia: ctx, }
     }
   }
   // A semantic error is recorded rather than raised, so the parse "succeeds"
@@ -82,7 +82,7 @@ pub fn parse_string(src : String, fname? : String = "") -> ParseResult {
         ],
         trivia: ctx,
       }
-    None => { module_: Some(module_), errors: [], trivia: ctx }
+    None => { module_: Some(module_), errors: [], trivia: ctx, }
   }
 }
 
@@ -147,8 +147,8 @@ fn report_of_parse_error(
   tokens : Array[(Token, Position, Position)],
 ) -> @basic.Report {
   let (loc, expected) : (@basic.Location, Array[TokenKind]) = match e {
-    UnexpectedToken(_, (start, end), expected) => ({ start, end }, expected)
-    UnexpectedEndOfInput(pos, expected) => ({ start: pos, end: pos }, expected)
+    UnexpectedToken(_, (start, end), expected) => ({ start, end, }, expected)
+    UnexpectedEndOfInput(pos, expected) => ({ start: pos, end: pos, }, expected)
   }
   // The state comes from replaying the parse, so it is only trusted when the
   // replay stopped where the parse did -- a disagreement means the replay no
@@ -195,11 +195,11 @@ fn syntax_report(
       // Emission order, as the reference's runtime resolves them: the subject
       // first, the delimiter hint second.
       if m.subject != "" && st.subject_span() is Some((start, end)) {
-        report.related.push({ loc: { start, end }, message: m.subject })
+        report.related.push({ loc: { start, end, }, message: m.subject, })
       }
       if m.opener != "" &&
         enclosing_opener(tokens, st.token_index) is Some((start, end)) {
-        report.related.push({ loc: { start, end }, message: m.opener })
+        report.related.push({ loc: { start, end, }, message: m.opener, })
       }
       report
     }

@@ -8,14 +8,14 @@
 ///|
 fn loc_at(start : Int, end_ : Int) -> @basic.Location {
   {
-    start: { fname: "t.wax", lnum: 1, bol: 0, cnum: start },
-    end: { fname: "t.wax", lnum: 1, bol: 0, cnum: end_ },
+    start: { fname: "t.wax", lnum: 1, bol: 0, cnum: start, },
+    end: { fname: "t.wax", lnum: 1, bol: 0, cnum: end_, },
   }
 }
 
 ///|
 fn var_(name : String) -> @wasm_types.Cond {
-  Var({ desc: name, info: loc_at(0, 0) })
+  Var({ desc: name, info: loc_at(0, 0), })
 }
 
 ///|
@@ -260,7 +260,7 @@ test "entering a function clears the per-function state" {
   ctx.locals["x"] = (None, loc_at(0, 1))
   ctx.initialized_locals["x"] = ()
   ctx.read_locals.push(5)
-  ctx.local_decls.push({ name: "x", loc: loc_at(0, 1) })
+  ctx.local_decls.push({ name: "x", loc: loc_at(0, 1), })
   ctx.used_labels.push(7)
   ctx.unresolved_label.val = true
   ctx.enter_function(return_types=[@infer.valtype_cell(@infer.i32_valtype)])

@@ -124,7 +124,13 @@ pub(all) struct RecGroup {
 ///|
 /// A subtype that is final and inherits from nothing -- the common case.
 pub fn SubType::simple(composite : CompositeType) -> SubType {
-  { final_: true, supertypes: [], descriptor: None, describes: None, composite }
+  {
+    final_: true,
+    supertypes: [],
+    descriptor: None,
+    describes: None,
+    composite,
+  }
 }
 
 ///|
@@ -133,7 +139,7 @@ pub fn SubType::func(
   params : Array[ValType],
   results : Array[ValType],
 ) -> SubType {
-  SubType::simple(Func({ params, results }))
+  SubType::simple(Func({ params, results, }))
 }
 
 // ============================================================
@@ -839,7 +845,7 @@ pub(all) struct InstrHints {
 ///|
 /// No hints.
 pub fn InstrHints::none() -> InstrHints {
-  { branch: None, freq: None, targets: None }
+  { branch: None, freq: None, targets: None, }
 }
 
 ///|

@@ -64,7 +64,7 @@ pub struct Context {
 
 ///|
 pub fn Context::new() -> Context {
-  { entries: [], at_start_of_line: true, prev_token_end: 0, locations: [] }
+  { entries: [], at_start_of_line: true, prev_token_end: 0, locations: [], }
 }
 
 ///|

@@ -461,7 +461,7 @@ fn Lowering::field(
       note_name(m.names.functions, fi, name.name)
       note_typeuse(m, OwnerFunc(fi), typ, sign)
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
-      m.codes.push({ ..code, priority: function_priority(attributes) })
+      m.codes.push({ ..code, priority: function_priority(attributes), })
       m.text.field_order.push(FFunc(m.codes.length() - 1))
       // The local names belong to the function that just closed over them.
       if !self.local_names.is_empty() {
@@ -508,7 +508,7 @@ fn Lowering::field(
       let (init, init_spans) = self.const_expr(def)
       let gi = imports_so_far(m, 3) + m.globals.length()
       note_name(m.names.globals, gi, name.name)
-      m.globals.push({ type_: { mut_, typ: ty }, init, init_spans })
+      m.globals.push({ type_: { mut_, typ: ty, }, init, init_spans, })
       m.text.field_order.push(FGlobal(m.globals.length() - 1))
       self.export_of(m, attributes, Global(gi), name)
     }
@@ -530,7 +530,7 @@ fn Lowering::field(
         None => (self.derived_pages(data, page_size_log2, loc), None)
       }
       m.memories.push({
-        limits: { mi, ma, address_type, page_size_log2, shared },
+        limits: { mi, ma, address_type, page_size_log2, shared, },
       })
       m.text.field_order.push(FMemory(m.memories.length() - 1))
       let mem = self.memory_index(name, loc)
@@ -572,7 +572,7 @@ fn Lowering::field(
       m.tables.push({
         type_: {
           elem_type,
-          limits: { mi, ma, address_type, page_size_log2: None, shared: false },
+          limits: { mi, ma, address_type, page_size_log2: None, shared: false, },
         },
         init: init_body,
         init_spans,
@@ -922,7 +922,7 @@ fn Lowering::export_of(
       None => utf8_of(own.name)
     }
     let at = m.exports.length()
-    m.exports.push({ name, desc })
+    m.exports.push({ name, desc, })
     // A GUARDED export is a field of its own under its condition. A clause on
     // the thing exported has nowhere to put one.
     if a.attr_guard is Some(g) {
@@ -1035,16 +1035,16 @@ fn Lowering::import_(
       }
       Func(ti, exact)
     }
-    Global(mut_~, typ~) => Global({ mut_, typ: self.valtype_index(typ, loc) })
+    Global(mut_~, typ~) => Global({ mut_, typ: self.valtype_index(typ, loc), })
     Memory(address_type~, limits~, page_size_log2~, shared~) => {
       let (mi, ma) = limits.unwrap_or((0UL, None))
-      Memory({ limits: { mi, ma, address_type, page_size_log2, shared } })
+      Memory({ limits: { mi, ma, address_type, page_size_log2, shared, }, })
     }
     Table(address_type~, reftype~, limits~) => {
       let (mi, ma) = limits.unwrap_or((0UL, None))
       Table({
         elem_type: self.reftype_index(reftype, loc),
-        limits: { mi, ma, address_type, page_size_log2: None, shared: false },
+        limits: { mi, ma, address_type, page_size_log2: None, shared: false, },
       })
     }
     // An imported tag that NAMES its type means that declaration, exactly as a
@@ -1061,7 +1061,7 @@ fn Lowering::import_(
   // its own kind. Not what its name resolves to: two branches of a conditional
   // may import one name, and the name table has a single answer for both.
   let at = imports_so_far(m, import_kind(desc))
-  m.imports.push({ mod_name: module_, name, desc, group: None })
+  m.imports.push({ mod_name: module_, name, desc, group: None, })
   match decl.kind {
     Func(typ~, sign~, ..) => {
       note_name(m.names.functions, at, decl.id.name)
@@ -1216,7 +1216,7 @@ fn Lowering::reftype_index(
     Array => Array
     None_ => None_
   }
-  { nullable: r.nullable, typ }
+  { nullable: r.nullable, typ, }
 }
 
 ///|
@@ -1427,11 +1427,11 @@ fn Lowering::declare_func_refs(
   if !init.is_empty() {
     m.elems.push({
       mode: Declarative,
-      type_: { nullable: false, typ: Func },
+      type_: { nullable: false, typ: Func, },
       init,
       // One `ref.func` each, so each folds to itself.
       init_spans: init.map(_ => {
-        [{ start: 0, head: 0, end: 1, loc: @basic.dummy_loc }]
+        [{ start: 0, head: 0, end: 1, loc: @basic.dummy_loc, }]
       }),
       offset_spans: [],
     })
@@ -1538,5 +1538,5 @@ fn Lowering::compact_group(
   for _ in 0..<n {
     let _ = m.imports.pop()
   }
-  m.imports.push({ ..head, group: Some(group) })
+  m.imports.push({ ..head, group: Some(group), })
 }

@@ -17,7 +17,7 @@ fn func_group(
       supertype: None,
       descriptor: None,
       describes: None,
-      typ: Func({ params, results }),
+      typ: Func({ params, results, }),
     },
   ]
 }
@@ -33,7 +33,7 @@ fn struct_of(
     supertype,
     descriptor: None,
     describes: None,
-    typ: Struct(fields.map(v => { mut_: false, typ: Value(v) })),
+    typ: Struct(fields.map(v => { mut_: false, typ: Value(v), })),
   }
 }
 
@@ -76,14 +76,14 @@ test "a structurally equal group is not added twice" {
 test "mutually recursive groups dedup regardless of where they land" {
   let s = @type_store.TypeStore::new()
   let pair : @type_store.RecType[@type_store.RefIndex] = [
-    struct_of([Ref({ nullable: true, typ: Type(Rec(1)) })]),
-    struct_of([Ref({ nullable: true, typ: Type(Rec(0)) })]),
+    struct_of([Ref({ nullable: true, typ: Type(Rec(1)), })]),
+    struct_of([Ref({ nullable: true, typ: Type(Rec(0)), })]),
   ]
   let first = s.add_rectype(pair)
   let _ = s.add_rectype(func_group([], []))
   let again = s.add_rectype([
-    struct_of([Ref({ nullable: true, typ: Type(Rec(1)) })]),
-    struct_of([Ref({ nullable: true, typ: Type(Rec(0)) })]),
+    struct_of([Ref({ nullable: true, typ: Type(Rec(1)), })]),
+    struct_of([Ref({ nullable: true, typ: Type(Rec(0)), })]),
   ])
   inspect(first == again, content="true")
   inspect(s.last_index(), content="3")
@@ -97,7 +97,7 @@ test "a mis-normalized group is rejected" {
   let s = @type_store.TypeStore::new()
   // A back-reference past the end of a one-member group.
   try
-    s.add_rectype([struct_of([Ref({ nullable: true, typ: Type(Rec(3)) })])])
+    s.add_rectype([struct_of([Ref({ nullable: true, typ: Type(Rec(3)), })])])
   catch {
     e =>
       inspect(
@@ -115,7 +115,7 @@ test "a mis-normalized group is rejected" {
   let borrowed = other.add_rectype(func_group([], []))
   try
     s.add_rectype([
-      struct_of([Ref({ nullable: true, typ: Type(Def(borrowed)) })]),
+      struct_of([Ref({ nullable: true, typ: Type(Def(borrowed)), })]),
     ])
   catch {
     e =>
@@ -137,8 +137,8 @@ test "resolution makes intra-group references absolute" {
   let s = @type_store.TypeStore::new()
   let _ = s.add_rectype(func_group([], []))
   let base = s.add_rectype([
-    struct_of([Ref({ nullable: true, typ: Type(Rec(1)) })]),
-    struct_of([Ref({ nullable: true, typ: Type(Rec(0)) })]),
+    struct_of([Ref({ nullable: true, typ: Type(Rec(1)), })]),
+    struct_of([Ref({ nullable: true, typ: Type(Rec(0)), })]),
   ])
   let info = s.subtyping_info()
   // The group landed at index 1, so its members are 1 and 2. Member 0 refers to
@@ -211,8 +211,8 @@ test "concrete types, and exact" {
       descriptor: None,
       describes: None,
       typ: Struct([
-        { mut_: false, typ: Value(I32) },
-        { mut_: false, typ: Value(I64) },
+        { mut_: false, typ: Value(I32), },
+        { mut_: false, typ: Value(I64), },
       ]),
     },
   ])
@@ -257,7 +257,7 @@ test "reference and value subtyping" {
     nullable : Bool,
     typ : @wasm_types.HeapType[@type_store.Id],
   ) -> @wasm_types.RefType[@type_store.Id] {
-    { nullable, typ }
+    { nullable, typ, }
   }
 
   inspect(

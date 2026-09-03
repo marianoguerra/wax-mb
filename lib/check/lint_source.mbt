@@ -770,7 +770,7 @@ fn lint_precedence(
         if 0 <= s && s <= e && e <= src.length() {
           Some(
             (
-              { loc: child.info, new_text: "(" + src[s:e].to_owned() + ")" } :
+              { loc: child.info, new_text: "(" + src[s:e].to_owned() + ")", } :
               @diagnostic.Edit),
           )
         } else {

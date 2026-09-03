@@ -165,7 +165,7 @@ fn split_labelled_args(args : Array[@ast.Instr[@basic.Location]]) -> MemArgs {
       _ => positional.push(a)
     }
   }
-  { positional, labelled }
+  { positional, labelled, }
 }
 
 ///|
@@ -204,7 +204,7 @@ fn take_labels(
     }
     seen[l.name] = l.loc
     match e.desc {
-      Int(_) => out[l.name] = { desc: e.desc, info: e.info }
+      Int(_) => out[l.name] = { desc: e.desc, info: e.info, }
       _ => integer_literal_required(diagnostics, e.info)
     }
   }
@@ -268,7 +268,7 @@ fn mem_immediates(
       Some(e) => Some(e)
       None =>
         if migration && k < extra.length() {
-          Some({ desc: extra[k].desc, info: extra[k].info })
+          Some({ desc: extra[k].desc, info: extra[k].info, })
         } else {
           None
         }

@@ -37,7 +37,7 @@ pub struct Spans {
 /// name of a file that exists: no source text will be found for it, and the
 /// renderer's job is easier when it does not go looking.
 pub fn Spans::new(fname? : String = "<generated>") -> Spans {
-  { fname, next: 0 }
+  { fname, next: 0, }
 }
 
 ///|
@@ -55,7 +55,7 @@ pub fn Spans::fresh(self : Spans) -> @basic.Location {
     bol: k,
     cnum: k,
   }
-  { start, end: { ..start, cnum: k + 1 } }
+  { start, end: { ..start, cnum: k + 1, }, }
 }
 
 ///|

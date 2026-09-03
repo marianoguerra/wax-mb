@@ -146,7 +146,7 @@ fn constant_instruction(
     // `extern.convert_any`. An i32 operand is wrapped in `ref.i31` first
     // (i32 -> i31 -> any -> extern, as the ordinary typing lowers it), and that
     // is constant too -- so accept it rather than demanding an `any` reference.
-    Cast(inner, Value(Ref({ typ: Extern, nullable }))) =>
+    Cast(inner, Value(Ref({ typ: Extern, nullable, }))) =>
       if constant_instruction(ctx, inner) {
         true
       } else {
@@ -156,7 +156,7 @@ fn constant_instruction(
             !@type_store.val_subtype(
               ctx.type_context.subtyping_info(),
               internal,
-              Ref({ nullable, typ: Any }),
+              Ref({ nullable, typ: Any, }),
             )
           Some(Error) => false
           _ => true
@@ -168,7 +168,7 @@ fn constant_instruction(
         }
       }
     // `any.convert_extern`.
-    Cast(inner, Value(Ref({ typ: Any, nullable }))) =>
+    Cast(inner, Value(Ref({ typ: Any, nullable, }))) =>
       if constant_instruction(ctx, inner) {
         true
       } else {
@@ -177,7 +177,7 @@ fn constant_instruction(
             !@type_store.val_subtype(
               ctx.type_context.subtyping_info(),
               internal,
-              Ref({ nullable, typ: Extern }),
+              Ref({ nullable, typ: Extern, }),
             )
           Some(Error) => false
           _ => true

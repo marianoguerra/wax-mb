@@ -331,7 +331,7 @@ fn check_resume_handlers(
           Some(ft_) =>
             if internals(ft.results) is Some(params) &&
               internals(result_types) is Some(results) {
-              if !functype_matches(info, { params, results }, ft_) {
+              if !functype_matches(info, { params, results, }, ft_) {
                 mismatch()
               }
             }

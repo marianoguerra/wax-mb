@@ -335,7 +335,7 @@ fn value_cast(
         internalize_valtype(
           tc,
           ctx.diagnostics,
-          Ref({ nullable: true, typ: t }),
+          Ref({ nullable: true, typ: t, }),
         ).map(v => v.internal)
       }
 
@@ -422,7 +422,7 @@ fn signed_cast(
         internalize_valtype(
           ctx.type_context,
           ctx.diagnostics,
-          Ref({ nullable: true, typ: Any }),
+          Ref({ nullable: true, typ: Any, }),
         ) {
         Some(t) => @type_store.val_subtype(info, Ref(op), t.internal)
         None => false
@@ -435,7 +435,7 @@ fn signed_cast(
         internalize_valtype(
           ctx.type_context,
           ctx.diagnostics,
-          Ref({ nullable: true, typ: Any }),
+          Ref({ nullable: true, typ: Any, }),
         ) {
         Some(v) => ground(v)
         None => true

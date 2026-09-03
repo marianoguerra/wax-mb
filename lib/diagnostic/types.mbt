@@ -133,7 +133,7 @@ pub(all) struct Sink {
 ///|
 /// A sink collecting into a growable buffer. Its flush does nothing.
 pub fn buffer_sink(buf : StringBuilder) -> Sink {
-  { write: s => buf.write_string(s), flush: () => () }
+  { write: s => buf.write_string(s), flush: () => (), }
 }
 
 ///|

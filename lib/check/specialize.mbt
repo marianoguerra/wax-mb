@@ -79,7 +79,7 @@ fn Configuring::attrs(
           under,
           g.desc,
           g.info,
-          _ => [{ ..a, attr_guard: None }],
+          _ => [{ ..a, attr_guard: None, }],
           _ => [],
         )
         for k in kept {
@@ -163,7 +163,7 @@ fn Configuring::decl(
   d : @basic.Annotated[@ast.ImportDecl, @basic.Location],
 ) -> (@basic.Annotated[@ast.ImportDecl, @basic.Location], @cond.T) {
   let (attributes, under) = self.attrs(under, d.desc.attributes)
-  ({ ..d, desc: { ..d.desc, attributes, } }, under)
+  ({ ..d, desc: { ..d.desc, attributes, }, }, under)
 }
 
 ///|
@@ -223,7 +223,7 @@ fn Configuring::field(
     }
     Tag(name~, typ~, sign~, attributes~) => {
       let (attributes, under) = self.attrs(under, attributes)
-      ([{ ..f, desc: Tag(name~, typ~, sign~, attributes~) }], under)
+      ([{ ..f, desc: Tag(name~, typ~, sign~, attributes~), }], under)
     }
     Memory(
       name~,
@@ -274,7 +274,7 @@ fn Configuring::field(
     }
     Import(module_~, decl~) => {
       let (decl, under) = self.decl(under, decl)
-      ([{ ..f, desc: Import(module_~, decl~) }], under)
+      ([{ ..f, desc: Import(module_~, decl~), }], under)
     }
     ImportGroup(module_~, decls~) => {
       let out = []
@@ -284,11 +284,11 @@ fn Configuring::field(
         out.push(d2)
         under = next
       }
-      ([{ ..f, desc: ImportGroup(module_~, decls=out) }], under)
+      ([{ ..f, desc: ImportGroup(module_~, decls=out), }], under)
     }
     ModuleAnnotation(a) => {
       let (a, under) = self.attrs(under, a)
-      ([{ ..f, desc: ModuleAnnotation(a) }], under)
+      ([{ ..f, desc: ModuleAnnotation(a), }], under)
     }
     Type(_) | Data(..) | Elem(..) => ([f], under)
   }
@@ -323,7 +323,7 @@ fn specialize_fields(
   enqueue : (@cond.T) -> Unit,
   record : (@cond.T) -> Unit,
 ) -> @ast.Module[@basic.Location] {
-  ({ env, diagnostics, enqueue, record } : Configuring).fields(
+  ({ env, diagnostics, enqueue, record, } : Configuring).fields(
     assumption, fields,
   )
 }

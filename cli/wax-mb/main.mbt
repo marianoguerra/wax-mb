@@ -9,7 +9,7 @@
 ///|
 /// A sink writing to stderr, where every machine-readable format goes.
 fn stderr_sink() -> @diagnostic.Sink {
-  { write: s => @io.eprint(s), flush: () => () }
+  { write: s => @io.eprint(s), flush: () => (), }
 }
 
 ///|

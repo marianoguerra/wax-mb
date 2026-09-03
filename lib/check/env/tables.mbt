@@ -64,7 +64,7 @@ pub fn Namespace::new(
   cond : Ref[@cond.T],
   links? : ResolveSink = None,
 ) -> Namespace {
-  { cond, entries: Map([]), links }
+  { cond, entries: Map([]), links, }
 }
 
 ///|
@@ -103,7 +103,7 @@ fn Namespace::register(
   if self.conflict(name) is Some(prev) {
     name_already_bound(diagnostics, loc, prev.loc, prev.kind, name)
   }
-  let entry = { kind, loc, cond: self.cond.val }
+  let entry = { kind, loc, cond: self.cond.val, }
   match self.entries.get(name) {
     Some(l) => l.push(entry)
     None => self.entries[name] = [entry]
@@ -164,7 +164,7 @@ pub fn[A] Tbl::new(
   current : Ref[Origin],
   hover? : (A) -> HoverTarget? = _ => None,
 ) -> Tbl[A] {
-  { kind, names, entries: Map([]), used: Map([]), current, hover }
+  { kind, names, entries: Map([]), used: Map([]), current, hover, }
 }
 
 ///|

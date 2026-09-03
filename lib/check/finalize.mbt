@@ -43,18 +43,21 @@ fn resolve_omitted_valtype(
       Some(@infer.f64_valtype)
     }
     Null =>
-      internalize_valtype(ctx, diagnostics, Ref({ nullable: true, typ: None_ })).map(v => {
-          ty.set(Valtype(v))
-          v
-        },
-      )
+      internalize_valtype(
+        ctx,
+        diagnostics,
+        Ref({ nullable: true, typ: None_, }),
+      ).map(v => {
+        ty.set(Valtype(v))
+        v
+      })
     // The bottom reference concretizes to the NON-NULL `&none`, which is the
     // type `null!` produced before `UnknownRef` existed.
     UnknownRef =>
       internalize_valtype(
         ctx,
         diagnostics,
-        Ref({ nullable: false, typ: None_ }),
+        Ref({ nullable: false, typ: None_, }),
       ).map(v => {
         ty.set(Valtype(v))
         v
@@ -175,7 +178,7 @@ pub fn finalize_inferred(
         exacts,
       )
     }
-    return ([@infer.valtype_cell(iv)], { ..typ, results: [iv.typ] })
+    return ([@infer.valtype_cell(iv)], { ..typ, results: [iv.typ], })
   }
   let result_cells : Array[@infer.Cell[@infer.InferredType]] = []
   for r in typ.results {
@@ -215,5 +218,5 @@ pub fn finalize_inferred(
         )
       _ => false
     })
-  (result_cells, if drop { { ..typ, results: [] } } else { typ })
+  (result_cells, if drop { { ..typ, results: [], } } else { typ })
 }

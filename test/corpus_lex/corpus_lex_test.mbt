@@ -28,7 +28,7 @@ fn load_index() -> Array[Case] raise {
       { "bucket": String(b), .. } => b
       _ => "?"
     }
-    out.push({ file: name, bucket })
+    out.push({ file: name, bucket, })
   }
   out
 }

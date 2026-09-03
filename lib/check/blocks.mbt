@@ -291,7 +291,7 @@ fn check_trytable_catches(
     internalize(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: false, typ: Exn }),
+      Ref({ nullable: false, typ: Exn, }),
     )
   }
 

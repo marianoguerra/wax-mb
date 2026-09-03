@@ -683,7 +683,7 @@ fn Ctx::instr_desc(
             for a in arms {
               let (l, body) = a
               self.newline()
-              self.block(Some(l), None, { params: [], results: [] }, body)
+              self.block(Some(l), None, { params: [], results: [], }, body)
             }
           })
           self.newline()

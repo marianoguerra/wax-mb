@@ -6,12 +6,12 @@
 
 ///|
 fn pos(c : Int) -> @basic.Position {
-  { fname: "t.wax", lnum: 1, bol: 0, cnum: c }
+  { fname: "t.wax", lnum: 1, bol: 0, cnum: c, }
 }
 
 ///|
 fn span(a : Int, b : Int) -> @basic.Location {
-  { start: pos(a), end: pos(b) }
+  { start: pos(a), end: pos(b), }
 }
 
 ///|

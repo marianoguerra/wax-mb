@@ -81,14 +81,14 @@ fn Checker::try_node(
     // and anchoring a leftover at the try's opening would be both misleading
     // and indistinguishable from the try's own report.
     let checked = self.body(arm.info, label, entry, results, results, arm.desc)
-    handled.push((tag, { desc: checked, info: arm.info }))
+    handled.push((tag, { desc: checked, info: arm.info, }))
   }
   let all = match catch_all {
     Some(arm) => {
       let checked = self.body(arm.info, label, [], results, results, arm.desc)
       Some(
         (
-          { desc: checked, info: arm.info } :
+          { desc: checked, info: arm.info, } :
           @basic.Annotated[
             Array[@ast.Instr[@typing_env.InferredAnnotation]],
             @basic.Location,
@@ -101,7 +101,7 @@ fn Checker::try_node(
     desc: Try(
       label~,
       typ~,
-      block={ desc: body, info: block.info },
+      block={ desc: body, info: block.info, },
       catches=handled,
       catch_all=all,
     ),
@@ -174,14 +174,14 @@ fn Checker::trycatch_node(
       arm_tag: arm.arm_tag,
       arm_ref: arm.arm_ref,
       arm_types: entries[k],
-      arm_body: { desc: arm_body, info: arm.arm_body.info },
+      arm_body: { desc: arm_body, info: arm.arm_body.info, },
     })
   }
   {
     desc: TryCatch(
       label~,
       typ~,
-      block={ desc: body, info: block.info },
+      block={ desc: body, info: block.info, },
       arms=checked,
     ),
     info: annotate(results, i.info),
@@ -219,7 +219,7 @@ fn Checker::arm_entry_types(
   }
   // A `&` arm is handed the exception itself, above its payload.
   if arm.arm_ref {
-    out.push(Ref({ nullable: false, typ: Exn }))
+    out.push(Ref({ nullable: false, typ: Exn, }))
   }
   out
 }

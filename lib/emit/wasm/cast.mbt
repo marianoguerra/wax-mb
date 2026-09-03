@@ -113,7 +113,7 @@ fn cast_prologue(
   from : @wasm_types.ValType[Int],
   target : @ast.CastType,
 ) -> @wasm_types.ValType[Int] {
-  let i31ref : @wasm_types.RefType[Int] = { nullable: false, typ: I31 }
+  let i31ref : @wasm_types.RefType[Int] = { nullable: false, typ: I31, }
   match (from, target) {
     // `r as i32_s/u`: an i31 is already one, and anything else in the `any`
     // hierarchy is cast to one first. The `i31.get` follows in the match.
@@ -141,12 +141,12 @@ fn cast_prologue(
     // because the conversion takes a reference.
     (I32, Value(Ref({ typ: Extern, .. }))) => {
       out.push(RefI31)
-      Ref({ nullable: false, typ: I31 })
+      Ref({ nullable: false, typ: I31, })
     }
     (I64, Value(Ref({ typ: Extern, .. }))) => {
       out.push(I32WrapI64)
       out.push(RefI31)
-      Ref({ nullable: false, typ: I31 })
+      Ref({ nullable: false, typ: I31, })
     }
     // `extern as &T` for an `any`-hierarchy T: convert to `any` first, and let
     // the match below do the `ref.cast` to T. A non-null `&any` target from a
@@ -160,11 +160,11 @@ fn cast_prologue(
       ),
     )
     | (
-      Ref({ typ: Extern | NoExtern, nullable: true }),
-      Value(Ref({ typ: Any, nullable: false })),
+      Ref({ typ: Extern | NoExtern, nullable: true, }),
+      Value(Ref({ typ: Any, nullable: false, })),
     ) => {
       out.push(AnyConvertExtern)
-      Ref({ nullable: true, typ: Any })
+      Ref({ nullable: true, typ: Any, })
     }
     _ => from
   }
@@ -209,7 +209,7 @@ fn Lowering::cast_instruction(
           | Type(_)
           | Exact(_)
           | None_,
-          ..,
+          ..
         }
       ),
       Value(Ref({ typ: Extern, .. })),

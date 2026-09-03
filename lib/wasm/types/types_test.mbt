@@ -13,12 +13,12 @@ priv struct Name {
 test "the spine instantiates at a named Idx, as Wax does" {
   let t : @wasm_types.ValType[Name] = Ref({
     nullable: true,
-    typ: Type({ text: "list" }),
+    typ: Type({ text: "list", }),
   })
   match t {
     Ref(r) => {
       assert_true(r.nullable)
-      assert_eq(r.typ, Type({ text: "list" }))
+      assert_eq(r.typ, Type({ text: "list", }))
     }
     _ => fail("expected a reference type")
   }
@@ -29,8 +29,8 @@ test "and at an integer Idx, as the binary form will" {
   // This is the case that does not exist yet. If it stopped compiling, the
   // parameter would have quietly become decoration and the eventual code
   // generator would need an AST change rather than an addition.
-  let t : @wasm_types.ValType[Int] = Ref({ nullable: false, typ: Exact(7) })
-  assert_eq(t, Ref({ nullable: false, typ: Exact(7) }))
+  let t : @wasm_types.ValType[Int] = Ref({ nullable: false, typ: Exact(7), })
+  assert_eq(t, Ref({ nullable: false, typ: Exact(7), }))
   let s : @wasm_types.StorageType[Int] = Packed(I8)
   assert_eq(s, Packed(I8))
 }
@@ -39,9 +39,9 @@ test "and at an integer Idx, as the binary form will" {
 test "only the index-carrying heap types lack a keyword" {
   // Their absence is meaningful: each printer spells an index its own way, so
   // there is no shared spelling to return.
-  let named : @wasm_types.HeapType[Name] = Type({ text: "t" })
+  let named : @wasm_types.HeapType[Name] = Type({ text: "t", })
   assert_eq(named.keyword(), None)
-  let exact : @wasm_types.HeapType[Name] = Exact({ text: "t" })
+  let exact : @wasm_types.HeapType[Name] = Exact({ text: "t", })
   assert_eq(exact.keyword(), None)
   let any : @wasm_types.HeapType[Name] = Any
   assert_eq(any.keyword(), Some("any"))
@@ -53,9 +53,9 @@ test "only the index-carrying heap types lack a keyword" {
 
 ///|
 test "mutability wraps both storage and value types" {
-  let field : @wasm_types.FieldType[Name] = { mut_: true, typ: Packed(I16) }
+  let field : @wasm_types.FieldType[Name] = { mut_: true, typ: Packed(I16), }
   assert_true(field.mut_)
-  let global : @wasm_types.GlobalType[Name] = { mut_: false, typ: I32 }
+  let global : @wasm_types.GlobalType[Name] = { mut_: false, typ: I32, }
   assert_false(global.mut_)
 }
 
@@ -88,7 +88,7 @@ test "v128 components stay unparsed" {
 test "conditions nest" {
   let loc = @basic.dummy_loc
   let c : @wasm_types.Cond = Not(
-    And([Var({ desc: "portable", info: loc }), Version(3, 0, 0)]),
+    And([Var({ desc: "portable", info: loc, }), Version(3, 0, 0)]),
   )
   match c {
     Not(And(parts)) => assert_eq(parts.length(), 2)

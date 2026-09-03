@@ -21,7 +21,7 @@ pub(all) struct Associated {
 } derive(Eq, Debug)
 
 ///|
-pub let empty_assoc : Associated = { before: [], within: [], after: [] }
+pub let empty_assoc : Associated = { before: [], within: [], after: [], }
 
 ///|
 /// A location-keyed trivia table.
@@ -44,12 +44,12 @@ struct SpanKey {
 
 ///|
 fn key_of(loc : @basic.Location) -> SpanKey {
-  { start: loc.start.cnum, end: loc.end.cnum }
+  { start: loc.start.cnum, end: loc.end.cnum, }
 }
 
 ///|
 pub fn Table::empty() -> Table {
-  { entries: Map([]), seen: Set([], capacity=16) }
+  { entries: Map([]), seen: Set([], capacity=16), }
 }
 
 ///|
@@ -87,7 +87,7 @@ pub struct Locations {
 
 ///|
 pub fn Locations::new() -> Locations {
-  { marked: Set([], capacity=64) }
+  { marked: Set([], capacity=64), }
 }
 
 ///|
@@ -306,7 +306,7 @@ fn process_range(
       match tbl.entries.get(arr[child_hi]) {
         Some(assoc) => {
           let stolen = assoc.after
-          tbl.entries[arr[child_hi]] = { ..assoc, after: [] }
+          tbl.entries[arr[child_hi]] = { ..assoc, after: [], }
           // The co-terminating child's own window collapsed to empty, since its
           // upto reached only to this node's end. Scan on to this node's upto so
           // its real trailing comments are not dropped; whatever the child did
@@ -329,7 +329,7 @@ fn process_range(
       final_after = a
       r4 = r
     }
-    tbl.entries[arr[lo]] = { before, within, after: final_after }
+    tbl.entries[arr[lo]] = { before, within, after: final_after, }
     lo = next_sib
     from = r4
   }

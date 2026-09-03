@@ -72,7 +72,7 @@ fn emit_case(
   case_index : Int,
   inputs : Array[Int],
 ) -> Unit {
-  let model = { entries: @hashmap.HashMap::HashMap([]) }
+  let model = { entries: @hashmap.HashMap::HashMap([]), }
   let vector : Array[Int?] = []
   out.write_string("fn ct_property_case_\{case_index}() {\n")
   out.write_string("    ct_stage = \{100 + case_index};\n")

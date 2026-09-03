@@ -10,7 +10,7 @@ let src : String =
 
 ///|
 fn pos(lnum : Int, bol : Int, cnum : Int) -> @basic.Position {
-  { fname: "e1.wax", lnum, bol, cnum }
+  { fname: "e1.wax", lnum, bol, cnum, }
 }
 
 ///|
@@ -18,7 +18,7 @@ fn pos(lnum : Int, bol : Int, cnum : Int) -> @basic.Position {
 /// opening line 3, with a related label covering the unterminated statement.
 fn sample() -> @diagnostic.Diagnostic {
   {
-    loc: { start: pos(3, 30, 34), end: pos(3, 30, 35) },
+    loc: { start: pos(3, 30, 34), end: pos(3, 30, 35), },
     severity: Error,
     warning: None,
     message: @message.text(
@@ -28,7 +28,7 @@ fn sample() -> @diagnostic.Diagnostic {
     edit: None,
     related: [
       {
-        loc: { start: pos(2, 16, 20), end: pos(2, 16, 29) },
+        loc: { start: pos(2, 16, 20), end: pos(2, 16, 29), },
         message: @message.text("this statement"),
       },
     ],
@@ -106,7 +106,7 @@ let multi_src : String =
 
 ///|
 fn mpos(lnum : Int, bol : Int, cnum : Int) -> @basic.Position {
-  { fname: "m.wax", lnum, bol, cnum }
+  { fname: "m.wax", lnum, bol, cnum, }
 }
 
 ///|
@@ -115,7 +115,7 @@ fn mpos(lnum : Int, bol : Int, cnum : Int) -> @basic.Position {
 /// line, and a closing corner reaching the final column, then the label.
 test "multi-line spans render as a spine" {
   let d : @diagnostic.Diagnostic = {
-    loc: { start: mpos(4, 23, 25), end: mpos(4, 23, 26) },
+    loc: { start: mpos(4, 23, 25), end: mpos(4, 23, 26), },
     severity: Error,
     warning: None,
     message: @message.text(
@@ -125,11 +125,11 @@ test "multi-line spans render as a spine" {
     edit: None,
     related: [
       {
-        loc: { start: mpos(1, 0, 7), end: mpos(1, 0, 8) },
+        loc: { start: mpos(1, 0, 7), end: mpos(1, 0, 8), },
         message: @message.text("This '{' opens the enclosing construct."),
       },
       {
-        loc: { start: mpos(2, 9, 11), end: mpos(3, 16, 22) },
+        loc: { start: mpos(2, 9, 11), end: mpos(3, 16, 22), },
         message: @message.text("this statement list"),
       },
     ],

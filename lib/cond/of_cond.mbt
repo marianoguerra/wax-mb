@@ -56,7 +56,7 @@ fn Env::intern(self : Env, tbl : Map[String, Int], name : String) -> Int {
 fn Env::fresh(self : Env) -> T {
   let v = self.next_var
   self.next_var = v + 1
-  { node: Lit(Bool(v), true) }
+  { node: Lit(Bool(v), true), }
 }
 
 ///|
@@ -130,8 +130,8 @@ fn apply_order(op : @wasm_types.CmpOp, c : Int) -> Bool {
 ///|
 /// `vid OP version`, in terms of upper-bound atoms.
 fn version_atom(vid : Int, op : @wasm_types.CmpOp, v : Version) -> T {
-  let le = { node: Lit(Bound(vid, v, true), true) } // vid <= v
-  let lt = { node: Lit(Bound(vid, v, false), true) } // vid <  v
+  let le = { node: Lit(Bound(vid, v, true), true), } // vid <= v
+  let lt = { node: Lit(Bound(vid, v, false), true), } // vid <  v
   match op {
     Le => le
     Lt => lt
@@ -152,8 +152,8 @@ fn Env::string_atom(
   s : Bytes,
 ) -> T {
   match op {
-    Eq => { node: Lit(Const(vid, s), true) }
-    Ne => { node: Lit(Const(vid, s), false) }
+    Eq => { node: Lit(Const(vid, s), true), }
+    Ne => { node: Lit(Const(vid, s), false), }
     Lt | Gt | Le | Ge => {
       self.report_ill_formed(
         ctx, location, "Strings can only be compared with = or <> in a condition.",
@@ -184,7 +184,7 @@ pub fn Env::of_cond(
   match c {
     Var(v) => {
       self.check_kind(ctx, v.info, v.desc, "boolean")
-      { node: Lit(Bool(self.intern(self.bool_vars, v.desc)), true) }
+      { node: Lit(Bool(self.intern(self.bool_vars, v.desc)), true), }
     }
     And(l) => and_list(l.map(x => self.of_cond(ctx, location, x)))
     Or(l) => or_list(l.map(x => self.of_cond(ctx, location, x)))
@@ -245,7 +245,7 @@ fn Env::cmp(
       bool_const(
         apply_order(
           op,
-          ({ major: x1, minor: y1, patch: z1 } : Version).compare_to({
+          ({ major: x1, minor: y1, patch: z1, } : Version).compare_to({
             major: x2,
             minor: y2,
             patch: z2,

@@ -48,7 +48,7 @@ pub fn Position::column1(self : Position) -> Int {
 /// Note `cnum` is `-1`, not `0`: the reference's `output_error_no_source` path
 /// tests for exactly this to decide whether it can print a `File "…", line …`
 /// header at all, so the sentinel value has to match.
-pub let dummy_pos : Position = { fname: "", lnum: 0, bol: 0, cnum: -1 }
+pub let dummy_pos : Position = { fname: "", lnum: 0, bol: 0, cnum: -1, }
 
 ///|
 pub fn Position::is_dummy(self : Position) -> Bool {

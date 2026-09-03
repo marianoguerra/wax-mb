@@ -70,14 +70,14 @@ priv enum Scope {
 /// An unmatched `TEnd` is ignored rather than fatal, matching the engine, whose
 /// `TEnd` handler refuses to pop the outermost frame.
 fn tree(tokens : Array[@printer.Token]) -> Array[Node] {
-  let stack : Array[Level] = [{ scope: SRoot, items: [] }]
+  let stack : Array[Level] = [{ scope: SRoot, items: [], }]
   let mut next_id = 0
   fn top() {
     stack[stack.length() - 1]
   }
 
   fn open(s : Scope) {
-    stack.push({ scope: s, items: [] })
+    stack.push({ scope: s, items: [], })
   }
 
   fn close() {

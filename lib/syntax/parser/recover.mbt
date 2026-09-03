@@ -94,16 +94,16 @@ pub fn parse_recover(src : String, fname? : String = "") -> ParseResult {
   // the tokens end where it stopped. Parsing them still reports the syntax
   // errors before that point.
   if lexed.tokens.length() == 0 {
-    return { module_: None, errors, trivia: ctx }
+    return { module_: None, errors, trivia: ctx, }
   }
   let module_ = drive_recovering(lexed.tokens, errors)
   match taken_error() {
     Some(SyntaxError(loc~, message~, hint~, fix~)) =>
-      errors.push({ ..@basic.Report::error(loc, message), hint, edit: fix })
+      errors.push({ ..@basic.Report::error(loc, message), hint, edit: fix, })
     None => ()
   }
   errors.sort_by((a, b) => a.loc.start.cnum - b.loc.start.cnum)
-  { module_, errors, trivia: ctx }
+  { module_, errors, trivia: ctx, }
 }
 
 ///|
@@ -234,7 +234,7 @@ fn drive_recovering(
           spans,
           token_index: cursor - 1,
         }
-        errors.push(syntax_report(st, tokens, { start, end }, expected))
+        errors.push(syntax_report(st, tokens, { start, end, }, expected))
 
         // Repair 1: a `;` in front of the offending token -- but only if it
         // UNBLOCKS the parse. The state after `{` can shift a `;` (an empty
@@ -274,7 +274,7 @@ fn drive_recovering(
               errors[errors.length() - 1] = {
                 ..errors[errors.length() - 1],
                 edit: Some({
-                  loc: { start: at.start, end: at.start },
+                  loc: { start: at.start, end: at.start, },
                   new_text: text.to_string(),
                 }),
               }
@@ -334,7 +334,7 @@ fn auto_close(stack : Array[Int], held : Int) -> Array[(Token, String)]? {
     (RBRACKET, "]"),
     (SEMI, ";"),
   ]
-  let nowhere : Position = { fname: "", lnum: 0, bol: 0, cnum: 0 }
+  let nowhere : Position = { fname: "", lnum: 0, bol: 0, cnum: 0, }
   let inserted = []
   let mut cur = stack.copy()
   // Bounded by the nesting the stack can hold.
@@ -369,8 +369,8 @@ fn auto_close(stack : Array[Int], held : Int) -> Array[(Token, String)]? {
 /// belongs, and it is what the reference underlines.
 fn missing_semi_report(at : Position) -> @basic.Report {
   {
-    ..@basic.Report::error({ start: at, end: at }, "Missing ';'."),
-    edit: Some({ loc: { start: at, end: at }, new_text: ";" }),
+    ..@basic.Report::error({ start: at, end: at, }, "Missing ';'."),
+    edit: Some({ loc: { start: at, end: at, }, new_text: ";", }),
   }
 }
 

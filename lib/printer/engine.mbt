@@ -74,7 +74,7 @@ pub fn Engine::new(width? : Int = 78) -> Engine {
     emitted: false,
     pend_line: None,
     pend_flat: None,
-    frames: [{ findent: 0, fmode: Brkm }],
+    frames: [{ findent: 0, fmode: Brkm, }],
     queue: [],
     qhd: 0,
     skip_depth: 0,
@@ -308,7 +308,7 @@ fn Engine::process(self : Engine, tok : Token) -> Unit {
     }
     TNest(n) => {
       let c = self.cur()
-      self.frames.push({ findent: c.findent + n, fmode: c.fmode })
+      self.frames.push({ findent: c.findent + n, fmode: c.fmode, })
     }
     TBegin(k) => {
       // A group's break-indentation is measured from the COLUMN WHERE IT OPENS
@@ -322,13 +322,13 @@ fn Engine::process(self : Engine, tok : Token) -> Unit {
         // GHv is resolved with lookahead in `advance` and never reaches here.
         GHv => Brkm
       }
-      self.frames.push({ findent: base, fmode: m })
+      self.frames.push({ findent: base, fmode: m, })
     }
     TIfBroken => {
       // Only reached when the enclosing group is broken; the flat case is
       // skipped in `advance`.
       let c = self.cur()
-      self.frames.push({ findent: c.findent, fmode: c.fmode })
+      self.frames.push({ findent: c.findent, fmode: c.fmode, })
     }
     TEnd => if self.frames.length() > 1 { self.frames.unsafe_pop() |> ignore }
     TBreak(str) => {

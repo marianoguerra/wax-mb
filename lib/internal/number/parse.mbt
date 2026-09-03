@@ -32,7 +32,7 @@ priv struct Significand {
 
 ///|
 fn Significand::new() -> Significand {
-  { bits: 0UL, exponent: 0, sticky: false, any_digit: false }
+  { bits: 0UL, exponent: 0, sticky: false, any_digit: false, }
 }
 
 ///|

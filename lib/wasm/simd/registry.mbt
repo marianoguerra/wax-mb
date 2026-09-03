@@ -50,7 +50,7 @@ fn build_table() -> Map[String, Intrinsic] {
     free : Bool,
     build : (Array[Int]) -> @wasm_bin.Instruction,
   ) -> Unit {
-    m[name] = { operands, result, imm, free, build }
+    m[name] = { operands, result, imm, free, build, }
   }
 
   add("abs_f32x4", [TV128], Some(TV128), NoImm, false, _ => F32x4Abs)

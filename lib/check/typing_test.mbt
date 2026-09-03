@@ -9,14 +9,14 @@
 ///|
 fn loc_at(start : Int, end_ : Int) -> @basic.Location {
   {
-    start: { fname: "t.wax", lnum: 1, bol: 0, cnum: start },
-    end: { fname: "t.wax", lnum: 1, bol: 0, cnum: end_ },
+    start: { fname: "t.wax", lnum: 1, bol: 0, cnum: start, },
+    end: { fname: "t.wax", lnum: 1, bol: 0, cnum: end_, },
   }
 }
 
 ///|
 fn id(name : String, at? : Int = 0) -> @ast.Ident {
-  { name, loc: loc_at(at, at + name.length()) }
+  { name, loc: loc_at(at, at + name.length()), }
 }
 
 ///|
@@ -34,7 +34,7 @@ fn ctx_with(
     "type", ns, origin,
   )
   let empty : @ast.SubType = {
-    typ: Func({ params: [], results: [] }),
+    typ: Func({ params: [], results: [], }),
     supertype: None,
     final_: true,
     descriptor: None,
@@ -130,14 +130,14 @@ test "value types" {
 
   inspect(ok(I32), content="true")
   inspect(ok(V128), content="true")
-  inspect(ok(Ref({ nullable: true, typ: Any })), content="true")
-  inspect(ok(Ref({ nullable: false, typ: Type(id("node")) })), content="true")
+  inspect(ok(Ref({ nullable: true, typ: Any, })), content="true")
+  inspect(ok(Ref({ nullable: false, typ: Type(id("node")), })), content="true")
   inspect(
-    ok(Ref({ nullable: false, typ: Type(id("missing")) })),
+    ok(Ref({ nullable: false, typ: Type(id("missing")), })),
     content="false",
   )
   // Nullability survives the trip.
-  guard! @typing.valtype(ctx, d, Ref({ nullable: true, typ: Any }))
+  guard! @typing.valtype(ctx, d, Ref({ nullable: true, typ: Any, }))
     is Some(Ref(r))
   inspect(r.nullable, content="true")
 }
@@ -165,9 +165,9 @@ test "duplicate parameter and field names" {
   let d = @diagnostic.collector()
   let ft : @ast.FuncType = {
     params: [
-      { desc: (Some(id("x", at=1)), I32), info: loc_at(1, 2) },
-      { desc: (Some(id("y", at=4)), I32), info: loc_at(4, 5) },
-      { desc: (Some(id("x", at=7)), I32), info: loc_at(7, 8) },
+      { desc: (Some(id("x", at=1)), I32), info: loc_at(1, 2), },
+      { desc: (Some(id("y", at=4)), I32), info: loc_at(4, 5), },
+      { desc: (Some(id("x", at=7)), I32), info: loc_at(7, 8), },
     ],
     results: [],
   }
@@ -197,7 +197,7 @@ test "duplicate parameter and field names" {
         desc: (
           id(n, at~),
           (
-            { mut_: false, typ: Value(I32) } :
+            { mut_: false, typ: Value(I32), } :
             @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
         ),
         info: loc_at(at, at + 1),
@@ -222,13 +222,13 @@ test "a bad component fails the whole type" {
   let ctx = ctx_with(["node"])
   let d = @diagnostic.collector()
   let good : @ast.FuncType = {
-    params: [{ desc: (None, I32), info: loc_at(0, 1) }],
-    results: [Ref({ nullable: true, typ: Type(id("node")) })],
+    params: [{ desc: (None, I32), info: loc_at(0, 1), }],
+    results: [Ref({ nullable: true, typ: Type(id("node")), })],
   }
   inspect(@typing.n_functype(ctx, d, good) is Some(_), content="true")
   let bad : @ast.FuncType = {
-    params: [{ desc: (None, I32), info: loc_at(0, 1) }],
-    results: [Ref({ nullable: true, typ: Type(id("missing")) })],
+    params: [{ desc: (None, I32), info: loc_at(0, 1), }],
+    results: [Ref({ nullable: true, typ: Type(id("missing")), })],
   }
   inspect(@typing.n_functype(ctx, d, bad) is Some(_), content="false")
 }
@@ -291,8 +291,8 @@ test "unknown, error and the bottom reference" {
   }
 
   let anyref : @infer.InferredValType = {
-    typ: Ref({ nullable: true, typ: Any }),
-    internal: Ref({ nullable: true, typ: Any }),
+    typ: Ref({ nullable: true, typ: Any, }),
+    internal: Ref({ nullable: true, typ: Any, }),
     anon_comptype: None,
   }
   // A genuinely polymorphic value takes whatever consumes it -- and IS pinned,
@@ -329,8 +329,8 @@ test "null" {
   let info = @type_store.TypeStore::new().subtyping_info()
   fn nullable(n : Bool) -> @infer.InferredValType {
     {
-      typ: Ref({ nullable: n, typ: Any }),
-      internal: Ref({ nullable: n, typ: Any }),
+      typ: Ref({ nullable: n, typ: Any, }),
+      internal: Ref({ nullable: n, typ: Any, }),
       anon_comptype: None,
     }
   }
@@ -354,14 +354,17 @@ test "field subtyping is invariant when mutable" {
     mut_ : Bool,
     t : @wasm_types.ValType[@type_store.Id],
   ) -> @wasm_types.FieldType[@type_store.Id] {
-    { mut_, typ: Value(t) }
+    { mut_, typ: Value(t), }
   }
 
   let any : @wasm_types.ValType[@type_store.Id] = Ref({
     nullable: true,
     typ: Any,
   })
-  let eq : @wasm_types.ValType[@type_store.Id] = Ref({ nullable: true, typ: Eq })
+  let eq : @wasm_types.ValType[@type_store.Id] = Ref({
+    nullable: true,
+    typ: Eq,
+  })
   // Immutable: covariant, so a narrower field is a subtype of a wider one.
   inspect(
     @typing.field_subtype(info, field(false, eq), field(false, any)),
@@ -705,8 +708,8 @@ test "the bottoms in a join" {
   let b = @infer.Cell::make(@infer.InferredType::UnknownRef)
   let _ = @typing.join_value_types(a, b, no_lub)
   let anyref : @infer.InferredValType = {
-    typ: Ref({ nullable: true, typ: Any }),
-    internal: Ref({ nullable: true, typ: Any }),
+    typ: Ref({ nullable: true, typ: Any, }),
+    internal: Ref({ nullable: true, typ: Any, }),
     anon_comptype: None,
   }
   let info = @type_store.TypeStore::new().subtyping_info()
@@ -949,7 +952,7 @@ fn some_id() -> @type_store.Id raise {
       supertype: None,
       descriptor: None,
       describes: None,
-      typ: Func({ params: [], results: [] }),
+      typ: Func({ params: [], results: [], }),
     },
   ])
 }
@@ -972,11 +975,11 @@ test "a local shadows everything" {
     ctx.diagnostics,
     "t",
     loc_at(6, 7),
-    (I32, { nullable: true, typ: Func }),
+    (I32, { nullable: true, typ: Func, }),
   )
   ctx.datas.add(ctx.diagnostics, "d", loc_at(8, 9), ())
   fn kind(n : String) -> String {
-    match @typing.resolve_variable(ctx, { name: n, loc: loc_at(20, 21) }) {
+    match @typing.resolve_variable(ctx, { name: n, loc: loc_at(20, 21), }) {
       Local(_, _) => "local"
       Global(_, _) => "global"
       FuncRef(_, _, _) => "func"
@@ -989,15 +992,15 @@ test "a local shadows everything" {
   inspect(kind("f"), content="func")
   inspect(kind("nope"), content="unbound")
   inspect(
-    @typing.memory_receiver(ctx, { name: "m", loc: loc_at(0, 1) }),
+    @typing.memory_receiver(ctx, { name: "m", loc: loc_at(0, 1), }),
     content="true",
   )
   inspect(
-    @typing.table_receiver(ctx, { name: "t", loc: loc_at(0, 1) }),
+    @typing.table_receiver(ctx, { name: "t", loc: loc_at(0, 1), }),
     content="true",
   )
   inspect(
-    @typing.segment_receiver(ctx, { name: "d", loc: loc_at(0, 1) }),
+    @typing.segment_receiver(ctx, { name: "d", loc: loc_at(0, 1), }),
     content="true",
   )
 
@@ -1008,15 +1011,15 @@ test "a local shadows everything" {
   ctx.locals["d"] = (None, loc_at(30, 31))
   inspect(kind("x"), content="local")
   inspect(
-    @typing.memory_receiver(ctx, { name: "m", loc: loc_at(0, 1) }),
+    @typing.memory_receiver(ctx, { name: "m", loc: loc_at(0, 1), }),
     content="false",
   )
   inspect(
-    @typing.table_receiver(ctx, { name: "t", loc: loc_at(0, 1) }),
+    @typing.table_receiver(ctx, { name: "t", loc: loc_at(0, 1), }),
     content="false",
   )
   inspect(
-    @typing.segment_receiver(ctx, { name: "d", loc: loc_at(0, 1) }),
+    @typing.segment_receiver(ctx, { name: "d", loc: loc_at(0, 1), }),
     content="false",
   )
 }
@@ -1027,7 +1030,7 @@ test "a local shadows everything" {
 test "a poisoned function is bound, not unbound" {
   let ctx = module_ctx()
   ctx.functions.add(ctx.diagnostics, "broken", loc_at(0, 1), None)
-  match @typing.resolve_variable(ctx, { name: "broken", loc: loc_at(5, 6) }) {
+  match @typing.resolve_variable(ctx, { name: "broken", loc: loc_at(5, 6), }) {
     Poisoned => inspect("poisoned", content="poisoned")
     Unbound => fail("a poisoned function must not read as unbound")
     _ => fail("unexpected")
@@ -1041,11 +1044,11 @@ test "what needs initializing" {
   inspect(@typing.is_defaultable(I32), content="true")
   inspect(@typing.is_defaultable(V128), content="true")
   inspect(
-    @typing.is_defaultable(Ref({ nullable: true, typ: Any })),
+    @typing.is_defaultable(Ref({ nullable: true, typ: Any, })),
     content="true",
   )
   inspect(
-    @typing.is_defaultable(Ref({ nullable: false, typ: Any })),
+    @typing.is_defaultable(Ref({ nullable: false, typ: Any, })),
     content="false",
   )
 }
@@ -1058,7 +1061,7 @@ test "a trailing operand defers what it cannot yet know" {
   // A read that fails now but would succeed later is DEFERRED, not reported --
   // and the replay finds it initialized by then.
   let ctx = module_ctx()
-  let x : @ast.Ident = { name: "x", loc: loc_at(10, 11) }
+  let x : @ast.Ident = { name: "x", loc: loc_at(10, 11), }
   let (_, replay) = @typing.type_trailing_operand(ctx, () => {
     @typing.report_uninitialized(ctx, x)
   })
@@ -1102,7 +1105,7 @@ test "a trailing operand's writes are withheld" {
 /// reporting, because the outer operand has its own slot still to come.
 test "deferrals nest" {
   let ctx = module_ctx()
-  let x : @ast.Ident = { name: "x", loc: loc_at(10, 11) }
+  let x : @ast.Ident = { name: "x", loc: loc_at(10, 11), }
   let (_, outer_replay) = @typing.type_trailing_operand(ctx, () => {
     let (_, inner_replay) = @typing.type_trailing_operand(ctx, () => {
       @typing.report_uninitialized(ctx, x)
@@ -1136,7 +1139,7 @@ test "reading a name" {
   ctx.locals["bad"] = (None, loc_at(6, 7))
   @typing.mark_initialized(ctx, "bad")
   fn read(n : String) -> String {
-    @infer.to_string(@typing.type_get(ctx, { name: n, loc: loc_at(20, 21) }))
+    @infer.to_string(@typing.type_get(ctx, { name: n, loc: loc_at(20, 21), }))
   }
 
   inspect(read("x"), content="i32")
@@ -1161,13 +1164,13 @@ test "did you mean" {
   ctx.locals["counter"] = (Some(@infer.i32_valtype), loc_at(2, 3))
   ctx.globals.add(ctx.diagnostics, "threshold", loc_at(4, 5), (false, None))
   ctx.functions.add(ctx.diagnostics, "compute", loc_at(6, 7), None)
-  let _ = @typing.type_get(ctx, { name: "countr", loc: loc_at(20, 21) })
+  let _ = @typing.type_get(ctx, { name: "countr", loc: loc_at(20, 21), })
   guard! ctx.diagnostics.collected()[0].hint is Some(h)
   inspect(@message.to_plain_string(h), content="Did you mean 'counter'?")
   // Nothing close enough draws no hint at all.
   let ctx2 = module_ctx()
   ctx2.locals["counter"] = (Some(@infer.i32_valtype), loc_at(2, 3))
-  let _ = @typing.type_get(ctx2, { name: "zzzzzz", loc: loc_at(20, 21) })
+  let _ = @typing.type_get(ctx2, { name: "zzzzzz", loc: loc_at(20, 21), })
   inspect(ctx2.diagnostics.collected()[0].hint is None, content="true")
 }
 
@@ -1196,11 +1199,11 @@ test "reads are recorded by binding, not by name" {
   let ctx = module_ctx()
   ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(2, 3))
   @typing.mark_initialized(ctx, "x")
-  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(20, 21) })
+  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(20, 21), })
   inspect(ctx.read_locals.map(o => o.to_string()).join(","), content="2")
   // A shadowing local of the same name is a different binding.
   ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(9, 10))
-  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(22, 23) })
+  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(22, 23), })
   inspect(ctx.read_locals.map(o => o.to_string()).join(","), content="2,9")
 }
 
@@ -1211,13 +1214,13 @@ test "reading before initializing" {
   let ctx = module_ctx()
   ctx.locals["r"] = (
     Some({
-      typ: Ref({ nullable: false, typ: Any }),
-      internal: Ref({ nullable: false, typ: Any }),
+      typ: Ref({ nullable: false, typ: Any, }),
+      internal: Ref({ nullable: false, typ: Any, }),
       anon_comptype: None,
     }),
     loc_at(2, 3),
   )
-  let cell = @typing.type_get(ctx, { name: "r", loc: loc_at(20, 21) })
+  let cell = @typing.type_get(ctx, { name: "r", loc: loc_at(20, 21), })
   inspect(@infer.to_string(cell), content="&any")
   inspect(
     @message.to_plain_string(ctx.diagnostics.collected()[0].message),
@@ -1227,7 +1230,7 @@ test "reading before initializing" {
   let ctx2 = module_ctx()
   ctx2.locals["r"] = (Some(@infer.i32_valtype), loc_at(2, 3))
   @typing.mark_initialized(ctx2, "r")
-  let _ = @typing.type_get(ctx2, { name: "r", loc: loc_at(20, 21) })
+  let _ = @typing.type_get(ctx2, { name: "r", loc: loc_at(20, 21), })
   inspect(ctx2.diagnostics.collected().length(), content="0")
 }
 
@@ -1241,7 +1244,7 @@ test "assignment targets" {
   ) -> String {
     let ctx = module_ctx()
     setup(ctx)
-    let idx : @ast.Ident = { name, loc: loc_at(20, 21) }
+    let idx : @ast.Ident = { name, loc: loc_at(20, 21), }
     let resolved = @typing.resolve_variable(ctx, idx)
     @typing.assign_target(ctx, idx, resolved, compound~)
     ctx.diagnostics
@@ -1321,7 +1324,7 @@ test "writing a mutable global records it" {
   let ctx = module_ctx()
   ctx.globals.add(ctx.diagnostics, "used", loc_at(0, 1), (true, None))
   ctx.globals.add(ctx.diagnostics, "never", loc_at(2, 3), (true, None))
-  let idx : @ast.Ident = { name: "used", loc: loc_at(20, 21) }
+  let idx : @ast.Ident = { name: "used", loc: loc_at(20, 21), }
   @typing.assign_target(ctx, idx, @typing.resolve_variable(ctx, idx))
   inspect(ctx.assigned_globals.contains("used"), content="true")
   inspect(ctx.assigned_globals.contains("never"), content="false")
@@ -1335,7 +1338,7 @@ test "tee targets" {
   fn tee(setup : (@typing_env.ModuleContext) -> Unit, name : String) -> String {
     let ctx = module_ctx()
     setup(ctx)
-    let idx : @ast.Ident = { name, loc: loc_at(20, 21) }
+    let idx : @ast.Ident = { name, loc: loc_at(20, 21), }
     let operand = @infer.valtype_cell(@infer.f64_valtype)
     let resolved = @typing.resolve_variable(ctx, idx)
     let result = @typing.tee_target(ctx, idx, resolved, operand)
@@ -1376,14 +1379,14 @@ test "tee targets" {
 test "a tee initializes its target" {
   let ctx = module_ctx()
   ctx.locals["x"] = (Some(@infer.i32_valtype), loc_at(0, 1))
-  let idx : @ast.Ident = { name: "x", loc: loc_at(20, 21) }
+  let idx : @ast.Ident = { name: "x", loc: loc_at(20, 21), }
   let _ = @typing.tee_target(
     ctx,
     idx,
     @typing.resolve_variable(ctx, idx),
     @infer.valtype_cell(@infer.i32_valtype),
   )
-  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(30, 31) })
+  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(30, 31), })
   inspect(ctx.diagnostics.collected().length(), content="0")
 }
 
@@ -1393,9 +1396,9 @@ test "a tee initializes its target" {
 test "a declared local starts initialized only if its type has a zero" {
   fn read_after_declaring(typ : @wasm_types.ValType[@ast.Ident]) -> String {
     let ctx = module_ctx()
-    @typing.declare_local(ctx, { name: "x", loc: loc_at(2, 3) }, typ)
+    @typing.declare_local(ctx, { name: "x", loc: loc_at(2, 3), }, typ)
     // Reading it immediately is the question the initialization state answers.
-    let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(20, 21) })
+    let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(20, 21), })
     let msgs = ctx.diagnostics.collected()
     msgs.map(e => @message.to_plain_string(e.message)).join(" | ")
   }
@@ -1405,11 +1408,11 @@ test "a declared local starts initialized only if its type has a zero" {
   inspect(read_after_declaring(F64), content="")
   inspect(read_after_declaring(V128), content="")
   // A NULLABLE reference has null as its zero value.
-  inspect(read_after_declaring(Ref({ nullable: true, typ: Any })), content="")
+  inspect(read_after_declaring(Ref({ nullable: true, typ: Any, })), content="")
   // A non-nullable one has nothing to start at, so reading it before assigning
   // is an error -- which is the whole reason initialization is tracked.
   inspect(
-    read_after_declaring(Ref({ nullable: false, typ: Any })),
+    read_after_declaring(Ref({ nullable: false, typ: Any, })),
     content="The local variable 'x' has not been initialized.",
   )
 }
@@ -1419,11 +1422,11 @@ test "a declared local starts initialized only if its type has a zero" {
 /// of the same rule.
 test "assigning a declared local makes it readable" {
   let ctx = module_ctx()
-  let x : @ast.Ident = { name: "x", loc: loc_at(2, 3) }
-  @typing.declare_local(ctx, x, Ref({ nullable: false, typ: Any }))
-  let target : @ast.Ident = { name: "x", loc: loc_at(10, 11) }
+  let x : @ast.Ident = { name: "x", loc: loc_at(2, 3), }
+  @typing.declare_local(ctx, x, Ref({ nullable: false, typ: Any, }))
+  let target : @ast.Ident = { name: "x", loc: loc_at(10, 11), }
   @typing.assign_target(ctx, target, @typing.resolve_variable(ctx, target))
-  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(20, 21) })
+  let _ = @typing.type_get(ctx, { name: "x", loc: loc_at(20, 21), })
   inspect(ctx.diagnostics.collected().length(), content="0")
 }
 
@@ -1433,11 +1436,11 @@ test "a bound local is initialized" {
   let ctx = module_ctx()
   @typing.bind_local(
     ctx,
-    { name: "x", loc: loc_at(2, 3) },
+    { name: "x", loc: loc_at(2, 3), },
     Some(@infer.i32_valtype),
   )
   inspect(
-    @infer.to_string(@typing.type_get(ctx, { name: "x", loc: loc_at(20, 21) })),
+    @infer.to_string(@typing.type_get(ctx, { name: "x", loc: loc_at(20, 21), })),
     content="i32",
   )
   inspect(ctx.diagnostics.collected().length(), content="0")
@@ -1452,8 +1455,8 @@ test "an unresolvable type declares no local" {
   let ctx = module_ctx()
   @typing.declare_local(
     ctx,
-    { name: "x", loc: loc_at(2, 3) },
-    Ref({ nullable: true, typ: Type({ name: "missing", loc: loc_at(4, 11) }) }),
+    { name: "x", loc: loc_at(2, 3), },
+    Ref({ nullable: true, typ: Type({ name: "missing", loc: loc_at(4, 11), }), }),
   )
   inspect(ctx.locals.contains("x"), content="false")
   inspect(ctx.local_decls.length(), content="0")
@@ -1470,11 +1473,11 @@ test "internalize keeps the name and the index" {
       supertype: None,
       descriptor: None,
       describes: None,
-      typ: Func({ params: [], results: [] }),
+      typ: Func({ params: [], results: [], }),
     },
   ])
   let empty : @ast.SubType = {
-    typ: Func({ params: [], results: [] }),
+    typ: Func({ params: [], results: [], }),
     supertype: None,
     final_: true,
     descriptor: None,
@@ -1483,7 +1486,7 @@ test "internalize keeps the name and the index" {
   ctx.types.add(ctx.diagnostics, "node", loc_at(0, 4), (Def(store_id), empty))
   let named : @wasm_types.ValType[@ast.Ident] = Ref({
     nullable: true,
-    typ: Type({ name: "node", loc: loc_at(10, 14) }),
+    typ: Type({ name: "node", loc: loc_at(10, 14), }),
   })
   guard! @typing.internalize_valtype(ctx.type_context, ctx.diagnostics, named)
     is Some(v)
@@ -1760,15 +1763,15 @@ test "an argument literal is pinned by the parameter" {
 /// outer -- which is why the search runs innermost first.
 test "a branch finds the innermost matching label" {
   let ctx = module_ctx()
-  let outer : @ast.Ident = { name: "l", loc: loc_at(2, 3) }
-  let inner : @ast.Ident = { name: "l", loc: loc_at(6, 7) }
+  let outer : @ast.Ident = { name: "l", loc: loc_at(2, 3), }
+  let inner : @ast.Ident = { name: "l", loc: loc_at(6, 7), }
   let i32 = @infer.valtype_cell(@infer.i32_valtype)
   let i64 = @infer.valtype_cell(@infer.i64_valtype)
   let found = ctx.with_frame(
     @typing_env.ControlFrame::new([i32], label=Some(outer)),
     () => {
       ctx.with_frame(@typing_env.ControlFrame::new([i64], label=Some(inner)), () => {
-        @typing.branch_target(ctx, { name: "l", loc: loc_at(20, 21) })
+        @typing.branch_target(ctx, { name: "l", loc: loc_at(20, 21), })
       })
     },
   )
@@ -1787,7 +1790,7 @@ test "a branch finds the innermost matching label" {
 test "an unbound label reports and marks the function" {
   let ctx = module_ctx()
   inspect(ctx.unresolved_label.val, content="false")
-  let found = @typing.branch_target(ctx, { name: "nope", loc: loc_at(20, 24) })
+  let found = @typing.branch_target(ctx, { name: "nope", loc: loc_at(20, 24), })
   inspect(found.length(), content="0")
   inspect(ctx.unresolved_label.val, content="true")
   inspect(
@@ -1806,13 +1809,13 @@ test "label suggestions are lexical" {
   ctx.with_frame(
     @typing_env.ControlFrame::new(
       [],
-      label=Some({ name: "closed", loc: loc_at(2, 8) }),
+      label=Some({ name: "closed", loc: loc_at(2, 8), }),
     ),
     () => (),
   )
-  let outer : @ast.Ident = { name: "retry", loc: loc_at(10, 15) }
+  let outer : @ast.Ident = { name: "retry", loc: loc_at(10, 15), }
   ctx.with_frame(@typing_env.ControlFrame::new([], label=Some(outer)), () => {
-    let _ = @typing.branch_target(ctx, { name: "retr", loc: loc_at(20, 24) })
+    let _ = @typing.branch_target(ctx, { name: "retr", loc: loc_at(20, 24), })
   })
   guard! ctx.diagnostics.collected()[0].hint is Some(h)
   inspect(@message.to_plain_string(h), content="Did you mean 'retry'?")
@@ -1821,11 +1824,11 @@ test "label suggestions are lexical" {
   ctx2.with_frame(
     @typing_env.ControlFrame::new(
       [],
-      label=Some({ name: "closed", loc: loc_at(2, 8) }),
+      label=Some({ name: "closed", loc: loc_at(2, 8), }),
     ),
     () => (),
   )
-  let _ = @typing.branch_target(ctx2, { name: "closd", loc: loc_at(20, 25) })
+  let _ = @typing.branch_target(ctx2, { name: "closd", loc: loc_at(20, 25), })
   inspect(ctx2.diagnostics.collected()[0].hint is None, content="true")
 }
 
@@ -1834,14 +1837,14 @@ test "label suggestions are lexical" {
 /// they need telling apart -- which is what `label_in_scope` is for.
 test "a void target is not an unbound one" {
   let ctx = module_ctx()
-  let l : @ast.Ident = { name: "done", loc: loc_at(2, 6) }
+  let l : @ast.Ident = { name: "done", loc: loc_at(2, 6), }
   let observed = ctx.with_frame(
     @typing_env.ControlFrame::new([], label=Some(l)),
     () => {
       (
-        @typing.branch_target(ctx, { name: "done", loc: loc_at(20, 24) }).length(),
-        @typing.label_in_scope(ctx, { name: "done", loc: loc_at(20, 24) }),
-        @typing.label_in_scope(ctx, { name: "nope", loc: loc_at(20, 24) }),
+        @typing.branch_target(ctx, { name: "done", loc: loc_at(20, 24), }).length(),
+        @typing.label_in_scope(ctx, { name: "done", loc: loc_at(20, 24), }),
+        @typing.label_in_scope(ctx, { name: "nope", loc: loc_at(20, 24), }),
       )
     },
   )
@@ -1861,7 +1864,7 @@ test "a void target is not an unbound one" {
 test "an unlabelled frame is not a branch target" {
   let ctx = module_ctx()
   let in_scope = ctx.with_frame(@typing_env.ControlFrame::new([]), () => {
-    @typing.label_in_scope(ctx, { name: "anything", loc: loc_at(0, 8) })
+    @typing.label_in_scope(ctx, { name: "anything", loc: loc_at(0, 8), })
   })
   inspect(in_scope, content="false")
 }
@@ -2036,7 +2039,7 @@ test "a rec group's members can name each other in either direction" {
             id("next"),
             {
               mut_: false,
-              typ: Value(Ref({ nullable: true, typ: Type(id(n)) })),
+              typ: Value(Ref({ nullable: true, typ: Type(id(n)), })),
             },
           ),
           info: loc_at(0, 1),
@@ -2052,9 +2055,9 @@ test "a rec group's members can name each other in either direction" {
   // $a points at $b, which is written after it.
   let group = [
     (
-      { desc: (id("a"), ref_to("b")), info: loc_at(0, 1) } :
+      { desc: (id("a"), ref_to("b")), info: loc_at(0, 1), } :
       @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location]),
-    { desc: (id("b"), ref_to("a")), info: loc_at(2, 3) },
+    { desc: (id("b"), ref_to("a")), info: loc_at(2, 3), },
   ]
   let base = @typing.add_type(tc, ctx.diagnostics, group)
   inspect(ctx.diagnostics.collected().length(), content="0")
@@ -2091,8 +2094,8 @@ test "a forward supertype is unbound, and is dropped" {
   let group : Array[
     @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location],
   ] = [
-    { desc: (id("a"), empty_struct(Some("b"))), info: loc_at(0, 1) },
-    { desc: (id("b"), empty_struct(None)), info: loc_at(2, 3) },
+    { desc: (id("a"), empty_struct(Some("b"))), info: loc_at(0, 1), },
+    { desc: (id("b"), empty_struct(None)), info: loc_at(2, 3), },
   ]
   let _ = @typing.add_type(tc, ctx.diagnostics, group)
   inspect(
@@ -2119,7 +2122,7 @@ test "a splice inherits its supertype's fields" {
     (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
     @basic.Location,
   ] {
-    { desc: (id(n), { mut_: false, typ: Value(I32) }), info: loc_at(0, 1) }
+    { desc: (id(n), { mut_: false, typ: Value(I32), }), info: loc_at(0, 1), }
   }
 
   let group : Array[
@@ -2253,7 +2256,7 @@ test "descriptor clauses must be reciprocal, and in order" {
 /// function defined later resolves at all.
 test "every name is declared before any body is checked" {
   let ctx = module_ctx()
-  let sig_ : @ast.FuncType = { params: [], results: [] }
+  let sig_ : @ast.FuncType = { params: [], results: [], }
   let fields : @ast.Module[@basic.Location] = [
     // `later` is defined below the type it names, and `t` below the function.
     {
@@ -2291,7 +2294,7 @@ test "every name is declared before any body is checked" {
     {
       desc: Elem(
         name=id("e"),
-        reftype={ nullable: true, typ: Func },
+        reftype={ nullable: true, typ: Func, },
         mode=EPassive,
         init=[],
         attributes=[],
@@ -2344,7 +2347,7 @@ test "the declaration pass counts memories and honours branches" {
     @ast.ModuleField[@basic.Location],
     @basic.Location,
   ] = {
-    desc: Import(module_={ desc: b"env", info: loc_at(0, 1) }, decl={
+    desc: Import(module_={ desc: b"env", info: loc_at(0, 1), }, decl={
       desc: {
         id: id("first"),
         kind: Memory(
@@ -2365,9 +2368,9 @@ test "the declaration pass counts memories and honours branches" {
     @basic.Location,
   ] = {
     desc: Conditional(
-      cond=Var({ desc: "debug", info: loc_at(8, 9) }),
-      then_fields={ desc: [mem("m", 10)], info: loc_at(10, 11) },
-      else_fields=Some({ desc: [mem("m", 12)], info: loc_at(12, 13) }),
+      cond=Var({ desc: "debug", info: loc_at(8, 9), }),
+      then_fields={ desc: [mem("m", 10)], info: loc_at(10, 11), },
+      else_fields=Some({ desc: [mem("m", 12)], info: loc_at(12, 13), }),
     ),
     info: loc_at(8, 9),
   }
@@ -2394,9 +2397,9 @@ test "entering a function establishes its scope" {
   let ctx = module_ctx()
   let sig_ : @ast.FuncType = {
     params: [
-      { desc: (Some(id("n")), I32), info: loc_at(0, 1) },
+      { desc: (Some(id("n")), I32), info: loc_at(0, 1), },
       // An unnamed parameter binds nothing -- there is no name to bind.
-      { desc: (None, F64), info: loc_at(2, 3) },
+      { desc: (None, F64), info: loc_at(2, 3), },
     ],
     results: [I64],
   }
@@ -2426,7 +2429,7 @@ test "entering a function establishes its scope" {
 test "a start function takes and returns nothing" {
   let ctx = module_ctx()
   let sig_ : @ast.FuncType = {
-    params: [{ desc: (Some(id("n")), I32), info: loc_at(0, 1) }],
+    params: [{ desc: (Some(id("n")), I32), info: loc_at(0, 1), }],
     results: [],
   }
   let attrs : Array[@ast.Attribute] = [
@@ -2466,11 +2469,11 @@ test "a poisoned signature is not reported twice" {
   let sig_ : @ast.FuncType = {
     params: [
       {
-        desc: (Some(id("p")), Ref({ nullable: true, typ: Type(id("nope")) })),
+        desc: (Some(id("p")), Ref({ nullable: true, typ: Type(id("nope")), })),
         info: loc_at(0, 1),
       },
     ],
-    results: [Ref({ nullable: true, typ: Type(id("nope")) })],
+    results: [Ref({ nullable: true, typ: Type(id("nope")), })],
   }
   let fields : @ast.Module[@basic.Location] = [
     {
@@ -2745,14 +2748,14 @@ test "a block whose shape does not resolve has none" {
   let ctx = module_ctx()
   let bad : @ast.FuncType = {
     params: [],
-    results: [Ref({ nullable: true, typ: Type(id("nope")) })],
+    results: [Ref({ nullable: true, typ: Type(id("nope")), })],
   }
   inspect(
     @typing.block_signature(ctx.type_context, ctx.diagnostics, bad) is None,
     content="true",
   )
   let good : @ast.FuncType = {
-    params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+    params: [{ desc: (None, I32), info: loc_at(0, 1), }],
     results: [F64],
   }
   guard! @typing.block_signature(ctx.type_context, ctx.diagnostics, good)
@@ -2841,7 +2844,7 @@ test "an omitted result commits to a width" {
   fn settle(t : @infer.InferredType) -> String {
     let (cells, typ) = @typing.finalize_inferred(
       ctx,
-      { params: [], results: [] },
+      { params: [], results: [], },
       Some(@infer.Cell::make(t)),
     )
     // The cell and the written annotation must agree -- one is what the rest of
@@ -2859,7 +2862,7 @@ test "an omitted result commits to a width" {
   // stays empty rather than inventing a type.
   let (cells, typ) = @typing.finalize_inferred(
     ctx,
-    { params: [], results: [] },
+    { params: [], results: [], },
     None,
   )
   inspect(cells.length(), content="0")
@@ -2879,7 +2882,7 @@ test "an annotation is dropped only when it can be recovered" {
     )
   }
 
-  let annotated : @ast.FuncType = { params: [], results: [I32] }
+  let annotated : @ast.FuncType = { params: [], results: [I32], }
   // Local functions cannot carry defaulted labels, so every knob is passed.
   fn dropped(
     ctx : @typing_env.ModuleContext,
@@ -2971,16 +2974,19 @@ test "an aggregate lookup names the kind it wanted" {
     ])
   }
 
-  declare_type("f", Func({ params: [], results: [] }), 0)
+  declare_type("f", Func({ params: [], results: [], }), 0)
   declare_type(
     "s",
     Struct([
-      { desc: (id("x"), { mut_: false, typ: Value(I32) }), info: loc_at(2, 3) },
-      { desc: (id("y"), { mut_: true, typ: Packed(I8) }), info: loc_at(4, 5) },
+      {
+        desc: (id("x"), { mut_: false, typ: Value(I32), }),
+        info: loc_at(2, 3),
+      },
+      { desc: (id("y"), { mut_: true, typ: Packed(I8), }), info: loc_at(4, 5), },
     ]),
     2,
   )
-  declare_type("a", Array({ mut_: false, typ: Value(F64) }), 6)
+  declare_type("a", Array({ mut_: false, typ: Value(F64), }), 6)
   inspect(ctx.diagnostics.collected().length(), content="0")
   // Each lookup finds its own kind.
   inspect(
@@ -3041,16 +3047,16 @@ test "a packed field reads wider than it is stored" {
     }
   }
 
-  inspect(read({ mut_: false, typ: Packed(I8) }), content="i8")
-  inspect(read({ mut_: false, typ: Packed(I16) }), content="i16")
-  inspect(read({ mut_: false, typ: Value(F64) }), content="f64")
+  inspect(read({ mut_: false, typ: Packed(I8), }), content="i8")
+  inspect(read({ mut_: false, typ: Packed(I16), }), content="i16")
+  inspect(read({ mut_: false, typ: Value(F64), }), content="f64")
   // Written as a plain i32 either way.
   inspect(
-    @typing.unpack_type({ mut_: false, typ: Packed(I8) }) is I32,
+    @typing.unpack_type({ mut_: false, typ: Packed(I8), }) is I32,
     content="true",
   )
   inspect(
-    @typing.unpack_type({ mut_: false, typ: Value(F64) }) is F64,
+    @typing.unpack_type({ mut_: false, typ: Value(F64), }) is F64,
     content="true",
   )
 }
@@ -3061,14 +3067,14 @@ test "a packed field reads wider than it is stored" {
 /// is no null to default a non-null reference to.
 test "only a nullable reference field has a default" {
   fn has(t : @wasm_types.StorageType[@ast.Ident]) -> Bool {
-    @typing.field_has_default({ mut_: false, typ: t })
+    @typing.field_has_default({ mut_: false, typ: t, })
   }
 
   inspect(has(Packed(I8)), content="true")
   inspect(has(Value(I32)), content="true")
   inspect(has(Value(V128)), content="true")
-  inspect(has(Value(Ref({ nullable: true, typ: Any }))), content="true")
-  inspect(has(Value(Ref({ nullable: false, typ: Any }))), content="false")
+  inspect(has(Value(Ref({ nullable: true, typ: Any, }))), content="true")
+  inspect(has(Value(Ref({ nullable: false, typ: Any, }))), content="false")
 }
 
 ///|
@@ -3092,7 +3098,7 @@ test "a field set names a struct only when it names one uniquely" {
                 fields.map(f => {
                   (
                     {
-                      desc: (id(f), { mut_: false, typ: Value(I32) }),
+                      desc: (id(f), { mut_: false, typ: Value(I32), }),
                       info: loc_at(at, at + 1),
                     } :
                     @basic.Annotated[
@@ -3150,7 +3156,7 @@ test "a method call is classified by its receiver as much as its name" {
     ctx.diagnostics,
     "tab",
     loc_at(4, 7),
-    (I32, { nullable: true, typ: Func }),
+    (I32, { nullable: true, typ: Func, }),
   )
   ctx.datas.add(ctx.diagnostics, "seg", loc_at(8, 11), ())
   fn kind(recv : String, meth : String) -> String {
@@ -3207,7 +3213,7 @@ test "a continuation names the function type it continues" {
     ])
   }
 
-  declare_type("ft", Func({ params: [], results: [] }), 0)
+  declare_type("ft", Func({ params: [], results: [], }), 0)
   declare_type("k", Cont(id("ft")), 2)
   declare_type("s", Struct([]), 4)
   fn wrapped(n : String) -> String {
@@ -3246,7 +3252,7 @@ test "function types match contravariantly in their parameters" {
     params : Array[@wasm_types.ValType[@type_store.Id]],
     results : Array[@wasm_types.ValType[@type_store.Id]],
   ) -> @type_store.FuncType[@type_store.Id] {
-    { params, results }
+    { params, results, }
   }
 
   // `eq` is a subtype of `any`.
@@ -3290,7 +3296,7 @@ test "an alignment may not claim more than the access can use" {
       d,
       I32,
       @typing.mem_natural_align(meth),
-      Some({ desc: Int(align), info: loc_at(0, 2) }),
+      Some({ desc: Int(align), info: loc_at(0, 2), }),
       None,
     )
     if d.collected().is_empty() {
@@ -3338,7 +3344,7 @@ test "an offset is bounded by what the address type can reach" {
       at,
       4,
       None,
-      Some({ desc: Int(offset), info: loc_at(0, 2) }),
+      Some({ desc: Int(offset), info: loc_at(0, 2), }),
     )
     if d.collected().is_empty() {
       "accepted"
@@ -3370,8 +3376,8 @@ test "a bad offset and a bad alignment are both reported" {
     d,
     I32,
     4,
-    Some({ desc: Int("8"), info: loc_at(10, 12) }),
-    Some({ desc: Int("4294967296"), info: loc_at(0, 2) }),
+    Some({ desc: Int("8"), info: loc_at(10, 12), }),
+    Some({ desc: Int("4294967296"), info: loc_at(0, 2), }),
   )
   inspect(
     d.collected().map(x => @message.to_plain_string(x.message)).join(" / "),
@@ -3411,7 +3417,7 @@ test "a lane bound comes from the shape, not the value" {
 test "a lane index must be a literal in range" {
   fn complain(bound : Int, lane : @ast.InstrDesc[@basic.Location]) -> String {
     let d = @diagnostic.collector()
-    @typing.check_lane_immediate(d, bound, { desc: lane, info: loc_at(0, 2) })
+    @typing.check_lane_immediate(d, bound, { desc: lane, info: loc_at(0, 2), })
     if d.collected().is_empty() {
       "accepted"
     } else {
@@ -3437,7 +3443,7 @@ test "a lane index must be a literal in range" {
   )
   // Not a literal at all.
   inspect(
-    complain(16, Get({ name: "n", loc: loc_at(0, 1) })),
+    complain(16, Get({ name: "n", loc: loc_at(0, 1), })),
     content="Only integer literals are allowed here.",
   )
 }
@@ -3461,7 +3467,7 @@ test "the dispatcher has an arm for every construct" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -3475,8 +3481,8 @@ test "the dispatcher has an arm for every construct" {
     ArrayFixed(None, [instr(Int("1"), 0)]),
     Suspend(id("tag"), []),
     IfAnnotation(
-      cond=Var({ desc: "debug", info: loc_at(0, 5) }),
-      then_body={ desc: [instr(Nop, 0)], info: loc_at(0, 3) },
+      cond=Var({ desc: "debug", info: loc_at(0, 5), }),
+      then_body={ desc: [instr(Nop, 0)], info: loc_at(0, 3), },
       else_body=None,
     ),
     ContNew(id("k"), instr(Null, 0)),
@@ -3510,7 +3516,7 @@ test "the dispatcher types what it has arms for" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -3526,13 +3532,13 @@ test "the dispatcher types what it has arms for" {
   inspect(typed(Char('a')), content="i32")
   inspect(typed(Null), content="null")
   inspect(typed(Nop), content="")
-  inspect(typed(Get({ name: "g", loc: loc_at(0, 1) })), content="f64")
+  inspect(typed(Get({ name: "g", loc: loc_at(0, 1), })), content="f64")
   // A sequence is a tuple: one value per element, in order.
   inspect(
     typed(
       Sequence([
         instr(Int("1"), 0),
-        instr(Get({ name: "g", loc: loc_at(0, 1) }), 2),
+        instr(Get({ name: "g", loc: loc_at(0, 1), }), 2),
       ]),
     ),
     content="number,f64",
@@ -3557,14 +3563,14 @@ test "a misplaced name or label is reported and recovered from" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
 
   let _ = checker.statement(
     instr(
-      Path({ name: "atomic", loc: loc_at(0, 6) }, {
+      Path({ name: "atomic", loc: loc_at(0, 6), }, {
         name: "fence",
         loc: loc_at(8, 13),
       }),
@@ -3578,7 +3584,7 @@ test "a misplaced name or label is reported and recovered from" {
   // The label is reported, and the expression it labelled is still typed.
   let labelled = checker.statement(
     instr(
-      Labelled({ name: "offset", loc: loc_at(0, 6) }, instr(Int("16"), 8)),
+      Labelled({ name: "offset", loc: loc_at(0, 6), }, instr(Int("16"), 8)),
       0,
     ),
   )
@@ -3607,7 +3613,7 @@ test "a block takes its parameters and leaves its results" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -3618,10 +3624,10 @@ test "a block takes its parameters and leaves its results" {
       Block(
         label=Some(id("out")),
         typ={
-          params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+          params: [{ desc: (None, I32), info: loc_at(0, 1), }],
           results: [F64],
         },
-        block={ desc: [instr(Float("1.5"), 20)], info: loc_at(20, 21) },
+        block={ desc: [instr(Float("1.5"), 20)], info: loc_at(20, 21), },
       ),
       10,
     ),
@@ -3660,7 +3666,7 @@ test "an if consumes its condition and needs an else to produce a value" {
       {
         desc: d,
         info: loc_at(at, at + 1),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       }
     }
@@ -3670,11 +3676,11 @@ test "an if consumes its condition and needs an else to produce a value" {
       instr(
         If(
           label=None,
-          typ={ params: [], results },
+          typ={ params: [], results, },
           cond=instr(Int("1"), 20),
-          if_block={ desc: body, info: loc_at(30, 31) },
+          if_block={ desc: body, info: loc_at(30, 31), },
           else_block=if with_else {
-            Some({ desc: body, info: loc_at(40, 41) })
+            Some({ desc: body, info: loc_at(40, 41), })
           } else {
             None
           },
@@ -3714,7 +3720,7 @@ test "a block with an unresolvable shape is not looked inside" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -3725,9 +3731,9 @@ test "a block with an unresolvable shape is not looked inside" {
         label=None,
         typ={
           params: [],
-          results: [Ref({ nullable: true, typ: Type(id("nope")) })],
+          results: [Ref({ nullable: true, typ: Type(id("nope")), })],
         },
-        block={ desc: [instr(Int("1"), 20)], info: loc_at(20, 21) },
+        block={ desc: [instr(Int("1"), 20)], info: loc_at(20, 21), },
       ),
       10,
     ),
@@ -3755,7 +3761,7 @@ test "a br ends control and a br_if does not" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -3769,7 +3775,7 @@ test "a br ends control and a br_if does not" {
     let checker = @typing.Checker::new(ctx, ops)
     let _ = checker.statement(
       instr(
-        Block(label=Some(id("out")), typ={ params: [], results: [I32] }, block={
+        Block(label=Some(id("out")), typ={ params: [], results: [I32], }, block={
           desc: body,
           info: loc_at(90, 91),
         }),
@@ -3810,7 +3816,7 @@ test "a br_if takes its condition last and passes the rest through" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -3818,7 +3824,7 @@ test "a br_if takes its condition last and passes the rest through" {
   // Inside a block producing an f64: `br_if $out (1.5, 1)`.
   let checked = checker.statement(
     instr(
-      Block(label=Some(id("out")), typ={ params: [], results: [F64] }, block={
+      Block(label=Some(id("out")), typ={ params: [], results: [F64], }, block={
         desc: [
           instr(
             BrIf(
@@ -3855,7 +3861,7 @@ test "a br_table reports its arity once, whatever the targets" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -3863,10 +3869,10 @@ test "a br_table reports its arity once, whatever the targets" {
   // Two targets wanting one value each; the table provides only the index.
   let _ = checker.statement(
     instr(
-      Block(label=Some(id("a")), typ={ params: [], results: [I32] }, block={
+      Block(label=Some(id("a")), typ={ params: [], results: [I32], }, block={
         desc: [
           instr(
-            Block(label=Some(id("b")), typ={ params: [], results: [I32] }, block={
+            Block(label=Some(id("b")), typ={ params: [], results: [I32], }, block={
               desc: [
                 instr(BrTable([id("a"), id("b")], instr(Int("0"), 40)), 40),
               ],
@@ -3902,7 +3908,7 @@ test "a select joins its two branches" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -3948,7 +3954,7 @@ test "the raising forms end control" {
   let ops = @typing.Operands::new()
   ctx.enter_function(return_types=[@infer.valtype_cell(@infer.i32_valtype)])
   ctx.tags.add(ctx.diagnostics, "oops", loc_at(0, 4), {
-    params: [{ desc: (None, F64), info: loc_at(0, 1) }],
+    params: [{ desc: (None, F64), info: loc_at(0, 1), }],
     results: [],
   })
   let checker = @typing.Checker::new(ctx, ops)
@@ -3959,7 +3965,7 @@ test "the raising forms end control" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4006,7 +4012,7 @@ test "an operator's default types operands nothing else constrains" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4021,7 +4027,7 @@ test "an operator's default types operands nothing else constrains" {
     let a_ = instr(a, 0)
     let b_ = instr(b, 4)
     let checked = checker.statement(
-      instr(BinOpI({ desc: op, info: loc_at(2, 3) }, a_, b_), 0),
+      instr(BinOpI({ desc: op, info: loc_at(2, 3), }, a_, b_), 0),
     )
     guard! checked.desc is BinOpI(_, ca, cb)
     (
@@ -4077,7 +4083,7 @@ test "a binary operator blames itself, not its operands" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4085,7 +4091,7 @@ test "a binary operator blames itself, not its operands" {
   let _ = checker.statement(
     instr(
       BinOpI(
-        { desc: Add, info: loc_at(2, 3) },
+        { desc: Add, info: loc_at(2, 3), },
         instr(Float("1.5"), 0),
         instr(Null, 4),
       ),
@@ -4116,14 +4122,14 @@ test "a negation shares its operand's cell" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
 
   let operand = instr(Int("1"), 4)
   let checked = checker.statement(
-    instr(UnOpI({ desc: Neg, info: loc_at(0, 1) }, operand), 0),
+    instr(UnOpI({ desc: Neg, info: loc_at(0, 1), }, operand), 0),
   )
   guard! checked.desc is UnOpI(_, inner)
   let result = checked.info.0[0]
@@ -4149,14 +4155,14 @@ test "a not takes an integer or a reference" {
       {
         desc: d,
         info: loc_at(at, at + 1),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       }
     }
 
     let inner = instr(operand, 4)
     let checked = checker.statement(
-      instr(UnOpI({ desc: op, info: loc_at(0, 1) }, inner), 0),
+      instr(UnOpI({ desc: op, info: loc_at(0, 1), }, inner), 0),
     )
     guard! checked.desc is UnOpI(_, c)
     // Result, operand, and anything reported -- one line, so the three move
@@ -4198,7 +4204,7 @@ test "an assignment checks its value against the target" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4253,7 +4259,7 @@ test "a compound assignment reports an unbound name once" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4264,7 +4270,7 @@ test "a compound assignment reports an unbound name once" {
     instr(
       Set(
         id("nope"),
-        Some({ desc: Add, info: loc_at(6, 8) }),
+        Some({ desc: Add, info: loc_at(6, 8), }),
         instr(Int("1"), 10),
       ),
       4,
@@ -4298,7 +4304,7 @@ test "a tee produces its target's type" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4343,7 +4349,7 @@ test "a let takes its annotation's type, or resolves the value's" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4392,7 +4398,7 @@ test "a tuple let matches names to values in order" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4451,7 +4457,7 @@ test "a bare declaration starts initialized only if it can" {
     let _ = checker.statement({
       desc: Let([(Some(id("x")), Some(typ))], None),
       info: loc_at(0, 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     })
     if ctx.locals.contains("x") {
@@ -4466,9 +4472,9 @@ test "a bare declaration starts initialized only if it can" {
   }
 
   inspect(declared(I32), content="holds a value")
-  inspect(declared(Ref({ nullable: true, typ: Any })), content="holds a value")
+  inspect(declared(Ref({ nullable: true, typ: Any, })), content="holds a value")
   inspect(
-    declared(Ref({ nullable: false, typ: Any })),
+    declared(Ref({ nullable: false, typ: Any, })),
     content="declared, uninitialized",
   )
 }
@@ -4485,7 +4491,7 @@ test "a struct access reads packed and writes plain" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4499,11 +4505,11 @@ test "a struct access reads packed and writes plain" {
           {
             typ: Struct([
               {
-                desc: (id("x"), { mut_: true, typ: Packed(I8) }),
+                desc: (id("x"), { mut_: true, typ: Packed(I8), }),
                 info: loc_at(0, 1),
               },
               {
-                desc: (id("y"), { mut_: false, typ: Value(F64) }),
+                desc: (id("y"), { mut_: false, typ: Value(F64), }),
                 info: loc_at(2, 3),
               },
             ]),
@@ -4522,7 +4528,7 @@ test "a struct access reads packed and writes plain" {
       @typing.internalize_valtype(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: false, typ: Type(id("point")) }),
+        Ref({ nullable: false, typ: Type(id("point")), }),
       ),
     )
     (ctx, @typing.Checker::new(ctx, @typing.Operands::new()))
@@ -4590,7 +4596,7 @@ test "an array index reads its element type" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4601,7 +4607,7 @@ test "an array index reads its element type" {
       desc: (
         id("bytes"),
         {
-          typ: Array({ mut_: true, typ: Packed(I8) }),
+          typ: Array({ mut_: true, typ: Packed(I8), }),
           supertype: None,
           final_: true,
           descriptor: None,
@@ -4617,7 +4623,7 @@ test "an array index reads its element type" {
     @typing.internalize_valtype(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: false, typ: Type(id("bytes")) }),
+      Ref({ nullable: false, typ: Type(id("bytes")), }),
     ),
   )
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -4651,7 +4657,7 @@ test "a struct literal finds its type from its fields" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4664,8 +4670,14 @@ test "a struct literal finds its type from its fields" {
         @basic.Location,
       ],
     ] = [
-      { desc: (id("x"), { mut_: false, typ: Value(I32) }), info: loc_at(0, 1) },
-      { desc: (id("y"), { mut_: false, typ: Value(F64) }), info: loc_at(2, 3) },
+      {
+        desc: (id("x"), { mut_: false, typ: Value(I32), }),
+        info: loc_at(0, 1),
+      },
+      {
+        desc: (id("y"), { mut_: false, typ: Value(F64), }),
+        info: loc_at(2, 3),
+      },
     ]
     let module_ : @ast.Module[@basic.Location] = [
       {
@@ -4753,7 +4765,7 @@ test "a punned field is typed as a read and stays punned" {
       @basic.Location,
     ],
   ] = [
-    { desc: (id("x"), { mut_: false, typ: Value(F64) }), info: loc_at(0, 1) },
+    { desc: (id("x"), { mut_: false, typ: Value(F64), }), info: loc_at(0, 1), },
   ]
   let module_ : @ast.Module[@basic.Location] = [
     {
@@ -4781,7 +4793,7 @@ test "a punned field is typed as a read and stays punned" {
   let checked = checker.statement({
     desc: Struct(Some(id("box")), [(id("x"), None)]),
     info: loc_at(0, 1),
-    hints: { branch: None, freq: None, targets: None },
+    hints: { branch: None, freq: None, targets: None, },
     expected: None,
   })
   inspect(ctx.diagnostics.collected().length(), content="0")
@@ -4808,14 +4820,20 @@ test "a default construction needs every field to have a zero" {
       {
         desc: (
           id("a"),
-          { mut_: false, typ: Value(Ref({ nullable: ref_nullable, typ: Any })) },
+          {
+            mut_: false,
+            typ: Value(Ref({ nullable: ref_nullable, typ: Any, })),
+          },
         ),
         info: loc_at(0, 1),
       },
       {
         desc: (
           id("b"),
-          { mut_: false, typ: Value(Ref({ nullable: ref_nullable, typ: Eq })) },
+          {
+            mut_: false,
+            typ: Value(Ref({ nullable: ref_nullable, typ: Eq, })),
+          },
         ),
         info: loc_at(2, 3),
       },
@@ -4845,7 +4863,7 @@ test "a default construction needs every field to have a zero" {
     let _ = checker.statement({
       desc: StructDefault(Some(id("holder"))),
       info: loc_at(0, 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     })
     ctx.diagnostics
@@ -4875,7 +4893,7 @@ test "an array construction pins its elements to the element type" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -4891,7 +4909,7 @@ test "an array construction pins its elements to the element type" {
             desc: (
               id("arr"),
               {
-                typ: Array({ mut_: true, typ: elem }),
+                typ: Array({ mut_: true, typ: elem, }),
                 supertype: None,
                 final_: true,
                 descriptor: None,
@@ -4970,7 +4988,7 @@ test "a default array needs an element type with a zero" {
               {
                 typ: Array({
                   mut_: true,
-                  typ: Value(Ref({ nullable, typ: Any })),
+                  typ: Value(Ref({ nullable, typ: Any, })),
                 }),
                 supertype: None,
                 final_: true,
@@ -4990,11 +5008,11 @@ test "a default array needs an element type with a zero" {
       desc: ArrayDefault(Some(id("arr")), {
         desc: Int("4"),
         info: loc_at(10, 11),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       }),
       info: loc_at(0, 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     })
     ctx.diagnostics
@@ -5022,8 +5040,8 @@ test "an unrelated cast can never succeed" {
     ih : @wasm_types.HeapType[@type_store.Id],
   ) -> @infer.InferredType {
     Valtype({
-      typ: Ref({ nullable, typ: h }),
-      internal: Ref({ nullable, typ: ih }),
+      typ: Ref({ nullable, typ: h, }),
+      internal: Ref({ nullable, typ: ih, }),
       anon_comptype: None,
     })
   }
@@ -5089,8 +5107,8 @@ test "a chain of trapping casts is reported once" {
     ih : @wasm_types.HeapType[@type_store.Id],
   ) -> @infer.InferredType {
     Valtype({
-      typ: Ref({ nullable: false, typ: h }),
-      internal: Ref({ nullable: false, typ: ih }),
+      typ: Ref({ nullable: false, typ: h, }),
+      internal: Ref({ nullable: false, typ: ih, }),
       anon_comptype: None,
     })
   }
@@ -5141,7 +5159,7 @@ test "a cast produces its target and a test produces an answer" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -5154,7 +5172,7 @@ test "a cast produces its target and a test produces an answer" {
       @typing.internalize_valtype(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: true, typ: Any }),
+        Ref({ nullable: true, typ: Any, }),
       ),
     )
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -5177,13 +5195,16 @@ test "a cast produces its target and a test produces an answer" {
   // A reference cast produces the target reference.
   inspect(
     typed(
-      Cast(instr(Get(id("r")), 4), Value(Ref({ nullable: false, typ: Struct }))),
+      Cast(
+        instr(Get(id("r")), 4),
+        Value(Ref({ nullable: false, typ: Struct, })),
+      ),
     ),
     content="&struct | 0",
   )
   // A test always answers with an i32.
   inspect(
-    typed(Test(instr(Get(id("r")), 4), { nullable: false, typ: Struct })),
+    typed(Test(instr(Get(id("r")), 4), { nullable: false, typ: Struct, })),
     content="i32 | 0",
   )
   // A non-null assertion strips the nullability and keeps the heap type.
@@ -5206,7 +5227,7 @@ test "an inline function cast target mints a type" {
     @typing.internalize_valtype(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: true, typ: Func }),
+      Ref({ nullable: true, typ: Func, }),
     ),
   )
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -5215,13 +5236,13 @@ test "an inline function cast target mints a type" {
       {
         desc: Get(id("f")),
         info: loc_at(4, 5),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       },
-      Func(nullable=false, sign={ params: [], results: [I32] }),
+      Func(nullable=false, sign={ params: [], results: [I32], }),
     ),
     info: loc_at(0, 1),
-    hints: { branch: None, freq: None, targets: None },
+    hints: { branch: None, freq: None, targets: None, },
     expected: None,
   })
   inspect(ctx.diagnostics.collected().length(), content="0")
@@ -5250,7 +5271,7 @@ test "a string builds the canonical byte array" {
             id("bytes"),
             {
               // The same shape as `<string>`: mutable i8.
-              typ: Array({ mut_: true, typ: Packed(I8) }),
+              typ: Array({ mut_: true, typ: Packed(I8), }),
               supertype: None,
               final_: true,
               descriptor: None,
@@ -5270,7 +5291,7 @@ test "a string builds the canonical byte array" {
       desc: Func(
         name=id("f", at=10),
         typ=None,
-        sign=Some({ params: [], results: [] }),
+        sign=Some({ params: [], results: [], }),
         body=(
           None,
           [
@@ -5280,12 +5301,12 @@ test "a string builds the canonical byte array" {
                 Some({
                   desc: Str(None, b"hi"),
                   info: loc_at(20, 24),
-                  hints: { branch: None, freq: None, targets: None },
+                  hints: { branch: None, freq: None, targets: None, },
                   expected: None,
                 }),
               ),
               info: loc_at(20, 24),
-              hints: { branch: None, freq: None, targets: None },
+              hints: { branch: None, freq: None, targets: None, },
               expected: None,
             },
           ],
@@ -5319,7 +5340,7 @@ test "a string builds the canonical byte array" {
   let checked = checker.statement({
     desc: Str(None, b"hi"),
     info: loc_at(0, 4),
-    hints: { branch: None, freq: None, targets: None },
+    hints: { branch: None, freq: None, targets: None, },
     expected: None,
   })
   // Nothing NEW: the canonical array is already registered by the time a second
@@ -5354,7 +5375,7 @@ test "a string's element type decides what it may hold" {
             desc: (
               id("chars"),
               {
-                typ: Array({ mut_: true, typ: elem }),
+                typ: Array({ mut_: true, typ: elem, }),
                 supertype: None,
                 final_: true,
                 descriptor: None,
@@ -5372,7 +5393,7 @@ test "a string's element type decides what it may hold" {
     let _ = checker.statement({
       desc: Str(Some(id("chars")), bytes),
       info: loc_at(0, 4),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     })
     ctx.diagnostics
@@ -5411,7 +5432,7 @@ test "a segment array picks its segment space by element type" {
             desc: (
               id("arr"),
               {
-                typ: Array({ mut_: true, typ: elem }),
+                typ: Array({ mut_: true, typ: elem, }),
                 supertype: None,
                 final_: true,
                 descriptor: None,
@@ -5435,7 +5456,7 @@ test "a segment array picks its segment space by element type" {
       {
         desc: d,
         info: loc_at(at, at + 1),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       }
     }
@@ -5462,7 +5483,7 @@ test "a segment array picks its segment space by element type" {
   inspect(build(Value(I32)), content="")
   // A reference element looks in the ELEMENT segments, where there is none.
   inspect(
-    build(Value(Ref({ nullable: true, typ: Func }))),
+    build(Value(Ref({ nullable: true, typ: Func, }))),
     content="The element segment 's' is not bound.",
   )
 }
@@ -5532,11 +5553,11 @@ test "a descriptor lookup follows the clause and keeps exactness" {
       desc: GetDescriptor({
         desc: Get(id("o")),
         info: loc_at(10, 11),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       }),
       info: loc_at(0, 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     })
     c.info.0.map(t => @infer.to_string(t)).join(",")
@@ -5560,7 +5581,7 @@ test "a catch delivers its payload to the label it names" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -5572,7 +5593,7 @@ test "a catch delivers its payload to the label it names" {
   ) -> String {
     let ctx = module_ctx()
     ctx.tags.add(ctx.diagnostics, "oops", loc_at(0, 4), {
-      params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+      params: [{ desc: (None, I32), info: loc_at(0, 1), }],
       results: [],
     })
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -5580,15 +5601,15 @@ test "a catch delivers its payload to the label it names" {
       instr(
         Block(
           label=Some(id("h")),
-          typ={ params: [], results: handler_results },
+          typ={ params: [], results: handler_results, },
           block={
             desc: [
               instr(
                 TryTable(
                   label=None,
-                  typ={ params: [], results: [] },
+                  typ={ params: [], results: [], },
                   catches~,
-                  block={ desc: [], info: loc_at(60, 61) },
+                  block={ desc: [], info: loc_at(60, 61), },
                 ),
                 30,
               ),
@@ -5611,7 +5632,7 @@ test "a catch delivers its payload to the label it names" {
   inspect(run([I32], [Catch(id("oops"), id("h"))]), content="")
   // A `_ref` catch appends the exception itself, so the handler can rethrow.
   inspect(
-    run([I32, Ref({ nullable: false, typ: Exn })], [
+    run([I32, Ref({ nullable: false, typ: Exn, })], [
       CatchRef(id("oops"), id("h")),
     ]),
     content="",
@@ -5620,7 +5641,7 @@ test "a catch delivers its payload to the label it names" {
   inspect(run([], [CatchAll(id("h"))]), content="")
   // And a catch-all `_ref` delivers only the exception.
   inspect(
-    run([Ref({ nullable: false, typ: Exn })], [CatchAllRef(id("h"))]),
+    run([Ref({ nullable: false, typ: Exn, })], [CatchAllRef(id("h"))]),
     content="",
   )
   // Delivering one value to a handler that wants none is an arity complaint.
@@ -5647,14 +5668,14 @@ test "a try handler is entered on its tag's payload" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
 
   let ctx = module_ctx()
   ctx.tags.add(ctx.diagnostics, "oops", loc_at(0, 4), {
-    params: [{ desc: (None, F64), info: loc_at(0, 1) }],
+    params: [{ desc: (None, F64), info: loc_at(0, 1), }],
     results: [],
   })
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -5663,9 +5684,9 @@ test "a try handler is entered on its tag's payload" {
     instr(
       Try(
         label=Some(id("t")),
-        typ={ params: [], results: [F64] },
-        block={ desc: [instr(Float("1.5"), 20)], info: loc_at(20, 21) },
-        catches=[(id("oops"), { desc: [], info: loc_at(40, 41) })],
+        typ={ params: [], results: [F64], },
+        block={ desc: [instr(Float("1.5"), 20)], info: loc_at(20, 21), },
+        catches=[(id("oops"), { desc: [], info: loc_at(40, 41), })],
         catch_all=None,
       ),
       10,
@@ -5690,18 +5711,18 @@ test "a try-catch arm completes into the next arm's entry" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
 
   let ctx = module_ctx()
   ctx.tags.add(ctx.diagnostics, "a", loc_at(0, 1), {
-    params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+    params: [{ desc: (None, I32), info: loc_at(0, 1), }],
     results: [],
   })
   ctx.tags.add(ctx.diagnostics, "b", loc_at(2, 3), {
-    params: [{ desc: (None, I32), info: loc_at(2, 3) }],
+    params: [{ desc: (None, I32), info: loc_at(2, 3), }],
     results: [],
   })
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -5711,20 +5732,20 @@ test "a try-catch arm completes into the next arm's entry" {
     instr(
       TryCatch(
         label=Some(id("t")),
-        typ={ params: [], results: [I32] },
-        block={ desc: [instr(Int("1"), 20)], info: loc_at(20, 21) },
+        typ={ params: [], results: [I32], },
+        block={ desc: [instr(Int("1"), 20)], info: loc_at(20, 21), },
         arms=[
           {
             arm_tag: Some(id("a")),
             arm_ref: false,
             arm_types: [],
-            arm_body: { desc: [], info: loc_at(40, 41) },
+            arm_body: { desc: [], info: loc_at(40, 41), },
           },
           {
             arm_tag: Some(id("b")),
             arm_ref: false,
             arm_types: [],
-            arm_body: { desc: [], info: loc_at(50, 51) },
+            arm_body: { desc: [], info: loc_at(50, 51), },
           },
         ],
       ),
@@ -5743,8 +5764,11 @@ test "a try-catch arm completes into the next arm's entry" {
     instr(
       TryCatch(
         label=None,
-        typ={ params: [{ desc: (None, I32), info: loc_at(0, 1) }], results: [] },
-        block={ desc: [], info: loc_at(20, 21) },
+        typ={
+          params: [{ desc: (None, I32), info: loc_at(0, 1), }],
+          results: [],
+        },
+        block={ desc: [], info: loc_at(20, 21), },
         arms=[],
       ),
       10,
@@ -5770,7 +5794,7 @@ test "a while is checked as the loop it becomes" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -5789,7 +5813,7 @@ test "a while is checked as the loop it becomes" {
           label~,
           cond=instr(cond, 20),
           step=step.map(sd => instr(sd, 30)),
-          block={ desc: [instr(Nop, 40)], info: loc_at(40, 41) },
+          block={ desc: [instr(Nop, 40)], info: loc_at(40, 41), },
         ),
         10,
       ),
@@ -5850,7 +5874,7 @@ test "a dispatch is checked as the block ladder it becomes" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -5865,9 +5889,9 @@ test "a dispatch is checked as the block ladder it becomes" {
         cases=[id("a"), id("b")],
         default=id("d"),
         arms=[
-          (id("a"), { desc: [instr(Nop, 30)], info: loc_at(30, 31) }),
-          (id("b"), { desc: [instr(Nop, 40)], info: loc_at(40, 41) }),
-          (id("d"), { desc: [instr(Nop, 50)], info: loc_at(50, 51) }),
+          (id("a"), { desc: [instr(Nop, 30)], info: loc_at(30, 31), }),
+          (id("b"), { desc: [instr(Nop, 40)], info: loc_at(40, 41), }),
+          (id("d"), { desc: [instr(Nop, 50)], info: loc_at(50, 51), }),
         ],
       ),
       10,
@@ -5896,7 +5920,7 @@ test "a dispatch may not name one arm twice" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -5911,8 +5935,8 @@ test "a dispatch may not name one arm twice" {
         cases=[id("a")],
         default=id("a"),
         arms=[
-          (id("a"), { desc: [], info: loc_at(30, 31) }),
-          (id("a"), { desc: [], info: loc_at(40, 41) }),
+          (id("a"), { desc: [], info: loc_at(30, 31), }),
+          (id("a"), { desc: [], info: loc_at(40, 41), }),
         ],
       ),
       10,
@@ -5936,7 +5960,7 @@ test "the null branches put the non-null form on opposite paths" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -5950,14 +5974,14 @@ test "the null branches put the non-null form on opposite paths" {
     @typing.internalize_valtype(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: true, typ: Any }),
+      Ref({ nullable: true, typ: Any, }),
     ),
   )
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   let mut seen = ""
   let _ = checker.statement(
     instr(
-      Block(label=Some(id("out")), typ={ params: [], results: [] }, block={
+      Block(label=Some(id("out")), typ={ params: [], results: [], }, block={
         desc: [
           instr(BrOnNull(id("out"), instr(Get(id("v")), 30)), 20),
           instr(Nop, 40),
@@ -5986,24 +6010,24 @@ test "a br_on_null on a bare null falls through to the bottom reference" {
   let ctx = module_ctx()
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   let checked = checker.statement({
-    desc: Block(label=Some(id("out")), typ={ params: [], results: [] }, block={
+    desc: Block(label=Some(id("out")), typ={ params: [], results: [], }, block={
       desc: [
         {
           desc: BrOnNull(id("out"), {
             desc: Null,
             info: loc_at(30, 31),
-            hints: { branch: None, freq: None, targets: None },
+            hints: { branch: None, freq: None, targets: None, },
             expected: None,
           }),
           info: loc_at(20, 21),
-          hints: { branch: None, freq: None, targets: None },
+          hints: { branch: None, freq: None, targets: None, },
           expected: None,
         },
       ],
       info: loc_at(20, 21),
     }),
     info: loc_at(10, 11),
-    hints: { branch: None, freq: None, targets: None },
+    hints: { branch: None, freq: None, targets: None, },
     expected: None,
   })
   guard! checked.desc is Block(block~, ..)
@@ -6050,7 +6074,7 @@ test "the lub climbs to a common supertype, or finds none" {
               // type after interning, which would make this test say nothing.
               typ: Struct([
                 {
-                  desc: (id("bark"), { mut_: false, typ: Value(I32) }),
+                  desc: (id("bark"), { mut_: false, typ: Value(I32), }),
                   info: loc_at(10, 11),
                 },
               ]),
@@ -6073,7 +6097,7 @@ test "the lub climbs to a common supertype, or finds none" {
             {
               typ: Struct([
                 {
-                  desc: (id("purr"), { mut_: false, typ: Value(F64) }),
+                  desc: (id("purr"), { mut_: false, typ: Value(F64), }),
                   info: loc_at(20, 21),
                 },
               ]),
@@ -6094,7 +6118,7 @@ test "the lub climbs to a common supertype, or finds none" {
           desc: (
             id("thing"),
             {
-              typ: Array({ mut_: false, typ: Value(I32) }),
+              typ: Array({ mut_: false, typ: Value(I32), }),
               supertype: None,
               final_: true,
               descriptor: None,
@@ -6117,8 +6141,8 @@ test "the lub climbs to a common supertype, or finds none" {
         @infer.to_string(
           @infer.Cell::make(
             Valtype({
-              typ: Ref({ nullable: false, typ: h }),
-              internal: Ref({ nullable: false, typ: Any }),
+              typ: Ref({ nullable: false, typ: h, }),
+              internal: Ref({ nullable: false, typ: Any, }),
               anon_comptype: None,
             }),
           ),
@@ -6153,8 +6177,8 @@ test "a lub is nullable if either side was" {
     match
       @typing.val_lub(
         ctx.type_context,
-        Ref({ nullable: n1, typ: Struct }),
-        Ref({ nullable: n2, typ: Array }),
+        Ref({ nullable: n1, typ: Struct, }),
+        Ref({ nullable: n2, typ: Array, }),
       ) {
       Some(v) =>
         match
@@ -6185,7 +6209,7 @@ test "the cast branches put target and residual on opposite paths" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -6198,7 +6222,7 @@ test "the cast branches put target and residual on opposite paths" {
       @typing.internalize_valtype(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: true, typ: Any }),
+        Ref({ nullable: true, typ: Any, }),
       ),
     )
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -6221,9 +6245,9 @@ test "the cast branches put target and residual on opposite paths" {
             params: [],
             results: [
               if fail {
-                Ref({ nullable: true, typ: Any })
+                Ref({ nullable: true, typ: Any, })
               } else {
-                Ref({ nullable: false, typ: Struct })
+                Ref({ nullable: false, typ: Struct, })
               },
             ],
           },
@@ -6231,7 +6255,7 @@ test "the cast branches put target and residual on opposite paths" {
           // branch left is absorbed by dead code rather than checked against
           // the block's result -- which is what the BRANCH delivers, not what
           // falls through.
-          block={ desc: [br, instr(Unreachable, 50)], info: loc_at(20, 21) },
+          block={ desc: [br, instr(Unreachable, 50)], info: loc_at(20, 21), },
         ),
         10,
       ),
@@ -6266,7 +6290,7 @@ test "a cast branch may not target a continuation" {
           desc: (
             id("ft"),
             {
-              typ: Func({ params: [], results: [] }),
+              typ: Func({ params: [], results: [], }),
               supertype: None,
               final_: true,
               descriptor: None,
@@ -6304,19 +6328,19 @@ test "a cast branch may not target a continuation" {
     @typing.internalize_valtype(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: true, typ: Any }),
+      Ref({ nullable: true, typ: Any, }),
     ),
   )
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   let _ = checker.statement({
-    desc: BrOnCast(id("out"), { nullable: false, typ: Type(id("k")) }, {
+    desc: BrOnCast(id("out"), { nullable: false, typ: Type(id("k")), }, {
       desc: Get(id("v")),
       info: loc_at(30, 31),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }),
     info: loc_at(20, 21),
-    hints: { branch: None, freq: None, targets: None },
+    hints: { branch: None, freq: None, targets: None, },
     expected: None,
   })
   inspect(
@@ -6337,7 +6361,7 @@ test "a match is checked as the test ladder it becomes" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -6349,7 +6373,7 @@ test "a match is checked as the test ladder it becomes" {
     @typing.internalize_valtype(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: true, typ: Any }),
+      Ref({ nullable: true, typ: Any, }),
     ),
   )
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -6363,13 +6387,13 @@ test "a match is checked as the test ladder it becomes" {
         // owe a value its fall-through never produces -- which the lowered
         // block check is exactly what catches.
         arms=[
-          (MatchNull, { desc: [instr(Unreachable, 30)], info: loc_at(30, 31) }),
+          (MatchNull, { desc: [instr(Unreachable, 30)], info: loc_at(30, 31), }),
           (
-            MatchCast(Some(id("s")), { nullable: false, typ: Struct }),
-            { desc: [instr(Unreachable, 40)], info: loc_at(40, 41) },
+            MatchCast(Some(id("s")), { nullable: false, typ: Struct, }),
+            { desc: [instr(Unreachable, 40)], info: loc_at(40, 41), },
           ),
         ],
-        default={ desc: [instr(Nop, 50)], info: loc_at(50, 51) },
+        default={ desc: [instr(Nop, 50)], info: loc_at(50, 51), },
       ),
       10,
     ),
@@ -6401,7 +6425,7 @@ test "a match with no arms is just its default" {
     @typing.internalize_valtype(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: true, typ: Any }),
+      Ref({ nullable: true, typ: Any, }),
     ),
   )
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -6410,7 +6434,7 @@ test "a match with no arms is just its default" {
       scrutinee={
         desc: Get(id("v")),
         info: loc_at(20, 21),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       },
       arms=[],
@@ -6419,7 +6443,7 @@ test "a match with no arms is just its default" {
           {
             desc: Nop,
             info: loc_at(50, 51),
-            hints: { branch: None, freq: None, targets: None },
+            hints: { branch: None, freq: None, targets: None, },
             expected: None,
           },
         ],
@@ -6427,7 +6451,7 @@ test "a match with no arms is just its default" {
       },
     ),
     info: loc_at(10, 11),
-    hints: { branch: None, freq: None, targets: None },
+    hints: { branch: None, freq: None, targets: None, },
     expected: None,
   })
   inspect(ctx.diagnostics.collected().length(), content="0")
@@ -6454,7 +6478,7 @@ test "a call pins its arguments to the parameter types" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -6469,7 +6493,7 @@ test "a call pins its arguments to the parameter types" {
               id("ft"),
               {
                 typ: Func({
-                  params: [{ desc: (None, F64), info: loc_at(0, 1) }],
+                  params: [{ desc: (None, F64), info: loc_at(0, 1), }],
                   results: [I64],
                 }),
                 supertype: None,
@@ -6544,7 +6568,7 @@ test "a tail call must return what its caller promised" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -6558,7 +6582,7 @@ test "a tail call must return what its caller promised" {
             desc: (
               id("ft"),
               {
-                typ: Func({ params: [], results: [I64] }),
+                typ: Func({ params: [], results: [I64], }),
                 supertype: None,
                 final_: true,
                 descriptor: None,
@@ -6622,7 +6646,7 @@ test "a memory access takes operands and labelled immediates" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -6661,7 +6685,7 @@ test "a memory access takes operands and labelled immediates" {
   }
 
   fn labelled(name : String, v : String) -> @ast.Instr[@basic.Location] {
-    instr(Labelled({ name, loc: loc_at(40, 46) }, instr(Int(v), 48)), 40)
+    instr(Labelled({ name, loc: loc_at(40, 46), }, instr(Int(v), 48)), 40)
   }
 
   // A load produces the width it names, remembering how narrow it was.
@@ -6709,7 +6733,7 @@ test "a narrowing store accepts a value wider than it writes" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -6767,7 +6791,7 @@ test "management calls take their receiver's shape" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -6784,7 +6808,7 @@ test "management calls take their receiver's shape" {
       ctx.diagnostics,
       "tab",
       loc_at(10, 13),
-      (I32, { nullable: true, typ: Func }),
+      (I32, { nullable: true, typ: Func, }),
     )
     ctx.datas.add(ctx.diagnostics, "seg", loc_at(14, 17), ())
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -6868,7 +6892,7 @@ test "a cross-memory copy takes its length at the narrower width" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -6930,7 +6954,7 @@ test "an atomic access demands exactly its natural alignment" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -6968,7 +6992,7 @@ test "an atomic access demands exactly its natural alignment" {
   }
 
   fn labelled(name : String, v : String) -> @ast.Instr[@basic.Location] {
-    instr(Labelled({ name, loc: loc_at(40, 46) }, instr(Int(v), 48)), 40)
+    instr(Labelled({ name, loc: loc_at(40, 46), }, instr(Int(v), 48)), 40)
   }
 
   let addr = instr(Int("0"), 30)
@@ -7007,7 +7031,7 @@ test "a narrow atomic rmw takes its width from its value" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -7063,7 +7087,7 @@ test "a simd memory access needs its lane immediate" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -7101,7 +7125,7 @@ test "a simd memory access needs its lane immediate" {
   }
 
   fn labelled(name : String, v : String) -> @ast.Instr[@basic.Location] {
-    instr(Labelled({ name, loc: loc_at(40, 46) }, instr(Int(v), 48)), 40)
+    instr(Labelled({ name, loc: loc_at(40, 46), }, instr(Int(v), 48)), 40)
   }
 
   let addr = instr(Int("0"), 30)
@@ -7140,7 +7164,7 @@ test "a simd operation takes its receiver as its first operand" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -7154,14 +7178,14 @@ test "a simd operation takes its receiver as its first operand" {
     @typing.bind_local(
       ctx,
       id("v"),
-      Some({ typ: V128, internal: V128, anon_comptype: None }),
+      Some({ typ: V128, internal: V128, anon_comptype: None, }),
     )
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
     let c = checker.statement(
       instr(
         Call(
           instr(
-            StructGet(instr(recv, 20), { name: meth, loc: loc_at(24, 36) }),
+            StructGet(instr(recv, 20), { name: meth, loc: loc_at(24, 36), }),
             20,
           ),
           args,
@@ -7224,7 +7248,7 @@ test "cont.bind must leave the tail and results unchanged" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -7249,7 +7273,7 @@ test "cont.bind must leave the tail and results unchanged" {
                 typ: Func({
                   params: ps.map(p => {
                     (
-                      { desc: (None, p), info: loc_at(at, at + 1) } :
+                      { desc: (None, p), info: loc_at(at, at + 1), } :
                       @basic.Annotated[
                         (@ast.Ident?, @wasm_types.ValType[@ast.Ident]),
                         @basic.Location,
@@ -7308,7 +7332,7 @@ test "cont.bind must leave the tail and results unchanged" {
       @typing.internalize_valtype(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: true, typ: Type(id("sc")) }),
+        Ref({ nullable: true, typ: Type(id("sc")), }),
       ),
     )
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -7348,7 +7372,7 @@ test "cont.bind must leave the tail and results unchanged" {
 test "a suspend takes back what its tag returns" {
   let ctx = module_ctx()
   ctx.tags.add(ctx.diagnostics, "ask", loc_at(0, 3), {
-    params: [{ desc: (None, I32), info: loc_at(0, 1) }],
+    params: [{ desc: (None, I32), info: loc_at(0, 1), }],
     results: [F64],
   })
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -7357,12 +7381,12 @@ test "a suspend takes back what its tag returns" {
       {
         desc: Int("1"),
         info: loc_at(30, 31),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       },
     ]),
     info: loc_at(10, 11),
-    hints: { branch: None, freq: None, targets: None },
+    hints: { branch: None, freq: None, targets: None, },
     expected: None,
   })
   inspect(ctx.diagnostics.collected().length(), content="0")
@@ -7384,7 +7408,7 @@ test "a resume handler receives a continuation of the rest" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -7404,7 +7428,7 @@ test "a resume handler receives a continuation of the rest" {
               typ: Func({
                 params: ps.map(p => {
                   (
-                    { desc: (None, p), info: loc_at(at, at + 1) } :
+                    { desc: (None, p), info: loc_at(at, at + 1), } :
                     @basic.Annotated[
                       (@ast.Ident?, @wasm_types.ValType[@ast.Ident]),
                       @basic.Location,
@@ -7471,7 +7495,7 @@ test "a resume handler receives a continuation of the rest" {
       @typing.internalize_valtype(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: true, typ: Type(id("k")) }),
+        Ref({ nullable: true, typ: Type(id("k")), }),
       ),
     )
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -7479,7 +7503,7 @@ test "a resume handler receives a continuation of the rest" {
       instr(
         Block(
           label=Some(id("h")),
-          typ={ params: [], results: handler_results },
+          typ={ params: [], results: handler_results, },
           block={
             desc: [
               instr(
@@ -7505,7 +7529,7 @@ test "a resume handler receives a continuation of the rest" {
   }
 
   // The handler takes exactly the continuation of the rest.
-  inspect(run([Ref({ nullable: true, typ: Type(id("kr")) })]), content=" | 0")
+  inspect(run([Ref({ nullable: true, typ: Type(id("kr")), })]), content=" | 0")
   // A handler taking something that is not a continuation at all.
   inspect(
     run([I32]),
@@ -7514,7 +7538,7 @@ test "a resume handler receives a continuation of the rest" {
   // A continuation of the WRONG rest -- one that produces an f64 where the
   // resume produces an i32.
   inspect(
-    run([Ref({ nullable: true, typ: Type(id("k")) })]),
+    run([Ref({ nullable: true, typ: Type(id("k")), })]),
     content="Type mismatch in this stack switching instruction: this handler must take the tag's parameters followed by a continuation of the remaining result type. | 0",
   )
 }
@@ -7541,7 +7565,7 @@ test "a switch passes the current continuation in the last slot" {
               typ: Func({
                 params: ps.map(p => {
                   (
-                    { desc: (None, p), info: loc_at(at, at + 1) } :
+                    { desc: (None, p), info: loc_at(at, at + 1), } :
                     @basic.Annotated[
                       (@ast.Ident?, @wasm_types.ValType[@ast.Ident]),
                       @basic.Location,
@@ -7595,7 +7619,7 @@ test "a switch passes the current continuation in the last slot" {
   ) -> String {
     let ctx = module_ctx()
     let last : @wasm_types.ValType[@ast.Ident] = if last_is_cont {
-      Ref({ nullable: true, typ: Type(id("back")) })
+      Ref({ nullable: true, typ: Type(id("back")), })
     } else {
       I32
     }
@@ -7616,7 +7640,7 @@ test "a switch passes the current continuation in the last slot" {
       @typing.internalize_valtype(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: true, typ: Type(id("fwd")) }),
+        Ref({ nullable: true, typ: Type(id("fwd")), }),
       ),
     )
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -7625,12 +7649,12 @@ test "a switch passes the current continuation in the last slot" {
         {
           desc: Get(id("k")),
           info: loc_at(30, 31),
-          hints: { branch: None, freq: None, targets: None },
+          hints: { branch: None, freq: None, targets: None, },
           expected: None,
         },
       ]),
       info: loc_at(10, 11),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     })
     c.info.0.map(t => @infer.to_string(t)).join(",") +
@@ -7670,13 +7694,13 @@ test "an on clause belongs to a resume" {
         {
           desc: inner,
           info: loc_at(20, 21),
-          hints: { branch: None, freq: None, targets: None },
+          hints: { branch: None, freq: None, targets: None, },
           expected: None,
         },
         [],
       ),
       info: loc_at(10, 11),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     })
     ctx.diagnostics
@@ -7712,7 +7736,7 @@ test "a descriptor construction recovers its type from the descriptor" {
           {
             typ: Struct([
               {
-                desc: (id("x"), { mut_: false, typ: Value(I32) }),
+                desc: (id("x"), { mut_: false, typ: Value(I32), }),
                 info: loc_at(0, 1),
               },
             ]),
@@ -7744,7 +7768,7 @@ test "a descriptor construction recovers its type from the descriptor" {
       @typing.internalize_valtype(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: false, typ: Type(id("d")) }),
+        Ref({ nullable: false, typ: Type(id("d")), }),
       ),
     )
     @typing.bind_local(ctx, id("bad"), Some(@infer.i32_valtype))
@@ -7758,7 +7782,7 @@ test "a descriptor construction recovers its type from the descriptor" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -7804,7 +7828,7 @@ test "a descriptor construction recovers its type from the descriptor" {
     @typing.internalize_valtype(
       ctx3.type_context,
       ctx3.diagnostics,
-      Ref({ nullable: true, typ: Any }),
+      Ref({ nullable: true, typ: Any, }),
     ),
   )
   let checker3 = @typing.Checker::new(ctx3, @typing.Operands::new())
@@ -7830,7 +7854,7 @@ test "an indexed write picks table or array by its receiver" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -7841,7 +7865,7 @@ test "an indexed write picks table or array by its receiver" {
       ctx.diagnostics,
       "tab",
       loc_at(0, 3),
-      (I32, { nullable: true, typ: Func }),
+      (I32, { nullable: true, typ: Func, }),
     )
     if shadowed {
       @typing.bind_local(ctx, id("tab"), Some(@infer.i32_valtype))
@@ -7879,7 +7903,7 @@ test "an indexed write picks table or array by its receiver" {
 /// resolve per branch: one may be declared only in the matching configuration.
 test "conditional compilation types each branch under its own assumption" {
   let ctx = module_ctx()
-  let cond : @wasm_types.Cond = Var({ desc: "debug", info: loc_at(0, 5) })
+  let cond : @wasm_types.Cond = Var({ desc: "debug", info: loc_at(0, 5), })
   // A global declared only under `debug`.
   ctx.cond.val = ctx.cond_env.of_cond(ctx.diagnostics, loc_at(0, 5), cond)
   ctx.globals.add(
@@ -7897,7 +7921,7 @@ test "conditional compilation types each branch under its own assumption" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -7907,7 +7931,7 @@ test "conditional compilation types each branch under its own assumption" {
     instr(
       IfAnnotation(
         cond~,
-        then_body={ desc: [instr(Get(id("dbg")), 30)], info: loc_at(20, 21) },
+        then_body={ desc: [instr(Get(id("dbg")), 30)], info: loc_at(20, 21), },
         else_body=None,
       ),
       10,
@@ -7945,7 +7969,7 @@ test "a module is declared then checked" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -7958,7 +7982,7 @@ test "a module is declared then checked" {
           desc: (
             id("t"),
             {
-              typ: Func({ params: [], results: [I32] }),
+              typ: Func({ params: [], results: [I32], }),
               supertype: None,
               final_: true,
               descriptor: None,
@@ -8031,7 +8055,7 @@ test "a global initializer sees only what precedes it" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8087,7 +8111,7 @@ test "an instruction method pins the receiver it is called on" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8101,7 +8125,7 @@ test "an instruction method pins the receiver it is called on" {
             desc: (
               id("bytes"),
               {
-                typ: Array({ mut_: true, typ: Packed(I8) }),
+                typ: Array({ mut_: true, typ: Packed(I8), }),
                 supertype: None,
                 final_: true,
                 descriptor: None,
@@ -8121,14 +8145,17 @@ test "an instruction method pins the receiver it is called on" {
       @typing.internalize_valtype(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: false, typ: Type(id("bytes")) }),
+        Ref({ nullable: false, typ: Type(id("bytes")), }),
       ),
     )
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
     let inner = instr(recv, 20)
     let c = checker.statement(
       instr(
-        Call(instr(StructGet(inner, { name: meth, loc: loc_at(24, 30) }), 20), []),
+        Call(
+          instr(StructGet(inner, { name: meth, loc: loc_at(24, 30), }), 20),
+          [],
+        ),
         10,
       ),
     )
@@ -8183,7 +8210,7 @@ test "an indexed read picks table or array by its receiver" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8194,7 +8221,7 @@ test "an indexed read picks table or array by its receiver" {
       ctx.diagnostics,
       "t",
       loc_at(0, 1),
-      (I32, { nullable: true, typ: Func }),
+      (I32, { nullable: true, typ: Func, }),
     )
     if shadowed {
       @typing.bind_local(ctx, id("t"), Some(@infer.i32_valtype))
@@ -8230,7 +8257,7 @@ test "a vector constant bounds each lane by its width" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8245,7 +8272,7 @@ test "a vector constant bounds each lane by its width" {
       instr(
         Call(
           instr(
-            Path({ name: "v128", loc: loc_at(20, 24) }, {
+            Path({ name: "v128", loc: loc_at(20, 24), }, {
               name: shape,
               loc: loc_at(26, 32),
             }),
@@ -8317,7 +8344,7 @@ test "a block used as a value infers what its exit delivers" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8327,7 +8354,7 @@ test "a block used as a value infers what its exit delivers" {
     at : Int,
   ) -> @ast.Instr[@basic.Location] {
     instr(
-      Block(label=None, typ={ params: [], results: [] }, block={
+      Block(label=None, typ={ params: [], results: [], }, block={
         desc: body,
         info: loc_at(at, at + 1),
       }),
@@ -8400,7 +8427,7 @@ test "a construction takes its type from what the context expects" {
       desc: (
         id("a"),
         {
-          typ: Array({ mut_: false, typ: Value(I32) }),
+          typ: Array({ mut_: false, typ: Value(I32), }),
           supertype: None,
           final_: true,
           descriptor: None,
@@ -8417,7 +8444,7 @@ test "a construction takes its type from what the context expects" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8430,7 +8457,7 @@ test "a construction takes its type from what the context expects" {
   let want = @typing.internalize(
     tc,
     ctx.diagnostics,
-    Ref({ nullable: false, typ: Type(id("a")) }),
+    Ref({ nullable: false, typ: Type(id("a")), }),
   ).unwrap()
   fn run(checked : Bool) -> String {
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
@@ -8471,7 +8498,7 @@ test "a method call reads as an instruction or a call by its receiver" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8494,7 +8521,7 @@ test "a method call reads as an instruction or a call by its receiver" {
       },
     ])
     let recv_type : @wasm_types.ValType[@ast.Ident] = if recv_is_ref {
-      Ref({ nullable: true, typ: Type(id("s")) })
+      Ref({ nullable: true, typ: Type(id("s")), })
     } else {
       I32
     }
@@ -8548,7 +8575,7 @@ test "a tuple produces one value per element" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8596,7 +8623,7 @@ test "a module declares its own features" {
               ),
             ),
             info: loc_at(10, 20),
-            hints: { branch: None, freq: None, targets: None },
+            hints: { branch: None, freq: None, targets: None, },
             expected: None,
           }),
           attr_guard: None,
@@ -8630,7 +8657,7 @@ test "a module declares its own features" {
     run([
       {
         desc: Conditional(
-          cond=Var({ desc: "wasi", info: loc_at(0, 4) }),
+          cond=Var({ desc: "wasi", info: loc_at(0, 4), }),
           then_fields={
             desc: [annotation("feature", "custom-descriptors")],
             info: loc_at(0, 30),
@@ -8657,7 +8684,7 @@ test "a try takes its result from its annotation, its context, or its exits" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8669,14 +8696,14 @@ test "a try takes its result from its annotation, its context, or its exits" {
     instr(
       TryCatch(
         label=None,
-        typ={ params: [], results },
-        block={ desc: [instr(Int("1"), 20)], info: loc_at(20, 21) },
+        typ={ params: [], results, },
+        block={ desc: [instr(Int("1"), 20)], info: loc_at(20, 21), },
         arms=[
           {
             arm_tag: Some(id("t", at=30)),
             arm_ref: false,
             arm_types: [],
-            arm_body: { desc: [instr(Int("2"), 40)], info: loc_at(40, 41) },
+            arm_body: { desc: [instr(Int("2"), 40)], info: loc_at(40, 41), },
           },
         ],
       ),
@@ -8686,7 +8713,10 @@ test "a try takes its result from its annotation, its context, or its exits" {
 
   fn run(annotated : Bool, checked : Bool) -> String {
     let ctx = module_ctx()
-    ctx.tags.add(ctx.diagnostics, "t", loc_at(0, 1), { params: [], results: [] })
+    ctx.tags.add(ctx.diagnostics, "t", loc_at(0, 1), {
+      params: [],
+      results: [],
+    })
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
     let n = node(if annotated { [I64] } else { [] })
     let c = if checked {
@@ -8740,7 +8770,7 @@ test "a write hands its destination's type to the value" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8754,7 +8784,7 @@ test "a write hands its destination's type to the value" {
         desc: (
           id("ints"),
           {
-            typ: Array({ mut_: true, typ: Value(I32) }),
+            typ: Array({ mut_: true, typ: Value(I32), }),
             supertype: None,
             final_: true,
             descriptor: None,
@@ -8767,7 +8797,7 @@ test "a write hands its destination's type to the value" {
     @typing.declare_local(
       ctx,
       id("xs"),
-      Ref({ nullable: false, typ: Type(id("ints")) }),
+      Ref({ nullable: false, typ: Type(id("ints")), }),
     )
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
     let c = if assign {
@@ -8810,7 +8840,7 @@ test "a struct literal's fields outrank the type expected of it" {
       mut_: true,
       typ: Value(I32),
     }
-    { desc: (id(f), ty), info: loc_at(at, at + 1) }
+    { desc: (id(f), ty), info: loc_at(at, at + 1), }
   }
 
   fn declare_struct(n : String, t : @ast.CompType, at : Int) -> Unit {
@@ -8837,7 +8867,7 @@ test "a struct literal's fields outrank the type expected of it" {
     {
       desc: Int("1"),
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8854,13 +8884,13 @@ test "a struct literal's fields outrank the type expected of it" {
       (id("b", at=24), Some(value(26))),
     ]),
     info: loc_at(18, 19),
-    hints: { branch: None, freq: None, targets: None },
+    hints: { branch: None, freq: None, targets: None, },
     expected: None,
   }
   let want = @typing.internalize(
     tc,
     ctx.diagnostics,
-    Ref({ nullable: false, typ: Type(id("base")) }),
+    Ref({ nullable: false, typ: Type(id("base")), }),
   ).unwrap()
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   // Checked against `&base` -- which has no `b` -- the fields still win, and
@@ -8910,7 +8940,7 @@ test "a resume's operands take their types from the continuation" {
     {
       desc: d,
       info: loc_at(at, at + 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -8918,14 +8948,14 @@ test "a resume's operands take their types from the continuation" {
   // `type sig = fn(i64); type k = cont sig;` -- resuming `k` hands it an i64.
   declare_type(
     "sig",
-    Func({ params: [{ desc: (None, I64), info: loc_at(0, 1) }], results: [] }),
+    Func({ params: [{ desc: (None, I64), info: loc_at(0, 1), }], results: [], }),
     0,
   )
   declare_type("k", Cont(id("sig")), 2)
   @typing.declare_local(
     ctx,
     id("c"),
-    Ref({ nullable: true, typ: Type(id("k")) }),
+    Ref({ nullable: true, typ: Type(id("k")), }),
   )
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   // `resume k (1, c)` -- the 1 is a bare literal, and only the continuation's
@@ -8977,20 +9007,20 @@ test "a dead cycle of functions is still dead" {
           {
             desc: Get(id(calls, at=at + 10)),
             info: loc_at(at + 10, at + 11),
-            hints: { branch: None, freq: None, targets: None },
+            hints: { branch: None, freq: None, targets: None, },
             expected: None,
           },
           [],
         ),
         info: loc_at(at + 10, at + 11),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       }
       {
         desc: Func(
           name=id(n, at~),
           typ=None,
-          sign=Some({ params: [], results: [] }),
+          sign=Some({ params: [], results: [], }),
           body=(None, [body]),
           attributes=if export_ {
             [
@@ -9045,7 +9075,7 @@ test "an expression is effectless only when nothing it does can be observed" {
     {
       desc: d,
       info: loc_at(0, 1),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     }
   }
@@ -9058,7 +9088,7 @@ test "an expression is effectless only when nothing it does can be observed" {
   let two = instr(Int("2"))
   let op = (b : @ast.BinOp) => {
     (
-      { desc: b, info: loc_at(0, 1) } :
+      { desc: b, info: loc_at(0, 1), } :
       @basic.Annotated[@ast.BinOp, @basic.Location])
   }
   // A literal, a read, and arithmetic over them.
@@ -9081,12 +9111,12 @@ test "an expression is effectless only when nothing it does can be observed" {
   )
   // A reference cast may trap.
   inspect(
-    pure(Cast(one, Value(Ref({ nullable: false, typ: Any })))),
+    pure(Cast(one, Value(Ref({ nullable: false, typ: Any, })))),
     content="false",
   )
   // Except a typed NULL, which is `ref.null` -- a constant.
   inspect(
-    pure(Cast(instr(Null), Value(Ref({ nullable: true, typ: Any })))),
+    pure(Cast(instr(Null), Value(Ref({ nullable: true, typ: Any, })))),
     content="true",
   )
   // A pure instruction method is; a call is not.
@@ -9141,7 +9171,7 @@ test "a conditional declaration is not reported as unused" {
         def={
           desc: Int("1"),
           info: loc_at(20, 21),
-          hints: { branch: None, freq: None, targets: None },
+          hints: { branch: None, freq: None, targets: None, },
           expected: None,
         },
         attributes=[],
@@ -9152,8 +9182,8 @@ test "a conditional declaration is not reported as unused" {
       [
         {
           desc: Conditional(
-            cond=Var({ desc: "debug", info: loc_at(0, 5) }),
-            then_fields={ desc: [global], info: loc_at(0, 30) },
+            cond=Var({ desc: "debug", info: loc_at(0, 5), }),
+            then_fields={ desc: [global], info: loc_at(0, 30), },
             else_fields=None,
           ),
           info: loc_at(0, 30),

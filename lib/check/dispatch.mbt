@@ -31,7 +31,7 @@ pub struct Checker {
 
 ///|
 pub fn Checker::new(ctx : @typing_env.ModuleContext, ops : Operands) -> Checker {
-  { ctx, ops, unpeeled: Map([]) }
+  { ctx, ops, unpeeled: Map([]), }
 }
 
 ///|
@@ -267,7 +267,7 @@ pub fn Checker::statement(
           )
           Some(
             (
-              { desc: checked, info: b.info } :
+              { desc: checked, info: b.info, } :
               @basic.Annotated[
                 Array[@ast.Instr[@typing_env.InferredAnnotation]],
                 @basic.Location,
@@ -293,7 +293,7 @@ pub fn Checker::statement(
           label~,
           typ~,
           cond=cond_,
-          if_block={ desc: then_, info: if_block.info },
+          if_block={ desc: then_, info: if_block.info, },
           else_block=else_,
         ),
         info: annotate(results, loc),
@@ -839,7 +839,7 @@ pub fn Checker::statement(
       note_use(ctx, ctx.tables, tabname)
       let (at, rt) = match ctx.tables.find_no_mark(tabname.name) {
         Some(t) => t
-        None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
+        None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func, })
       }
       let index_ = self.expression(index)
       check_subtype(
@@ -1132,7 +1132,7 @@ pub fn Checker::statement(
           match self.inline_functype(loc, sign) {
             Some(name) => {
               let (c, failed) = value_target(
-                Ref({ nullable, typ: Type(name) }),
+                Ref({ nullable, typ: Type(name), }),
                 Some(Func(sign)),
               )
               if failed {
@@ -1218,7 +1218,7 @@ pub fn Checker::statement(
             internalize(
               ctx.type_context,
               ctx.diagnostics,
-              Ref({ nullable: true, typ: top }),
+              Ref({ nullable: true, typ: top, }),
             ) {
             Some(want) => {
               let ok = subtype(ctx.type_context.subtyping_info(), natural, want)
@@ -1262,10 +1262,10 @@ pub fn Checker::statement(
     NonNull(operand) => {
       let operand_ = self.expression(operand)
       let ty = match expression_type(ctx, operand_.info).get() {
-        Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype }) => {
+        Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype, }) => {
           let v : @infer.InferredValType = {
-            typ: Ref({ nullable: false, typ: r.typ }),
-            internal: Ref({ nullable: false, typ: ir.typ }),
+            typ: Ref({ nullable: false, typ: r.typ, }),
+            internal: Ref({ nullable: false, typ: ir.typ, }),
             anon_comptype,
           }
           @infer.Cell::make(@infer.InferredType::Valtype(v))
@@ -1303,7 +1303,7 @@ pub fn Checker::statement(
           // the ones whose literals all name a type of their own. Interning
           // appends, so an index already handed out does not move.
           register_string_type(ctx)
-          { name: string_type_name, loc }
+          { name: string_type_name, loc, }
         }
       }
       // A string that resolves to the canonical array is a use of every source
@@ -1576,7 +1576,7 @@ pub fn Checker::statement(
             ),
           ] = []
           for k, a in arms {
-            rebuilt.push((a.0, { desc: bodies[k], info: a.1.info }))
+            rebuilt.push((a.0, { desc: bodies[k], info: a.1.info, }))
           }
           {
             desc: Dispatch(index=index_, cases~, default~, arms=rebuilt),
@@ -1794,7 +1794,7 @@ pub fn Checker::statement(
             ),
           ] = []
           for k, a in arms {
-            rebuilt.push((a.0, { desc: bodies[k], info: a.1.info }))
+            rebuilt.push((a.0, { desc: bodies[k], info: a.1.info, }))
           }
           // With no arms the scrutinee never reaches the lowering, so there is
           // nothing typed to recover and it is checked here instead.
@@ -1831,7 +1831,7 @@ pub fn Checker::statement(
             ),
           ] = []
           for a in arms {
-            rebuilt.push((a.0, { desc: [], info: a.1.info }))
+            rebuilt.push((a.0, { desc: [], info: a.1.info, }))
           }
           let scrut = self.expression(scrutinee)
           self.require_ref_scrutinee(scrut, scrut_had_holes)
@@ -1870,7 +1870,7 @@ pub fn Checker::statement(
               },
               match callee.desc {
                 StructGet(_, m) => m
-                _ => { name: "drop", loc }
+                _ => { name: "drop", loc, }
               },
             ),
             info: annotate([], callee.info),
@@ -2116,7 +2116,7 @@ pub fn Checker::statement(
       // plain forms are -- and then re-tagged, with one extra demand: the
       // callee's results must satisfy THIS function's, since its return is what
       // the caller will see.
-      let typed = self.statement({ ..i, desc: Call(callee, args) })
+      let typed = self.statement({ ..i, desc: Call(callee, args), })
       if typed.desc is Unreachable {
         // Typing the call already failed and said so; there is no tail call to
         // form, so the failed result is passed straight through rather than
@@ -2157,7 +2157,7 @@ pub fn Checker::statement(
         if internalize(
             ctx.type_context,
             ctx.diagnostics,
-            Ref({ nullable: true, typ: Type(ft) }),
+            Ref({ nullable: true, typ: Type(ft), }),
           )
           is Some(want) {
           check_subtype(
@@ -2507,7 +2507,7 @@ pub fn Checker::statement(
       note_use(ctx, ctx.tables, tabname)
       let (at, rt) = match ctx.tables.find_no_mark(tabname.name) {
         Some(t) => t
-        None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
+        None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func, })
       }
       let index_ = self.expression(index)
       check_subtype(
@@ -2585,7 +2585,7 @@ pub fn Checker::statement(
           })
           Some(
             (
-              { desc: checked, info: b.info } :
+              { desc: checked, info: b.info, } :
               @basic.Annotated[
                 Array[@ast.Instr[@typing_env.InferredAnnotation]],
                 @basic.Location,
@@ -2597,7 +2597,7 @@ pub fn Checker::statement(
       {
         desc: IfAnnotation(
           cond~,
-          then_body={ desc: then_, info: then_body.info },
+          then_body={ desc: then_, info: then_body.info, },
           else_body=else_,
         ),
         info: annotate([], loc),
@@ -2760,7 +2760,7 @@ fn Checker::block_construct(
     block.desc,
   )
   let body = (
-    { desc: checked, info: block.info } :
+    { desc: checked, info: block.info, } :
     @basic.Annotated[
       Array[@ast.Instr[@typing_env.InferredAnnotation]],
       @basic.Location,
@@ -2863,7 +2863,7 @@ fn Checker::poisoned(
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   let ty = @infer.Cell::make(@infer.InferredType::Error)
   let node = self.placeholder(i)
-  { ..node, info: annotate([ty], i.info) }
+  { ..node, info: annotate([ty], i.info), }
 }
 
 ///|
@@ -3171,7 +3171,7 @@ fn Checker::field_value(
         {
           desc: Get(name),
           info: name.loc,
-          hints: { branch: None, freq: None, targets: None },
+          hints: { branch: None, freq: None, targets: None, },
           expected: None,
         } : @ast.Instr[@basic.Location])
     }
@@ -3239,7 +3239,7 @@ fn Checker::inline_functype(
   sign : @ast.FuncType,
 ) -> @ast.Ident? {
   let name = "<fn:" + location.start.cnum.to_string() + ">"
-  let id : @ast.Ident = { name, loc: location }
+  let id : @ast.Ident = { name, loc: location, }
   match
     add_type(self.ctx.type_context, self.ctx.diagnostics, [
       {
@@ -3388,10 +3388,10 @@ fn Checker::non_null_of(
   ty : @infer.Cell[@infer.InferredType],
 ) -> @infer.Cell[@infer.InferredType] {
   match ty.get() {
-    Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype }) => {
+    Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype, }) => {
       let v : @infer.InferredValType = {
-        typ: Ref({ nullable: false, typ: r.typ }),
-        internal: Ref({ nullable: false, typ: ir.typ }),
+        typ: Ref({ nullable: false, typ: r.typ, }),
+        internal: Ref({ nullable: false, typ: ir.typ, }),
         anon_comptype,
       }
       @infer.Cell::make(@infer.InferredType::Valtype(v))
@@ -3694,7 +3694,7 @@ fn Checker::mem_access(
         expected: value.expected,
       }),
       info: annotate([], value.info),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     })
   }
@@ -3978,7 +3978,7 @@ fn Checker::table_mgmt(
   note_use(ctx, ctx.tables, name)
   let (at, rt) = match ctx.tables.find_no_mark(name.name) {
     Some(t) => t
-    None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func })
+    None => (@wasm_types.AddressType::I32, { nullable: true, typ: Func, })
   }
   let elt = internalize(ctx.type_context, ctx.diagnostics, Ref(rt))
   let leading = if args.length() == 4 && args[0].desc is Get(n) {
@@ -4293,7 +4293,7 @@ fn simd_cell(t : @simd.Ty) -> @infer.Cell[@infer.InferredType] {
     // `infer` carries no v128 constant, the type having no flexible form to
     // sit alongside -- a vector is only ever itself.
     TV128 =>
-      @infer.valtype_cell({ typ: V128, internal: V128, anon_comptype: None })
+      @infer.valtype_cell({ typ: V128, internal: V128, anon_comptype: None, })
     TI32 => @infer.valtype_cell(@infer.i32_valtype)
     TI64 => @infer.valtype_cell(@infer.i64_valtype)
     TF32 => @infer.valtype_cell(@infer.f32_valtype)
@@ -4401,7 +4401,7 @@ fn Checker::simd_mem_access(
         expected: value.expected,
       }),
       info: annotate([], value.info),
-      hints: { branch: None, freq: None, targets: None },
+      hints: { branch: None, freq: None, targets: None, },
       expected: None,
     })
   }
@@ -4487,7 +4487,7 @@ fn Checker::simd_vector_call(
   for k, a in args {
     if k < nimm {
       if bound is Some(b) {
-        check_lane_immediate(ctx.diagnostics, b, { desc: a.desc, info: a.info })
+        check_lane_immediate(ctx.diagnostics, b, { desc: a.desc, info: a.info, })
       }
     } else {
       let operand = 1 + (k - nimm)
@@ -4530,7 +4530,7 @@ fn Checker::fresh_continuation(
     internalize(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: false, typ: if exact { Exact(ct) } else { Type(ct) } }),
+      Ref({ nullable: false, typ: if exact { Exact(ct) } else { Type(ct) }, }),
     ) {
     Some(c) => c
     None => @infer.Cell::make(@infer.InferredType::Error)
@@ -4585,7 +4585,7 @@ fn Checker::check_cont_bind(
     let tail = src_ft.params[np:np + dst_ft.params.length()].to_owned()
     if !functype_matches(
         ctx.type_context.subtyping_info(),
-        { params: tail, results: src_ft.results },
+        { params: tail, results: src_ft.results, },
         dst_ft,
       ) {
       stack_switching_type_mismatch(
@@ -4613,7 +4613,7 @@ fn Checker::check_cont_bind(
   if internalize(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: true, typ: Type(src) }),
+      Ref({ nullable: true, typ: Type(src), }),
     )
     is Some(c) {
     want.push(c)
@@ -4658,7 +4658,7 @@ fn Checker::type_resume(
     if internalize(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: true, typ: Exn }),
+        Ref({ nullable: true, typ: Exn, }),
       )
       is Some(c) {
       want.push(c)
@@ -4683,7 +4683,7 @@ fn Checker::type_resume(
   if internalize(
       ctx.type_context,
       ctx.diagnostics,
-      Ref({ nullable: true, typ: Type(ct) }),
+      Ref({ nullable: true, typ: Type(ct), }),
     )
     is Some(c) {
     want.push(c)
@@ -4741,7 +4741,7 @@ fn Checker::type_switch(
     if internalize(
         ctx.type_context,
         ctx.diagnostics,
-        Ref({ nullable: true, typ: Type(ct) }),
+        Ref({ nullable: true, typ: Type(ct), }),
       )
       is Some(c) {
       want.push(c)

@@ -95,7 +95,7 @@ fn Lowering::read_span(
 ) -> Unit raise LowerError {
   let at = out.length()
   out.push(self.read(name, loc))
-  self.spans.push({ start: at, head: at, end: at + 1, loc })
+  self.spans.push({ start: at, head: at, end: at + 1, loc, })
 }
 
 ///|
@@ -216,7 +216,7 @@ fn Lowering::hinted(
           }
           let op_at = out.length()
           out.push(instruction)
-          self.spans.push({ start: at, head: op_at, end: op_at + 1, loc })
+          self.spans.push({ start: at, head: op_at, end: op_at + 1, loc, })
         }
       }
       out.push(self.write(name, loc))
@@ -390,7 +390,7 @@ fn Lowering::hinted(
           }
         }
         if many {
-          self.spans.push({ start: at, head: at, end: at + 1, loc })
+          self.spans.push({ start: at, head: at, end: at + 1, loc, })
         }
       }
     }
@@ -427,7 +427,7 @@ fn Lowering::hinted(
       // belongs to nothing.
       let base = out.length()
       let (inner, inner_spans) = self.detached(scratch => {
-        self.instr(scratch, { ..i, desc: Call(callee, args) })
+        self.instr(scratch, { ..i, desc: Call(callee, args), })
       })
       guard inner.length() >= 1 else { return }
       let last = inner[inner.length() - 1]
@@ -821,11 +821,11 @@ fn Lowering::hinted(
         let base = if k == 0 { "catch" } else { "catch_" + k.to_string() }
         let name = fresh_name(taken, base, 0)
         taken.push(name)
-        arm_labels.push({ name, loc })
+        arm_labels.push({ name, loc, })
       }
       let join : @ast.Ident = match label {
         Some(l) => l
-        None => { name: fresh_name(taken, "join", 0), loc }
+        None => { name: fresh_name(taken, "join", 0), loc, }
       }
       self.instr(
         out,
@@ -946,7 +946,7 @@ fn Lowering::hinted(
       for name in labels_within(inner) {
         taken.push(name)
       }
-      let fresh : @ast.Ident = { name: fresh_name(taken, "loop", 1), loc }
+      let fresh : @ast.Ident = { name: fresh_name(taken, "loop", 1), loc, }
       for
         x in @ast.lower_while(
           i.info,
@@ -985,10 +985,10 @@ fn Lowering::hinted(
         let base = if k == 0 { "arm" } else { "arm_" + k.to_string() }
         let name = fresh_name(taken, base, 0)
         taken.push(name)
-        labels.push({ name, loc })
+        labels.push({ name, loc, })
       }
       let escape = fresh_name(taken, "default", 0)
-      labels.push({ name: escape, loc })
+      labels.push({ name: escape, loc, })
       // The synthesized nodes carry the SCRUTINEE's type, not the match's:
       // each threaded `br_on_cast` reads its source type off its operand's
       // annotation, and every fall-through value in the chain stays a subtype
@@ -1786,7 +1786,7 @@ fn br_on_cast_source(
   match node_last_reftype(operand) {
     Some(r) => r
     None =>
-      { ..target, nullable: target.nullable || node_last_nullable(operand) }
+      { ..target, nullable: target.nullable || node_last_nullable(operand), }
   }
 }
 

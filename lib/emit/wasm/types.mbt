@@ -26,7 +26,7 @@
 ///
 /// Empty means the identity, which is what the unit tests want: they build a
 /// module without a source to lay out.
-let type_remap : Ref[Map[Int, Int]] = { val: Map([]) }
+let type_remap : Ref[Map[Int, Int]] = { val: Map([]), }
 
 ///|
 /// The emitted index a store index became.
@@ -39,7 +39,7 @@ fn emitted_type_index(store_index : Int) -> Int {
 
 ///|
 /// Emitted index back to store index, the inverse of `type_remap`.
-let store_remap : Ref[Array[Int]] = { val: [] }
+let store_remap : Ref[Array[Int]] = { val: [], }
 
 ///|
 /// The store index behind an emitted one.
@@ -55,7 +55,7 @@ fn store_type_index(emitted : Int) -> Int {
 ///|
 /// The layout of the module being lowered, for the leaf functions that resolve
 /// a reference by name. Companion to `type_remap`, and installed with it.
-let current_layout : Ref[TypeLayout?] = { val: None }
+let current_layout : Ref[TypeLayout?] = { val: None, }
 
 ///|
 /// The emitted index a type NAME means.
@@ -125,7 +125,7 @@ fn named_index(layout : TypeLayout, name : String, store_index : Int) -> Int {
   layout.by_name[name] = emitted
   layout.store_of.push(store_index)
   layout.types.push(layout.pending[store_index])
-  layout.groups.push({ start: emitted, len: 1, explicit: false })
+  layout.groups.push({ start: emitted, len: 1, explicit: false, })
   emitted
 }
 
@@ -154,9 +154,9 @@ fn emitted_shape_index(
     supertypes: [],
     descriptor: None,
     describes: None,
-    composite: Func({ params, results }),
+    composite: Func({ params, results, }),
   })
-  layout.groups.push({ start: emitted, len: 1, explicit: false })
+  layout.groups.push({ start: emitted, len: 1, explicit: false, })
   Some(emitted)
 }
 
@@ -234,7 +234,7 @@ fn type_layout(
     // WRITTEN -- a group the author declared and the format can spell, not an
     // absence.
     let len = store_of.length() - start
-    groups.push({ start, len, explicit: len != 1 })
+    groups.push({ start, len, explicit: len != 1, })
   })
   // Then the types the LOWERING interns rather than the checker, in the order
   // the sections that need them are written -- which is binary section order,
@@ -252,7 +252,7 @@ fn type_layout(
     let start = store_of.length()
     by_store[store_index] = start
     store_of.push(store_index)
-    groups.push({ start, len: 1, explicit: false })
+    groups.push({ start, len: 1, explicit: false, })
   }
 
   // The name a store-tier entry was placed FOR. Its written form is what gets
@@ -321,7 +321,7 @@ fn type_layout(
       store_index = store_index + 1
     }
     if added > 0 {
-      groups.push({ start, len: added, explicit: added != 1 })
+      groups.push({ start, len: added, explicit: added != 1, })
     }
   }
   type_remap.val = by_store
@@ -450,7 +450,7 @@ fn TypeLayout::source_subtype(
         })
       Array(f) =>
         Array({
-          element: { mut_: f.mut_, typ: self.source_storagetype(ctx, f.typ) },
+          element: { mut_: f.mut_, typ: self.source_storagetype(ctx, f.typ), },
         })
       Cont(n) => Cont(idx(n))
     },
@@ -552,12 +552,12 @@ fn lower_comptype(
       Struct({
         fields: fields.map(f => {
           (
-            { mut_: f.mut_, typ: lower_storagetype(f.typ) } :
+            { mut_: f.mut_, typ: lower_storagetype(f.typ), } :
             @wasm_types.MutType[@wasm_types.StorageType[Int]])
         }),
       })
     Array(f) =>
-      Array({ element: { mut_: f.mut_, typ: lower_storagetype(f.typ) } })
+      Array({ element: { mut_: f.mut_, typ: lower_storagetype(f.typ), }, })
     Cont(i) => Cont(emitted_type_index(i.to_int_for_tests_only()))
   }
 }
@@ -581,7 +581,7 @@ fn lower_valtype(
 fn lower_reftype(
   r : @wasm_types.RefType[@type_store.Id],
 ) -> @wasm_types.RefType[Int] {
-  { nullable: r.nullable, typ: lower_heaptype(r.typ) }
+  { nullable: r.nullable, typ: lower_heaptype(r.typ), }
 }
 
 ///|

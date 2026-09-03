@@ -73,7 +73,7 @@ pub fn Session::check(
     simplify?,
     warn_unused?,
   )
-  { session: self, context, source_module: module_, typed }
+  { session: self, context, source_module: module_, typed, }
 }
 
 ///|

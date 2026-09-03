@@ -230,7 +230,7 @@ pub(all) struct TryCatchArm[Info] {
 ///|
 /// Build an instruction with a span and no hints.
 pub fn build(desc : InstrDesc[Location], loc : Location) -> Instr[Location] {
-  { desc, info: loc, hints: no_hints, expected: None }
+  { desc, info: loc, hints: no_hints, expected: None, }
 }
 
 ///|

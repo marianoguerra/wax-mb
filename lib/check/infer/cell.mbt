@@ -27,7 +27,7 @@ pub struct Cell[A] {
 ///|
 /// A fresh cell of its own class.
 pub fn[A] Cell::make(value : A) -> Cell[A] {
-  { state: Root(value) }
+  { state: Root(value), }
 }
 
 ///|

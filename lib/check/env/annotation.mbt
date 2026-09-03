@@ -91,8 +91,8 @@ pub fn[Info] expression_type_opt(
 /// is what lets this be a plain value where the checker's own path threads one.
 fn ref_none_valtype(nullable~ : Bool) -> @infer.InferredValType {
   {
-    typ: Ref({ nullable, typ: None_ }),
-    internal: Ref({ nullable, typ: None_ }),
+    typ: Ref({ nullable, typ: None_, }),
+    internal: Ref({ nullable, typ: None_, }),
     anon_comptype: None,
   }
 }
@@ -102,8 +102,8 @@ fn ref_none_valtype(nullable~ : Bool) -> @infer.InferredValType {
 /// instructions that carry one around take.
 pub fn ref_exn_valtype(nullable~ : Bool) -> @infer.InferredValType {
   {
-    typ: Ref({ nullable, typ: Exn }),
-    internal: Ref({ nullable, typ: Exn }),
+    typ: Ref({ nullable, typ: Exn, }),
+    internal: Ref({ nullable, typ: Exn, }),
     anon_comptype: None,
   }
 }
@@ -178,6 +178,6 @@ pub fn record_reference(
   guard sink is Some(r) && is_source(use_) else { return }
   let kept = definitions.filter(d => is_source(d) && !same_span(d, use_))
   if !kept.is_empty() {
-    r.push({ use_, definitions: kept, hover })
+    r.push({ use_, definitions: kept, hover, })
   }
 }

@@ -97,7 +97,7 @@ pub fn configure(specs : Array[(Feature, Bool)]) -> Set {
       explicitly_off.add(f)
     }
   }
-  { enabled, explicitly_off, used: @sorted_set.SortedSet([]) }
+  { enabled, explicitly_off, used: @sorted_set.SortedSet([]), }
 }
 
 ///|

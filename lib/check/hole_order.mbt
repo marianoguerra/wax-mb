@@ -44,7 +44,7 @@ fn reject_control_holes(
     return (operand, false)
   }
   hole_in_control_operand(ctx.diagnostics, operand.info, construct, role)
-  ({ ..operand, desc: recovery }, true)
+  ({ ..operand, desc: recovery, }, true)
 }
 
 ///|
@@ -71,7 +71,7 @@ fn check_hole_order(
   if count_holes(node) == 0 {
     return
   }
-  HoleOrder::{ ctx, value_loc: None, reported: false }.walk(node)
+  HoleOrder::{ ctx, value_loc: None, reported: false, }.walk(node)
 }
 
 ///|

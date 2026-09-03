@@ -64,7 +64,7 @@ pub struct Operands {
 
 ///|
 pub fn Operands::new() -> Operands {
-  { stack: Empty, missing_holes: [] }
+  { stack: Empty, missing_holes: [], }
 }
 
 ///|
@@ -301,14 +301,14 @@ pub fn leftovers(st : Stack) -> (Array[@basic.Location], Bool) {
 ///
 /// One character wide, not empty: a caret has to sit on something.
 fn loc_first_char(loc : @basic.Location) -> @basic.Location {
-  { start: loc.start, end: { ..loc.start, cnum: loc.start.cnum + 1 } }
+  { start: loc.start, end: { ..loc.start, cnum: loc.start.cnum + 1, }, }
 }
 
 ///|
 /// The span of the LAST CHARACTER of `loc` -- the closing bracket, where a
 /// missing result belongs.
 fn loc_last_char(loc : @basic.Location) -> @basic.Location {
-  { start: { ..loc.end, cnum: loc.end.cnum - 1 }, end: loc.end }
+  { start: { ..loc.end, cnum: loc.end.cnum - 1, }, end: loc.end, }
 }
 
 ///|
@@ -338,7 +338,7 @@ pub fn report_leftovers(
   // with no text of their own -- the message above already says what they are.
   let related = locs[1:]
     .iter()
-    .map(loc => ({ loc, message: @message.concat([]) } : @diagnostic.Label))
+    .map(loc => ({ loc, message: @message.concat([]), } : @diagnostic.Label))
     .collect()
   leftover_values(diagnostics, locs[0], related)
 }

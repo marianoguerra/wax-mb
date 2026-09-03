@@ -109,7 +109,7 @@ fn cube(lits : Array[(Atom, Bool)]) -> T {
   let mut f = true_
   for l in lits {
     let (atom, value) = l
-    f = and_(f, { node: Lit(atom, value) })
+    f = and_(f, { node: Lit(atom, value), })
   }
   f
 }

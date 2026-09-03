@@ -8,14 +8,14 @@
 ///|
 fn loc_at(start : Int, end_ : Int) -> @basic.Location {
   {
-    start: { fname: "t.wax", lnum: 1, bol: 0, cnum: start },
-    end: { fname: "t.wax", lnum: 1, bol: 0, cnum: end_ },
+    start: { fname: "t.wax", lnum: 1, bol: 0, cnum: start, },
+    end: { fname: "t.wax", lnum: 1, bol: 0, cnum: end_, },
   }
 }
 
 ///|
 fn var_(name : String) -> @wasm_types.Cond {
-  Var({ desc: name, info: loc_at(0, 0) })
+  Var({ desc: name, info: loc_at(0, 0), })
 }
 
 ///|

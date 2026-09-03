@@ -30,7 +30,7 @@ pub fn[A, B] InstrDesc::map_desc(
   block~ : (Array[Instr[A]]) -> Array[Instr[B]],
 ) -> InstrDesc[B] {
   fn body(b : Body[A]) -> Body[B] {
-    { desc: block(b.desc), info: b.info }
+    { desc: block(b.desc), info: b.info, }
   }
 
   fn opt(i : Instr[A]?) -> Instr[B]? {
@@ -237,7 +237,7 @@ pub let synthetic_loop_label : String = "#loop"
 ///|
 /// `{ params: [], results: [] }` -- the type of a block that leaves nothing.
 fn void_type() -> FuncType {
-  { params: [], results: [] }
+  { params: [], results: [], }
 }
 
 ///|
@@ -257,7 +257,7 @@ pub fn[I] lower_dispatch(
   arms~ : Array[(Label, Body[I])],
 ) -> Array[Instr[I]] {
   fn mk(desc : InstrDesc[I]) -> Instr[I] {
-    { desc, info: block_info, hints: no_hints, expected: None }
+    { desc, info: block_info, hints: no_hints, expected: None, }
   }
 
   let targets = cases.copy()
@@ -313,7 +313,7 @@ pub fn[I] lower_while(
   block~ : Array[Instr[I]],
 ) -> Array[Instr[I]] {
   fn mk(desc : InstrDesc[I]) -> Instr[I] {
-    { desc, info: block_info, hints: no_hints, expected: None }
+    { desc, info: block_info, hints: no_hints, expected: None, }
   }
 
   fn if_(c : Instr[I], body : Array[Instr[I]]) -> Instr[I] {
@@ -388,12 +388,12 @@ pub fn[I] lower_match(
   default~ : Body[I],
 ) -> Array[Instr[I]] {
   fn mk(desc : InstrDesc[I]) -> Instr[I] {
-    { desc, info: block_info, hints: no_hints, expected: None }
+    { desc, info: block_info, hints: no_hints, expected: None, }
   }
 
   fn res(p : MatchPattern) -> FuncType {
     match p {
-      MatchCast(_, rt) => { params: [], results: [Ref(rt)] }
+      MatchCast(_, rt) => { params: [], results: [Ref(rt)], }
       MatchNull => void_type()
     }
   }
@@ -489,7 +489,7 @@ pub fn[I] lower_trycatch(
   arms~ : Array[TryCatchArm[I]],
 ) -> Instr[I] {
   fn mk(desc : InstrDesc[I]) -> Instr[I] {
-    { desc, info: block_info, hints: no_hints, expected: None }
+    { desc, info: block_info, hints: no_hints, expected: None, }
   }
 
   let catches = []
@@ -514,7 +514,7 @@ pub fn[I] lower_trycatch(
     let blk = mk(
       Block(
         label=Some(arm_labels[i]),
-        typ={ params: [], results: arm.arm_types },
+        typ={ params: [], results: arm.arm_types, },
         block=@basic.no_loc(inner),
       ),
     )
@@ -541,10 +541,10 @@ pub fn import_name(decl : ImportDecl) -> Annotated[Bytes, Location] {
   for a in decl.attributes {
     if a.attr_name == "import" {
       match a.attr_value {
-        Some({ desc: Str(_, bytes), info, .. }) => return { desc: bytes, info }
+        Some({ desc: Str(_, bytes), info, .. }) => return { desc: bytes, info, }
         _ => ()
       }
     }
   }
-  { desc: @utf8.encode(decl.id.name), info: decl.id.loc }
+  { desc: @utf8.encode(decl.id.name), info: decl.id.loc, }
 }

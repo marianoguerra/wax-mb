@@ -115,17 +115,17 @@ priv struct Attach {
 
 ///|
 fn Attach::plain() -> Attach {
-  { table: @trivia.Table::empty(), collect: None }
+  { table: @trivia.Table::empty(), collect: None, }
 }
 
 ///|
 fn Attach::dry(only : @trivia.Locations) -> Attach {
-  { table: @trivia.Table::empty(), collect: Some(only) }
+  { table: @trivia.Table::empty(), collect: Some(only), }
 }
 
 ///|
 fn Attach::of_table(table : @trivia.Table) -> Attach {
-  { table, collect: None }
+  { table, collect: None, }
 }
 
 ///|

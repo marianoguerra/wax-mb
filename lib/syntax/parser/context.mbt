@@ -159,7 +159,7 @@ fn taken_error() -> SyntaxError? {
 ///|
 /// Build a location from a MoonYacc `$loc`-style position pair.
 fn loc_of(p : (Position, Position)) -> Location {
-  { start: p.0, end: p.1 }
+  { start: p.0, end: p.1, }
 }
 
 ///|
@@ -176,7 +176,7 @@ fn with_loc(
 ) -> Instr[Location] {
   let info = loc_of(p)
   context.val.record_pos(info)
-  { desc, info, hints: @ast.no_hints, expected: None }
+  { desc, info, hints: @ast.no_hints, expected: None, }
 }
 
 ///|
@@ -185,7 +185,7 @@ fn with_loc(
 fn[T] annot(p : (Position, Position), desc : T) -> Annotated[T, Location] {
   let info = loc_of(p)
   context.val.record_pos(info)
-  { desc, info }
+  { desc, info, }
 }
 
 ///|
@@ -198,7 +198,7 @@ fn[T] respan(
   a : Annotated[T, Location],
   p : (Position, Position),
 ) -> Annotated[T, Location] {
-  { desc: a.desc, info: loc_of(p) }
+  { desc: a.desc, info: loc_of(p), }
 }
 
 ///|
@@ -206,7 +206,7 @@ fn[T] respan(
 fn blocktype(bt : FuncType?) -> FuncType {
   match bt {
     Some(t) => t
-    None => { params: [], results: [] }
+    None => { params: [], results: [], }
   }
 }
 

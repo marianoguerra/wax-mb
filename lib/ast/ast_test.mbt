@@ -6,19 +6,19 @@
 ///|
 fn loc(a : Int, b : Int) -> @basic.Location {
   {
-    start: { fname: "t.wax", lnum: 1, bol: 0, cnum: a },
-    end: { fname: "t.wax", lnum: 1, bol: 0, cnum: b },
+    start: { fname: "t.wax", lnum: 1, bol: 0, cnum: a, },
+    end: { fname: "t.wax", lnum: 1, bol: 0, cnum: b, },
   }
 }
 
 ///|
 fn id(name : String) -> @ast.Ident {
-  { name, loc: loc(0, name.length()) }
+  { name, loc: loc(0, name.length()), }
 }
 
 ///|
 fn body(xs : Array[@ast.Instr[@basic.Location]]) -> @ast.Body[@basic.Location] {
-  { desc: xs, info: loc(0, 1) }
+  { desc: xs, info: loc(0, 1), }
 }
 
 ///|
@@ -37,7 +37,7 @@ test "the tree can be re-annotated, which is why Info is a parameter" {
   // be decoration and porting the typer would mean rewriting the AST.
   let inner = @ast.build(Int("1"), loc(0, 1))
   let outer = @ast.build(
-    BinOpI({ desc: Add, info: loc(1, 2) }, inner, inner),
+    BinOpI({ desc: Add, info: loc(1, 2), }, inner, inner),
     loc(0, 3),
   )
   fn retype(i : @ast.Instr[@basic.Location]) -> @ast.Instr[String] {
@@ -46,7 +46,7 @@ test "the tree can be re-annotated, which is why Info is a parameter" {
       BinOpI(op, l, r) => BinOpI(op, retype(l), retype(r))
       _ => Nop
     }
-    { desc, info: "i32", hints: i.hints, expected: i.expected }
+    { desc, info: "i32", hints: i.hints, expected: i.expected, }
   }
 
   let typed = retype(outer)
@@ -61,9 +61,9 @@ test "the tree can be re-annotated, which is why Info is a parameter" {
 test "a block body carries its own braces span" {
   // The trivia layer needs it: a comment inside an otherwise-empty block has no
   // instruction to attach to, only the block's own braces.
-  let b : @ast.Body[@basic.Location] = { desc: [], info: loc(9, 11) }
+  let b : @ast.Body[@basic.Location] = { desc: [], info: loc(9, 11), }
   let blk = @ast.build(
-    Block(label=None, typ={ params: [], results: [] }, block=b),
+    Block(label=None, typ={ params: [], results: [], }, block=b),
     loc(0, 12),
   )
   match blk.desc {
@@ -106,7 +106,7 @@ test "compound assignment keeps its operator" {
   let compound = @ast.build(
     Set(
       id("x"),
-      Some({ desc: Add, info: loc(2, 4) }),
+      Some({ desc: Add, info: loc(2, 4), }),
       @ast.build(Int("1"), loc(5, 6)),
     ),
     loc(0, 6),
@@ -136,7 +136,10 @@ test "the splice sentinel cannot collide with a real field" {
   let real : @basic.Annotated[
     (@ast.Ident, @wasm_types.FieldType[@ast.Ident]),
     @basic.Location,
-  ] = { desc: (id("value"), { mut_: false, typ: Value(I32) }), info: loc(0, 5) }
+  ] = {
+    desc: (id("value"), { mut_: false, typ: Value(I32), }),
+    info: loc(0, 5),
+  }
   assert_false(@ast.is_splice_field(real))
 }
 
@@ -164,7 +167,7 @@ test "a module is just a list of spanned fields" {
       desc: Func(
         name=id("f"),
         typ=None,
-        sign=Some({ params: [], results: [] }),
+        sign=Some({ params: [], results: [], }),
         body=(None, []),
         attributes=[],
       ),

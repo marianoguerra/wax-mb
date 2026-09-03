@@ -80,7 +80,7 @@ fn internal_functype(
     }
     results.push(v.internal)
   }
-  Some({ params, results })
+  Some({ params, results, })
 }
 
 ///|
@@ -141,7 +141,7 @@ fn fundecl_typ(
       let id = add_type(ctx.type_context, ctx.diagnostics, [
         {
           desc: (
-            { name: minted, loc: name.loc },
+            { name: minted, loc: name.loc, },
             {
               typ: Func(sign),
               supertype: None,
@@ -329,7 +329,7 @@ pub fn[Info] declare_fields(
   // rather than the other way round -- which is how a string literal comes to
   // count as a use of that user type.
   index_structs_by_fields(ctx)
-  let state = { memory_index: 0 }
+  let state = { memory_index: 0, }
   walk_fields(ctx, fields, field => {
     match field.desc {
       Memory(name~, address_type~, data~, ..) => {
@@ -422,7 +422,8 @@ pub fn index_structs_by_fields(ctx : @typing_env.ModuleContext) -> Unit {
     guard st.typ is Struct(fields) else { continue }
     let key = field_set_key(fields.map(f => f.desc.0.name))
     match ctx.structs_by_fields.get(key) {
-      None => ctx.structs_by_fields[key] = Some({ name, loc: @basic.dummy_loc })
+      None =>
+        ctx.structs_by_fields[key] = Some({ name, loc: @basic.dummy_loc, })
       Some(Some(n)) => if n.name != name { ctx.structs_by_fields[key] = None }
       Some(None) => ()
     }
@@ -481,13 +482,13 @@ fn register_string_type(ctx : @typing_env.ModuleContext) -> Unit {
   guard ctx.type_context.types.find_no_mark(string_type_name) is None else {
     return
   }
-  let name : @ast.Ident = { name: string_type_name, loc: @basic.dummy_loc }
+  let name : @ast.Ident = { name: string_type_name, loc: @basic.dummy_loc, }
   let _ = add_type(ctx.type_context, ctx.diagnostics, [
     {
       desc: (
         name,
         {
-          typ: Array({ mut_: true, typ: Packed(I8) }),
+          typ: Array({ mut_: true, typ: Packed(I8), }),
           supertype: None,
           final_: true,
           descriptor: None,

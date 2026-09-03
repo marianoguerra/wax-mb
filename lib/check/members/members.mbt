@@ -44,7 +44,7 @@ fn meth(
   binary? : Bool = false,
   result? : MethodResult = Same,
 ) -> ValueMethod {
-  { name, binary, result }
+  { name, binary, result, }
 }
 
 ///|
@@ -110,7 +110,7 @@ pub fn simd_valtype(t : SimdTy) -> @infer.InferredValType {
   match t {
     TV128 =>
       (
-        { typ: V128, internal: V128, anon_comptype: None } :
+        { typ: V128, internal: V128, anon_comptype: None, } :
         @infer.InferredValType)
     TI32 => @infer.i32_valtype
     TI64 => @infer.i64_valtype

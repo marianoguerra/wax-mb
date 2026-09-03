@@ -202,7 +202,7 @@ fn decl_sign(
     record_error(
       loc_of(p),
       "A parameter list is required.",
-      fix=Some({ loc: { start: caret, end: caret }, new_text: "()" }),
+      fix=Some({ loc: { start: caret, end: caret, }, new_text: "()", }),
     )
   }
   sign
@@ -311,7 +311,7 @@ fn data_run(
             n.info,
             "Expected a v128 lane group like i32x4(1, 2, 3, 4).",
           )
-          out.push({ desc: { shape: I32x4, components: [] }, info: n.info })
+          out.push({ desc: { shape: I32x4, components: [], }, info: n.info, })
         }
       }
     }
@@ -326,7 +326,7 @@ fn data_run(
             v.info,
             "Expected a scalar literal, not a v128 lane group.",
           )
-          out.push({ desc: "0", info: v.info })
+          out.push({ desc: "0", info: v.info, })
         }
       }
     }

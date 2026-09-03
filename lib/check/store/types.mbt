@@ -47,7 +47,7 @@ pub fn Id::of_index(index : Int) -> Id {
 /// The canonical index `n` positions after this one -- e.g. the `n`-th member
 /// of a rec group whose first member is this.
 pub fn Id::add(self : Id, n : Int) -> Id {
-  { index: self.index + n }
+  { index: self.index + n, }
 }
 
 ///|
@@ -166,7 +166,7 @@ fn[A, B] map_valtype(
     F32 => F32
     F64 => F64
     V128 => V128
-    Ref({ nullable, typ }) => Ref({ nullable, typ: map_heaptype(typ, f) })
+    Ref({ nullable, typ, }) => Ref({ nullable, typ: map_heaptype(typ, f), })
   }
 }
 
@@ -179,7 +179,7 @@ fn[A, B] map_fieldtype(
     Value(vt) => @wasm_types.StorageType::Value(map_valtype(vt, f))
     Packed(pt) => Packed(pt)
   }
-  { mut_: ft.mut_, typ }
+  { mut_: ft.mut_, typ, }
 }
 
 ///|
@@ -187,7 +187,7 @@ fn[A, B] map_fieldtype(
 /// application for this; here it is a function.
 pub fn[A, B] SubType::map(self : SubType[A], f : (A) -> B) -> SubType[B] {
   let typ = match self.typ {
-    Func({ params, results }) =>
+    Func({ params, results, }) =>
       CompType::Func({
         params: params.map(v => map_valtype(v, f)),
         results: results.map(v => map_valtype(v, f)),

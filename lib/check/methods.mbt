@@ -225,7 +225,7 @@ fn Checker::cont_method_call(
   // can be read out of.
   if tag is Some(t) {
     args_.push({
-      desc: Labelled({ name: "tag", loc: t.loc }, {
+      desc: Labelled({ name: "tag", loc: t.loc, }, {
         desc: Get(t),
         info: annotate([], t.loc),
         hints: @ast.no_hints,
@@ -679,7 +679,7 @@ fn Checker::cont_construct(
           internalize(
             ctx.type_context,
             ctx.diagnostics,
-            Ref({ nullable: true, typ: Type(ft) }),
+            Ref({ nullable: true, typ: Type(ft), }),
           )
           is Some(want) {
           check_subtype(
@@ -863,7 +863,7 @@ fn Checker::cont_construct_recovery(
       {
         desc: Path(ns, name),
         info: annotate([], i.info),
-        hints: { branch: None, freq: None, targets: None },
+        hints: { branch: None, freq: None, targets: None, },
         expected: None,
       },
       checked,
@@ -972,7 +972,7 @@ fn Checker::resume_operand_source_types(
   }
 
   match meth {
-    "resume_throw_ref" => Some([Ref({ nullable: true, typ: Exn })])
+    "resume_throw_ref" => Some([Ref({ nullable: true, typ: Exn, })])
     "resume_throw" => {
       guard tag is Some(t) else { return None }
       guard find(ctx.tags, ctx.diagnostics, t) is Some(ft) else { return None }
@@ -1035,7 +1035,7 @@ fn Checker::annotated_block_operand(
 ) -> @ast.Instr[@typing_env.InferredAnnotation]? {
   fn fill(typ : @ast.FuncType) -> @ast.FuncType {
     if typ.results.is_empty() {
-      { ..typ, results: [src] }
+      { ..typ, results: [src], }
     } else {
       typ
     }

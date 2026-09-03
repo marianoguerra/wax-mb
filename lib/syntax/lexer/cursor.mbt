@@ -33,17 +33,17 @@ pub struct Cursor {
 
 ///|
 pub fn Cursor::new(src : String, fname? : String = "") -> Cursor {
-  { src, fname, idx: 0, cnum: 0, bol: 0, lnum: 1 }
+  { src, fname, idx: 0, cnum: 0, bol: 0, lnum: 1, }
 }
 
 ///|
 pub fn Cursor::pos(self : Cursor) -> Position {
-  { fname: self.fname, lnum: self.lnum, bol: self.bol, cnum: self.cnum }
+  { fname: self.fname, lnum: self.lnum, bol: self.bol, cnum: self.cnum, }
 }
 
 ///|
 pub fn Cursor::span(self : Cursor, from : Position) -> Location {
-  { start: from, end: self.pos() }
+  { start: from, end: self.pos(), }
 }
 
 ///|

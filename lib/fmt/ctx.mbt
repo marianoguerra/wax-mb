@@ -48,7 +48,7 @@ pub fn Ctx::new(
   locate? : (@basic.Location) -> @basic.Location? = l => Some(l),
   theme? : @colors.Theme = @colors.no_color,
 ) -> Ctx[@basic.Location] {
-  { p, theme, style_override: None, trivia, collect, locate }
+  { p, theme, style_override: None, trivia, collect, locate, }
 }
 
 ///|

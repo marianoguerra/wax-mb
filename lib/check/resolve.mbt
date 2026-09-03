@@ -148,7 +148,7 @@ fn reftype(
   r : @wasm_types.RefType[@ast.Ident],
 ) -> @wasm_types.RefType[@type_store.Id]? {
   heaptype(ctx, diagnostics, r.typ).map(typ => {
-    ({ nullable: r.nullable, typ } : @wasm_types.RefType[@type_store.Id])
+    ({ nullable: r.nullable, typ, } : @wasm_types.RefType[@type_store.Id])
   })
 }
 
@@ -216,7 +216,7 @@ fn n_reftype(
   r : @wasm_types.RefType[@ast.Ident],
 ) -> @wasm_types.RefType[@type_store.RefIndex]? {
   n_heaptype(ctx, diagnostics, r.typ).map(typ => {
-    ({ nullable: r.nullable, typ } : @wasm_types.RefType[@type_store.RefIndex])
+    ({ nullable: r.nullable, typ, } : @wasm_types.RefType[@type_store.RefIndex])
   })
 }
 
@@ -257,7 +257,7 @@ fn n_fieldtype(
   ty : @wasm_types.FieldType[@ast.Ident],
 ) -> @wasm_types.FieldType[@type_store.RefIndex]? {
   n_storagetype(ctx, diagnostics, ty.typ).map(typ => {
-    ({ mut_: ty.mut_, typ } : @wasm_types.FieldType[@type_store.RefIndex])
+    ({ mut_: ty.mut_, typ, } : @wasm_types.FieldType[@type_store.RefIndex])
   })
 }
 
@@ -296,7 +296,7 @@ pub fn n_functype(
     is Some(results) else {
     return None
   }
-  Some({ params, results })
+  Some({ params, results, })
 }
 
 ///|
@@ -387,7 +387,7 @@ pub fn internalize_valtype(
   typ : @wasm_types.ValType[@ast.Ident],
 ) -> @infer.InferredValType? {
   valtype(ctx, diagnostics, typ).map(internal => {
-    ({ typ, internal, anon_comptype: None } : @infer.InferredValType)
+    ({ typ, internal, anon_comptype: None, } : @infer.InferredValType)
   })
 }
 
@@ -404,6 +404,6 @@ pub fn internalize(
   inline? : @ast.CompType? = None,
 ) -> @infer.Cell[@infer.InferredType]? {
   valtype(ctx, diagnostics, typ).map(internal => {
-    @infer.valtype_cell({ typ, internal, anon_comptype: inline })
+    @infer.valtype_cell({ typ, internal, anon_comptype: inline, })
   })
 }

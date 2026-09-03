@@ -8,7 +8,7 @@ pub(all) struct Location {
 
 ///|
 /// The span of a synthesized node, mirroring the reference's `dummy_loc`.
-pub let dummy_loc : Location = { start: dummy_pos, end: dummy_pos }
+pub let dummy_loc : Location = { start: dummy_pos, end: dummy_pos, }
 
 ///|
 pub fn Location::is_dummy(self : Location) -> Bool {
@@ -23,19 +23,19 @@ pub fn Location::merge(self : Location, other : Location) -> Location {
   guard! self.start.fname == other.start.fname
   let start = if self.start < other.start { self.start } else { other.start }
   let end = if self.end > other.end { self.end } else { other.end }
-  { start, end }
+  { start, end, }
 }
 
 ///|
 /// An empty span at the start of `self`, used for an insertion-point edit.
 pub fn Location::collapse_start(self : Location) -> Location {
-  { start: self.start, end: self.start }
+  { start: self.start, end: self.start, }
 }
 
 ///|
 /// An empty span at the end of `self`, used for an insertion-point edit.
 pub fn Location::collapse_end(self : Location) -> Location {
-  { start: self.end, end: self.end }
+  { start: self.end, end: self.end, }
 }
 
 ///|
@@ -81,5 +81,5 @@ pub(all) struct Annotated[D, Info] {
 ///|
 /// Wrap a value with a dummy span, the counterpart of the reference's `no_loc`.
 pub fn[D] no_loc(desc : D) -> Annotated[D, Location] {
-  { desc, info: dummy_loc }
+  { desc, info: dummy_loc, }
 }

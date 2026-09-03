@@ -261,14 +261,14 @@ fn check_attributes(
           if clashes(seen, cond) is Some(prev) {
             duplicated_export(ctx.diagnostics, location, prev, name)
           }
-          seen.push({ when_: cond, loc: location })
+          seen.push({ when_: cond, loc: location, })
           exports[name] = seen
         }
         "start" => {
           if clashes(starts, cond) is Some(prev) {
             multiple_start(ctx.diagnostics, location, prev)
           }
-          starts.push({ when_: cond, loc: location })
+          starts.push({ when_: cond, loc: location, })
         }
         // A module name is not guarded -- it states a fact about the whole
         // module, like a feature -- so one is simply one too many.

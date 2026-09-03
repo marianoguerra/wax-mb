@@ -15,7 +15,7 @@ fn diff_ref_type(
   t1 : @wasm_types.RefType[@ast.Ident],
   t2 : @wasm_types.RefType[@ast.Ident],
 ) -> @wasm_types.RefType[@ast.Ident] {
-  { nullable: t1.nullable && !t2.nullable, typ: t1.typ }
+  { nullable: t1.nullable && !t2.nullable, typ: t1.typ, }
 }
 
 ///|

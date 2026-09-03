@@ -26,7 +26,7 @@ pub fn TypeContext::new(
   types : Tbl[(@type_store.RefIndex, @ast.SubType)],
   features : @feature.Set,
 ) -> TypeContext {
-  { store, types, features, subtyping_cache: None }
+  { store, types, features, subtyping_cache: None, }
 }
 
 ///|
@@ -303,7 +303,7 @@ pub fn ControlFrame::new(
   results : Array[@infer.Cell[@infer.InferredType]],
   label? : @ast.Ident? = None,
 ) -> ControlFrame {
-  { label, results }
+  { label, results, }
 }
 
 ///|

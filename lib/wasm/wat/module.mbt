@@ -587,10 +587,10 @@ fn folded_bare(node : Node, ctx : Ctx) -> Sexp raise WatError {
   if node.head is Hinted(h, inner) {
     let annots = hint_annotations(h, ctx.m.names)
     if !annots.is_empty() {
-      annots.push(folded({ ..node, head: inner }, ctx))
+      annots.push(folded({ ..node, head: inner, }, ctx))
       return Block(annots, KBox, true)
     }
-    return folded({ ..node, head: inner }, ctx)
+    return folded({ ..node, head: inner, }, ctx)
   }
   if !node.bodies.is_empty() ||
     node.head is (Block(_, _) | Loop(_, _) | If(_, _, _)) {

@@ -142,5 +142,5 @@ fn function_priority(attributes : Array[@ast.Attribute]) -> @wasm_bin.Priority? 
       _ => ()
     }
   }
-  compilation.map(c => ({ compilation: c, optimization } : @wasm_bin.Priority))
+  compilation.map(c => ({ compilation: c, optimization, } : @wasm_bin.Priority))
 }

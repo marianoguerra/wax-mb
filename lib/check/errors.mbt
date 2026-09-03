@@ -46,7 +46,7 @@ fn duplicated_field(
     @message.text("Several fields have the same name")
     .sep(@message.ident(name))
     .seq(@message.text(".")),
-    related=[{ loc: prev_loc, message: @message.text("other field here") }],
+    related=[{ loc: prev_loc, message: @message.text("other field here"), }],
   )
 }
 
@@ -64,7 +64,7 @@ fn duplicated_parameter(
     @message.text("Several parameters have the same name")
     .sep(@message.ident(name))
     .seq(@message.text(".")),
-    related=[{ loc: prev_loc, message: @message.text("other parameter here") }],
+    related=[{ loc: prev_loc, message: @message.text("other parameter here"), }],
   )
 }
 
@@ -140,7 +140,7 @@ fn expression_type_mismatch(
   let related = match expected_at {
     None => []
     Some(loc) =>
-      [({ loc, message: @message.text("expected here") } : @diagnostic.Label)]
+      [({ loc, message: @message.text("expected here"), } : @diagnostic.Label)]
   }
   ctx.report(
     location,
@@ -191,7 +191,7 @@ fn non_empty_stack(
   rendered : String,
 ) -> Unit {
   ctx.report(
-    { start: location.end, end: location.end },
+    { start: location.end, end: location.end, },
     Error,
     @message.text("Some values remain on the stack:")
     .seq(@message.text(rendered))
@@ -377,7 +377,7 @@ fn typed_branch_label(
   location : @basic.Location,
   ty : @infer.Cell[@infer.InferredType],
 ) -> @diagnostic.Label {
-  { loc: location, message: @message.type_(@infer.to_string(ty)) }
+  { loc: location, message: @message.type_(@infer.to_string(ty)), }
 }
 
 ///|
@@ -1140,7 +1140,7 @@ fn dispatch_duplicate_arm(
     @message.text("This dispatch has several cases named")
     .sep(@message.ident(name))
     .seq(@message.text(".")),
-    related=[{ loc: prev_loc, message: @message.text("other arm here") }],
+    related=[{ loc: prev_loc, message: @message.text("other arm here"), }],
   )
 }
 
@@ -1211,7 +1211,9 @@ fn duplicate_argument_label(
     @message.text("The argument label")
     .sep(@message.ident(name))
     .sep(@message.text("is given several times.")),
-    related=[{ loc: prev_loc, message: @message.text("previously given here") }],
+    related=[
+      { loc: prev_loc, message: @message.text("previously given here"), },
+    ],
   )
 }
 
@@ -1537,7 +1539,7 @@ fn unused_local(
     .sep(@message.text("is never used.")),
     warning=Some(UnusedLocal),
     universal=true,
-    edit=Some({ loc: { ..location, end: location.start }, new_text: "_" }),
+    edit=Some({ loc: { ..location, end: location.start, }, new_text: "_", }),
   )
 }
 
@@ -1575,7 +1577,7 @@ fn unused_label(
         Some(
           (
             {
-              loc: { ..location, end: { ..location.end, cnum: i } },
+              loc: { ..location, end: { ..location.end, cnum: i, }, },
               new_text: "",
             } : @diagnostic.Edit),
         )
@@ -1929,7 +1931,7 @@ fn duplicated_export(
     .sep(@message.code(name))
     .seq(@message.text(".")),
     related=[
-      { loc: prev_loc, message: @message.text("previously exported here") },
+      { loc: prev_loc, message: @message.text("previously exported here"), },
     ],
   )
 }
@@ -1946,7 +1948,7 @@ fn multiple_start(
     Error,
     @message.text("A module can have at most one start function."),
     related=[
-      { loc: prev_loc, message: @message.text("other start function here") },
+      { loc: prev_loc, message: @message.text("other start function here"), },
     ],
   )
 }
@@ -1963,7 +1965,7 @@ fn multiple_module(
     Error,
     @message.text("A module can have at most one name annotation."),
     related=[
-      { loc: prev_loc, message: @message.text("other name annotation here") },
+      { loc: prev_loc, message: @message.text("other name annotation here"), },
     ],
   )
 }
@@ -2152,7 +2154,7 @@ fn conflicting_optimization(
     .sep(@message.text("or"))
     .sep(@message.code("#[run_once]"))
     .seq(@message.text(", not both.")),
-    related=[{ loc: prev_loc, message: @message.text("the other one here") }],
+    related=[{ loc: prev_loc, message: @message.text("the other one here"), }],
   )
 }
 

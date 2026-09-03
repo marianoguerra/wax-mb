@@ -135,7 +135,7 @@ pub fn Checker::check(
     TryTable(typ~, ..) | Try(typ~, ..) | TryCatch(typ~, ..) =>
       match pin_block_result(expected, typ, i.desc) {
         Some(d) => {
-          let c = self.expression({ ..i, desc: d })
+          let c = self.expression({ ..i, desc: d, })
           self.want(expected, i.info, c)
           c
         }
@@ -152,9 +152,9 @@ pub fn Checker::check(
       }
       match pinned {
         Some(d) => {
-          let c = self.expression({ ..i, desc: d })
+          let c = self.expression({ ..i, desc: d, })
           self.want(expected, i.info, c)
-          { ..c, desc: unpin_construction_name(c.desc) }
+          { ..c, desc: unpin_construction_name(c.desc), }
         }
         None => {
           let c = self.expression(i)
@@ -197,7 +197,7 @@ fn fill_omitted_result(
 ) -> @ast.FuncType {
   guard typ.results.is_empty() else { return typ }
   match @typing_env.standalone_valtype(result_cell) {
-    Some(iv) => { ..typ, results: [iv.typ] }
+    Some(iv) => { ..typ, results: [iv.typ], }
     None => typ
   }
 }
@@ -260,7 +260,7 @@ fn Checker::check_block(
   let body : @basic.Annotated[
     Array[@ast.Instr[@typing_env.InferredAnnotation]],
     @basic.Location,
-  ] = { desc: checked, info: block.info }
+  ] = { desc: checked, info: block.info, }
   {
     desc: if loop_ {
       Loop(label~, typ=typ_, block=body)
@@ -319,7 +319,7 @@ fn Checker::check_if(
       let checked = self.body(b.info, label, [], results, results, b.desc)
       Some(
         (
-          { desc: checked, info: b.info } :
+          { desc: checked, info: b.info, } :
           @basic.Annotated[
             Array[@ast.Instr[@typing_env.InferredAnnotation]],
             @basic.Location,
@@ -346,7 +346,7 @@ fn Checker::check_if(
       label~,
       typ=fill_omitted_result(typ, result_cell),
       cond=cond_,
-      if_block={ desc: then_, info: if_block.info },
+      if_block={ desc: then_, info: if_block.info, },
       else_block=else_,
     ),
     info: annotate(results, i.info),
@@ -471,7 +471,7 @@ fn pin_block_result(
   guard @typing_env.standalone_valtype(expected) is Some(iv) else {
     return None
   }
-  let filled : @ast.FuncType = { ..typ, results: [iv.typ] }
+  let filled : @ast.FuncType = { ..typ, results: [iv.typ], }
   match desc {
     TryTable(label~, catches~, block~, ..) =>
       Some(TryTable(label~, typ=filled, catches~, block~))

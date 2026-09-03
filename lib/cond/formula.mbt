@@ -77,10 +77,10 @@ pub struct T {
 }
 
 ///|
-pub let true_ : T = { node: True }
+pub let true_ : T = { node: True, }
 
 ///|
-pub let false_ : T = { node: False }
+pub let false_ : T = { node: False, }
 
 ///|
 /// Negation, pushed to the literals so that a formula is always in negation
@@ -98,7 +98,7 @@ fn negate(n : Node) -> Node {
 
 ///|
 pub fn not_(f : T) -> T {
-  { node: negate(f.node) }
+  { node: negate(f.node), }
 }
 
 ///|
@@ -108,7 +108,7 @@ pub fn and_(a : T, b : T) -> T {
     (False, _) | (_, False) => false_
     (True, _) => b
     (_, True) => a
-    _ => { node: And([a.node, b.node]) }
+    _ => { node: And([a.node, b.node]), }
   }
 }
 
@@ -118,7 +118,7 @@ pub fn or_(a : T, b : T) -> T {
     (True, _) | (_, True) => true_
     (False, _) => b
     (_, False) => a
-    _ => { node: Or([a.node, b.node]) }
+    _ => { node: Or([a.node, b.node]), }
   }
 }
 

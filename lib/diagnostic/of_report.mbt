@@ -21,9 +21,9 @@ pub fn of_report(r : @basic.Report) -> Diagnostic {
     warning: None,
     message: @message.text(r.message),
     hint: r.hint.map(h => @message.text(h)),
-    edit: r.edit.map(e => ({ loc: e.loc, new_text: e.new_text } : Edit)),
+    edit: r.edit.map(e => ({ loc: e.loc, new_text: e.new_text, } : Edit)),
     related: r.related.map(l => {
-      ({ loc: l.loc, message: @message.text(l.message) } : Label)
+      ({ loc: l.loc, message: @message.text(l.message), } : Label)
     }),
     universal: false,
   }

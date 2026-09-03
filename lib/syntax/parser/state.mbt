@@ -349,7 +349,7 @@ fn expected_at(stack : Array[Int]) -> Array[TokenKind] {
   for s in stack {
     cells = @list.cons(s, cells)
   }
-  let nowhere : Position = { fname: "", lnum: 0, bol: 0, cnum: 0 }
+  let nowhere : Position = { fname: "", lnum: 0, bol: 0, cnum: 0, }
   try {
     error(cells, None, (nowhere, nowhere))
     ([] : Array[TokenKind])
