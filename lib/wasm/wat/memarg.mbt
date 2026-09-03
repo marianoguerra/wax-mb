@@ -39,7 +39,7 @@ fn memarg(
   natural : Int,
   names : @wasm_bin.Names,
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   out.write_string(name + memidx(names, mem))
   if offset != 0L {
     // UNSIGNED: a memory64 offset fills the 64 bits, and the format writes the

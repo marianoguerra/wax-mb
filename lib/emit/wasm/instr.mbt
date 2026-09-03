@@ -1631,7 +1631,7 @@ fn Lowering::path_intrinsic(
         for a in args {
           texts.push(literal_text(a, loc))
         }
-        let spelling = StringBuilder::new()
+        let spelling = StringBuilder()
         spelling.write_string(shape.to_str())
         for t in texts {
           spelling.write_string(" " + t)

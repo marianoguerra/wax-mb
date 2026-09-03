@@ -11,7 +11,7 @@
 /// named control escapes, everything else below 0x20 as `\u00xx`, and non-ASCII
 /// passed through as raw UTF-8 rather than escaped.
 fn json_string(s : String) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   out.write_char('"')
   for c in s {
     match c {

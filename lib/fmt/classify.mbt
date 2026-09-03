@@ -245,7 +245,7 @@ fn[Info] simple_inline_instr(i : @ast.Instr[Info]) -> Bool {
 /// the named escapes and DECIMAL `\ddd` -- three digits, always -- for
 /// anything else outside printable ASCII.
 fn ocaml_escaped(b : Bytes) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   out.write_char('"')
   for byte in b {
     let n = byte.to_int()

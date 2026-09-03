@@ -5,7 +5,7 @@ fn repeat_str(s : String, n : Int) -> String {
   if n <= 0 {
     return ""
   }
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for _ in 0..<n {
     out.write_string(s)
   }

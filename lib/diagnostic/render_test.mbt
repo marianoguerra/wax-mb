@@ -41,7 +41,7 @@ fn render(
   format : @diagnostic.OutputFormat,
   d : @diagnostic.Diagnostic,
 ) -> String {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   @diagnostic.output_error(
     @diagnostic.buffer_sink(buf),
     @diagnostic.get_theme(color=Never),
@@ -135,7 +135,7 @@ test "multi-line spans render as a spine" {
     ],
     universal: false,
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   @diagnostic.output_error(
     @diagnostic.buffer_sink(buf),
     @diagnostic.get_theme(color=Never),

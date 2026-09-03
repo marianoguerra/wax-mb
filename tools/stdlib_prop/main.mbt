@@ -422,7 +422,7 @@ fn main raise {
   let traces = @quickcheck.int_range(-1000000, 1000001)
     .array_with_size(48)
     .samples(count=24, size=48, seed~)
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   append_sources(out)
   for case_index, inputs in traces {
     emit_property_case(out, case_index, inputs)
@@ -433,7 +433,7 @@ fn main raise {
     out.write_string("    st_property_case_\{case_index}();\n")
   }
   out.write_string("    1\n}\n\n")
-  let utf8_cases = StringBuilder::new()
+  let utf8_cases = StringBuilder()
   let utf8_count = emit_utf8_cases(out, utf8_cases, seed + 1000)
   let source = out.to_string()
   @fs.write_string_to_file(args[1] + ".wax", source)

@@ -301,7 +301,7 @@ fn bytes_json(b : Bytes) -> Json {
   match (Some(@utf8.decode(b[:])) catch { _ => None }) {
     Some(t) => Json::string(t)
     None => {
-      let out = StringBuilder::new()
+      let out = StringBuilder()
       out.write_string("hex:")
       for byte in b {
         let digits = "0123456789abcdef"

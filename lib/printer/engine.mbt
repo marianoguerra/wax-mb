@@ -64,7 +64,7 @@ struct Engine {
 pub fn Engine::new(width? : Int = 78) -> Engine {
   {
     width,
-    out: StringBuilder::new(),
+    out: StringBuilder(),
     max_indent: if width - 10 > 0 {
       width - 10
     } else {

@@ -284,7 +284,7 @@ fn main raise {
   let traces = @quickcheck.int_range(-1000000, 1000001)
     .array_with_size(steps)
     .samples(count~, size=steps, seed~)
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   out.write_string(@fs.read_file_to_string("stdlib/collections/hashing.wax"))
   out.write_string("\n")
   out.write_string(

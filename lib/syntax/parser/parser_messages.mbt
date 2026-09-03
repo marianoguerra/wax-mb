@@ -51,7 +51,7 @@ priv enum Entry {
 /// Walks from the top frame down, deepening only where the table says the
 /// shallower key stands for more than one message.
 fn reference_message(stack : ArrayView[Int], signature : String) -> Message? {
-  let key = StringBuilder::new()
+  let key = StringBuilder()
   for depth = 1; depth <= stack.length() && depth <= 7; depth = depth + 1 {
     // The key reads bottom-up within the suffix, as the generator writes it.
     key.reset()

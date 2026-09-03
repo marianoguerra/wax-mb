@@ -70,7 +70,7 @@ fn main raise {
   }
   let seed : UInt64 = 0x48415348494e47
   let cases = 96
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   out.write_string(@fs.read_file_to_string("stdlib/collections/hashing.wax"))
   out.write_string("\n")
   out.write_string(@fs.read_file_to_string("test/hashing/support.wax"))

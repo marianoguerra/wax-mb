@@ -60,7 +60,7 @@ fn export_field(m : @wasm_bin.Module, k : Int) -> Sexp {
 /// -- printable characters as themselves, the rest escaped -- reads as text
 /// that is not text, and is not what the format does.
 fn quoted(b : Bytes) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   out.write_char('"')
   if readable(b) {
     let text = text_of(b)

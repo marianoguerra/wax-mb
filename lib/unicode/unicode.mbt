@@ -42,7 +42,7 @@ pub fn expand_tabs(s : String, offset? : Int = 0) -> String {
   if !s.contains("\t") {
     return s
   }
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   let mut pos = offset
   for c in s {
     if c == '\t' {
@@ -136,7 +136,7 @@ pub fn utf8_text(b : Bytes) -> String? {
 /// The width is returned alongside because the escaped form is what occupies
 /// columns, and it is not the width of the original.
 pub fn escape_string(s : Bytes, hex_prefix? : String = "") -> (Int, String) {
-  let buf = StringBuilder::new()
+  let buf = StringBuilder()
   match utf8_text(s) {
     Some(t) if !has_hex_escape(t) =>
       for c in t {

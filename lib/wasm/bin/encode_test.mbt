@@ -15,7 +15,7 @@ fn hex(b : Bytes) -> String {
   let digits : Array[Char] = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
   ]
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for i in 0..<b.length() {
     let byte = b[i].to_int()
     out.write_char(digits[byte >> 4])

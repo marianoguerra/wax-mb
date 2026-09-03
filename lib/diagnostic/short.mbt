@@ -4,7 +4,7 @@
 /// Flatten a message onto one physical line.
 fn one_line(m : @message.Message) -> String {
   let s = @message.to_plain_string(m)
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for c in s {
     out.write_char(if c == '\n' { ' ' } else { c })
   }

@@ -264,7 +264,7 @@ fn drive_recovering(
         if sync_class(held) is (Close | Boundary | Terminal) {
           match auto_close(stack, sym) {
             Some(closers) => {
-              let text = StringBuilder::new()
+              let text = StringBuilder()
               for c in closers {
                 pending.push((c.0, last_pos, last_pos))
                 text.write_string(c.1)

@@ -55,7 +55,7 @@ fn on_clauses(
   names : @wasm_bin.Names,
   scope : Array[String?],
 ) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   for c in on {
     match c {
       OnLabel(tag, l) =>
@@ -136,7 +136,7 @@ pub fn mnemonic(
 /// one: `(ref null $t)` is a single thing to write and has nowhere to break.
 fn top_level_words(text : String) -> Array[String] {
   let out : Array[String] = []
-  let cur = StringBuilder::new()
+  let cur = StringBuilder()
   let mut depth = 0
   for c in text {
     if c == '(' {
@@ -285,7 +285,7 @@ fn mnemonic_text(
     // A branch table names every arm and then the default, which is written
     // last and no differently -- the position is what makes it the default.
     BrTable(ls, d) => {
-      let out = StringBuilder::new()
+      let out = StringBuilder()
       out.write_string("br_table")
       for l in ls {
         out.write_string(" " + label(scope, l))
@@ -328,7 +328,7 @@ fn mnemonic_text(
     // `select` with an explicit result type. Written with the type when the
     // operands are references, because then it cannot be inferred.
     SelectTyped(ts) => {
-      let out = StringBuilder::new()
+      let out = StringBuilder()
       out.write_string("select (result")
       for t in ts {
         out.write_string(" " + valtype(t, names.types))
@@ -353,7 +353,7 @@ fn mnemonic_text(
     F32x4ReplaceLane(l) => "f32x4.replace_lane " + l.to_string()
     F64x2ReplaceLane(l) => "f64x2.replace_lane " + l.to_string()
     I8x16Shuffle(lanes) => {
-      let out = StringBuilder::new()
+      let out = StringBuilder()
       out.write_string("i8x16.shuffle")
       for k in 0..<16 {
         out.write_string(" " + lanes[k].to_string())

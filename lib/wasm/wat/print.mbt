@@ -51,7 +51,7 @@ fn is_bare_identifier(s : String) -> Bool {
 /// A name-section entry as a string. The section stores UTF-8 bytes; the
 /// printer wants characters.
 fn text_of(b : Bytes) -> String {
-  let out = StringBuilder::new()
+  let out = StringBuilder()
   let mut k = 0
   while k < b.length() {
     let c = b[k].to_int()
