@@ -1,1 +1,0 @@
-let x: i64 = 42;        // takes i64 from the annotation

@@ -1,2 +1,0 @@
-{"severity":"warning","file":"test/corpus/docs/reference__005_checked.wax","startLine":1,"startColumn":5,"endLine":1,"endColumn":10,"startOffset":5,"endOffset":10,"message":"The type 'point' is never used.","warning":"unused-field","hint":null,"related":[]}
-{"severity":"warning","file":"test/corpus/docs/reference__005_checked.wax","startLine":3,"startColumn":3,"endLine":3,"endColumn":6,"startOffset":38,"endOffset":41,"message":"The function 'add' is never used.","warning":"unused-field","hint":null,"related":[]}

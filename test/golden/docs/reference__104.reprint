@@ -1,9 +1,0 @@
-memory mem1: i64 {
-    data _ @ [0x1000 // active, anonymous
-        ] = "hello world";
-    data greeting @ [0x2000 // active, named
-        ] = "hi";
-}
-
-data seg = "\x72\x61\x77\x00\x62\x79\x74\x65\x73"; // top-level passive segment
-data init @ mem0 [0] = "hello"; // top-level active segment

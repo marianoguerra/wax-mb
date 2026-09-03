@@ -1,0 +1,1 @@
+{"severity":"error","file":"test/corpus/docs/module_fields__021.wax","startLine":3,"startColumn":0,"endLine":3,"endColumn":1,"startOffset":33,"endOffset":34,"message":"Assuming that the attributes are complete, expecting a definition.","warning":null,"hint":null,"related":[]}

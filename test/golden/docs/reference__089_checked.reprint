@@ -1,6 +1,0 @@
-type shape = open { kind: i32 };
-type circle: shape = { kind: i32, radius: f64 };
-
-fn kind_of(s: &shape) -> i32 {
-    s.kind;
-} // also accepts a &circle

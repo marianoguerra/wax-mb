@@ -1,4 +1,0 @@
-if x <s 0 {
-    unreachable;            // this branch cannot happen
-}
-nop;                        // no operation

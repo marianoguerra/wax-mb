@@ -1,5 +1,0 @@
-if condition => i32 {
-    1;
-} else {
-    0;
-}

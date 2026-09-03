@@ -1,3 +1,0 @@
-arr.fill(idx, val, count)             // fill count elements from idx with val
-arr.copy(idx, src, src_idx, count)    // copy from another array src
-arr.init(seg, idx, src_idx, count)    // fill from a passive data/element segment

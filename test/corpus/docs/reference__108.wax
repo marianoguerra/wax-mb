@@ -1,7 +1,0 @@
-table funcs: &?func [1, 10];          // table of function references
-elem init: &?func @ funcs[0] = [f];   // active: initialize funcs at offset 0
-elem pool: &?func = [f, g, h];        // passive segment
-
-funcs[i]                              // table.get
-funcs[i] = g;                         // table.set
-(funcs[i] as &cmp)(x, y)              // indirect call (call_indirect)

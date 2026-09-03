@@ -1,6 +1,0 @@
-type chars = [i8];
-type wide = [i16];
-
-chars # "hi";               // a &chars, one i8 per UTF-8 byte
-wide # "café";              // a &wide, one i16 per UTF-16 code unit
-let s: &chars = "yo";       // type taken from the annotation

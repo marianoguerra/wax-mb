@@ -1,6 +1,0 @@
-fn example() -> i32 {
-    let x: i32; // annotated, no initializer
-    let y = 20; // type inferred from the initializer (i32)
-    x = 10;
-    x + y;
-}

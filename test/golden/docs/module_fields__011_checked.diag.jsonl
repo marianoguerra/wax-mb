@@ -1,0 +1,2 @@
+{"severity":"warning","file":"test/corpus/docs/module_fields__011_checked.wax","startLine":2,"startColumn":10,"endLine":2,"endColumn":14,"startOffset":25,"endOffset":29,"message":"The imported global 'base' is never used.","warning":"unused-import","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/docs/module_fields__011_checked.wax","startLine":3,"startColumn":8,"endLine":3,"endColumn":15,"startOffset":44,"endOffset":51,"message":"The imported global 'counter' is never used.","warning":"unused-import","hint":null,"related":[]}

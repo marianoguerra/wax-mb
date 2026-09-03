@@ -1,5 +1,0 @@
-e as t          // cast or convert (as i32_s / as i32_u for signedness)
-e is &t         // type test, yields i32
-!ref            // true if null
-ref!            // assert non-null (traps if null)
-x as &i31       // box an i32; read back with as i32_s / as i32_u

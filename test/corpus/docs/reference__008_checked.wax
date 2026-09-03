@@ -1,3 +1,0 @@
-let a = 42;             // unconstrained -> i32
-let b = 5_000_000_000;  // too big for i32 -> i64
-let c = 3.14;           // float literal -> f64

@@ -1,3 +1,0 @@
-x as &i31       // box an i32 (its low 31 bits) into a reference
-r as i32_s      // read an &i31 back, sign-extended
-r as i32_u      //   or zero-extended

@@ -1,1 +1,0 @@
-memory pool: i32 [1, 16] shared;

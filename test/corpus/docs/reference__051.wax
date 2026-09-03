@@ -1,4 +1,0 @@
-#[freq = 4] f(x);            // fine: the hint is on the call
-let y = #[freq = 4] f(x);    // fine: the initialiser is delimited
-(#[freq = 4] f(x)) + 1       // fine: parentheses say which operand
-#[freq = 4] f(x) + 1         // error: the hint lands on the `+`

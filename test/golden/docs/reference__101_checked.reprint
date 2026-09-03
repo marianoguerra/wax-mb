@@ -1,2 +1,0 @@
-memory small: i32 [4096] pagesize 1; // 4096 pages of 1 byte
-memory mem3: i32 [1, 1000] pagesize 65536; // the default page size, explicit

@@ -1,2 +1,0 @@
-{"severity":"warning","file":"test/corpus/docs/reference__003_checked.wax","startLine":4,"startColumn":9,"endLine":4,"endColumn":12,"startOffset":51,"endOffset":54,"message":"The type 'obj' is never used.","warning":"unused-field","hint":null,"related":[]}
-{"severity":"warning","file":"test/corpus/docs/reference__003_checked.wax","startLine":5,"startColumn":9,"endLine":5,"endColumn":17,"startOffset":98,"endOffset":106,"message":"The type 'obj_desc' is never used.","warning":"unused-field","hint":null,"related":[]}

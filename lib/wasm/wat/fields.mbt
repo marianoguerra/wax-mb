@@ -411,7 +411,15 @@ fn import_field(m : @wasm_bin.Module, k : Int) -> Sexp {
 
 ///|
 /// `(import "m" (item "n" (func ...)) ...)`, or -- when every item shares one
-/// descriptor -- `(import "m" (item $id "n") ... (func ...))`.
+/// descriptor AND none of them is named -- the shared-type form
+/// `(import "m" (item "n") ... (func ...))`.
+///
+/// The shared-type text form is strictly name-only: an item under it has
+/// nowhere to bind an identifier, so a homogeneous group whose items carry
+/// name-section names is written per-item instead, each spelling the shared
+/// type out. Nothing is lost by that -- the choice here is about TEXT, and the
+/// binary encoder still writes such a group with the shared-type (0x7E)
+/// encoding, the ids riding the name section.
 fn compact_import(
   m : @wasm_bin.Module,
   i : @wasm_bin.Import,
@@ -422,37 +430,74 @@ fn compact_import(
   match g {
     Heterogeneous(items) =>
       for it in items {
-        let (kind, id, typ, _) = import_parts(m, it.1, at)
-        let inner : Array[Sexp] = [Atom(kind)]
-        for x in id {
-          inner.push(x)
+        out.push(compact_item(m, it.0, it.1, at))
+      }
+    Homogeneous(names) =>
+      if group_is_named(m, i.desc, names.length(), at) {
+        for n in names {
+          out.push(compact_item(m, n, i.desc, at))
         }
+      } else {
+        let (kind, _, typ, _) = import_parts(m, i.desc, at)
+        for n in names {
+          out.push(List([Atom("item"), Atom(quoted(n))]))
+          bump(at, kind)
+        }
+        let tail : Array[Sexp] = [Atom(kind)]
         for x in typ {
-          inner.push(x)
+          tail.push(x)
         }
-        out.push(List([Atom("item"), Atom(quoted(it.0)), List([block(inner)])]))
-        bump(at, kind)
+        out.push(List(tail))
       }
-    Homogeneous(names) => {
-      let (kind, _, typ, _) = import_parts(m, i.desc, at)
-      for n in names {
-        let (_, id, _, _) = import_parts(m, i.desc, at)
-        let item : Array[Sexp] = [Atom("item")]
-        for x in id {
-          item.push(x)
-        }
-        item.push(Atom(quoted(n)))
-        out.push(List(item))
-        bump(at, kind)
-      }
-      let tail : Array[Sexp] = [Atom(kind)]
-      for x in typ {
-        tail.push(x)
-      }
-      out.push(List(tail))
-    }
   }
   List(out)
+}
+
+///|
+/// One `(item "n" (kind $id ...))` of a per-item group, advancing `at` past the
+/// slot it took.
+fn compact_item(
+  m : @wasm_bin.Module,
+  name : Bytes,
+  d : @wasm_bin.ImportDesc,
+  at : Map[String, Int],
+) -> Sexp {
+  let (kind, id, typ, _) = import_parts(m, d, at)
+  let inner : Array[Sexp] = [Atom(kind)]
+  for x in id {
+    inner.push(x)
+  }
+  for x in typ {
+    inner.push(x)
+  }
+  bump(at, kind)
+  List([Atom("item"), Atom(quoted(name)), List([block(inner)])])
+}
+
+///|
+/// Whether any of the `n` items a homogeneous group starting at `at` stands for
+/// carries a name-section id -- which the shared-type text form cannot write.
+/// Looks only, and leaves `at` where it found it.
+fn group_is_named(
+  m : @wasm_bin.Module,
+  d : @wasm_bin.ImportDesc,
+  n : Int,
+  at : Map[String, Int],
+) -> Bool {
+  let names = match d {
+    Func(_, _) => m.names.functions
+    Table(_) => m.names.tables
+    Memory(_) => m.names.memories
+    Global(_) => m.names.globals
+    Tag(_) => m.names.tags
+  }
+  let start = at.get(kind_of(d)).unwrap_or(0)
+  for j in 0..<n {
+    if names.get(start + j) is Some(_) {
+      return true
+    }
+  }
+  false
 }
 
 ///|

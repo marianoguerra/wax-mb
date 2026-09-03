@@ -1,8 +1,0 @@
-let r: i32;
-'done: do {
-    dispatch x ['zero, 'one, else 'two] {
-        'two:  { r = 30; }
-        'one:  { r = 20; br 'done; }
-        'zero: { r = 10; br 'done; }
-    }
-}

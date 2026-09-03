@@ -1,6 +1,0 @@
-'done: do {
-    if condition {
-        br 'done;   // jump past the block (exits it)
-    }
-    // ...
-}

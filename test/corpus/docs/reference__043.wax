@@ -1,7 +1,0 @@
-'next: loop {
-    if i <s n {
-        total = total + i;
-        i = i + 1;
-        br 'next;
-    }
-}

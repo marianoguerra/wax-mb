@@ -1,3 +1,0 @@
-fn bad() -> i32 {
-    2; 3; _ + 3 + _;    // Error: This expression occurs before a hole '_'.
-}

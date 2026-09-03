@@ -1,1 +1,0 @@
-const handler: &callback = inc; // a reference to `inc`, not a call

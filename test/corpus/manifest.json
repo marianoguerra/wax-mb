@@ -1,8 +1,8 @@
 {
   "_comment": "Provenance for every corpus file. Regenerate with tools/waxdiff.py collect. Files are committed so the differential suite runs without the wax/ checkout.",
   "counts": {
-    "cram": 309,
-    "docs": 391,
+    "cram": 310,
+    "docs": 219,
     "wat": 259,
     "spec": 1158
   },
@@ -195,6 +195,9 @@
     },
     "cram/descriptor-types__not-struct.wax": {
       "origin": "test/cram-tests/descriptor-types.t/not-struct.wax"
+    },
+    "cram/descriptor-types__sub-added-descriptor.wax": {
+      "origin": "test/cram-tests/descriptor-types.t/sub-added-descriptor.wax"
     },
     "cram/descriptor-types__sub-missing-descriptor.wax": {
       "origin": "test/cram-tests/descriptor-types.t/sub-missing-descriptor.wax"
@@ -1054,6 +1057,18 @@
     "docs/examples__028.wax": {
       "origin": "docs/src/examples.md block 28"
     },
+    "docs/instructions__000.wax": {
+      "origin": "docs/src/correspondence/instructions.md block 0"
+    },
+    "docs/instructions__001.wax": {
+      "origin": "docs/src/correspondence/instructions.md block 1"
+    },
+    "docs/instructions__002.wax": {
+      "origin": "docs/src/correspondence/instructions.md block 2"
+    },
+    "docs/instructions__003.wax": {
+      "origin": "docs/src/correspondence/instructions.md block 3"
+    },
     "docs/introduction__000.wax": {
       "origin": "docs/src/introduction.md block 0"
     },
@@ -1450,662 +1465,134 @@
     "docs/language__129_checked.wax": {
       "origin": "docs/src/language.md block 129"
     },
-    "docs/reference__000.wax": {
-      "origin": "skills/wax/reference.md block 0"
+    "docs/module_fields__000_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 0"
     },
-    "docs/reference__001.wax": {
-      "origin": "skills/wax/reference.md block 1"
+    "docs/module_fields__001_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 1"
     },
-    "docs/reference__002_checked.wax": {
-      "origin": "skills/wax/reference.md block 2"
+    "docs/module_fields__002_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 2"
     },
-    "docs/reference__003_checked.wax": {
-      "origin": "skills/wax/reference.md block 3"
+    "docs/module_fields__003_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 3"
     },
-    "docs/reference__004_checked.wax": {
-      "origin": "skills/wax/reference.md block 4"
+    "docs/module_fields__004_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 4"
     },
-    "docs/reference__005_checked.wax": {
-      "origin": "skills/wax/reference.md block 5"
+    "docs/module_fields__005.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 5"
     },
-    "docs/reference__006.wax": {
-      "origin": "skills/wax/reference.md block 6"
+    "docs/module_fields__006_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 6"
     },
-    "docs/reference__007_checked.wax": {
-      "origin": "skills/wax/reference.md block 7"
+    "docs/module_fields__007.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 7"
     },
-    "docs/reference__008_checked.wax": {
-      "origin": "skills/wax/reference.md block 8"
+    "docs/module_fields__008.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 8"
     },
-    "docs/reference__009.wax": {
-      "origin": "skills/wax/reference.md block 9"
+    "docs/module_fields__009_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 9"
     },
-    "docs/reference__010.wax": {
-      "origin": "skills/wax/reference.md block 10"
+    "docs/module_fields__010_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 10"
     },
-    "docs/reference__011_checked.wax": {
-      "origin": "skills/wax/reference.md block 11"
+    "docs/module_fields__011_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 11"
     },
-    "docs/reference__012_checked.wax": {
-      "origin": "skills/wax/reference.md block 12"
+    "docs/module_fields__012_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 12"
     },
-    "docs/reference__013.wax": {
-      "origin": "skills/wax/reference.md block 13"
+    "docs/module_fields__013_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 13"
     },
-    "docs/reference__014.wax": {
-      "origin": "skills/wax/reference.md block 14"
+    "docs/module_fields__014_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 14"
     },
-    "docs/reference__015.wax": {
-      "origin": "skills/wax/reference.md block 15"
+    "docs/module_fields__015.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 15"
     },
-    "docs/reference__016.wax": {
-      "origin": "skills/wax/reference.md block 16"
+    "docs/module_fields__016_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 16"
     },
-    "docs/reference__017.wax": {
-      "origin": "skills/wax/reference.md block 17"
+    "docs/module_fields__017.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 17"
     },
-    "docs/reference__018.wax": {
-      "origin": "skills/wax/reference.md block 18"
+    "docs/module_fields__018.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 18"
     },
-    "docs/reference__019_checked.wax": {
-      "origin": "skills/wax/reference.md block 19"
+    "docs/module_fields__019_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 19"
     },
-    "docs/reference__020_checked.wax": {
-      "origin": "skills/wax/reference.md block 20"
+    "docs/module_fields__020.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 20"
     },
-    "docs/reference__021_checked.wax": {
-      "origin": "skills/wax/reference.md block 21"
+    "docs/module_fields__021.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 21"
     },
-    "docs/reference__022.wax": {
-      "origin": "skills/wax/reference.md block 22"
+    "docs/module_fields__022.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 22"
     },
-    "docs/reference__023.wax": {
-      "origin": "skills/wax/reference.md block 23"
+    "docs/module_fields__023.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 23"
     },
-    "docs/reference__024.wax": {
-      "origin": "skills/wax/reference.md block 24"
+    "docs/module_fields__024_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 24"
     },
-    "docs/reference__025.wax": {
-      "origin": "skills/wax/reference.md block 25"
+    "docs/module_fields__025_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 25"
     },
-    "docs/reference__026.wax": {
-      "origin": "skills/wax/reference.md block 26"
+    "docs/module_fields__026_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 26"
     },
-    "docs/reference__027.wax": {
-      "origin": "skills/wax/reference.md block 27"
+    "docs/module_fields__027_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 27"
     },
-    "docs/reference__028.wax": {
-      "origin": "skills/wax/reference.md block 28"
+    "docs/module_fields__028_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 28"
     },
-    "docs/reference__029.wax": {
-      "origin": "skills/wax/reference.md block 29"
+    "docs/module_fields__029_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 29"
     },
-    "docs/reference__030.wax": {
-      "origin": "skills/wax/reference.md block 30"
+    "docs/module_fields__030_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 30"
     },
-    "docs/reference__031.wax": {
-      "origin": "skills/wax/reference.md block 31"
+    "docs/module_fields__031_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 31"
     },
-    "docs/reference__032.wax": {
-      "origin": "skills/wax/reference.md block 32"
+    "docs/module_fields__032_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 32"
     },
-    "docs/reference__033.wax": {
-      "origin": "skills/wax/reference.md block 33"
+    "docs/module_fields__033_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 33"
     },
-    "docs/reference__034.wax": {
-      "origin": "skills/wax/reference.md block 34"
+    "docs/module_fields__034_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 34"
     },
-    "docs/reference__035.wax": {
-      "origin": "skills/wax/reference.md block 35"
+    "docs/module_fields__035_checked.wax": {
+      "origin": "docs/src/correspondence/module_fields.md block 35"
     },
-    "docs/reference__036.wax": {
-      "origin": "skills/wax/reference.md block 36"
+    "docs/types__000_checked.wax": {
+      "origin": "docs/src/correspondence/types.md block 0"
     },
-    "docs/reference__037.wax": {
-      "origin": "skills/wax/reference.md block 37"
+    "docs/types__001_checked.wax": {
+      "origin": "docs/src/correspondence/types.md block 1"
     },
-    "docs/reference__038.wax": {
-      "origin": "skills/wax/reference.md block 38"
+    "docs/types__002_checked.wax": {
+      "origin": "docs/src/correspondence/types.md block 2"
     },
-    "docs/reference__039.wax": {
-      "origin": "skills/wax/reference.md block 39"
+    "docs/types__003_checked.wax": {
+      "origin": "docs/src/correspondence/types.md block 3"
     },
-    "docs/reference__040.wax": {
-      "origin": "skills/wax/reference.md block 40"
+    "docs/types__004_checked.wax": {
+      "origin": "docs/src/correspondence/types.md block 4"
     },
-    "docs/reference__041.wax": {
-      "origin": "skills/wax/reference.md block 41"
+    "docs/types__005_checked.wax": {
+      "origin": "docs/src/correspondence/types.md block 5"
     },
-    "docs/reference__042.wax": {
-      "origin": "skills/wax/reference.md block 42"
-    },
-    "docs/reference__043.wax": {
-      "origin": "skills/wax/reference.md block 43"
-    },
-    "docs/reference__044.wax": {
-      "origin": "skills/wax/reference.md block 44"
-    },
-    "docs/reference__045.wax": {
-      "origin": "skills/wax/reference.md block 45"
-    },
-    "docs/reference__046.wax": {
-      "origin": "skills/wax/reference.md block 46"
-    },
-    "docs/reference__047.wax": {
-      "origin": "skills/wax/reference.md block 47"
-    },
-    "docs/reference__048.wax": {
-      "origin": "skills/wax/reference.md block 48"
-    },
-    "docs/reference__049.wax": {
-      "origin": "skills/wax/reference.md block 49"
-    },
-    "docs/reference__050.wax": {
-      "origin": "skills/wax/reference.md block 50"
-    },
-    "docs/reference__051.wax": {
-      "origin": "skills/wax/reference.md block 51"
-    },
-    "docs/reference__052.wax": {
-      "origin": "skills/wax/reference.md block 52"
-    },
-    "docs/reference__053_checked.wax": {
-      "origin": "skills/wax/reference.md block 53"
-    },
-    "docs/reference__054.wax": {
-      "origin": "skills/wax/reference.md block 54"
-    },
-    "docs/reference__055.wax": {
-      "origin": "skills/wax/reference.md block 55"
-    },
-    "docs/reference__056.wax": {
-      "origin": "skills/wax/reference.md block 56"
-    },
-    "docs/reference__057.wax": {
-      "origin": "skills/wax/reference.md block 57"
-    },
-    "docs/reference__058_checked.wax": {
-      "origin": "skills/wax/reference.md block 58"
-    },
-    "docs/reference__059.wax": {
-      "origin": "skills/wax/reference.md block 59"
-    },
-    "docs/reference__060.wax": {
-      "origin": "skills/wax/reference.md block 60"
-    },
-    "docs/reference__061_checked.wax": {
-      "origin": "skills/wax/reference.md block 61"
-    },
-    "docs/reference__062_checked.wax": {
-      "origin": "skills/wax/reference.md block 62"
-    },
-    "docs/reference__063_checked.wax": {
-      "origin": "skills/wax/reference.md block 63"
-    },
-    "docs/reference__064_checked.wax": {
-      "origin": "skills/wax/reference.md block 64"
-    },
-    "docs/reference__065_checked.wax": {
-      "origin": "skills/wax/reference.md block 65"
-    },
-    "docs/reference__066_checked.wax": {
-      "origin": "skills/wax/reference.md block 66"
-    },
-    "docs/reference__067.wax": {
-      "origin": "skills/wax/reference.md block 67"
-    },
-    "docs/reference__068.wax": {
-      "origin": "skills/wax/reference.md block 68"
-    },
-    "docs/reference__069.wax": {
-      "origin": "skills/wax/reference.md block 69"
-    },
-    "docs/reference__070_checked.wax": {
-      "origin": "skills/wax/reference.md block 70"
-    },
-    "docs/reference__071_checked.wax": {
-      "origin": "skills/wax/reference.md block 71"
-    },
-    "docs/reference__072_checked.wax": {
-      "origin": "skills/wax/reference.md block 72"
-    },
-    "docs/reference__073_checked.wax": {
-      "origin": "skills/wax/reference.md block 73"
-    },
-    "docs/reference__074.wax": {
-      "origin": "skills/wax/reference.md block 74"
-    },
-    "docs/reference__075.wax": {
-      "origin": "skills/wax/reference.md block 75"
-    },
-    "docs/reference__076.wax": {
-      "origin": "skills/wax/reference.md block 76"
-    },
-    "docs/reference__077.wax": {
-      "origin": "skills/wax/reference.md block 77"
-    },
-    "docs/reference__078.wax": {
-      "origin": "skills/wax/reference.md block 78"
-    },
-    "docs/reference__079_checked.wax": {
-      "origin": "skills/wax/reference.md block 79"
-    },
-    "docs/reference__080.wax": {
-      "origin": "skills/wax/reference.md block 80"
-    },
-    "docs/reference__081.wax": {
-      "origin": "skills/wax/reference.md block 81"
-    },
-    "docs/reference__082.wax": {
-      "origin": "skills/wax/reference.md block 82"
-    },
-    "docs/reference__083.wax": {
-      "origin": "skills/wax/reference.md block 83"
-    },
-    "docs/reference__084_checked.wax": {
-      "origin": "skills/wax/reference.md block 84"
-    },
-    "docs/reference__085.wax": {
-      "origin": "skills/wax/reference.md block 85"
-    },
-    "docs/reference__086.wax": {
-      "origin": "skills/wax/reference.md block 86"
-    },
-    "docs/reference__087.wax": {
-      "origin": "skills/wax/reference.md block 87"
-    },
-    "docs/reference__088_checked.wax": {
-      "origin": "skills/wax/reference.md block 88"
-    },
-    "docs/reference__089_checked.wax": {
-      "origin": "skills/wax/reference.md block 89"
-    },
-    "docs/reference__090_checked.wax": {
-      "origin": "skills/wax/reference.md block 90"
-    },
-    "docs/reference__091.wax": {
-      "origin": "skills/wax/reference.md block 91"
-    },
-    "docs/reference__092.wax": {
-      "origin": "skills/wax/reference.md block 92"
-    },
-    "docs/reference__093_checked.wax": {
-      "origin": "skills/wax/reference.md block 93"
-    },
-    "docs/reference__094.wax": {
-      "origin": "skills/wax/reference.md block 94"
-    },
-    "docs/reference__095.wax": {
-      "origin": "skills/wax/reference.md block 95"
-    },
-    "docs/reference__096.wax": {
-      "origin": "skills/wax/reference.md block 96"
-    },
-    "docs/reference__097_checked.wax": {
-      "origin": "skills/wax/reference.md block 97"
-    },
-    "docs/reference__098_checked.wax": {
-      "origin": "skills/wax/reference.md block 98"
-    },
-    "docs/reference__099_checked.wax": {
-      "origin": "skills/wax/reference.md block 99"
-    },
-    "docs/reference__100_checked.wax": {
-      "origin": "skills/wax/reference.md block 100"
-    },
-    "docs/reference__101_checked.wax": {
-      "origin": "skills/wax/reference.md block 101"
-    },
-    "docs/reference__102_checked.wax": {
-      "origin": "skills/wax/reference.md block 102"
-    },
-    "docs/reference__103_checked.wax": {
-      "origin": "skills/wax/reference.md block 103"
-    },
-    "docs/reference__104.wax": {
-      "origin": "skills/wax/reference.md block 104"
-    },
-    "docs/reference__105.wax": {
-      "origin": "skills/wax/reference.md block 105"
-    },
-    "docs/reference__106.wax": {
-      "origin": "skills/wax/reference.md block 106"
-    },
-    "docs/reference__107.wax": {
-      "origin": "skills/wax/reference.md block 107"
-    },
-    "docs/reference__108.wax": {
-      "origin": "skills/wax/reference.md block 108"
-    },
-    "docs/reference__109.wax": {
-      "origin": "skills/wax/reference.md block 109"
-    },
-    "docs/reference__110.wax": {
-      "origin": "skills/wax/reference.md block 110"
-    },
-    "docs/reference__111_checked.wax": {
-      "origin": "skills/wax/reference.md block 111"
-    },
-    "docs/reference__112_checked.wax": {
-      "origin": "skills/wax/reference.md block 112"
-    },
-    "docs/reference__113.wax": {
-      "origin": "skills/wax/reference.md block 113"
-    },
-    "docs/reference__114.wax": {
-      "origin": "skills/wax/reference.md block 114"
-    },
-    "docs/reference__115.wax": {
-      "origin": "skills/wax/reference.md block 115"
-    },
-    "docs/reference__116.wax": {
-      "origin": "skills/wax/reference.md block 116"
-    },
-    "docs/reference__117.wax": {
-      "origin": "skills/wax/reference.md block 117"
-    },
-    "docs/reference__118_checked.wax": {
-      "origin": "skills/wax/reference.md block 118"
-    },
-    "docs/reference__119_checked.wax": {
-      "origin": "skills/wax/reference.md block 119"
-    },
-    "docs/reference__120.wax": {
-      "origin": "skills/wax/reference.md block 120"
-    },
-    "docs/reference__121.wax": {
-      "origin": "skills/wax/reference.md block 121"
-    },
-    "docs/reference__122_checked.wax": {
-      "origin": "skills/wax/reference.md block 122"
-    },
-    "docs/reference__123_checked.wax": {
-      "origin": "skills/wax/reference.md block 123"
-    },
-    "docs/reference__124_checked.wax": {
-      "origin": "skills/wax/reference.md block 124"
-    },
-    "docs/reference__125_checked.wax": {
-      "origin": "skills/wax/reference.md block 125"
-    },
-    "docs/reference__126.wax": {
-      "origin": "skills/wax/reference.md block 126"
-    },
-    "docs/reference__127.wax": {
-      "origin": "skills/wax/reference.md block 127"
-    },
-    "docs/reference__128_checked.wax": {
-      "origin": "skills/wax/reference.md block 128"
-    },
-    "docs/reference__129_checked.wax": {
-      "origin": "skills/wax/reference.md block 129"
-    },
-    "docs/reference__130_checked.wax": {
-      "origin": "skills/wax/reference.md block 130"
-    },
-    "docs/reference__131_checked.wax": {
-      "origin": "skills/wax/reference.md block 131"
-    },
-    "docs/reference__132.wax": {
-      "origin": "skills/wax/reference.md block 132"
-    },
-    "docs/reference__133.wax": {
-      "origin": "skills/wax/reference.md block 133"
-    },
-    "docs/reference__134.wax": {
-      "origin": "skills/wax/reference.md block 134"
-    },
-    "docs/reference__135.wax": {
-      "origin": "skills/wax/reference.md block 135"
-    },
-    "docs/reference__136.wax": {
-      "origin": "skills/wax/reference.md block 136"
-    },
-    "docs/reference__137.wax": {
-      "origin": "skills/wax/reference.md block 137"
-    },
-    "docs/reference__138.wax": {
-      "origin": "skills/wax/reference.md block 138"
-    },
-    "docs/reference__139.wax": {
-      "origin": "skills/wax/reference.md block 139"
-    },
-    "docs/reference__140.wax": {
-      "origin": "skills/wax/reference.md block 140"
-    },
-    "docs/reference__141.wax": {
-      "origin": "skills/wax/reference.md block 141"
-    },
-    "docs/reference__142.wax": {
-      "origin": "skills/wax/reference.md block 142"
-    },
-    "docs/reference__143.wax": {
-      "origin": "skills/wax/reference.md block 143"
-    },
-    "docs/reference__144.wax": {
-      "origin": "skills/wax/reference.md block 144"
-    },
-    "docs/reference__145.wax": {
-      "origin": "skills/wax/reference.md block 145"
-    },
-    "docs/reference__146.wax": {
-      "origin": "skills/wax/reference.md block 146"
-    },
-    "docs/reference__147.wax": {
-      "origin": "skills/wax/reference.md block 147"
-    },
-    "docs/reference__148.wax": {
-      "origin": "skills/wax/reference.md block 148"
-    },
-    "docs/reference__149.wax": {
-      "origin": "skills/wax/reference.md block 149"
-    },
-    "docs/reference__150.wax": {
-      "origin": "skills/wax/reference.md block 150"
-    },
-    "docs/reference__151.wax": {
-      "origin": "skills/wax/reference.md block 151"
-    },
-    "docs/reference__152.wax": {
-      "origin": "skills/wax/reference.md block 152"
-    },
-    "docs/reference__153.wax": {
-      "origin": "skills/wax/reference.md block 153"
-    },
-    "docs/reference__154.wax": {
-      "origin": "skills/wax/reference.md block 154"
-    },
-    "docs/reference__155.wax": {
-      "origin": "skills/wax/reference.md block 155"
-    },
-    "docs/reference__156.wax": {
-      "origin": "skills/wax/reference.md block 156"
-    },
-    "docs/reference__157.wax": {
-      "origin": "skills/wax/reference.md block 157"
-    },
-    "docs/reference__158.wax": {
-      "origin": "skills/wax/reference.md block 158"
-    },
-    "docs/reference__159.wax": {
-      "origin": "skills/wax/reference.md block 159"
-    },
-    "docs/reference__160.wax": {
-      "origin": "skills/wax/reference.md block 160"
-    },
-    "docs/reference__161.wax": {
-      "origin": "skills/wax/reference.md block 161"
-    },
-    "docs/reference__162.wax": {
-      "origin": "skills/wax/reference.md block 162"
-    },
-    "docs/reference__163.wax": {
-      "origin": "skills/wax/reference.md block 163"
-    },
-    "docs/reference__164.wax": {
-      "origin": "skills/wax/reference.md block 164"
-    },
-    "docs/reference__165.wax": {
-      "origin": "skills/wax/reference.md block 165"
-    },
-    "docs/reference__166.wax": {
-      "origin": "skills/wax/reference.md block 166"
-    },
-    "docs/reference__167.wax": {
-      "origin": "skills/wax/reference.md block 167"
-    },
-    "docs/reference__168.wax": {
-      "origin": "skills/wax/reference.md block 168"
-    },
-    "docs/reference__169.wax": {
-      "origin": "skills/wax/reference.md block 169"
-    },
-    "docs/reference__170.wax": {
-      "origin": "skills/wax/reference.md block 170"
-    },
-    "docs/reference__171.wax": {
-      "origin": "skills/wax/reference.md block 171"
-    },
-    "docs/reference__172_checked.wax": {
-      "origin": "skills/wax/reference.md block 172"
-    },
-    "docs/reference__173_checked.wax": {
-      "origin": "skills/wax/reference.md block 173"
-    },
-    "docs/reference__174_checked.wax": {
-      "origin": "skills/wax/reference.md block 174"
-    },
-    "docs/reference__175_checked.wax": {
-      "origin": "skills/wax/reference.md block 175"
-    },
-    "docs/reference__176_checked.wax": {
-      "origin": "skills/wax/reference.md block 176"
-    },
-    "docs/reference__177_checked.wax": {
-      "origin": "skills/wax/reference.md block 177"
-    },
-    "docs/reference__178_checked.wax": {
-      "origin": "skills/wax/reference.md block 178"
-    },
-    "docs/reference__179.wax": {
-      "origin": "skills/wax/reference.md block 179"
-    },
-    "docs/reference__180.wax": {
-      "origin": "skills/wax/reference.md block 180"
-    },
-    "docs/reference__181.wax": {
-      "origin": "skills/wax/reference.md block 181"
-    },
-    "docs/reference__182.wax": {
-      "origin": "skills/wax/reference.md block 182"
-    },
-    "docs/reference__183_checked.wax": {
-      "origin": "skills/wax/reference.md block 183"
-    },
-    "docs/reference__184_checked.wax": {
-      "origin": "skills/wax/reference.md block 184"
-    },
-    "docs/reference__185_checked.wax": {
-      "origin": "skills/wax/reference.md block 185"
-    },
-    "docs/reference__186_checked.wax": {
-      "origin": "skills/wax/reference.md block 186"
-    },
-    "docs/reference__187_checked.wax": {
-      "origin": "skills/wax/reference.md block 187"
-    },
-    "docs/reference__188.wax": {
-      "origin": "skills/wax/reference.md block 188"
-    },
-    "docs/reference__189_checked.wax": {
-      "origin": "skills/wax/reference.md block 189"
-    },
-    "docs/reference__190.wax": {
-      "origin": "skills/wax/reference.md block 190"
-    },
-    "docs/reference__191.wax": {
-      "origin": "skills/wax/reference.md block 191"
-    },
-    "docs/reference__192_checked.wax": {
-      "origin": "skills/wax/reference.md block 192"
-    },
-    "docs/reference__193_checked.wax": {
-      "origin": "skills/wax/reference.md block 193"
-    },
-    "docs/reference__194_checked.wax": {
-      "origin": "skills/wax/reference.md block 194"
-    },
-    "docs/reference__195_checked.wax": {
-      "origin": "skills/wax/reference.md block 195"
-    },
-    "docs/reference__196_checked.wax": {
-      "origin": "skills/wax/reference.md block 196"
-    },
-    "docs/reference__197_checked.wax": {
-      "origin": "skills/wax/reference.md block 197"
-    },
-    "docs/reference__198.wax": {
-      "origin": "skills/wax/reference.md block 198"
-    },
-    "docs/reference__199_checked.wax": {
-      "origin": "skills/wax/reference.md block 199"
-    },
-    "docs/reference__200.wax": {
-      "origin": "skills/wax/reference.md block 200"
-    },
-    "docs/reference__201.wax": {
-      "origin": "skills/wax/reference.md block 201"
-    },
-    "docs/reference__202_checked.wax": {
-      "origin": "skills/wax/reference.md block 202"
-    },
-    "docs/reference__203.wax": {
-      "origin": "skills/wax/reference.md block 203"
-    },
-    "docs/reference__204.wax": {
-      "origin": "skills/wax/reference.md block 204"
-    },
-    "docs/reference__205.wax": {
-      "origin": "skills/wax/reference.md block 205"
-    },
-    "docs/reference__206.wax": {
-      "origin": "skills/wax/reference.md block 206"
-    },
-    "docs/reference__207_checked.wax": {
-      "origin": "skills/wax/reference.md block 207"
-    },
-    "docs/reference__208_checked.wax": {
-      "origin": "skills/wax/reference.md block 208"
-    },
-    "docs/reference__209_checked.wax": {
-      "origin": "skills/wax/reference.md block 209"
-    },
-    "docs/reference__210_checked.wax": {
-      "origin": "skills/wax/reference.md block 210"
-    },
-    "docs/reference__211_checked.wax": {
-      "origin": "skills/wax/reference.md block 211"
-    },
-    "docs/reference__212_checked.wax": {
-      "origin": "skills/wax/reference.md block 212"
-    },
-    "docs/reference__213_checked.wax": {
-      "origin": "skills/wax/reference.md block 213"
-    },
-    "docs/reference__214_checked.wax": {
-      "origin": "skills/wax/reference.md block 214"
-    },
-    "docs/reference__215_checked.wax": {
-      "origin": "skills/wax/reference.md block 215"
-    },
-    "docs/reference__216_checked.wax": {
-      "origin": "skills/wax/reference.md block 216"
-    },
-    "docs/reference__217_checked.wax": {
-      "origin": "skills/wax/reference.md block 217"
-    },
-    "docs/reference__218_checked.wax": {
-      "origin": "skills/wax/reference.md block 218"
+    "docs/types__006_checked.wax": {
+      "origin": "docs/src/correspondence/types.md block 6"
     },
     "fuzz/hint-attr-then-syntax-error.wax": {
       "origin": "diff-fuzzing find, minimized: a statement-position attribute that is not a hint, followed by a syntax error"
@@ -2419,8 +1906,8 @@
     "spec/wasm-test-suite__core__custom-descriptors__descriptors__descriptors.0.wax": {
       "origin": "test/wasm-test-suite/core/custom-descriptors/descriptors.wast -> descriptors.0.wasm (wasm->wax)"
     },
-    "spec/wasm-test-suite__core__custom-descriptors__descriptors__descriptors.21.wax": {
-      "origin": "test/wasm-test-suite/core/custom-descriptors/descriptors.wast -> descriptors.21.wasm (wasm->wax)"
+    "spec/wasm-test-suite__core__custom-descriptors__descriptors__descriptors.1.wax": {
+      "origin": "test/wasm-test-suite/core/custom-descriptors/descriptors.wast -> descriptors.1.wasm (wasm->wax)"
     },
     "spec/wasm-test-suite__core__custom-descriptors__descriptors__descriptors.22.wax": {
       "origin": "test/wasm-test-suite/core/custom-descriptors/descriptors.wast -> descriptors.22.wasm (wasm->wax)"
@@ -5635,8 +5122,8 @@
     "wat/cram-tests__compact-import-groups.t__groups.wax": {
       "origin": "test/cram-tests/compact-import-groups.t/groups.wat (wat->wax)"
     },
-    "wat/cram-tests__compact-import-item-id.t__g2.wax": {
-      "origin": "test/cram-tests/compact-import-item-id.t/g2.wat (wat->wax)"
+    "wat/cram-tests__compact-import-item-id.t__g1.wax": {
+      "origin": "test/cram-tests/compact-import-item-id.t/g1.wat (wat->wax)"
     },
     "wat/cram-tests__compact-import-section.t__imports.wax": {
       "origin": "test/cram-tests/compact-import-section.t/imports.wat (wat->wax)"

@@ -1,0 +1,2 @@
+{"severity":"warning","file":"test/corpus/docs/module_fields__009_checked.wax","startLine":1,"startColumn":6,"endLine":1,"endColumn":8,"startOffset":6,"endOffset":8,"message":"The global 'PI' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/docs/module_fields__009_checked.wax","startLine":2,"startColumn":6,"endLine":2,"endColumn":14,"startOffset":31,"endOffset":39,"message":"The global 'MAX_SIZE' is never used.","warning":"unused-field","hint":null,"related":[]}

@@ -1,1 +1,0 @@
-tag yield(i32) -> i32;      // carries an i32; resumes with an i32

@@ -1,0 +1,2 @@
+{"severity":"warning","file":"test/corpus/docs/module_fields__003_checked.wax","startLine":2,"startColumn":9,"endLine":2,"endColumn":13,"startOffset":15,"endOffset":19,"message":"The type 'list' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/docs/module_fields__003_checked.wax","startLine":3,"startColumn":9,"endLine":3,"endColumn":13,"startOffset":60,"endOffset":64,"message":"The type 'node' is never used.","warning":"unused-field","hint":null,"related":[]}

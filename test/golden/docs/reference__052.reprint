@@ -1,9 +1,0 @@
-#[priority = 1 /* compiled early, never optimized */ ]
-#[run_once]
-fn init() {}
-
-#[priority = 5]
-#[optimization = 10]
-fn hot(x: i32) -> i32 {
-    x;
-}

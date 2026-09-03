@@ -1,8 +1,0 @@
-let x: i32 = 0;           // local (type or initializer may be omitted)
-let (q, r) = divmod(a);   // bind several results
-const PI: f64 = 3.14;     // immutable global
-let counter: i32 = 0;     // mutable global
-x = 1;                    // assign
-x := 1;                   // assign and yield the value (locals only)
-x += 1;                   // compound: += -= *= /= /s= /u= %s= %u= &= |= ^= <<= >>s= >>u=
-_ = e;                    // evaluate and discard

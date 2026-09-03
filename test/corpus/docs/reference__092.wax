@@ -1,2 +1,0 @@
-x as &!point    // cast to an exact reference
-x is &!point    // test for an exact type

@@ -17,10 +17,10 @@
   "repo": "ocsigen/wax",
   "release": "edge",
   "asset": "wax-linux-x86_64",
-  "sha256": "33779a9d35e171fa5481d992ac2411124c397d28333f2d3bc55d836f5e7f0785",
+  "sha256": "abbee1be4e19b1b76c61269bc6966a35b088ff3d257b7c15bb59dfc904252ac6",
   "reports_version": "0.1.1~dev",
-  "upstream_commit": "e57f93b",
-  "ported_from_commit": "e57f93bbcb0fee7c09c3014c717ee2a2538ff7d7",
+  "upstream_commit": "209f43a",
+  "ported_from_commit": "209f43a9526404c73a6b433f35a24c6b54f2a5f9",
   "front_end_identical": true,
   "_front_end_note": [
     "upstream_commit and ported_from_commit are the SAME commit: the binary is",

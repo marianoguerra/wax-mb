@@ -1,1 +1,0 @@
-try_legacy i32 { find(k); } catch { overflow => { _; } _ => { 0; } }

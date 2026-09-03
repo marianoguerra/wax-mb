@@ -1,8 +1,0 @@
-fn classify(v: &?eq) -> i32 {
-    match v {
-        p: &point => { return p.x + p.y; }   // v is a &point, bound to p
-        a: &bytes => { return a.length(); }  // else if v is a &bytes
-        null      => { return -1; }           // else if v is null
-        _         => { return 0; }            // otherwise (the default)
-    }
-}

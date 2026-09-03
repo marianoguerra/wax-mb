@@ -1,2 +1,0 @@
-{"severity":"warning","file":"test/corpus/docs/reference__202_checked.wax","startLine":1,"startColumn":6,"endLine":1,"endColumn":11,"startOffset":6,"endOffset":11,"message":"The table 'funcs' is never used.","warning":"unused-field","hint":null,"related":[]}
-{"severity":"warning","file":"test/corpus/docs/reference__202_checked.wax","startLine":2,"startColumn":6,"endLine":2,"endColumn":10,"startOffset":35,"endOffset":39,"message":"The table 'objs' is never used.","warning":"unused-field","hint":null,"related":[]}

@@ -1,3 +1,0 @@
--x          // Negate
-+x          // Positive (no-op for integers)
-!x          // Logical not / is_null for references

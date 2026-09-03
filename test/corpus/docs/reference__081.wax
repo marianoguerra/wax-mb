@@ -1,3 +1,0 @@
-fn origin() -> &eq {
-    {x: 0, y: 0};               // inferred as &point from its fields
-}

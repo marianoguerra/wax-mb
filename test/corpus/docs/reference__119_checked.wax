@@ -1,5 +1,0 @@
-tag yield(i32) -> i32;
-
-fn worker(x: i32) -> i32 {
-    suspend yield(x);          // yield `x`; the result is what resumes it
-}

@@ -1,8 +1,0 @@
-let r: i32;
-'done: do {
-    match v {
-        p: &point => { r = p.x; br 'done; }
-        a: &bytes => { r = a.length(); br 'done; }
-        _ => { r = 0; }   // also reached by a non-point, non-bytes v
-    }
-}

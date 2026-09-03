@@ -1,3 +1,0 @@
-fn make(x: i32, y: i32) -> &point {
-    {x, y: y + 1};              // same as {x: x, y: y + 1}
-}

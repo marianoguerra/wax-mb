@@ -1,5 +1,0 @@
-x = if condition {
-    1;
-} else {
-    0;
-};

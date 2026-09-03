@@ -1,2 +1,0 @@
-{"severity":"warning","file":"test/corpus/docs/reference__175_checked.wax","startLine":1,"startColumn":5,"endLine":1,"endColumn":7,"startOffset":5,"endOffset":7,"message":"The type 'ft' is never used.","warning":"unused-field","hint":null,"related":[]}
-{"severity":"warning","file":"test/corpus/docs/reference__175_checked.wax","startLine":2,"startColumn":5,"endLine":2,"endColumn":6,"startOffset":31,"endOffset":32,"message":"The type 'k' is never used.","warning":"unused-field","hint":null,"related":[]}

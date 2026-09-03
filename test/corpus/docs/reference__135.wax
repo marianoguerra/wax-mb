@@ -1,4 +1,0 @@
-+  -  *  /  /s  /u  %s  %u       // arithmetic (/ is float division)
-&  |  ^  <<  >>s  >>u            // bitwise
-==  !=  <  <s  <u  <=  <=s  ...  // comparison (== / != on refs is identity)
--x   !x                         // negate / logical not (eqz)

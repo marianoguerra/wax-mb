@@ -1,2 +1,0 @@
-!ref            // True if ref is null
-ref!            // Assert non-null (trap if null)

@@ -1,10 +1,10 @@
 {
   "_comment": "The reference's expected behaviour for every corpus file. Committed, so `waxdiff.py run` needs neither the reference binary nor the wax/ checkout. A diff here is either your behaviour change or upstream's -- never edit it to make a test pass.",
-  "reference": "33779a9d35e171fa5481d992ac2411124c397d28333f2d3bc55d836f5e7f0785",
+  "reference": "abbee1be4e19b1b76c61269bc6966a35b088ff3d257b7c15bb59dfc904252ac6",
   "counts": {
-    "syntax-bad": 212,
-    "compiles-clean": 1596,
-    "type-bad": 311
+    "syntax-bad": 130,
+    "compiles-clean": 1522,
+    "type-bad": 296
   },
   "files": {
     "cram/all-errors-semantic-raise__module-else.wax": {
@@ -380,6 +380,12 @@
       "wasm_sha256": null
     },
     "cram/descriptor-types__not-struct.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "cram/descriptor-types__sub-added-descriptor.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
@@ -2101,6 +2107,30 @@
       "diag_code": 0,
       "wasm_sha256": "458d0187fe2c7d4edd20d90e885f8543db9b079b93551a39dbcae5ab3014c6b9"
     },
+    "docs/instructions__000.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "docs/instructions__001.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "docs/instructions__002.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "docs/instructions__003.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
     "docs/introduction__000.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
@@ -2893,1319 +2923,263 @@
       "diag_code": 0,
       "wasm_sha256": null
     },
-    "docs/reference__000.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "ec9f6ce0bd817aa5e2b28f5782e56182d01fae3d5f17a6a08080fd868a149b75"
-    },
-    "docs/reference__001.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "223cfe4725872705772e0193d8c646685bb13842f2037cf1d7256f8a5e57902c"
-    },
-    "docs/reference__002_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "26e81cc98250df0f1cf60dfbcd98bbb35904c378cdb4133e76a2be0cfc93282a"
-    },
-    "docs/reference__003_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "460bca95ed4642fde0277fe1c0f52081fde4b534b7e14d2d12272db35f6381c6"
-    },
-    "docs/reference__004_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "93a44bbb96c751218e4c00d479e4c14358122a389acca16205b1e4d0dc5f9476"
-    },
-    "docs/reference__005_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "10ac36e5cb34b3181bd50596851fe3c065f1edbb8a981e0b21fab5c946d3ded7"
-    },
-    "docs/reference__006.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__007_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "13ade9b7a75bb4a81162321e3249e5e7766e835e08d616fc95bd0b1c2f53284f"
-    },
-    "docs/reference__008_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "255d770b742e84f5a460f7024830fafa978e513fb4fb500f899ae15ac9b38164"
-    },
-    "docs/reference__009.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__010.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__011_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "238450728cbcf95c2939bc81314dbbf456b37586952b17bbda7b94d950372eb0"
-    },
-    "docs/reference__012_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "37a13509f5b3091a2d707410761283bd735533bbb42487ba6a00c6c9de00e51c"
-    },
-    "docs/reference__013.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__014.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__015.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__016.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__017.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__018.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__019_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "fadbf70b2fc48238592552cb986005a84a33daa2eee2a69f2a038d9ce3988116"
-    },
-    "docs/reference__020_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "2399435bc57e7ddda76a92f2adb0167f3dab3d3019ea3cf4ea175040bf3ce048"
-    },
-    "docs/reference__021_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "197cd9e0326d672c75b284aa0dab55ee56f88ac37d7e1f6cf7160265d9875735"
-    },
-    "docs/reference__022.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__023.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__024.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__025.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__026.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__027.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__028.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__029.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__030.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__031.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__032.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__033.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__034.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__035.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__036.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__037.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__038.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__039.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__040.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__041.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__042.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__043.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__044.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__045.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__046.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__047.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__048.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__049.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__050.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__051.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__052.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "e9c22c95f468b780a82794d92c84c7374c5652149c2a9e0f18c2634b6775309f"
-    },
-    "docs/reference__053_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "4fb1145fdfee1ac4d42bb121db3c64e4bb1d2b98c14210b615b81055c18f1a38"
-    },
-    "docs/reference__054.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__055.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__056.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__057.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__058_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "0a3ae01b9ac1878adf6e98c5e26d02c24223148365976a045d2bcbc10b34d4cd"
-    },
-    "docs/reference__059.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__060.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__061_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "a65464f70550075b82c6fc1e5d4763debd30638b7ce0f438353a6d94ec0d192b"
-    },
-    "docs/reference__062_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "9586279c747bcd9914b92c65e18dbffb52f3ed09501bccb4bbca440b2455ec71"
-    },
-    "docs/reference__063_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "f3e20a023a611cfd33e04255165d287aba1bf46c84dd0871ad72d5888559a767"
-    },
-    "docs/reference__064_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": null
-    },
-    "docs/reference__065_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "51bfadcec815259fc676d3cd94ca0b0782ce157f9a5bbb4d4aaef6b61ffbeb4e"
-    },
-    "docs/reference__066_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "3aafec526c09b046897ea7d158647c1309bcec4d8d9ccbaf49326be350aa4fd1"
-    },
-    "docs/reference__067.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__068.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__069.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__070_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "f884eba3e50ae5483236bb3cb2233aac912c4afa62f1310237e2fca331609449"
-    },
-    "docs/reference__071_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "0137045be6a6ea7128e17dd35a51d77f4f7b76d19e159d0f3dd4fc45424f873c"
-    },
-    "docs/reference__072_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "0b4e6e12c88e3551503268874d251679548d82bf6578993164862256e8c13bcb"
-    },
-    "docs/reference__073_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": null
-    },
-    "docs/reference__074.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__075.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__076.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__077.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__078.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__079_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "85915111cf4a2e95401d4401bb0d11196f372a510e017ee7c84cb093e789c3b0"
-    },
-    "docs/reference__080.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__081.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__082.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__083.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__084_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "453663ca70cc8ea7c34a2581a37f4f22add4db2779105083aaeb14b22f10aec2"
-    },
-    "docs/reference__085.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__086.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__087.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__088_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "eaf81852b8f092204e6907456e951c955ea37e5e80f86d2956aeb895ecb6be4f"
-    },
-    "docs/reference__089_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "52f3d1a34367445893a47a367032729a902f320698d2284388c2941f63f0ddc5"
-    },
-    "docs/reference__090_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "a24287c556b1eddaf41029c8a9be41b1c685e679dd53b65b7d7b8e07947e6a96"
-    },
-    "docs/reference__091.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__092.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__093_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__094.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__095.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__096.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__097_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "f8e4f331563f45473060a0c3758488cc904b0f60224c9ea539153d2bd85cfa5b"
-    },
-    "docs/reference__098_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "173ecb32883892b78b9adf0abf0bc4e05f29fec21f0860b0071033eb73ad6036"
-    },
-    "docs/reference__099_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "2f8e029abcab19d211443d59316d89cb7031c14c67fe334f1cc9aa805df32597"
-    },
-    "docs/reference__100_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "d916d58d3d21d34e7dc5e53e10827ca8605492147bdf20bde19e6de64ddb1ec1"
-    },
-    "docs/reference__101_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "45766e64d342d764bcbfb5d0fa662defb873c3cd18685b9715e50e1062633991"
-    },
-    "docs/reference__102_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "cb4ebe6a0cb809cf30f2720ae3a3d9ffaa3b0bf48c761b64c836bc7c952062b2"
-    },
-    "docs/reference__103_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "4476f8618163f1e2fd71434ee523fe1f07ffc48cd679b3e20498d7ff890cae6e"
-    },
-    "docs/reference__104.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__105.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__106.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "8095ec0e2556b7d15e585fb27ce4b7806fd98745ae2c8135d25fcfe8781a32c0"
-    },
-    "docs/reference__107.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__108.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__109.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__110.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__111_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "dc797316cd2d09d6aa294109473e771878ee1839c7311e4e973a957f1adea981"
-    },
-    "docs/reference__112_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "acc30527abc5cbb53c35105ac0bab2da6c7fc217ac433da7a84ddc4e3a4681b6"
-    },
-    "docs/reference__113.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__114.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__115.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__116.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__117.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__118_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "fcd66789584edf8f39f2d27b41b0aa2cc5e5b1368bed99e47e77486dbf01c5a7"
-    },
-    "docs/reference__119_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "9b0531e34c4559e729e9ccbb2b01c3dc713475ffb9227f0ef8031a46ff260587"
-    },
-    "docs/reference__120.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__121.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__122_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "d57d2ab21b1da62f917db4d8ce222ea65f1c43d986fae465d232da29c05d144d"
-    },
-    "docs/reference__123_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "fe2503d6ebfd7c49be72ef4e4c5fb8547a1e8fb7e671d33acabf95b2bfe66c02"
-    },
-    "docs/reference__124_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "c022c48c11ed91c80f43c742380af995fe07265121fb03e08dde960cd50eb71a"
-    },
-    "docs/reference__125_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "db208bfa2e76a5c444b1cb2703e900c7d0a7c9284067d33d1cdd73f9fa9da7a3"
-    },
-    "docs/reference__126.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__127.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__128_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": null
-    },
-    "docs/reference__129_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": null
-    },
-    "docs/reference__130_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": null
-    },
-    "docs/reference__131_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": null
-    },
-    "docs/reference__132.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__133.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__134.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__135.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__136.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__137.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__138.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__139.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__140.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__141.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__142.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__143.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "812bd7b0a40668f84448f95ee59a2640115a24fc55e5e4eb5e6bac6d5736e42b"
-    },
-    "docs/reference__144.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "c4ce9164cb7b1df6446519b4be4e9fb882de98546d8c1c54127638cd3b2e2b55"
-    },
-    "docs/reference__145.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "459df5affc936f0056351bc0ad7f6f0e1971307716c982633ece9ebd5dc61773"
-    },
-    "docs/reference__146.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "935cc7eb65de18196bc25d6ca83e48a12da19927429040d1e2c2126d30375472"
-    },
-    "docs/reference__147.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "7a7a7105cb47f28e4d7e7b8138bddd3a743423f756e4b9293719c3240294fee9"
-    },
-    "docs/reference__148.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "07b58f72fa9ae6362582771b4ef835cf0436d497ac65fa566961de799c638d4e"
-    },
-    "docs/reference__149.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "66fe59140ed78f8eabe35f28b27aa8a271bc5545d339a590ae8aac5ad236bffe"
-    },
-    "docs/reference__150.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "f5d53e41c1f859a5f8fe71202361daed8f2ba6d62bb68db22b318d33814dade7"
-    },
-    "docs/reference__151.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "7f789bc58e747e9ad5481f5304f21c137588fd7c014a64bea96b3e20d3d2dbc3"
-    },
-    "docs/reference__152.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "e98a2f8bed418b48c681dede0f4914016d5283e35cf8c7746fda440512bc0145"
-    },
-    "docs/reference__153.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "60bd699b99b024aa6008cb6a2eb13e8c36ce3783a6c4c34ae45baf00b8aca93f"
-    },
-    "docs/reference__154.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "83cd82d2830de0ce114a60963dd72ae60233801e47862720f0c9608df0577fb9"
-    },
-    "docs/reference__155.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "73d15ba18c5242e324e6f4c5fcea4371319405bf3ccb7b06f0f6492a34df4481"
-    },
-    "docs/reference__156.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "527ac826aa1ec6aa95cfc14452e181b2ef5fbb804bb585cc31ae14343a6d4b6c"
-    },
-    "docs/reference__157.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "f608802c360b0516ada5fbfe7f3389e4874f885a3a84d475012aca8d76be3672"
-    },
-    "docs/reference__158.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "5646103845e779012899548aaf9c62c24701bd398a20ae34b69b42e87f469200"
-    },
-    "docs/reference__159.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "969191f77cd1ca4599204ba77779f3f7fab0478e76aaaf71b69ef78dfca528fc"
-    },
-    "docs/reference__160.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "dd7e0176f64bc3a59b34c58c6fb57f5605dfd941bdd7e8c4983095c27585e1b7"
-    },
-    "docs/reference__161.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "cccf7ce9adf2e022737a007256ff1a937a97b63777e0e08ca355976eab7ff3f8"
-    },
-    "docs/reference__162.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "9c74042d05472e62aafb032d964584fef10e92611c6134c5713b1612e87e1166"
-    },
-    "docs/reference__163.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "88b1772d701f90f45b5de0b75b03f75c1b53dbe7e6c2ad8190e6a2798bc09b8c"
-    },
-    "docs/reference__164.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "50523df22482cff228be61c95dae4b0bca896bebbdaf37589b70964ad5c95b56"
-    },
-    "docs/reference__165.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "a97731ee321848d7200ebcb736f2915710b2a22816d184d61219a87323257fe7"
-    },
-    "docs/reference__166.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "460bca95ed4642fde0277fe1c0f52081fde4b534b7e14d2d12272db35f6381c6"
-    },
-    "docs/reference__167.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "dbd2acca2d18e7a220d3645a54d4e79e55ad194c7a9fe2a8f780976d3646fe8d"
-    },
-    "docs/reference__168.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "66a8576dc18d51c213a922a331f28ffc035cc83d8c4b21d5566cb87ae185548d"
-    },
-    "docs/reference__169.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "d22d5bd917122b00139551e6e55b10ba18bb9103094558a15663903737b81a04"
-    },
-    "docs/reference__170.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "0d137e339b783ed6d6eb4112c101626900e7025cc63869a796b63852efa36bc9"
-    },
-    "docs/reference__171.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "458d0187fe2c7d4edd20d90e885f8543db9b079b93551a39dbcae5ab3014c6b9"
-    },
-    "docs/reference__172_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "85915111cf4a2e95401d4401bb0d11196f372a510e017ee7c84cb093e789c3b0"
-    },
-    "docs/reference__173_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "ee09a6b2ac2c8e740651af415e9419600f097ee9f8b244f07e9110268c89705a"
-    },
-    "docs/reference__174_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "ce1e3f2b47699fbf7db10b2ace728a6b8de67062907d31065d47eb33bef92bbc"
-    },
-    "docs/reference__175_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "afb366413d109925177185a70cc17e824ecb284aa926e332b18f92256496d4f0"
-    },
-    "docs/reference__176_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "92adb924ca3b8e6584bcca5f7ee22a254c3fb81c87b31125e53bf70f21074e02"
-    },
-    "docs/reference__177_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "9f756e38b06aba36124c4ad4e61986c24a2ede411a860ffc799fd76fc2ce3130"
-    },
-    "docs/reference__178_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__179.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__180.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__181.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__182.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/reference__183_checked.wax": {
+    "docs/module_fields__000_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "4a837c7d0cc22f1a931f98b5b648ddc8d3cc08515f72f7aa59a0fa0342a6a7c7"
     },
-    "docs/reference__184_checked.wax": {
+    "docs/module_fields__001_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "ca8c9f449689bc7a11928a3ae46ad6eaa269e2aef9eb66845d286e87e54a3704"
     },
-    "docs/reference__185_checked.wax": {
+    "docs/module_fields__002_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "563aff6f5beafac05df48510f0e20537c3ed93e1260084462b1ee54c4bc08b6e"
     },
-    "docs/reference__186_checked.wax": {
+    "docs/module_fields__003_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "f92d60d2d13a527ffca2d8daca7f05115f4fef75ffdfb494fef02f10e58384d4"
     },
-    "docs/reference__187_checked.wax": {
+    "docs/module_fields__004_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "8025741580572ce739ac71baa444f4e2e097f2c9bf8b6d9752f5a41b7b629b5a"
     },
-    "docs/reference__188.wax": {
+    "docs/module_fields__005.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/reference__189_checked.wax": {
+    "docs/module_fields__006_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "a65464f70550075b82c6fc1e5d4763debd30638b7ce0f438353a6d94ec0d192b"
     },
-    "docs/reference__190.wax": {
+    "docs/module_fields__007.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/reference__191.wax": {
+    "docs/module_fields__008.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/reference__192_checked.wax": {
+    "docs/module_fields__009_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "9629cd2004b99ee6529bbc4b0373741c51caee109145bab3d3566e88c2620326"
     },
-    "docs/reference__193_checked.wax": {
+    "docs/module_fields__010_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "093c5bc8a6a57fc8fe900f42aa3290ea577242d46f06501f23d232600cc82270"
     },
-    "docs/reference__194_checked.wax": {
+    "docs/module_fields__011_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "50a4957c5120e65bcbb0cdc01ffb917f0226fbdd79185739753184d6b9a22f4e"
     },
-    "docs/reference__195_checked.wax": {
+    "docs/module_fields__012_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "d916d58d3d21d34e7dc5e53e10827ca8605492147bdf20bde19e6de64ddb1ec1"
     },
-    "docs/reference__196_checked.wax": {
+    "docs/module_fields__013_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "da4db2e4cabf337054cf29a4156c2f5a72acc82243abe8794dbc3ff7083ad708"
     },
-    "docs/reference__197_checked.wax": {
+    "docs/module_fields__014_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "cb4ebe6a0cb809cf30f2720ae3a3d9ffaa3b0bf48c761b64c836bc7c952062b2"
     },
-    "docs/reference__198.wax": {
+    "docs/module_fields__015.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/reference__199_checked.wax": {
+    "docs/module_fields__016_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "619a21d7785b95488cdfb4af564bcf41afb9b017acbd054458bc7a07b793e410"
     },
-    "docs/reference__200.wax": {
+    "docs/module_fields__017.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/reference__201.wax": {
+    "docs/module_fields__018.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "1a1e57378a52d411f69b9c4c3ac38921debe4a05e4d5b40eecc7ec3fc69bbb23"
     },
-    "docs/reference__202_checked.wax": {
+    "docs/module_fields__019_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "bdb45e5658d3e17d4f35117ceaede99e5b4d8d59941f46d00383873b5943ffc1"
     },
-    "docs/reference__203.wax": {
+    "docs/module_fields__020.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/reference__204.wax": {
+    "docs/module_fields__021.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/reference__205.wax": {
+    "docs/module_fields__022.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/reference__206.wax": {
+    "docs/module_fields__023.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/reference__207_checked.wax": {
+    "docs/module_fields__024_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "711d5a706467061a04949318027c1bd2fa0733bacb6ad71663228dd02950d3c2"
     },
-    "docs/reference__208_checked.wax": {
+    "docs/module_fields__025_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "acc30527abc5cbb53c35105ac0bab2da6c7fc217ac433da7a84ddc4e3a4681b6"
     },
-    "docs/reference__209_checked.wax": {
+    "docs/module_fields__026_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "ac17fc34bedd66c6353485a55ee9e3c94e41a118f721df750252f5e3d71a8e8a"
     },
-    "docs/reference__210_checked.wax": {
+    "docs/module_fields__027_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "59f75b35786524bf2976a7b76312222642e804665c623189f20e762f87942d4f"
     },
-    "docs/reference__211_checked.wax": {
+    "docs/module_fields__028_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "5eac5c2e7abde03c507ac707b264785c9e92e9e74bf5327db240023fb4cc1b93"
     },
-    "docs/reference__212_checked.wax": {
+    "docs/module_fields__029_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "a9625f877608931df43f426d31c1979e098d018ecfdb325d63ed108a3a060c6b"
     },
-    "docs/reference__213_checked.wax": {
+    "docs/module_fields__030_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "f3e20a023a611cfd33e04255165d287aba1bf46c84dd0871ad72d5888559a767"
     },
-    "docs/reference__214_checked.wax": {
+    "docs/module_fields__031_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "1229bae8bce1e194fb27402a09595bffb73a1f5097302d4269177a6ff8c5a2e3"
     },
-    "docs/reference__215_checked.wax": {
+    "docs/module_fields__032_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "02174513dab9bc3ba52f1f7926d30fbe6d4ea64889c79400a81e187216a0b83a"
     },
-    "docs/reference__216_checked.wax": {
+    "docs/module_fields__033_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "cec02fafe3a03761ce6cb3828fbc01e90794e906dd040ccb8081547ccd09d097"
     },
-    "docs/reference__217_checked.wax": {
+    "docs/module_fields__034_checked.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": null
     },
-    "docs/reference__218_checked.wax": {
+    "docs/module_fields__035_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "e1adcf1879fab1f5e1dafad6c8eab96830b71d81391209860d41e8b441c2376b"
+    },
+    "docs/types__000_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "85915111cf4a2e95401d4401bb0d11196f372a510e017ee7c84cb093e789c3b0"
+    },
+    "docs/types__001_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "ee09a6b2ac2c8e740651af415e9419600f097ee9f8b244f07e9110268c89705a"
+    },
+    "docs/types__002_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "ce1e3f2b47699fbf7db10b2ace728a6b8de67062907d31065d47eb33bef92bbc"
+    },
+    "docs/types__003_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "afb366413d109925177185a70cc17e824ecb284aa926e332b18f92256496d4f0"
+    },
+    "docs/types__004_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "92adb924ca3b8e6584bcca5f7ee22a254c3fb81c87b31125e53bf70f21074e02"
+    },
+    "docs/types__005_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "9f756e38b06aba36124c4ad4e61986c24a2ede411a860ffc799fd76fc2ce3130"
+    },
+    "docs/types__006_checked.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
     },
     "fuzz/hint-attr-then-syntax-error.wax": {
       "bucket": "syntax-bad",
@@ -4831,29 +3805,29 @@
       "diag_code": 0,
       "wasm_sha256": "fac15df972d303405983bb7cad8a9b788e1ef5267cb04955e4d38ab7fe04dff4"
     },
-    "spec/wasm-test-suite__core__custom-descriptors__descriptors__descriptors.21.wax": {
+    "spec/wasm-test-suite__core__custom-descriptors__descriptors__descriptors.1.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "8ca561ab8e3c4c92784d80d780811a1dc14f642ca6254349de085057aa5c759f"
+      "wasm_sha256": "c1fa2beceadc45500c105f4cbc361ecf39b044473167f936f2bfbba4b3d12475"
     },
     "spec/wasm-test-suite__core__custom-descriptors__descriptors__descriptors.22.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "a7ef7f2b3e3ad572c5b489d1cdf9f580ee0bfd46dc13be14ffca80f5e04f8e57"
+      "wasm_sha256": "8ca561ab8e3c4c92784d80d780811a1dc14f642ca6254349de085057aa5c759f"
     },
     "spec/wasm-test-suite__core__custom-descriptors__descriptors__descriptors.23.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "e939cfe8e8135a32b6d42e2e905a177b5f600bf0001fbd34efb934450d760b33"
+      "wasm_sha256": "a7ef7f2b3e3ad572c5b489d1cdf9f580ee0bfd46dc13be14ffca80f5e04f8e57"
     },
     "spec/wasm-test-suite__core__custom-descriptors__descriptors__descriptors.24.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "41bf8417c344d97e164ed98e4cd04a92f89fedd5daff401c58f19d223341c58b"
+      "wasm_sha256": "e939cfe8e8135a32b6d42e2e905a177b5f600bf0001fbd34efb934450d760b33"
     },
     "spec/wasm-test-suite__core__custom-descriptors__exact-casts__exact-casts.0.wax": {
       "bucket": "compiles-clean",
@@ -11263,7 +10237,7 @@
       "diag_code": 0,
       "wasm_sha256": "a83cf4c7ae49926347ea4fe7ebe7aa1d51feef48f134f4eb103ac49b05571c38"
     },
-    "wat/cram-tests__compact-import-item-id.t__g2.wax": {
+    "wat/cram-tests__compact-import-item-id.t__g1.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,

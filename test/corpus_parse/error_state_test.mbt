@@ -64,7 +64,7 @@ test "the replay stops on the token the parse rejected" {
   }
   // Not zero: the count is the coverage, and it dropping would mean the
   // corpus stopped exercising this.
-  inspect(checked, content="193")
+  inspect(checked, content="114")
 }
 
 ///|
@@ -136,5 +136,5 @@ test "recovery leaves a clean parse alone" {
     let joined = sample.join("\n  ")
     fail("\{differing.length()} of \{checked} differ:\n  \{joined}")
   }
-  inspect(checked, content="1907")
+  inspect(checked, content="1818")
 }

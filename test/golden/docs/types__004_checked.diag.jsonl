@@ -1,0 +1,2 @@
+{"severity":"warning","file":"test/corpus/docs/types__004_checked.wax","startLine":2,"startColumn":9,"endLine":2,"endColumn":13,"startOffset":15,"endOffset":19,"message":"The type 'tree' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/docs/types__004_checked.wax","startLine":3,"startColumn":9,"endLine":3,"endColumn":15,"startOffset":66,"endOffset":72,"message":"The type 'forest' is never used.","warning":"unused-field","hint":null,"related":[]}

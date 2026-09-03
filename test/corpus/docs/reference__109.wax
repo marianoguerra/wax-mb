@@ -1,6 +1,0 @@
-funcs.size()                          // current size
-funcs.grow(init, n)                   // grow by n, filling with init; returns the old size
-funcs.fill(dst, val, n)               // set n slots from dst to val
-funcs.copy(dst, src, n)               // copy n slots within the table
-funcs.init(pool, dst, src, n)         // copy n refs from element segment pool
-pool.drop();                          // drop a passive element segment

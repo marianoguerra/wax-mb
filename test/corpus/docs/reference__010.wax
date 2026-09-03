@@ -1,4 +1,0 @@
-'A';            // 65
-'\n';           // 10
-'\x41';         // 65, a byte written as two hex digits
-'\u{1F600}';    // 128512, a Unicode code point

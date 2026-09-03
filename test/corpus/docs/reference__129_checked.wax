@@ -1,7 +1,0 @@
-#[if(debug)]
-{
-    const debug_enabled: i32 = 1;
-    fn debug_log(msg: i32) {
-        // ...
-    }
-}

@@ -347,18 +347,15 @@ fn check_type_definitions(ctx : @typing_env.ModuleContext) -> Unit {
       final_supertype(ctx.diagnostics, sup.loc, sup.name)
       continue
     }
-    // A descriptor is inherited, so a subtype of a described type is described
-    // too -- by a subtype of the same descriptor. It may ADD one its supertype
-    // lacks, since nothing was promised about it. Being a descriptor, on the
-    // other hand, is all or nothing: the two must describe types standing in
-    // the same relation they do.
-    let descriptor_ok = match sup_ty.descriptor {
-      None => true
-      Some(dp) =>
-        match ty.descriptor {
-          Some(ds) => @type_store.heap_subtype(info, Type(ds), Type(dp))
-          None => false
-        }
+    // Descriptor presence is all or nothing along the declared chain: a
+    // subtype has a descriptor exactly when its supertype does, and that
+    // descriptor must be a subtype of the supertype's. A subtype may not ADD
+    // one its supertype lacks -- the proposal's "complete square" rule, which
+    // makes this check symmetric with the `describes` one below.
+    let descriptor_ok = match (ty.descriptor, sup_ty.descriptor) {
+      (None, None) => true
+      (Some(ds), Some(dp)) => @type_store.heap_subtype(info, Type(ds), Type(dp))
+      _ => false
     }
     let describes_ok = match (ty.describes, sup_ty.describes) {
       (None, None) => true

@@ -1,3 +1,0 @@
-do (i32) -> i32 {
-    // the i32 operand below the block is available here
-}

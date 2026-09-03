@@ -215,19 +215,32 @@ FENCE = re.compile(r"^```(wax(?:,[a-z]+)?)\s*$")
 
 
 def collect_docs(manifest: dict) -> int:
-    """Wax code blocks from the language documentation and the agent skill.
+    """Wax code blocks from the language documentation.
 
     Blocks fenced ```wax,check are validated by the reference's own doc build,
     so they are known-good complete modules. Plain ```wax blocks are often
     fragments that do not parse standalone -- they are collected anyway, because
     "both implementations must reject this identically" is just as much a test
     as "both must accept this identically".
+
+    docs/src is the SOURCE of these blocks, and the glob is recursive because
+    docs/src/correspondence/ is a subdirectory. This used to read the top level
+    plus skills/wax/reference.md, which the reference's doc build assembles from
+    every page -- so the skill re-contributed the top-level pages as duplicates,
+    and the correspondence pages were reachable only through it. Upstream then
+    split reference.md into per-topic skill files (ocsigen/wax b76fc90f) and the
+    single-file lookup silently stopped matching: the duplicates went, and the
+    correspondence blocks went with them. Reading the source recursively is what
+    that lookup was standing in for, and it cannot be broken by a re-split.
     """
     n = 0
-    sources = sorted((WAX_CHECKOUT / "docs" / "src").glob("*.md"))
-    skill = WAX_CHECKOUT / "skills" / "wax" / "reference.md"
-    if skill.exists():
-        sources.append(skill)
+    sources = sorted((WAX_CHECKOUT / "docs" / "src").rglob("*.md"))
+    stems = [md.stem for md in sources]
+    duplicate = {s for s in stems if stems.count(s) > 1}
+    if duplicate:
+        # Corpus names are keyed by stem, so two pages sharing one would
+        # overwrite each other's blocks rather than collide visibly.
+        raise SystemExit(f"collect: duplicate doc stems: {sorted(duplicate)}")
     for md in sources:
         lines = md.read_text(encoding="utf-8").splitlines()
         i, block = 0, 0

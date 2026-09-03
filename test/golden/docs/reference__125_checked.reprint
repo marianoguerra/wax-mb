@@ -1,5 +1,0 @@
-fn ok() -> i32 {
-    1;
-    2;
-    _ + _ + 3; // OK: the literal 3 comes after both holes
-}

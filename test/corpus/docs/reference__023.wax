@@ -1,6 +1,0 @@
-x & y       // And
-x | y       // Or
-x ^ y       // Xor
-x << y      // Shift left
-x >>s y     // Shift right signed
-x >>u y     // Shift right unsigned

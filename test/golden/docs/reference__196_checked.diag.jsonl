@@ -1,1 +1,0 @@
-{"severity":"warning","file":"test/corpus/docs/reference__196_checked.wax","startLine":1,"startColumn":7,"endLine":1,"endColumn":12,"startOffset":7,"endOffset":12,"message":"The memory 'small' is never used.","warning":"unused-field","hint":null,"related":[]}

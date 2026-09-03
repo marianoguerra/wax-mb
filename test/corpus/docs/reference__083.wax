@@ -1,2 +1,0 @@
-p.x                         // read a field
-p.x = 42;                   // write a field (only if it is `mut`)

@@ -1,9 +1,0 @@
-memory m: i32 [min, max];                // memory (optional: pagesize N, shared)
-table t: &?func [min, max];              // table
-data d = "bytes";                        // data segment
-elem e: &?func = [f, g];                 // element segment
-tag oops(i32);                           // exception tag
-import "env" { fn log(x: i32); }         // import block
-#[export = "name"] fn f() { }            // export
-#[start] fn init() { }                   // start function
-#[if(cond)] ... #[else] ...              // conditional compilation

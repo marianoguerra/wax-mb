@@ -1,5 +1,0 @@
-3.14        // Decimal
-1.0e10      // Scientific notation
-0x1.5p10    // Hexadecimal float
-inf         // Infinity
-nan         // Not a number

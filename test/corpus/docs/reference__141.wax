@@ -1,2 +1,0 @@
-m.load32(p)   m.load8(p) as i32_u   m.store16(p, v);   // load / store (width in name)
-m.size()   m.grow(n)   m.fill(d, v, n)   m.copy(d, s, n)   // management
