@@ -5,6 +5,37 @@ All notable changes to `marianoguerra/wax` and `marianoguerra/wax-cli`.
 The two modules are versioned together and released from one repository, so a
 release note here covers both unless it says otherwise.
 
+## [0.2.1] — 2026-09-03
+
+Tracks the reference implementation from `e57f93b` to `209f43a`. Both changes
+are behaviour changes inside feature-gated Wasm proposals, so they reach only
+code that opted into one; no public API moved.
+
+### Changed
+
+- **custom-descriptors**: descriptor presence must now match along the declared
+  subtype chain. A subtype may no longer add a `descriptor` clause its
+  supertype lacks — the proposal's "complete square" rule (upstream
+  WebAssembly/custom-descriptors#111), which makes the check symmetric with the
+  `describes` one it sits beside. Programs relying on the old asymmetry are now
+  rejected with `This type is not a valid subtype of '...'`.
+- **compact-import-section**: the shared-type text form is strictly name-only,
+  so `(item $id "name")` is gone. A group whose items bind identifiers is
+  printed per-item, each spelling the shared type out. This costs nothing in
+  the binary: the encoder still picks the shared-type (`0x7E`) encoding
+  whenever the item types agree, with the identifiers riding the name section.
+
+### Fixed
+
+- The differential harness collected documentation blocks from `docs/src/*.md`
+  plus `skills/wax/reference.md`, which the reference assembles from every doc
+  page — so the top-level pages were collected twice and the
+  `docs/src/correspondence/` pages only through the skill. Upstream split
+  `reference.md` into per-topic files and the single-file lookup silently
+  stopped matching. `collect_docs` now reads `docs/src` recursively, which is
+  what that lookup stood in for: same 215 distinct modules, without the 172
+  duplicate files, and no longer breakable by a re-split.
+
 ## [0.2.0] — 2026-08-14
 
 ### Added

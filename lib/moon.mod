@@ -1,6 +1,6 @@
 name = "marianoguerra/wax"
 
-version = "0.2.0"
+version = "0.2.1"
 
 // THERE IS NO `import` BLOCK HERE, and that is the point. A module's
 // dependencies are fetched by every consumer whether or not it imports the
