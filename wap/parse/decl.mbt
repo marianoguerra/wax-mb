@@ -62,6 +62,7 @@ priv struct Mods {
   mut export_name : String?
   mut import_name : String?
   mut is_start : Bool
+  mut is_pub : Bool
 }
 
 ///|
@@ -70,7 +71,12 @@ fn take_mods(
   head : Array[@sh.Node],
   src : @er.SourceId,
 ) -> (Mods, Array[@sh.Node]) raise ParseError {
-  let m : Mods = { export_name: None, import_name: None, is_start: false, }
+  let m : Mods = {
+    export_name: None,
+    import_name: None,
+    is_start: false,
+    is_pub: false,
+  }
   let mut i = 0
   while i < head.length() {
     match as_id(head[i]) {
@@ -87,6 +93,10 @@ fn take_mods(
       }
       Some("start") => {
         m.is_start = true
+        i += 1
+      }
+      Some("pub") => {
+        m.is_pub = true
         i += 1
       }
       Some("import") =>
@@ -120,7 +130,7 @@ fn parse_decl(g : @sh.Node, src : @er.SourceId) -> @wap.Decl raise ParseError {
     }
     Some("import") => parse_import(head, p, src)
     Some("const") => Const(parse_const(head, p, mods, src))
-    Some("type") => parse_typedecl(head, p, src)
+    Some("type") => parse_typedecl(head, p, mods, src)
     Some("fn") => Fn(parse_fn(head, p, mods, None, src))
     Some("impl") => {
       if head.length() != 2 || as_id(head[1]) is None {
@@ -254,6 +264,7 @@ fn parse_const(
     value,
     export_name: mods.export_name,
     import_name: mods.import_name,
+    is_pub: mods.is_pub,
     span: p.span,
   }
 }
@@ -262,6 +273,7 @@ fn parse_const(
 fn parse_typedecl(
   head : Array[@sh.Node],
   p : Parts,
+  mods : Mods,
   src : @er.SourceId,
 ) -> @wap.Decl raise ParseError {
   let ts = head[1:].to_owned()
@@ -290,7 +302,7 @@ fn parse_typedecl(
   }
   let rhs = ts[i + 1:].to_owned()
   let def = parse_typedef(rhs, parent, p, src)
-  TypeD(name~, def~, span=p.span)
+  TypeD(name~, def~, is_pub=mods.is_pub, span=p.span)
 }
 
 ///|
@@ -454,6 +466,7 @@ fn parse_fn(
     export_name: mods.export_name,
     import_name: mods.import_name,
     is_start: mods.is_start,
+    is_pub: mods.is_pub,
     span: p.span,
   }
 }

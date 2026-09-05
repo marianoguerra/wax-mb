@@ -9,7 +9,7 @@
 ///|
 /// The declaration a type name refers to.
 fn Lowering::resolve(self : Lowering, name : String) -> @wap.TypeDef? {
-  self.types.get(name)
+  self.types.get(self.qualify(name))
 }
 
 ///|
@@ -172,7 +172,7 @@ fn Lowering::record_name(self : Lowering, t : @wap.Type) -> String? {
   match t {
     Named(n) =>
       match self.resolve(n) {
-        Some(Record(..)) => Some(n)
+        Some(Record(..)) => Some(self.qualify(n))
         Some(Alias(inner)) => self.record_name(inner)
         _ => None
       }
@@ -201,6 +201,62 @@ fn Lowering::field_type(
       }
     }
     _ => None
+  }
+}
+
+///|
+/// Rewrite every name inside a type so it says which module owns it.
+///
+/// Doing this once, when the declaration is collected, is what keeps the rest
+/// of the lowering from having to know which module a stored type came from.
+fn Lowering::qualify_typ(self : Lowering, t : @wap.Type) -> @wap.Type {
+  match t {
+    Named(n) =>
+      match builtin_or_self(n) {
+        true => t
+        false => Named(self.qualify(n))
+      }
+    Nullable(i) => Nullable(self.qualify_typ(i))
+    ArrayOf(e) => ArrayOf(self.qualify_typ(e))
+    Tuple(ts) => Tuple(ts.map(x => self.qualify_typ(x)))
+    Func(params~, results~) =>
+      Func(
+        params=params.map(x => self.qualify_typ(x)),
+        results=results.map(x => self.qualify_typ(x)),
+      )
+    _ => t
+  }
+}
+
+///|
+/// A name that is already qualified needs no help.
+fn builtin_or_self(n : String) -> Bool {
+  n.contains(".")
+}
+
+///|
+/// The same, for a whole declaration.
+fn Lowering::qualify_def(self : Lowering, d : @wap.TypeDef) -> @wap.TypeDef {
+  match d {
+    Record(parent~, fields~) =>
+      Record(
+        parent=match parent {
+          Some(p) => Some(self.qualify(p))
+          None => None
+        },
+        fields=fields.map(f => {
+          (
+            {
+              name: f.name,
+              mut_: f.mut_,
+              typ: self.qualify_typ(f.typ),
+              span: f.span,
+            } : @wap.Field)
+        }),
+      )
+    SetOf(e) => SetOf(self.qualify(e))
+    Alias(t) => Alias(self.qualify_typ(t))
+    _ => d
   }
 }
 

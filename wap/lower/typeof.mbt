@@ -31,13 +31,13 @@ fn Lowering::type_of(self : Lowering, e : @wap.Node) -> @wap.Type? {
       match self.local_type(n) {
         Some(t) => Some(t)
         None =>
-          match self.globals.get(n) {
+          match self.globals.get(self.qualify(n)) {
             Some(t) => Some(t)
             None =>
-              match self.member_owner.get(n) {
+              match self.member_owner.get(self.qualify(n)) {
                 Some(owner) => Some(Named(owner))
                 None =>
-                  match self.funcs.get(n) {
+                  match self.funcs.get(self.qualify(n)) {
                     Some(sig) =>
                       Some(Func(params=sig.params, results=sig.results))
                     None => None
@@ -45,7 +45,12 @@ fn Lowering::type_of(self : Lowering, e : @wap.Node) -> @wap.Type? {
               }
           }
       }
-    Field(recv, name) =>
+    Field(recv, name) => {
+      // `hashing.limit` is a name in another module, not a field of a local.
+      match self.module_ref(recv, name) {
+        Some(q) => return self.type_of({ it: Var(q), span: e.span, })
+        None => ()
+      }
       match self.type_of(recv) {
         Some(t) =>
           match self.record_name(t) {
@@ -54,6 +59,7 @@ fn Lowering::type_of(self : Lowering, e : @wap.Node) -> @wap.Type? {
           }
         None => None
       }
+    }
     Index(a, _) =>
       match self.type_of(a) {
         Some(t) => self.elem_type(t)
@@ -62,7 +68,7 @@ fn Lowering::type_of(self : Lowering, e : @wap.Node) -> @wap.Type? {
     Call(callee, _) =>
       match callee.it {
         Var(n) =>
-          match self.funcs.get(n) {
+          match self.funcs.get(self.qualify(n)) {
             Some(sig) => one_result(sig.results)
             None => None
           }
@@ -170,7 +176,7 @@ fn Lowering::lookup_method(
   record : String,
   name : String,
 ) -> FnSig? {
-  match self.methods.get(record + "." + name) {
+  match self.methods.get(self.qualify(record) + "." + name) {
     Some(s) => Some(s)
     None =>
       match self.resolve(record) {

@@ -59,6 +59,31 @@ the wrong place.
 
 ## [wap 0.1.0] — 2026-09-05
 
+*Superseded before release by the entries below; kept as one release note.*
+
+### Added: a module system that resolves
+
+- **`marianoguerra/wap/resolve`**, whose point is the `Loader` trait: one
+  method, `load(path) -> String?`, and nothing in the resolver knows that files
+  exist. A build tool implements it over a filesystem, an editor over its open
+  buffers, a test over `MapLoader`. Imports are walked depth-first, a cycle is
+  reported with the whole ring rather than the edge that closed it, and the
+  modules come back in dependency order.
+- **`pub`**, and cross-module references written out: `geometry.make(3, 4)`. A
+  declaration is private to its module unless marked, the importing module must
+  have imported the one it names, and both are enforced with a report that says
+  which rule was broken.
+- **Qualified names throughout the lowering.** Every table is keyed
+  `module.name`, and each module carries its own line map, so a Wax type error
+  found three modules deep names the right file and line.
+
+### Added: was as an output format
+
+- `marianoguerra/was/print` renders a Wax AST as shrubbery, which is what makes
+  `wap -f was` and `wax -f was` real rather than aspirational.
+
+## [wap 0.1.0 — original entry]
+
 The first release of `marianoguerra/wap`: **W**eb**A**ssembly's **P**ascal, an
 Oberon-level language on [shrubbery](https://docs.racket-lang.org/shrubbery/)
 notation that compiles through the Wax AST. It reads notation with

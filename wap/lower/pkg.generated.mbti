@@ -9,15 +9,28 @@ import {
 // Values
 pub fn lower_module(@marianoguerra/wap/ast.Module, text? : String, fname? : String, src? : @error-report.SourceId) -> Lowered
 
+pub fn lower_program(Array[Input]) -> Lowered
+
 // Errors
 
 // Types and methods
+pub(all) struct Input {
+  module_ : @marianoguerra/wap/ast.Module
+  source : ModuleSource
+}
+
 pub struct Lowered {
   fields : Array[@basic.Annotated[@marianoguerra/wax/ast.ModuleField[@basic.Location], @basic.Location]]
   diagnostics : Array[@error-report.Report]
 }
 pub fn Lowered::diagnostics(Self) -> Array[@error-report.Report]
 pub fn Lowered::fields(Self) -> Array[@basic.Annotated[@marianoguerra/wax/ast.ModuleField[@basic.Location], @basic.Location]]
+
+pub(all) struct ModuleSource {
+  fname : String
+  text : String
+  src : @error-report.SourceId
+}
 
 // Type aliases
 

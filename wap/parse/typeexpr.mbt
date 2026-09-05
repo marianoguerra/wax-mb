@@ -127,7 +127,22 @@ fn parse_type_primary(c : Cursor) -> @wap.Type raise ParseError {
         Id(name) =>
           match builtin_type(name) {
             Some(t) => t
-            None => Named(name)
+            None => {
+              // `other.point` -- a type from another module. The dot is a
+              // qualifier here and a field access in expressions, which is
+              // unambiguous because a type is never a value.
+              let mut full = name
+              while c.peek() is Some(d) && is_op(d, ".") {
+                match (c.i + 1 < c.ts.length(), as_id(c.ts[c.i + 1])) {
+                  (true, Some(seg)) => {
+                    full = full + "." + seg
+                    c.i += 2
+                  }
+                  _ => break
+                }
+              }
+              Named(full)
+            }
           }
         Brackets(gs) => {
           if gs.length() != 1 {

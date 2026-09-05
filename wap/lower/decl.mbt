@@ -32,9 +32,52 @@ pub fn lower_module(
   fname? : String = "input.wap",
   src? : @er.SourceId = 0,
 ) -> Lowered {
-  let l = Lowering::new(m.name, fname~, text~, src~)
-  l.collect(m)
-  let fields = l.emit(m)
+  lower_program([{ module_: m, source: { fname, text, src, }, }])
+}
+
+///|
+/// Lower a whole program -- several wap modules -- into one Wax module.
+///
+/// One wasm module comes out, with one flat namespace, because that is what
+/// wasm has. What the module system does is decide the names in it: a
+/// declaration in `hashing` is emitted as `hashing__name`, and a reference to
+/// it from elsewhere is written `hashing.name`.
+///
+/// The modules must arrive in dependency order, which is what
+/// `marianoguerra/wap/resolve` produces.
+pub fn lower_program(units : Array[Input]) -> Lowered {
+  let entry = if units.length() > 0 {
+    units[units.length() - 1].source
+  } else {
+    ({ fname: "", text: "", src: 0, } : ModuleSource)
+  }
+  let l = Lowering::new("", entry~)
+  for u in units {
+    l.modules[u.module_.name] = ()
+    l.line_maps[u.module_.name] = LineMap::of(u.source)
+  }
+  // Types first, across every module: a module may name another's types
+  // regardless of which was declared first.
+  for u in units {
+    l.enter(u.module_.name)
+    l.collect_types(u.module_)
+  }
+  for u in units {
+    l.enter(u.module_.name)
+    l.collect_rest(u.module_)
+  }
+  let fields : @ast.LocModule = []
+  for u in units {
+    l.enter(u.module_.name)
+    for f in l.emit(u.module_) {
+      fields.push(f)
+    }
+  }
+  // The generated types are shared by the whole program.
+  if l.extra_types.length() > 0 {
+    let at = l.extra_types[0].info
+    fields.push({ desc: Type(l.extra_types), info: at, })
+  }
   { fields, diagnostics: l.diagnostics, }
 }
 
@@ -43,36 +86,64 @@ pub fn lower_module(
 ///|
 /// Record what every declaration introduces, so that the order they were
 /// written in does not matter.
-fn Lowering::collect(self : Lowering, m : @wap.Module) -> Unit {
+fn Lowering::collect_types(self : Lowering, m : @wap.Module) -> Unit {
+  let seen : Map[String, Unit] = Map([])
   for d in m.decls {
     match d {
-      TypeD(name~, def~, ..) => {
-        self.types[name] = def
+      Import(path) => {
+        // The alias is the module's own declared name, not the path.
+        let last = path[path.length() - 1]
+        seen[last] = ()
+      }
+      _ => ()
+    }
+  }
+  self.imports[m.name] = seen
+  for d in m.decls {
+    match d {
+      TypeD(name~, def~, is_pub~, ..) => {
+        let q = self.qualify(name)
+        self.types[q] = self.qualify_def(def)
+        if is_pub {
+          self.visible[q] = ()
+        }
         if def is Enum(items) {
           let ms : Map[String, Int] = Map([])
           for it in items {
             let (n, v) = it
+            let qn = self.qualify(n)
             ms[n] = v.unwrap_or(0)
-            if self.member_owner.contains(n) {
-              // Two enumerations with the same member name: the bare name is
-              // no longer usable, so record neither.
-              self.member_owner.remove(n)
+            if self.member_owner.contains(qn) {
+              self.member_owner.remove(qn)
             } else {
-              self.member_owner[n] = name
+              self.member_owner[qn] = q
+            }
+            if is_pub {
+              self.visible[qn] = ()
             }
           }
-          self.enum_members[name] = ms
+          self.enum_members[q] = ms
         }
       }
       _ => ()
     }
   }
+}
+
+///|
+/// Everything a module declares that is not a type.
+fn Lowering::collect_rest(self : Lowering, m : @wap.Module) -> Unit {
   for d in m.decls {
     match d {
       Const(c) => {
-        self.globals[c.name] = c.typ.unwrap_or(I32)
         if c.import_name is Some(_) {
           self.foreign[c.name] = ()
+        }
+        self.globals[self.qualify(c.name)] = self.qualify_typ(
+          c.typ.unwrap_or(I32),
+        )
+        if c.is_pub {
+          self.visible[self.qualify(c.name)] = ()
         }
       }
       Fn(f) => self.note_fn(f, false)
@@ -94,19 +165,21 @@ fn Lowering::collect(self : Lowering, m : @wap.Module) -> Unit {
           self.globals[c.name] = c.typ.unwrap_or(I32)
         }
       }
-      Impl(typ~, methods~, ..) =>
+      Impl(typ~, methods~, ..) => {
+        let q = self.qualify(typ)
         for f in methods {
           let sig : FnSig = {
-            params: f.params.map(p => p.typ),
-            results: f.results,
+            params: f.params.map(p => self.qualify_typ(p.typ)),
+            results: f.results.map(t => self.qualify_typ(t)),
             emitted: self.mangle_method(typ, f.name),
           }
-          self.methods[typ + "." + f.name] = sig
+          self.methods[q + "." + f.name] = sig
           match self.method_owners.get(f.name) {
-            Some(a) => a.push(typ)
-            None => self.method_owners[f.name] = [typ]
+            Some(a) => a.push(q)
+            None => self.method_owners[f.name] = [q]
           }
         }
+      }
       _ => ()
     }
   }
@@ -115,10 +188,14 @@ fn Lowering::collect(self : Lowering, m : @wap.Module) -> Unit {
 ///|
 fn Lowering::note_fn(self : Lowering, f : @wap.FnDecl, foreign : Bool) -> Unit {
   let emitted = if foreign { f.name } else { self.mangle(f.name) }
-  self.funcs[f.name] = {
-    params: f.params.map(p => p.typ),
-    results: f.results,
+  let key = if foreign { f.name } else { self.qualify(f.name) }
+  self.funcs[key] = {
+    params: f.params.map(p => self.qualify_typ(p.typ)),
+    results: f.results.map(t => self.qualify_typ(t)),
     emitted,
+  }
+  if f.is_pub {
+    self.visible[key] = ()
   }
 }
 
@@ -135,7 +212,7 @@ fn Lowering::emit(self : Lowering, m : @wap.Module) -> @ast.LocModule {
   ] = []
   for d in m.decls {
     match d {
-      TypeD(name~, def~, span~) =>
+      TypeD(name~, def~, span~, ..) =>
         match self.type_decl(name, def, span, parents) {
           Some(entry) => group.push(entry)
           None => ()
@@ -167,9 +244,6 @@ fn Lowering::emit(self : Lowering, m : @wap.Module) -> @ast.LocModule {
       // visibility statement resolved before this point.
       _ => ()
     }
-  }
-  for extra in self.extra_types {
-    group.push(extra)
   }
   if group.length() > 0 {
     let at = group[0].info
@@ -227,7 +301,7 @@ fn Lowering::type_decl(
               Some(p) => Some(self.ident(self.mangle(p), span))
               None => None
             },
-            final_: !parents.contains(name),
+            final_: !parents.contains(self.qualify(name)),
             descriptor: None,
             describes: None,
           },
@@ -399,9 +473,10 @@ fn Lowering::dispatcher(
   f : @wap.FnDecl,
 ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]? {
   let subs = []
+  let q = self.qualify(typ)
   for name, def in self.types {
     if def is Record(parent=Some(p), ..) &&
-      p == typ &&
+      p == q &&
       self.methods.contains(name + "." + f.name) {
       subs.push(name)
     }

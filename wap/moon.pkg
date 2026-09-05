@@ -7,6 +7,7 @@ import {
   "marianoguerra/error-report" @er,
   "marianoguerra/wap/lower",
   "marianoguerra/wap/parse",
+  "marianoguerra/wap/resolve",
   "marianoguerra/wax/ast",
   "marianoguerra/wax/compile",
   "marianoguerra/wax/diagnostic",

@@ -54,6 +54,25 @@ spelling to give them.
 
 ## Modules
 
+Every declaration is private to its module unless it is written `pub`, and a
+name from another module is always written out:
+
+```
+module app
+
+import geometry
+import collections.hashing
+
+export "run" fn run() -> i32:
+  let p = geometry.make(3, 4)      // `geometry.make` must be `pub`
+  geometry.dot(p, p)
+```
+
+The alias is the module's own declared name, not the last segment of the path
+it was found at: `import collections.hashing` brings in whatever the source at
+that path declares itself to be. A dot is a field access on a local and a
+qualifier on a module, told apart the only way it can be -- a local wins.
+
 `stdlib/collections/persistent_vector.wax` opens with
 
 > All names use `pv_`/`pvt_` prefixes because Wax has no source namespaces.
@@ -77,6 +96,33 @@ Two ways in, the same as Wax itself.
 @wap.compile_string_to_wat(src)   // the same lowering, printed
 @wap.to_wax(src)                  // stop at the Wax AST
 ```
+
+**With several modules**, hand it a loader:
+
+```moonbit
+let loader = @resolve.MapLoader::new(entries=[("collections.hashing", src)])
+@wap.compile_program("app", entry_src, loader)
+```
+
+`Loader` is a trait with one method, `load(path) -> String?`, and nothing in
+the resolver knows that files exist. A build tool implements it over a
+filesystem, an editor over its open buffers, a bundler over what it has already
+read:
+
+```moonbit
+struct Files {
+  root : String
+}
+
+impl @resolve.Loader for Files with load(self, path) {
+  read_file(self.root + "/" + path.replace_all(old=".", new="/") + ".wap")
+}
+```
+
+The resolver walks imports depth-first, reports a cycle with the whole ring
+rather than just the edge that happened to close it, and returns the modules in
+dependency order. Every module gets its own entry in the source registry, so a
+Wax type error found three modules deep still names the right file and line.
 
 **Without it**, build the AST. This is the point of `marianoguerra/wap/ast`
 being public: a project that generates wap -- a schema compiler, a DSL back end
@@ -120,13 +166,15 @@ renderer starts working for it.
 | `marianoguerra/wap/ast` | the AST. Depends on `error-report` and nothing else |
 | `marianoguerra/wap/parse` | shrubbery notation to wap AST |
 | `marianoguerra/wap/lower` | wap AST to Wax AST |
+| `marianoguerra/wap/resolve` | `Loader`, and the import walk over it |
 
 `ast` deliberately does not import `marianoguerra/wax`: a generator that builds
 wap values should not have to compile a type checker to do it.
 
 ## What is implemented
 
-Modules and name mangling; `const`; record types with single inheritance;
+Modules with `pub` visibility, qualified cross-module references, and
+resolution through a `Loader` that need not be a filesystem; `const`; record types with single inheritance;
 array, function and enumeration types; subranges; sets over enumerations;
 `impl` blocks with static and type-switch dispatch; nullable references;
 tuples as multi-value results and destructuring bindings; `let`/`var`;
@@ -140,8 +188,6 @@ carrying a table of them.
 
 ## What is not
 
-- **`import a.b` is recorded but not resolved.** Compilation is one file at a
-  time; a multi-file build has to concatenate. This is the largest gap.
 - **A value `match` lowers to a comparison chain**, never to `dispatch`.
   Correct for every label set, but not the jump table a dense one deserves.
 - **`let` is not enforced.** It parses and is recorded, and assigning to one is

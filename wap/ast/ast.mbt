@@ -287,6 +287,9 @@ pub(all) struct FnDecl {
   export_name : String?
   import_name : String?
   is_start : Bool
+  /// Whether another module may name this one. Wasm exports are a different
+  /// thing entirely: `export "n"` is an ABI, `pub` is visibility.
+  is_pub : Bool
   span : Span
 } derive(Eq, @debug.Debug)
 
@@ -306,6 +309,7 @@ pub(all) struct ConstDecl {
   value : Node
   export_name : String?
   import_name : String?
+  is_pub : Bool
   span : Span
 } derive(Eq, @debug.Debug)
 
@@ -327,7 +331,7 @@ pub(all) enum Decl {
     consts~ : Array[ConstDecl]
   )
   Const(ConstDecl)
-  TypeD(name~ : String, def~ : TypeDef, span~ : Span)
+  TypeD(name~ : String, def~ : TypeDef, is_pub~ : Bool, span~ : Span)
   Fn(FnDecl)
   /// `impl circle: ...`
   Impl(typ~ : String, methods~ : Array[FnDecl], span~ : Span)

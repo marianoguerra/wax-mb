@@ -60,6 +60,7 @@ test "a module built as an AST compiles without any source" {
     export_name: Some("mul"),
     import_name: None,
     is_start: false,
+    is_pub: true,
     span: @wapast.nowhere,
   }
   let m : @wapast.Module = { name: "gen", decls: [Fn(f)], }

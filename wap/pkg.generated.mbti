@@ -3,6 +3,7 @@ package "marianoguerra/wap"
 
 import {
   "marianoguerra/error-report",
+  "marianoguerra/wap/resolve",
   "marianoguerra/wax/ast",
   "marianoguerra/wax/basic",
   "marianoguerra/wax/compile",
@@ -12,11 +13,19 @@ import {
 }
 
 // Values
+pub fn check_program(String, String, &@resolve.Loader, features? : @feature.Set, policy? : @warning.Policy) -> Result[(@compile.Checked, Module), Diagnostics]
+
 pub fn check_string(String, fname? : String, features? : @feature.Set, policy? : @warning.Policy) -> Result[(@compile.Checked, Module), Diagnostics]
+
+pub fn compile_program(String, String, &@resolve.Loader, features? : @feature.Set, policy? : @warning.Policy) -> Result[Bytes, Diagnostics] raise @compile.CompileError
+
+pub fn compile_program_to_wat(String, String, &@resolve.Loader, features? : @feature.Set, policy? : @warning.Policy) -> Result[String, Diagnostics] raise @compile.CompileError
 
 pub fn compile_string(String, fname? : String, features? : @feature.Set, policy? : @warning.Policy) -> Result[Bytes, Diagnostics] raise @compile.CompileError
 
 pub fn compile_string_to_wat(String, fname? : String, features? : @feature.Set, policy? : @warning.Policy) -> Result[String, Diagnostics] raise @compile.CompileError
+
+pub fn program_to_wax(String, String, &@resolve.Loader) -> Result[Module, Array[@error-report.Report]]
 
 pub fn to_wax(String, fname? : String) -> Result[Module, Array[@error-report.Report]]
 

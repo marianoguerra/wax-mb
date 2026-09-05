@@ -125,3 +125,82 @@ pub fn check_string(
     Ok((checked, m))
   }
 }
+
+///|
+/// Parse and lower a whole program: the entry module and everything it
+/// imports, found through the loader.
+///
+/// The loader is the only thing that knows where source lives, which is why
+/// this works when there are no files -- an editor's buffers, a generated map,
+/// a zip. `@resolve.MapLoader` is the one for sources already in memory.
+pub fn program_to_wax(
+  path : String,
+  src : String,
+  loader : &@resolve.Loader,
+) -> Result[Module, Array[@er.Report]] {
+  let program = @resolve.resolve_source(path, src, loader) catch {
+    @resolve.ResolveError(r) => return Err([r])
+  }
+  let lowered = @lower.lower_program(program.units())
+  Ok({
+    fields: lowered.fields(),
+    sources: program.sources(),
+    diagnostics: lowered.diagnostics(),
+  })
+}
+
+///|
+/// Compile a whole program to wasm.
+pub fn compile_program(
+  path : String,
+  src : String,
+  loader : &@resolve.Loader,
+  features? : @feature.Set,
+  policy? : @warning.Policy,
+) -> Result[Bytes, Diagnostics] raise @compile.CompileError {
+  match check_program(path, src, loader, features?, policy?) {
+    Err(d) => Err(d)
+    Ok((checked, _)) => Ok(checked.to_bytes())
+  }
+}
+
+///|
+/// Compile a whole program to the WebAssembly text format.
+pub fn compile_program_to_wat(
+  path : String,
+  src : String,
+  loader : &@resolve.Loader,
+  features? : @feature.Set,
+  policy? : @warning.Policy,
+) -> Result[String, Diagnostics] raise @compile.CompileError {
+  match check_program(path, src, loader, features?, policy?) {
+    Err(d) => Err(d)
+    Ok((checked, _)) => Ok(checked.to_wat())
+  }
+}
+
+///|
+/// Resolve, lower and type check a program, stopping before the emitters.
+pub fn check_program(
+  path : String,
+  src : String,
+  loader : &@resolve.Loader,
+  features? : @feature.Set,
+  policy? : @warning.Policy,
+) -> Result[(@compile.Checked, Module), Diagnostics] {
+  let m = match program_to_wax(path, src, loader) {
+    Err(rs) => return Err({ wap: rs, wax: [], })
+    Ok(m) => m
+  }
+  if m.diagnostics.length() > 0 {
+    return Err({ wap: m.diagnostics, wax: [], })
+  }
+  let session = @compile.Session::new(features?, source=src)
+  let checked = session.check(m.fields)
+  let reports = session.reports(policy?)
+  if @compile.rejected(reports) {
+    Err({ wap: [], wax: reports, })
+  } else {
+    Ok((checked, m))
+  }
+}

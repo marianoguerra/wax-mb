@@ -142,13 +142,21 @@ fn Lowering::expr(
     Var(n) => self.var_ref(n, sp)
     Drop(inner) =>
       @ast.build(Let([(None, None)], Some(self.expr(inner, None))), at)
-    Field(recv, name) => {
-      let base = @ast.build(
-        StructGet(self.expr(recv, None), self.ident(name, sp)),
-        at,
-      )
-      self.widen(base, self.field_of(recv, name), sp)
-    }
+    Field(recv, name) =>
+      // `hashing.limit` is a name in another module, not a field of a local.
+      match self.module_ref(recv, name) {
+        Some(q) => {
+          self.check_visible(q, sp)
+          self.var_ref(q, sp)
+        }
+        None => {
+          let base = @ast.build(
+            StructGet(self.expr(recv, None), self.ident(name, sp)),
+            at,
+          )
+          self.widen(base, self.field_of(recv, name), sp)
+        }
+      }
     Index(a, i) =>
       // `ints[0]` is an array literal when `ints` is a type, and an index when
       // it is a value. Only the declarations know which.
@@ -241,7 +249,7 @@ fn Lowering::expr(
         _ => self.expr(callee, None)
       }
       let sig = match callee.it {
-        Var(n) => self.funcs.get(n)
+        Var(n) => self.funcs.get(self.qualify(n))
         _ => None
       }
       let out = []
@@ -401,7 +409,7 @@ fn Lowering::var_ref(
   let at = self.loc(sp)
   // An enumerator is a constant, and never reaches the emitted module.
   if self.local_type(n) is None {
-    match self.member_owner.get(n) {
+    match self.member_owner.get(self.qualify(n)) {
       Some(owner) =>
         match self.enum_members.get(owner) {
           Some(ms) =>
@@ -417,10 +425,10 @@ fn Lowering::var_ref(
   if self.local_type(n) is Some(_) {
     return @ast.build(Get(self.ident(n, sp)), at)
   }
-  match self.funcs.get(n) {
+  match self.funcs.get(self.qualify(n)) {
     Some(sig) => @ast.build(Get(self.ident(sig.emitted, sp)), at)
     None =>
-      if self.globals.contains(n) {
+      if self.globals.contains(self.qualify(n)) {
         @ast.build(Get(self.ident(self.mangle(n), sp)), at)
       } else {
         @ast.build(Get(self.ident(n, sp)), at)

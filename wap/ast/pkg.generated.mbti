@@ -56,6 +56,7 @@ pub(all) struct ConstDecl {
   value : Node
   export_name : String?
   import_name : String?
+  is_pub : Bool
   span : @error-report.Span
 } derive(Eq, @debug.Debug)
 
@@ -65,7 +66,7 @@ pub(all) enum Decl {
   ImportWas(file~ : String, funcs~ : Array[FnDecl], consts~ : Array[ConstDecl])
   ImportHost(module_~ : String, funcs~ : Array[FnDecl], consts~ : Array[ConstDecl])
   Const(ConstDecl)
-  TypeD(name~ : String, def~ : TypeDef, span~ : @error-report.Span)
+  TypeD(name~ : String, def~ : TypeDef, is_pub~ : Bool, span~ : @error-report.Span)
   Fn(FnDecl)
   Impl(typ~ : String, methods~ : Array[FnDecl], span~ : @error-report.Span)
 } derive(Eq, @debug.Debug)
@@ -129,6 +130,7 @@ pub(all) struct FnDecl {
   export_name : String?
   import_name : String?
   is_start : Bool
+  is_pub : Bool
   span : @error-report.Span
 } derive(Eq, @debug.Debug)
 

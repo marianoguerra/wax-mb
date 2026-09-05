@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wap/resolve"
+
+import {
+  "marianoguerra/error-report",
+  "marianoguerra/wap/lower",
+}
+
+// Values
+pub fn resolve(String, &Loader) -> Program raise ResolveError
+
+pub fn resolve_source(String, String, &Loader) -> Program raise ResolveError
+
+// Errors
+pub(all) suberror ResolveError {
+  ResolveError(@error-report.Report)
+}
+pub fn ResolveError::report(Self) -> @error-report.Report
+
+// Types and methods
+pub struct MapLoader {
+  sources : Map[String, String]
+}
+pub fn MapLoader::add(Self, String, String) -> Unit
+pub fn MapLoader::new(entries? : Array[(String, String)]) -> Self
+pub impl Loader for MapLoader
+
+pub struct Program {
+  units : Array[@lower.Input]
+  sources : @error-report.Sources
+}
+pub fn Program::entry(Self) -> String
+pub fn Program::sources(Self) -> @error-report.Sources
+pub fn Program::units(Self) -> Array[@lower.Input]
+
+// Type aliases
+
+// Traits
+pub(open) trait Loader {
+  fn load(Self, String) -> String?
+}

@@ -150,7 +150,7 @@ fn Lowering::ordinal_of(
     Var(n) => {
       let owner = match self.set_type(expected) {
         Some(o) => Some(o)
-        None => self.member_owner.get(n)
+        None => self.member_owner.get(self.qualify(n))
       }
       match owner {
         Some(o) =>
@@ -253,6 +253,18 @@ fn Lowering::method_call(
   sp : @wap.Span,
 ) -> @ast.Instr[@basic.Location] {
   let at = self.loc(sp)
+  // `hashing.i32_value(x)` is a call into another module, not a method.
+  match self.module_ref(recv, name) {
+    Some(q) => {
+      self.check_visible(q, sp)
+      let out = []
+      for a in args {
+        out.push(self.expr(a, None))
+      }
+      return @ast.build(Call(self.var_ref(q, sp), out), at)
+    }
+    None => ()
+  }
   // The array intrinsics keep Wax's spelling, except that `len` is shorter
   // than `length` and is the only one worth renaming.
   let intrinsic = match name {
@@ -330,7 +342,7 @@ fn Lowering::owner_of_method(
   record : String,
   name : String,
 ) -> String? {
-  if self.methods.contains(record + "." + name) {
+  if self.methods.contains(self.qualify(record) + "." + name) {
     return Some(record)
   }
   match self.resolve(record) {
@@ -342,8 +354,9 @@ fn Lowering::owner_of_method(
 ///|
 /// True when some record extends this one.
 fn Lowering::has_subtype(self : Lowering, record : String) -> Bool {
+  let q = self.qualify(record)
   for _, def in self.types {
-    if def is Record(parent=Some(p), ..) && p == record {
+    if def is Record(parent=Some(p), ..) && p == q {
       return true
     }
   }

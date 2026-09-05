@@ -1,0 +1,16 @@
+// Finding the modules a wap program is made of.
+//
+// The point of this package is the `Loader` trait: nothing here opens a file,
+// or knows that files exist. A build tool implements `Loader` over a
+// filesystem, an editor over its open buffers, a test over a literal map, and
+// a bundler over whatever it has already read. The resolver is the same in
+// every case.
+import {
+  "marianoguerra/error-report" @er,
+  "marianoguerra/wap/lower",
+  "marianoguerra/wap/parse",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"
