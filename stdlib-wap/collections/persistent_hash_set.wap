@@ -1,0 +1,99 @@
+// A persistent hash set, ported from
+// `stdlib/collections/persistent_hash_set.wax`.
+//
+// The .wax file has to be concatenated after `persistent_hash_map.wax` and
+// takes its prefix, `phs_`, to stay out of the map's way. Here it says
+// `import collections.persistent_hash_map` and the compiler keeps them apart,
+// which is the whole point of the exercise: this is the first module in the
+// ported stdlib that depends on another one.
+//
+// The set is the map with a marker for a value, so everything about hashing,
+// equality, structural sharing and null keys is the map's. Only the transient
+// half is missing, because the map's is -- see the note there.
+
+module persistent_hash_set
+
+import collections.persistent_hash_map
+
+type visit = fn(eq?, eq?)
+
+pub type set = { map :: persistent_hash_map.map }
+
+type each_context = {
+  context :: eq?,
+  visit :: visit,
+}
+
+fn each_entry(context :: eq?, key :: eq?, value :: eq?):
+  let state = context! as each_context
+  state.visit(state.context, key)
+
+export "phs_empty" pub fn empty(
+  hash :: persistent_hash_map.hash_fn,
+  equal :: persistent_hash_map.equal_fn,
+) -> set:
+  set{map: persistent_hash_map.empty(hash, equal)}
+
+export "phs_count" pub fn count(s :: set) -> i32:
+  persistent_hash_map.count(s.map)
+
+export "phs_contains" pub fn contains(s :: set, value :: eq?) -> bool:
+  persistent_hash_map.contains(s.map, value)
+
+export "phs_add" pub fn add(s :: set, value :: eq?) -> set:
+  let m = persistent_hash_map.assoc(s.map, value, 0 as i31)
+  if m == s.map:
+    return s
+  set{map: m}
+
+export "phs_remove" pub fn remove(s :: set, value :: eq?) -> set:
+  let m = persistent_hash_map.dissoc(s.map, value)
+  if m == s.map:
+    return s
+  set{map: m}
+
+export "phs_each" pub fn each(s :: set, context :: eq?, seen :: visit):
+  let state = each_context{context: context, visit: seen}
+  persistent_hash_map.each(s.map, state, each_entry)
+
+type union_context = { out :: mut set }
+
+fn union_add(context :: eq?, value :: eq?):
+  let state = context! as union_context
+  state.out = add(state.out, value)
+
+export "phs_union" pub fn union(left :: set, right :: set) -> set:
+  let state = union_context{out: left}
+  each(right, state, union_add)
+  state.out
+
+// Intersection and difference are the same walk with the answer inverted, so
+// they share a context and differ only in which way `keep_present` points.
+type filter_context = {
+  other :: set,
+  out :: mut set,
+  keep_present :: bool,
+}
+
+fn filter_add(context :: eq?, value :: eq?):
+  let state = context! as filter_context
+  if contains(state.other, value) == state.keep_present:
+    state.out = add(state.out, value)
+
+export "phs_intersection" pub fn intersection(left :: set, right :: set) -> set:
+  let state = filter_context{
+    other: right,
+    out: empty(left.map.hash, left.map.equal),
+    keep_present: true,
+  }
+  each(left, state, filter_add)
+  state.out
+
+export "phs_difference" pub fn difference(left :: set, right :: set) -> set:
+  let state = filter_context{
+    other: right,
+    out: empty(left.map.hash, left.map.equal),
+    keep_present: false,
+  }
+  each(left, state, filter_add)
+  state.out

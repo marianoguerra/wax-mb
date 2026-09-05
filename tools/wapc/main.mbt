@@ -18,11 +18,35 @@
 struct Files {
   root : String
   read : Map[String, String]
+  /// File names in the order they were read, which is the order the resolver
+  /// registers them in -- see `replay`.
+  order : Array[String]
 }
 
 ///|
 fn Files::new(root : String) -> Files {
-  { root, read: {}, }
+  { root, read: {}, order: [], }
+}
+
+///|
+/// A source registry equivalent to the resolver's own.
+///
+/// The facade hands back reports without the registry they point into, and a
+/// report addresses a source by an id rather than by name, so there is nothing
+/// to look a span up in. The resolver registers each module the first time it
+/// loads it, through this loader, so replaying the loads in order rebuilds the
+/// same ids. It is a reconstruction rather than the real thing: if it is ever
+/// wrong the snippet is drawn against the wrong file, so it is used only where
+/// the alternative is no snippet at all.
+fn Files::replay(self : Files) -> @er.Sources {
+  let sources = @er.Sources::new()
+  for fname in self.order {
+    match self.read.get(fname) {
+      Some(text) => sources.add(fname, text) |> ignore
+      None => ()
+    }
+  }
+  sources
 }
 
 ///|
@@ -37,7 +61,11 @@ impl @resolve.Loader for Files with fn load(self, path) {
   let text = @fs.read_file_to_string(file) catch { _ => return None }
   // Keyed the way the resolver names its sources -- `path + ".wap"` -- so that
   // a diagnostic can be traced back to the text it is about.
-  self.read[path + ".wap"] = text
+  let fname = path + ".wap"
+  if !self.read.contains(fname) {
+    self.order.push(fname)
+  }
+  self.read[fname] = text
   Some(text)
 }
 
@@ -116,7 +144,7 @@ fn compile_one(
     // A resolve or parse failure comes back with no registry to point into,
     // so the report is rendered against an empty one: the message and the
     // code, without a snippet.
-    Err(rs) => return Err(render_reports(rs, @er.Sources::new()))
+    Err(rs) => return Err(render_reports(rs, files.replay()))
     Ok(m) => m
   }
   if m.diagnostics().length() > 0 {
@@ -142,6 +170,7 @@ fn main raise {
   let args = @env.args()
   let mut root = "stdlib-wap"
   let mut wat = false
+  let mut wax = false
   let wanted = []
   let mut i = 1
   while i < args.length() {
@@ -151,6 +180,7 @@ fn main raise {
         root = args[i]
       }
       "--wat" => wat = true
+      "--wax" => wax = true
       "--help" | "-h" => {
         usage()
         return
@@ -167,6 +197,26 @@ fn main raise {
   let mut failed = 0
   for path in modules {
     let files = Files::new(root)
+    if wax {
+      // What wap actually handed to Wax, as Wax source. The seam between the
+      // two front ends is where a port's mystery usually is: a wap type error
+      // that Wax reports is easier to read against the tree it is about than
+      // against the wap line it came from.
+      match
+        @wap.program_to_wax(
+          path,
+          @resolve.Loader::load(files, path).unwrap(),
+          files,
+        ) {
+        Ok(m) => println(@output.render(m.fields(), @trivia.Context::new()))
+        Err(rs) => {
+          println("FAIL  " + path)
+          println(render_reports(rs, files.replay()))
+          failed = failed + 1
+        }
+      }
+      continue
+    }
     match compile_one(files, path) {
       Ok(w) => if wat { println(w) } else { println("ok    " + path) }
       Err(message) => {

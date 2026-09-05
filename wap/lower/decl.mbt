@@ -210,11 +210,26 @@ fn Lowering::emit(self : Lowering, m : @wap.Module) -> @ast.LocModule {
   let group : Array[
     @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location],
   ] = []
+  // Function types that mention no other declared type are declared on their
+  // own, ahead of the group. Wax refuses to coerce a function's name to a
+  // function type declared inside a `rec` group -- the reference implementation
+  // does the same -- so leaving them in it would make `each(xs, visit_fn)`
+  // unspellable in any module that declares two types. See
+  // the "a callback type survives a second type declaration" test in
+  // `wap/repro_test.mbt`.
+  let standalone : Array[
+    @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location],
+  ] = []
   for d in m.decls {
     match d {
       TypeD(name~, def~, span~, ..) =>
         match self.type_decl(name, def, span, parents) {
-          Some(entry) => group.push(entry)
+          Some(entry) =>
+            if self.free_standing_func(def) {
+              standalone.push(entry)
+            } else {
+              group.push(entry)
+            }
           None => ()
         }
       _ => ()
@@ -254,7 +269,76 @@ fn Lowering::emit(self : Lowering, m : @wap.Module) -> @ast.LocModule {
         @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]),
     )
   }
+  // In front of it, so that a record in the group may name one of them.
+  for i = standalone.length() - 1; i >= 0; i = i - 1 {
+    let entry = standalone[i]
+    out.insert(
+      0,
+      (
+        { desc: Type([entry]), info: entry.info, } :
+        @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]),
+    )
+  }
   out
+}
+
+///|
+/// True when a function type can be declared outside the recursive group.
+///
+/// It can when nothing in its signature names another declared type, which is
+/// the case for every callback the standard library takes: they are written
+/// over `eq`, `i32` and the like. One that does mention a declared type stays
+/// in the group, where it may need it -- and where Wax will then refuse the
+/// implicit coercion, which is upstream's behaviour rather than this port's.
+fn Lowering::free_standing_func(self : Lowering, def : @wap.TypeDef) -> Bool {
+  match def {
+    Alias(Func(params~, results~)) => {
+      for t in params {
+        if self.mentions_declared(t) {
+          return false
+        }
+      }
+      for t in results {
+        if self.mentions_declared(t) {
+          return false
+        }
+      }
+      true
+    }
+    _ => false
+  }
+}
+
+///|
+/// Whether a type expression names a type that becomes a Wax declaration.
+fn Lowering::mentions_declared(self : Lowering, t : @wap.Type) -> Bool {
+  match t {
+    Named(n) => self.nominal(n)
+    Nullable(inner) => self.mentions_declared(inner)
+    ArrayOf(inner) => self.mentions_declared(inner)
+    Tuple(ts) => {
+      for x in ts {
+        if self.mentions_declared(x) {
+          return true
+        }
+      }
+      false
+    }
+    Func(params~, results~) => {
+      for x in params {
+        if self.mentions_declared(x) {
+          return true
+        }
+      }
+      for x in results {
+        if self.mentions_declared(x) {
+          return true
+        }
+      }
+      false
+    }
+    _ => false
+  }
 }
 
 ///|

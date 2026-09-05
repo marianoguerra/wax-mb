@@ -95,3 +95,52 @@ test "repro: a bare loop repeats" {
   // Without the generated `br`, a wasm loop runs its body once.
   assert_true(w.contains("(br $loop__1)"))
 }
+
+///|
+/// A module with two declared types used to put both in one `rec` group, and
+/// Wax will not coerce a function's name to a function type declared inside
+/// one -- the reference implementation refuses it too. So `each(xs, callback)`
+/// compiled in a module with one type and stopped compiling when a second was
+/// added, which is how the standard library ports found it.
+///
+/// The cast that suggests itself, `callback as visit`, is worse than the error:
+/// it compiles, and traps at run time with `illegal cast`, because the two
+/// function types are in different recursion groups and so are not the same
+/// wasm type.
+test "repro: a callback type survives a second type declaration" {
+  let src =
+    #|module m
+    #|type visit = fn(eq?, eq?)
+    #|type holder = { x :: i32 }
+    #|fn note(context :: eq?, value :: eq?):
+    #|  ()
+    #|fn each(context :: eq?, seen :: visit):
+    #|  seen(context, null)
+    #|export "run" fn run():
+    #|  each(null, note)
+  let w = try_wat(src)
+  assert_false(w.contains("FAILED"))
+  // The reference must be handed over as-is. A `ref.cast` here would mean the
+  // callback type went back into the group.
+  assert_false(w.contains("ref.cast"))
+}
+
+///|
+/// The other half of the rule: a function type that names a declared type
+/// cannot leave the group, because a record in the group may name it back.
+/// Wax's refusal then stands, and that is upstream's behaviour rather than
+/// this port's -- the test records it so a future change to the grouping has
+/// to decide about it deliberately.
+test "repro: a callback type over a declared type stays in the group" {
+  let src =
+    #|module m
+    #|type item = { x :: i32 }
+    #|type visit = fn(item)
+    #|fn note(it :: item):
+    #|  ()
+    #|fn each(seen :: visit):
+    #|  seen(item{x: 1})
+    #|export "run" fn run():
+    #|  each(note)
+  assert_true(try_wat(src).contains("FAILED"))
+}

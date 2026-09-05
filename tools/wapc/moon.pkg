@@ -9,6 +9,8 @@ import {
   "marianoguerra/wap",
   "marianoguerra/wap/resolve",
   "marianoguerra/wax/basic",
+  "marianoguerra/wax/fmt" @output,
+  "marianoguerra/wax/syntax/trivia",
   "marianoguerra/wax/compile",
   "marianoguerra/wax/diagnostic",
   "moonbitlang/core/env",
