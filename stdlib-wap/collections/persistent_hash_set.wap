@@ -8,8 +8,8 @@
 // ported stdlib that depends on another one.
 //
 // The set is the map with a marker for a value, so everything about hashing,
-// equality, structural sharing and null keys is the map's. Only the transient
-// half is missing, because the map's is -- see the note there.
+// equality, structural sharing, null keys and edit ownership is the map's. That
+// includes the transient half, which is why it is four lines per operation.
 
 module persistent_hash_set
 
@@ -97,3 +97,25 @@ export "phs_difference" pub fn difference(left :: set, right :: set) -> set:
   }
   each(left, state, filter_add)
   state.out
+
+// ---------------------------------------------------------------- transient
+
+pub type transient = { map :: persistent_hash_map.transient }
+
+export "phs_as_transient" pub fn as_transient(s :: set) -> transient:
+  transient{map: persistent_hash_map.as_transient(s.map)}
+
+export "phst_count" pub fn t_count(t :: transient) -> i32:
+  persistent_hash_map.t_count(t.map)
+
+export "phst_contains" pub fn t_contains(t :: transient, value :: eq?) -> bool:
+  persistent_hash_map.t_contains(t.map, value)
+
+export "phst_add" pub fn t_add(t :: transient, value :: eq?):
+  persistent_hash_map.t_assoc(t.map, value, 0 as i31)
+
+export "phst_remove" pub fn t_remove(t :: transient, value :: eq?):
+  persistent_hash_map.t_dissoc(t.map, value)
+
+export "phst_persistent" pub fn t_persistent(t :: transient) -> set:
+  set{map: persistent_hash_map.t_persistent(t.map)}

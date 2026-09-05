@@ -167,9 +167,11 @@ let collections_persistent_hash_map_wap : String =
   #|//   * A predicate returns `bool`. Wax has no `bool`, so the original returns
   #|//     `i32` and compares it against 0 at every call site.
   #|//
-  #|// This is the persistent half. The transient half of the .wax file -- `phmt_*`,
-  #|// edit ownership, in-place mutation -- is a separate exercise and is not ported
-  #|// here, so the `edit` field below is carried but never set.
+  #|// The transient half is here too. It is the same HAMT with the copying turned
+  #|// off: a builder owns an `edit` token, a node that already carries that token
+  #|// is written in place rather than copied, and `persistent` clears the token so
+  #|// that a builder used after freezing traps instead of writing into the value it
+  #|// handed out.
   #|
   #|module persistent_hash_map
   #|
@@ -611,6 +613,290 @@ let collections_persistent_hash_map_wap : String =
   #|    seen(context, null, m.null_value)
   #|  if m.root != null:
   #|    node_each(m.root!, context, seen)
+  #|
+  #|// ---------------------------------------------------------------- transient
+  #|
+  #|pub type transient = {
+  #|  edit :: edit,
+  #|  count :: mut i32,
+  #|  root :: mut node?,
+  #|  has_null :: mut bool,
+  #|  null_value :: mut eq?,
+  #|  hash :: hash_fn,
+  #|  equal :: equal_fn,
+  #|}
+  #|
+  #|// Every transient operation starts here. A builder that has been frozen is a
+  #|// programming mistake rather than a value, so it traps.
+  #|fn require_active(t :: transient):
+  #|  if t.edit.active == 0:
+  #|    unreachable
+  #|
+  #|// The node this builder is allowed to write into: itself when it already owns
+  #|// it, a copy carrying the token otherwise. Ownership is what makes the whole
+  #|// structure safe to mutate -- a node the persistent value still points at was
+  #|// made by someone else and is never touched.
+  #|fn ensure_node(n :: node, owner :: edit) -> node:
+  #|  match n
+  #|  | b :: bitmap_node:
+  #|      if b.edit == owner:
+  #|        return b
+  #|      return bitmap(owner, b.bitmap, copy_slots(b.slots, b.slots.len()))
+  #|  | a :: array_node:
+  #|      if a.edit == owner:
+  #|        return a
+  #|      let children = node_slots[null ** 32]
+  #|      children.copy(0, a.children, 0, 32)
+  #|      return array(owner, a.count, children)
+  #|  | c :: collision_node:
+  #|      if c.edit == owner:
+  #|        return c
+  #|      return collision(owner, c.hash, c.count, copy_slots(c.slots, c.slots.len()))
+  #|  | _: unreachable
+  #|  unreachable
+  #|
+  #|fn t_node_assoc(
+  #|  n :: node?,
+  #|  shift :: u32,
+  #|  hash :: u32,
+  #|  key :: eq,
+  #|  value :: eq?,
+  #|  hash_of :: hash_fn,
+  #|  equal :: equal_fn,
+  #|  owner :: edit,
+  #|) -> (node, i32):
+  #|  if n == null:
+  #|    let out = singleton_at(shift, hash, key, value)
+  #|    out.edit = owner
+  #|    return (out, 1)
+  #|  let owned = ensure_node(n!, owner)
+  #|  match owned
+  #|  | b :: bitmap_node:
+  #|      let bit = bitpos(hash, shift)
+  #|      let at = bitmap_index(b.bitmap, bit) * 2
+  #|      if (b.bitmap && bit) == 0:
+  #|        if b.bitmap.popcnt() >= 16:
+  #|          let promoted = promote(b, shift, hash, key, value, hash_of)
+  #|          promoted.edit = owner
+  #|          return (promoted, 1)
+  #|        b.bitmap = b.bitmap || bit
+  #|        b.slots = insert_pair(b.slots, at, key, value)
+  #|        return (b, 1)
+  #|      let old_key = b.slots[at]
+  #|      if old_key == null:
+  #|        let (child, added) = t_node_assoc(
+  #|          b.slots[at + 1] as node,
+  #|          shift + 5,
+  #|          hash,
+  #|          key,
+  #|          value,
+  #|          hash_of,
+  #|          equal,
+  #|          owner,
+  #|        )
+  #|        b.slots[at + 1] = child
+  #|        return (b, added)
+  #|      if equal(old_key!, key):
+  #|        b.slots[at + 1] = value
+  #|        return (b, 0)
+  #|      let child = merge_two(
+  #|        shift + 5,
+  #|        hash_of(old_key!),
+  #|        old_key!,
+  #|        b.slots[at + 1],
+  #|        hash,
+  #|        key,
+  #|        value,
+  #|      )
+  #|      b.slots[at] = null
+  #|      b.slots[at + 1] = child
+  #|      return (b, 1)
+  #|  | a :: array_node:
+  #|      let index = (hash >> shift) & 31
+  #|      let (child, added) = t_node_assoc(
+  #|        a.children[index],
+  #|        shift + 5,
+  #|        hash,
+  #|        key,
+  #|        value,
+  #|        hash_of,
+  #|        equal,
+  #|        owner,
+  #|      )
+  #|      if a.children[index] == null:
+  #|        a.count = a.count + 1
+  #|      a.children[index] = child
+  #|      return (a, added)
+  #|  | c :: collision_node:
+  #|      if c.hash != hash:
+  #|        let (out, added) = node_assoc(c, shift, hash, key, value, hash_of, equal)
+  #|        out.edit = owner
+  #|        return (out, added)
+  #|      for i in 0 ..< c.count:
+  #|        let at = i * 2
+  #|        if equal(c.slots[at]!, key):
+  #|          c.slots[at + 1] = value
+  #|          return (c, 0)
+  #|      c.slots = insert_pair(c.slots, c.slots.len(), key, value)
+  #|      c.count = c.count + 1
+  #|      return (c, 1)
+  #|  | _: unreachable
+  #|  unreachable
+  #|
+  #|fn t_node_dissoc(
+  #|  n :: node,
+  #|  shift :: u32,
+  #|  hash :: u32,
+  #|  key :: eq,
+  #|  equal :: equal_fn,
+  #|  owner :: edit,
+  #|) -> (node?, bool):
+  #|  let owned = ensure_node(n, owner)
+  #|  match owned
+  #|  | b :: bitmap_node:
+  #|      let bit = bitpos(hash, shift)
+  #|      if (b.bitmap && bit) == 0:
+  #|        return (b, false)
+  #|      let at = bitmap_index(b.bitmap, bit) * 2
+  #|      let old_key = b.slots[at]
+  #|      if old_key == null:
+  #|        let (child, removed) = t_node_dissoc(
+  #|          b.slots[at + 1] as node,
+  #|          shift + 5,
+  #|          hash,
+  #|          key,
+  #|          equal,
+  #|          owner,
+  #|        )
+  #|        if !removed:
+  #|          return (b, false)
+  #|        if child == null
+  #|        | if b.bitmap == bit:
+  #|            return (null, true)
+  #|          b.bitmap = b.bitmap ^ bit
+  #|          b.slots = remove_pair(b.slots, at)
+  #|        | b.slots[at + 1] = child
+  #|        return (b, true)
+  #|      if !equal(old_key!, key):
+  #|        return (b, false)
+  #|      if b.bitmap == bit:
+  #|        return (null, true)
+  #|      b.bitmap = b.bitmap ^ bit
+  #|      b.slots = remove_pair(b.slots, at)
+  #|      return (b, true)
+  #|  | a :: array_node:
+  #|      let index = (hash >> shift) & 31
+  #|      let old = a.children[index]
+  #|      if old == null:
+  #|        return (a, false)
+  #|      let (child, removed) = t_node_dissoc(old!, shift + 5, hash, key, equal, owner)
+  #|      if !removed:
+  #|        return (a, false)
+  #|      if child == null:
+  #|        if a.count <= 9:
+  #|          let packed = pack_array(a, index)
+  #|          if packed != null:
+  #|            packed!.edit = owner
+  #|          return (packed, true)
+  #|        a.count = a.count - 1
+  #|      a.children[index] = child
+  #|      return (a, true)
+  #|  | c :: collision_node:
+  #|      if c.hash != hash:
+  #|        return (c, false)
+  #|      for i in 0 ..< c.count:
+  #|        let at = i * 2
+  #|        if equal(c.slots[at]!, key):
+  #|          if c.count == 1:
+  #|            return (null, true)
+  #|          if c.count == 2:
+  #|            let keep = if at == 0 | 2 | 0
+  #|            let out = singleton_at(shift, hash, c.slots[keep]!, c.slots[keep + 1])
+  #|            out.edit = owner
+  #|            return (out, true)
+  #|          c.slots = remove_pair(c.slots, at)
+  #|          c.count = c.count - 1
+  #|          return (c, true)
+  #|      return (c, false)
+  #|  | _: unreachable
+  #|  unreachable
+  #|
+  #|export "phm_as_transient" pub fn as_transient(m :: map) -> transient:
+  #|  transient{
+  #|    edit: edit{active: 1},
+  #|    count: m.count,
+  #|    root: m.root,
+  #|    has_null: m.has_null,
+  #|    null_value: m.null_value,
+  #|    hash: m.hash,
+  #|    equal: m.equal,
+  #|  }
+  #|
+  #|export "phmt_count" pub fn t_count(t :: transient) -> i32:
+  #|  require_active(t)
+  #|  t.count
+  #|
+  #|export "phmt_get" pub fn t_get(t :: transient, key :: eq?) -> (bool, eq?):
+  #|  require_active(t)
+  #|  if key == null:
+  #|    return (t.has_null, t.null_value)
+  #|  if t.root == null:
+  #|    return (false, null)
+  #|  node_get(t.root!, 0, t.hash(key!), key!, t.equal)
+  #|
+  #|export "phmt_contains" pub fn t_contains(t :: transient, key :: eq?) -> bool:
+  #|  let (found, _) = t_get(t, key)
+  #|  found
+  #|
+  #|export "phmt_assoc" pub fn t_assoc(t :: transient, key :: eq?, value :: eq?):
+  #|  require_active(t)
+  #|  if key == null:
+  #|    if !t.has_null:
+  #|      t.count = t.count + 1
+  #|    t.has_null = true
+  #|    t.null_value = value
+  #|    return
+  #|  if t.count == 0x7fffffff:
+  #|    unreachable
+  #|  let (root, added) = t_node_assoc(
+  #|    t.root,
+  #|    0,
+  #|    t.hash(key!),
+  #|    key!,
+  #|    value,
+  #|    t.hash,
+  #|    t.equal,
+  #|    t.edit,
+  #|  )
+  #|  t.root = root
+  #|  t.count = t.count + added
+  #|
+  #|export "phmt_dissoc" pub fn t_dissoc(t :: transient, key :: eq?):
+  #|  require_active(t)
+  #|  if key == null:
+  #|    if t.has_null:
+  #|      t.has_null = false
+  #|      t.null_value = null
+  #|      t.count = t.count - 1
+  #|    return
+  #|  if t.root == null:
+  #|    return
+  #|  let (root, removed) = t_node_dissoc(t.root!, 0, t.hash(key!), key!, t.equal, t.edit)
+  #|  t.root = root
+  #|  if removed:
+  #|    t.count = t.count - 1
+  #|
+  #|export "phmt_persistent" pub fn t_persistent(t :: transient) -> map:
+  #|  require_active(t)
+  #|  t.edit.active = 0
+  #|  map{
+  #|    count: t.count,
+  #|    root: t.root,
+  #|    has_null: t.has_null,
+  #|    null_value: t.null_value,
+  #|    hash: t.hash,
+  #|    equal: t.equal,
+  #|  }
 
 ///|
 let collections_persistent_hash_set_wap : String =
@@ -624,8 +910,8 @@ let collections_persistent_hash_set_wap : String =
   #|// ported stdlib that depends on another one.
   #|//
   #|// The set is the map with a marker for a value, so everything about hashing,
-  #|// equality, structural sharing and null keys is the map's. Only the transient
-  #|// half is missing, because the map's is -- see the note there.
+  #|// equality, structural sharing, null keys and edit ownership is the map's. That
+  #|// includes the transient half, which is why it is four lines per operation.
   #|
   #|module persistent_hash_set
   #|
@@ -713,6 +999,28 @@ let collections_persistent_hash_set_wap : String =
   #|  }
   #|  each(left, state, filter_add)
   #|  state.out
+  #|
+  #|// ---------------------------------------------------------------- transient
+  #|
+  #|pub type transient = { map :: persistent_hash_map.transient }
+  #|
+  #|export "phs_as_transient" pub fn as_transient(s :: set) -> transient:
+  #|  transient{map: persistent_hash_map.as_transient(s.map)}
+  #|
+  #|export "phst_count" pub fn t_count(t :: transient) -> i32:
+  #|  persistent_hash_map.t_count(t.map)
+  #|
+  #|export "phst_contains" pub fn t_contains(t :: transient, value :: eq?) -> bool:
+  #|  persistent_hash_map.t_contains(t.map, value)
+  #|
+  #|export "phst_add" pub fn t_add(t :: transient, value :: eq?):
+  #|  persistent_hash_map.t_assoc(t.map, value, 0 as i31)
+  #|
+  #|export "phst_remove" pub fn t_remove(t :: transient, value :: eq?):
+  #|  persistent_hash_map.t_dissoc(t.map, value)
+  #|
+  #|export "phst_persistent" pub fn t_persistent(t :: transient) -> set:
+  #|  set{map: persistent_hash_map.t_persistent(t.map)}
 
 ///|
 let collections_persistent_vector_wap : String =
@@ -728,8 +1036,11 @@ let collections_persistent_vector_wap : String =
   #|// `persistent_vector__node`, `persistent_vector__empty` and so on. Nothing
   #|// else about the data structure changed.
   #|//
-  #|// This is the persistent half. The transient half of the .wax file is a
-  #|// separate exercise and is not ported here.
+  #|// The transient half is here too. It is the same trie with the copying turned
+  #|// off: a builder owns an `edit` token, every node it made carries that token,
+  #|// and a node that already carries it is written in place instead of being
+  #|// copied. `persistent` clears the token, so a builder used after freezing
+  #|// traps rather than corrupting the value it handed out.
   #|
   #|module persistent_vector
   #|
@@ -929,6 +1240,208 @@ let collections_persistent_vector_wap : String =
   #|export "pv_each" pub fn each(v :: vector, context :: eq?, seen :: visit):
   #|  for i in 0 ..< v.count:
   #|    seen(context, i, at(v, i))
+  #|
+  #|// ---------------------------------------------------------------- transient
+  #|
+  #|pub type transient = {
+  #|  edit :: edit,
+  #|  count :: mut i32,
+  #|  shift :: mut i32,
+  #|  root :: mut node,
+  #|  tail :: mut slots,
+  #|  // The tail array is always full width; this is how much of it is live. The
+  #|  // persistent side has no such field because its tail is exactly as long as
+  #|  // it is full.
+  #|  tail_count :: mut i32,
+  #|}
+  #|
+  #|fn ensure_node(n :: node, owner :: edit) -> node:
+  #|  if n.edit == owner:
+  #|    return n
+  #|  node{edit: owner, slots: copy_slots(n.slots, branching)}
+  #|
+  #|fn t_new_path(level :: i32, n :: node, owner :: edit) -> node:
+  #|  if level == 0:
+  #|    return n
+  #|  let parent = node_new(owner)
+  #|  parent.slots[0] = t_new_path(level - shift_bits, n, owner)
+  #|  parent
+  #|
+  #|fn t_push_tail(
+  #|  level :: i32,
+  #|  parent :: node,
+  #|  tail_node :: node,
+  #|  index :: i32,
+  #|  owner :: edit,
+  #|) -> node:
+  #|  let out = ensure_node(parent, owner)
+  #|  let subidx = (index >> level) & mask
+  #|  if level == shift_bits:
+  #|    out.slots[subidx] = tail_node
+  #|    return out
+  #|  let child = out.slots[subidx]
+  #|  if child == null
+  #|  | out.slots[subidx] = t_new_path(level - shift_bits, tail_node, owner)
+  #|  | out.slots[subidx] = t_push_tail(level - shift_bits, child as node, tail_node, index, owner)
+  #|  out
+  #|
+  #|fn t_do_assoc(
+  #|  level :: i32,
+  #|  n :: node,
+  #|  index :: i32,
+  #|  value :: eq?,
+  #|  owner :: edit,
+  #|) -> node:
+  #|  let out = ensure_node(n, owner)
+  #|  if level == 0:
+  #|    out.slots[index & mask] = value
+  #|    return out
+  #|  let subidx = (index >> level) & mask
+  #|  out.slots[subidx] = t_do_assoc(
+  #|    level - shift_bits,
+  #|    out.slots[subidx] as node,
+  #|    index,
+  #|    value,
+  #|    owner,
+  #|  )
+  #|  out
+  #|
+  #|fn t_pop_tail(level :: i32, n :: node, index :: i32, owner :: edit) -> node?:
+  #|  let out = ensure_node(n, owner)
+  #|  let subidx = (index >> level) & mask
+  #|  if level > shift_bits:
+  #|    let child = t_pop_tail(level - shift_bits, out.slots[subidx] as node, index, owner)
+  #|    if child == null:
+  #|      if subidx == 0:
+  #|        return null
+  #|    out.slots[subidx] = child
+  #|    return out
+  #|  if subidx == 0:
+  #|    return null
+  #|  out.slots[subidx] = null
+  #|  out
+  #|
+  #|// Every transient operation starts here. A builder that has been frozen is a
+  #|// programming mistake rather than a value, so it traps.
+  #|fn require_active(t :: transient):
+  #|  if t.edit.active == 0:
+  #|    unreachable
+  #|
+  #|fn snapshot(t :: transient) -> vector:
+  #|  vector{
+  #|    count: t.count,
+  #|    shift: t.shift,
+  #|    root: t.root,
+  #|    tail: copy_slots(t.tail, t.tail_count),
+  #|  }
+  #|
+  #|export "pv_as_transient" pub fn as_transient(v :: vector) -> transient:
+  #|  let owner = edit{active: 1}
+  #|  transient{
+  #|    edit: owner,
+  #|    count: v.count,
+  #|    shift: v.shift,
+  #|    root: ensure_node(v.root, owner),
+  #|    tail: copy_slots(v.tail, branching),
+  #|    tail_count: v.tail.len(),
+  #|  }
+  #|
+  #|export "pvt_count" pub fn t_count(t :: transient) -> i32:
+  #|  require_active(t)
+  #|  t.count
+  #|
+  #|export "pvt_get" pub fn t_get(t :: transient, index :: i32) -> (bool, eq?):
+  #|  require_active(t)
+  #|  if index < 0:
+  #|    return (false, null)
+  #|  if index >= t.count:
+  #|    return (false, null)
+  #|  if index >= tail_offset(t.count):
+  #|    return (true, t.tail[index & mask])
+  #|  var n = t.root
+  #|  var level = t.shift
+  #|  while level > 0:
+  #|    n = n.slots[(index >> level) & mask] as node
+  #|    level -= shift_bits
+  #|  (true, n.slots[index & mask])
+  #|
+  #|export "pvt_at" pub fn t_at(t :: transient, index :: i32) -> eq?:
+  #|  require_active(t)
+  #|  let (found, value) = t_get(t, index)
+  #|  if !found:
+  #|    unreachable
+  #|  value
+  #|
+  #|export "pvt_push" pub fn t_push(t :: transient, value :: eq?):
+  #|  require_active(t)
+  #|  if t.count == 0x7fffffff:
+  #|    unreachable
+  #|  if t.tail_count < branching:
+  #|    t.tail[t.tail_count] = value
+  #|    t.tail_count = t.tail_count + 1
+  #|    t.count = t.count + 1
+  #|    return
+  #|  let tail_node = node{edit: t.edit, slots: t.tail}
+  #|  if (t.count >> shift_bits) > (1 << t.shift)
+  #|  | let grown = node_new(t.edit)
+  #|    grown.slots[0] = t.root
+  #|    grown.slots[1] = t_new_path(t.shift, tail_node, t.edit)
+  #|    t.root = grown
+  #|    t.shift = t.shift + shift_bits
+  #|  | t.root = t_push_tail(t.shift, t.root, tail_node, t.count - 1, t.edit)
+  #|  t.tail = slots[null ** branching]
+  #|  t.tail[0] = value
+  #|  t.tail_count = 1
+  #|  t.count = t.count + 1
+  #|
+  #|export "pvt_assoc" pub fn t_assoc(t :: transient, index :: i32, value :: eq?):
+  #|  require_active(t)
+  #|  if index == t.count:
+  #|    t_push(t, value)
+  #|    return
+  #|  if index < 0:
+  #|    unreachable
+  #|  if index >= t.count:
+  #|    unreachable
+  #|  if index >= tail_offset(t.count):
+  #|    t.tail[index & mask] = value
+  #|    return
+  #|  t.root = t_do_assoc(t.shift, t.root, index, value, t.edit)
+  #|
+  #|export "pvt_pop" pub fn t_pop(t :: transient):
+  #|  require_active(t)
+  #|  if t.count == 0:
+  #|    unreachable
+  #|  if t.count == 1:
+  #|    t.count = 0
+  #|    t.tail[0] = null
+  #|    t.tail_count = 0
+  #|    return
+  #|  if t.tail_count > 1:
+  #|    t.tail_count = t.tail_count - 1
+  #|    t.tail[t.tail_count] = null
+  #|    t.count = t.count - 1
+  #|    return
+  #|  var leaf = t.root
+  #|  var level = t.shift
+  #|  let index = t.count - 2
+  #|  while level > 0:
+  #|    leaf = leaf.slots[(index >> level) & mask] as node
+  #|    level -= shift_bits
+  #|  t.tail = copy_slots(leaf.slots, branching)
+  #|  t.tail_count = branching
+  #|  let shrunk = t_pop_tail(t.shift, t.root, t.count - 2, t.edit)
+  #|  t.root = if shrunk == null | node_new(t.edit) | shrunk!
+  #|  if t.shift > shift_bits:
+  #|    if t.root.slots[1] == null:
+  #|      t.root = t.root.slots[0] as node
+  #|      t.shift = t.shift - shift_bits
+  #|  t.count = t.count - 1
+  #|
+  #|export "pvt_persistent" pub fn t_persistent(t :: transient) -> vector:
+  #|  require_active(t)
+  #|  t.edit.active = 0
+  #|  snapshot(t)
 
 ///|
 let text_utf8_wap : String =
