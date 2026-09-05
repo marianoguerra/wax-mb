@@ -36,6 +36,16 @@ Two rules follow from the split, and both are load-bearing:
   name that has to stay public. Do not "fix" a harness import by widening
   `lib/`'s surface without deciding that the name is a promise.
 
+`stdlib-wap/` is the whole Wax standard library ported to wap, one module per
+`.wax` file. It is compiled two ways -- `just wap-stdlib` from disk through
+`tools/wapc`'s filesystem loader, and `moon test` from the copies
+`tools/gen-stdlib-test.py` embeds in `wap/stdlib_test.mbt`, since `moon test`
+also runs on wasm where there is no filesystem. Never edit that generated file;
+`just wap-stdlib-embed` rewrites it and CI diffs the result.
+`just wap-stdlib-test` runs the two example modules in Node and checks they
+return what the `.wax` originals return. `stdlib-wap/README.md` records every
+place a port differs from its original and why.
+
 `was/` and `wap/` are front ends and never back ends: it reaches Wax through
 `marianoguerra/wax/ast`, `.../ast/build` and `.../compile`, and never through
 the Wax parser. A wap program does not become Wax source text on its way to

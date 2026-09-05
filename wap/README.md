@@ -208,5 +208,10 @@ moon info --target all    # regenerate .mbti
 moon fmt
 ```
 
-`stdlib-wap/` holds ports of the Wax standard library, and the tests in this
-module compile them: they are the showcase and the regression suite at once.
+`stdlib-wap/` holds ports of the whole Wax standard library, and the tests in
+this module compile them: they are the showcase and the regression suite at
+once. `just wap-stdlib` compiles the same sources from disk through a
+filesystem `Loader`, and `just wap-stdlib-test` runs the examples in Node and
+checks that they return what the `.wax` originals return. See
+[`stdlib-wap/README.md`](../stdlib-wap/README.md) for what the ports changed and
+why.
