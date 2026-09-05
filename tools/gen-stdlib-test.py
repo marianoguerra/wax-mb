@@ -60,7 +60,11 @@ ASSERTIONS = {
          "The hash is the one from `collections.hashing`, not a copy of it."),
     ],
     "data.immutable_value": [
-        ('w.contains("$immutable_value__equal")', None),
+        ('w.contains("$jv__equal")',
+         "The module is called `jv`, not the file it lives in."),
+        ('w.contains("$jv__record_equal")',
+         "The three functions that close the loop with `data/record` live here."),
+        ('w.contains("$persistent_hash_map__assoc")', None),
     ],
     "data.record": [
         ('w.contains("$record__type_create")', None),

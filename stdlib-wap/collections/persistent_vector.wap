@@ -120,17 +120,17 @@ export "pv_empty" pub fn empty() -> vector:
 export "pv_count" pub fn count(v :: vector) -> i32:
   v.count
 
-fn get(v :: vector, index :: i32) -> (i32, eq?):
+pub fn get(v :: vector, index :: i32) -> (bool, eq?):
   if index < 0:
-    return (0, null)
+    return (false, null)
   if index >= v.count:
-    return (0, null)
+    return (false, null)
   let found = array_for(v, index)
-  (1, found[index & mask])
+  (true, found[index & mask])
 
 export "pv_at" pub fn at(v :: vector, index :: i32) -> eq?:
   let (ok, value) = get(v, index)
-  if ok == 0:
+  if !ok:
     unreachable
   value
 
@@ -184,10 +184,10 @@ export "pv_assoc" pub fn assoc(v :: vector, index :: i32, value :: eq?) -> vecto
     tail: v.tail,
   }
 
-fn peek(v :: vector) -> (i32, eq?):
+pub fn peek(v :: vector) -> (bool, eq?):
   if v.count == 0:
-    return (0, null)
-  (1, v.tail[v.tail.len() - 1])
+    return (false, null)
+  (true, v.tail[v.tail.len() - 1])
 
 export "pv_pop" pub fn pop(v :: vector) -> vector:
   if v.count == 0:

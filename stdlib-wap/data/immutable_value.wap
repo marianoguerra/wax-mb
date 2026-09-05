@@ -1,0 +1,1112 @@
+// Immutable JSON-like values, ported from `stdlib/data/immutable_value.wax`.
+//
+// The module is called `jv`, not `immutable_value`, and that is deliberate:
+// wap takes the module's own declared name as the alias, not the last segment
+// of the path it was found at, so `import data.immutable_value` brings this in
+// as `jv`. Every name in the .wax file is `jv_something`, and the module now
+// supplies that prefix -- `jv_i32` is `jv.i32`, emitted as `jv__i32`.
+//
+// It is also why `fn i32` and `fn bool` are not a problem: a type and a
+// function do not share a namespace, and the qualifier says which is meant.
+//
+// Three differences from the original beyond the prefix.
+//
+// A predicate returns `bool` and a lookup returns `(bool, value)`. Wax has no
+// `bool`, so the original returns `i32` and every caller compares it against 0.
+//
+// A hash is `u32`, because that is what `collections.hashing` produces and what
+// the map's `hash_fn` expects.
+//
+// `record_to_map`, `record_equal` and `record_hash` live here rather than in
+// `data/record.wap`. In the .wax files they are in record.wax, which is fine
+// when the sources are concatenated into one namespace: `jv_equal` calls
+// `jv_record_equal` and `jv_record_equal` calls `jv_equal`. wap modules cannot
+// import each other in a circle, so the three functions that close the loop
+// move to this side. All three are one-liners over fields declared here, and
+// `data/record.wap` calls them by name.
+
+module jv
+
+import collections.hashing
+import collections.persistent_hash_map
+import collections.persistent_hash_set
+import collections.persistent_vector
+import text.utf8
+
+pub const kind_null = 0
+pub const kind_bool = 1
+pub const kind_string = 2
+pub const kind_i32 = 3
+pub const kind_i64 = 4
+pub const kind_f32 = 5
+pub const kind_f64 = 6
+pub const kind_vector = 7
+pub const kind_map = 8
+pub const kind_any = 9
+pub const kind_set = 10
+pub const kind_record = 11
+pub const kind_ordered_map = 12
+pub const kind_ordered_set = 13
+
+// Insertion-ordered storage, shared by the ordered map and the ordered set: a
+// HAMT from key to slot, and a vector of entries in encounter order. A removed
+// entry leaves a tombstone until the trailing ones are trimmed or the whole
+// thing is compacted.
+pub type entry = { key :: eq, value :: eq? }
+
+pub type store = {
+  index :: persistent_hash_map.map,
+  entries :: persistent_vector.vector,
+}
+
+pub type transient_store = {
+  index :: persistent_hash_map.transient,
+  entries :: persistent_vector.transient,
+}
+
+pub type value = { kind :: i32 }
+pub type null_value :: value = {}
+pub type bool_value :: value = { value :: bool }
+pub type string_value :: value = { value :: utf8.string }
+pub type i32_value :: value = { value :: i32 }
+pub type i64_value :: value = { value :: i64 }
+pub type f32_value :: value = { value :: f32 }
+pub type f64_value :: value = { value :: f64 }
+pub type vector_value :: value = { value :: persistent_vector.vector }
+pub type map_value :: value = { value :: persistent_hash_map.map }
+pub type any_value :: value = { value :: any? }
+pub type set_value :: value = { value :: persistent_hash_set.set }
+pub type ordered_map_value :: value = { value :: store }
+pub type ordered_set_value :: value = { value :: store }
+
+pub type record_value :: value = {
+  definition :: record_type,
+  values :: persistent_hash_map.map,
+}
+
+// The runtime type descriptors. Their constructors and the validation walk are
+// in `data/record.wap`; the shapes are here because `record_value` names them
+// and everything in one module is visible to the rest of it.
+pub type runtime_type = { kind :: i32 }
+pub type type_scalar :: runtime_type = {}
+pub type type_vector_value :: runtime_type = { element :: runtime_type }
+pub type type_map_value :: runtime_type = { value :: runtime_type }
+pub type type_set_value :: runtime_type = { element :: runtime_type }
+pub type type_ordered_map_value :: runtime_type = { value :: runtime_type }
+pub type type_ordered_set_value :: runtime_type = { element :: runtime_type }
+pub type type_record_value :: runtime_type = { definition :: record_type }
+pub type type_or_value :: runtime_type = {
+  left :: runtime_type,
+  right :: runtime_type,
+}
+
+pub type field_validator = fn(eq?, value) -> bool
+pub type record_validator = fn(eq?, record_value) -> bool
+
+pub type record_field = {
+  value_type :: runtime_type,
+  default_value :: value,
+  validator_context :: eq?,
+  validator :: field_validator,
+}
+
+pub type record_schema = {
+  fields :: persistent_hash_map.map,
+  defaults :: persistent_hash_map.map,
+}
+
+pub type record_type = {
+  name :: utf8.string,
+  schema :: record_schema,
+  validator_context :: eq?,
+  validator :: record_validator,
+}
+
+pub type vector_visit = fn(eq?, i32, value)
+pub type map_visit = fn(eq?, utf8.string, value)
+pub type set_visit = fn(eq?, value)
+
+pub type transient_vector = { value :: persistent_vector.transient }
+pub type transient_map = { value :: persistent_hash_map.transient }
+pub type transient_set = { value :: persistent_hash_set.transient }
+pub type transient_ordered_map = { value :: transient_store }
+pub type transient_ordered_set = { value :: transient_store }
+
+// ------------------------------------------------------------------ scalars
+
+pub fn null() -> value:
+  null_value{kind: kind_null}
+
+pub fn bool(v :: bool) -> value:
+  bool_value{kind: kind_bool, value: v}
+
+pub fn string(v :: utf8.string) -> value:
+  string_value{kind: kind_string, value: v}
+
+pub fn i32(v :: i32) -> value:
+  i32_value{kind: kind_i32, value: v}
+
+pub fn i64(v :: i64) -> value:
+  i64_value{kind: kind_i64, value: v}
+
+pub fn f32(v :: f32) -> value:
+  f32_value{kind: kind_f32, value: v}
+
+pub fn f64(v :: f64) -> value:
+  f64_value{kind: kind_f64, value: v}
+
+pub fn any(v :: any?) -> value:
+  any_value{kind: kind_any, value: v}
+
+pub fn kind(v :: value) -> i32:
+  v.kind
+
+// Each scalar has a safe accessor and a trapping one. The safe one answers
+// `(false, zero)` for the wrong kind, so a caller that is asking rather than
+// asserting never traps.
+pub fn get_bool(v :: value) -> (bool, bool):
+  match v
+  | found :: bool_value: return (true, found.value)
+  | _: return (false, false)
+  unreachable
+
+pub fn require_bool(v :: value) -> bool:
+  let (found, out) = get_bool(v)
+  if !found:
+    unreachable
+  out
+
+pub fn get_string(v :: value) -> (bool, utf8.string?):
+  match v
+  | found :: string_value: return (true, found.value)
+  | _: return (false, null)
+  unreachable
+
+pub fn require_string(v :: value) -> utf8.string:
+  let (found, out) = get_string(v)
+  if !found:
+    unreachable
+  out!
+
+pub fn get_i32(v :: value) -> (bool, i32):
+  match v
+  | found :: i32_value: return (true, found.value)
+  | _: return (false, 0)
+  unreachable
+
+pub fn require_i32(v :: value) -> i32:
+  let (found, out) = get_i32(v)
+  if !found:
+    unreachable
+  out
+
+pub fn get_i64(v :: value) -> (bool, i64):
+  match v
+  | found :: i64_value: return (true, found.value)
+  | _: return (false, 0)
+  unreachable
+
+pub fn require_i64(v :: value) -> i64:
+  let (found, out) = get_i64(v)
+  if !found:
+    unreachable
+  out
+
+pub fn get_f32(v :: value) -> (bool, f32):
+  match v
+  | found :: f32_value: return (true, found.value)
+  | _: return (false, 0.0)
+  unreachable
+
+pub fn require_f32(v :: value) -> f32:
+  let (found, out) = get_f32(v)
+  if !found:
+    unreachable
+  out
+
+pub fn get_f64(v :: value) -> (bool, f64):
+  match v
+  | found :: f64_value: return (true, found.value)
+  | _: return (false, 0.0)
+  unreachable
+
+pub fn require_f64(v :: value) -> f64:
+  let (found, out) = get_f64(v)
+  if !found:
+    unreachable
+  out
+
+pub fn get_any(v :: value) -> (bool, any?):
+  match v
+  | found :: any_value: return (true, found.value)
+  | _: return (false, null)
+  unreachable
+
+pub fn require_any(v :: value) -> any?:
+  let (found, out) = get_any(v)
+  if !found:
+    unreachable
+  out
+
+// An opaque payload compares by reference when it is in the equality
+// hierarchy, and is unequal to everything otherwise.
+pub fn any_equal(left :: any?, right :: any?) -> bool:
+  match left
+  | null:
+      match right
+      | null: return true
+      | _: return false
+      unreachable
+  | v :: eq:
+      match right
+      | other :: eq: return v == other
+      | _: return false
+      unreachable
+  | _: return false
+  unreachable
+
+// ---------------------------------------------- insertion-ordered storage
+
+pub fn store_empty(
+  hash :: persistent_hash_map.hash_fn,
+  equal :: persistent_hash_map.equal_fn,
+) -> store:
+  store{
+    index: persistent_hash_map.empty(hash, equal),
+    entries: persistent_vector.empty(),
+  }
+
+pub fn store_count(s :: store) -> i32:
+  persistent_hash_map.count(s.index)
+
+fn store_slot(s :: store, key :: eq) -> (bool, i32):
+  let (found, v) = persistent_hash_map.get(s.index, key)
+  if !found:
+    return (false, 0)
+  (true, v! as i32_s)
+
+pub fn store_get(s :: store, key :: eq) -> (bool, eq?):
+  let (found, slot) = store_slot(s, key)
+  if !found:
+    return (false, null)
+  let e = persistent_vector.at(s.entries, slot)! as entry
+  (true, e.value)
+
+pub fn store_contains(s :: store, key :: eq) -> bool:
+  persistent_hash_map.contains(s.index, key)
+
+// The cursor walks slots, skipping tombstones, and answers where to resume.
+pub fn store_next(s :: store, start :: i32) -> (i32, entry?):
+  var i = start
+  while i < persistent_vector.count(s.entries):
+    let raw = persistent_vector.at(s.entries, i)
+    i += 1
+    if raw != null:
+      return (i, raw! as entry)
+  (i, null)
+
+// Sparse storage is rebuilt once it is more than half tombstones, and only
+// past a floor where the copy is cheap. Encounter order does not change.
+fn store_compact(s :: store) -> store:
+  let slots = persistent_vector.count(s.entries)
+  let count = store_count(s)
+  if slots < 32:
+    return s
+  if slots < count * 2:
+    return s
+  var index = persistent_hash_map.empty(s.index.hash, s.index.equal)
+  var entries = persistent_vector.empty()
+  for cursor in 0 ..< slots:
+    let raw = persistent_vector.at(s.entries, cursor)
+    if raw != null:
+      let e = raw! as entry
+      index = persistent_hash_map.assoc(
+        index,
+        e.key,
+        persistent_vector.count(entries) as i31,
+      )
+      entries = persistent_vector.push(entries, e)
+  store{index: index, entries: entries}
+
+pub fn store_assoc(s :: store, key :: eq, value :: eq?) -> store:
+  let (found, slot) = store_slot(s, key)
+  if found:
+    let old = persistent_vector.at(s.entries, slot)! as entry
+    if old.value == value:
+      return s
+    let e = entry{key: old.key, value: value}
+    return store{
+      index: s.index,
+      entries: persistent_vector.assoc(s.entries, slot, e),
+    }
+  let slot = persistent_vector.count(s.entries)
+  let e = entry{key: key, value: value}
+  store{
+    index: persistent_hash_map.assoc(s.index, key, slot as i31),
+    entries: persistent_vector.push(s.entries, e),
+  }
+
+fn has_trailing_tombstone(entries :: persistent_vector.vector) -> bool:
+  if persistent_vector.count(entries) == 0:
+    return false
+  persistent_vector.at(entries, persistent_vector.count(entries) - 1) == null
+
+pub fn store_dissoc(s :: store, key :: eq) -> store:
+  let (found, slot) = store_slot(s, key)
+  if !found:
+    return s
+  let index = persistent_hash_map.dissoc(s.index, key)
+  var entries = persistent_vector.assoc(s.entries, slot, null)
+  while has_trailing_tombstone(entries):
+    entries = persistent_vector.pop(entries)
+  store_compact(store{index: index, entries: entries})
+
+pub fn store_as_transient(s :: store) -> transient_store:
+  transient_store{
+    index: persistent_hash_map.as_transient(s.index),
+    entries: persistent_vector.as_transient(s.entries),
+  }
+
+pub fn t_store_count(s :: transient_store) -> i32:
+  persistent_hash_map.t_count(s.index)
+
+fn t_store_slot(s :: transient_store, key :: eq) -> (bool, i32):
+  let (found, v) = persistent_hash_map.t_get(s.index, key)
+  if !found:
+    return (false, 0)
+  (true, v! as i32_s)
+
+pub fn t_store_get(s :: transient_store, key :: eq) -> (bool, eq?):
+  let (found, slot) = t_store_slot(s, key)
+  if !found:
+    return (false, null)
+  let e = persistent_vector.t_at(s.entries, slot)! as entry
+  (true, e.value)
+
+pub fn t_store_contains(s :: transient_store, key :: eq) -> bool:
+  persistent_hash_map.t_contains(s.index, key)
+
+pub fn t_store_assoc(s :: transient_store, key :: eq, value :: eq?):
+  let (found, slot) = t_store_slot(s, key)
+  if found:
+    let old = persistent_vector.t_at(s.entries, slot)! as entry
+    if old.value == value:
+      return
+    persistent_vector.t_assoc(s.entries, slot, entry{key: old.key, value: value})
+    return
+  let slot = persistent_vector.t_count(s.entries)
+  persistent_hash_map.t_assoc(s.index, key, slot as i31)
+  persistent_vector.t_push(s.entries, entry{key: key, value: value})
+
+fn t_has_trailing_tombstone(entries :: persistent_vector.transient) -> bool:
+  if persistent_vector.t_count(entries) == 0:
+    return false
+  persistent_vector.t_at(entries, persistent_vector.t_count(entries) - 1) == null
+
+pub fn t_store_dissoc(s :: transient_store, key :: eq):
+  let (found, slot) = t_store_slot(s, key)
+  if !found:
+    return
+  persistent_hash_map.t_dissoc(s.index, key)
+  persistent_vector.t_assoc(s.entries, slot, null)
+  while t_has_trailing_tombstone(s.entries):
+    persistent_vector.t_pop(s.entries)
+
+pub fn t_store_persistent(s :: transient_store) -> store:
+  let index = persistent_hash_map.t_persistent(s.index)
+  let entries = persistent_vector.t_persistent(s.entries)
+  store_compact(store{index: index, entries: entries})
+
+// ------------------------------------------------------------------ vectors
+
+pub fn vector_empty() -> vector_value:
+  vector_value{kind: kind_vector, value: persistent_vector.empty()}
+
+pub fn get_vector(v :: value) -> (bool, vector_value?):
+  match v
+  | found :: vector_value: return (true, found)
+  | _: return (false, null)
+  unreachable
+
+pub fn require_vector(v :: value) -> vector_value:
+  let (found, out) = get_vector(v)
+  if !found:
+    unreachable
+  out!
+
+pub fn vector_count(v :: vector_value) -> i32:
+  persistent_vector.count(v.value)
+
+pub fn vector_get(v :: vector_value, index :: i32) -> (bool, value?):
+  let (found, out) = persistent_vector.get(v.value, index)
+  if !found:
+    return (false, null)
+  (true, out! as value)
+
+pub fn vector_at(v :: vector_value, index :: i32) -> value:
+  let (found, out) = vector_get(v, index)
+  if !found:
+    unreachable
+  out!
+
+pub fn vector_push(v :: vector_value, item :: value) -> vector_value:
+  vector_value{kind: kind_vector, value: persistent_vector.push(v.value, item)}
+
+pub fn vector_assoc(v :: vector_value, index :: i32, item :: value) -> vector_value:
+  let raw = persistent_vector.assoc(v.value, index, item)
+  if raw == v.value:
+    return v
+  vector_value{kind: kind_vector, value: raw}
+
+pub fn vector_peek(v :: vector_value) -> (bool, value?):
+  let (found, out) = persistent_vector.peek(v.value)
+  if !found:
+    return (false, null)
+  (true, out! as value)
+
+pub fn vector_pop(v :: vector_value) -> vector_value:
+  vector_value{kind: kind_vector, value: persistent_vector.pop(v.value)}
+
+type vector_each_context = {
+  context :: eq?,
+  visit :: vector_visit,
+}
+
+fn vector_each_adapter(context :: eq?, index :: i32, item :: eq?):
+  let state = context! as vector_each_context
+  state.visit(state.context, index, item! as value)
+
+pub fn vector_each(v :: vector_value, context :: eq?, seen :: vector_visit):
+  let state = vector_each_context{context: context, visit: seen}
+  persistent_vector.each(v.value, state, vector_each_adapter)
+
+pub fn vector_as_transient(v :: vector_value) -> transient_vector:
+  transient_vector{value: persistent_vector.as_transient(v.value)}
+
+pub fn t_vector_count(v :: transient_vector) -> i32:
+  persistent_vector.t_count(v.value)
+
+pub fn t_vector_get(v :: transient_vector, index :: i32) -> (bool, value?):
+  let (found, out) = persistent_vector.t_get(v.value, index)
+  if !found:
+    return (false, null)
+  (true, out! as value)
+
+pub fn t_vector_push(v :: transient_vector, item :: value):
+  persistent_vector.t_push(v.value, item)
+
+pub fn t_vector_assoc(v :: transient_vector, index :: i32, item :: value):
+  persistent_vector.t_assoc(v.value, index, item)
+
+pub fn t_vector_pop(v :: transient_vector):
+  persistent_vector.t_pop(v.value)
+
+pub fn t_vector_persistent(v :: transient_vector) -> vector_value:
+  vector_value{kind: kind_vector, value: persistent_vector.t_persistent(v.value)}
+
+// --------------------------------------------------------------------- maps
+
+pub fn map_empty() -> map_value:
+  map_value{
+    kind: kind_map,
+    value: persistent_hash_map.empty(utf8.hash_key, utf8.equal_key),
+  }
+
+pub fn get_map(v :: value) -> (bool, map_value?):
+  match v
+  | found :: map_value: return (true, found)
+  | _: return (false, null)
+  unreachable
+
+pub fn require_map(v :: value) -> map_value:
+  let (found, out) = get_map(v)
+  if !found:
+    unreachable
+  out!
+
+pub fn map_count(m :: map_value) -> i32:
+  persistent_hash_map.count(m.value)
+
+pub fn map_get(m :: map_value, key :: utf8.string) -> (bool, value?):
+  let (found, out) = persistent_hash_map.get(m.value, key)
+  if !found:
+    return (false, null)
+  (true, out! as value)
+
+pub fn map_contains(m :: map_value, key :: utf8.string) -> bool:
+  persistent_hash_map.contains(m.value, key)
+
+pub fn map_assoc(m :: map_value, key :: utf8.string, item :: value) -> map_value:
+  let raw = persistent_hash_map.assoc(m.value, key, item)
+  if raw == m.value:
+    return m
+  map_value{kind: kind_map, value: raw}
+
+pub fn map_dissoc(m :: map_value, key :: utf8.string) -> map_value:
+  let raw = persistent_hash_map.dissoc(m.value, key)
+  if raw == m.value:
+    return m
+  map_value{kind: kind_map, value: raw}
+
+type map_each_context = {
+  context :: eq?,
+  visit :: map_visit,
+}
+
+fn map_each_adapter(context :: eq?, key :: eq?, item :: eq?):
+  let state = context! as map_each_context
+  state.visit(state.context, key! as utf8.string, item! as value)
+
+pub fn map_each(m :: map_value, context :: eq?, seen :: map_visit):
+  let state = map_each_context{context: context, visit: seen}
+  persistent_hash_map.each(m.value, state, map_each_adapter)
+
+pub fn map_as_transient(m :: map_value) -> transient_map:
+  transient_map{value: persistent_hash_map.as_transient(m.value)}
+
+pub fn t_map_count(m :: transient_map) -> i32:
+  persistent_hash_map.t_count(m.value)
+
+pub fn t_map_get(m :: transient_map, key :: utf8.string) -> (bool, value?):
+  let (found, out) = persistent_hash_map.t_get(m.value, key)
+  if !found:
+    return (false, null)
+  (true, out! as value)
+
+pub fn t_map_contains(m :: transient_map, key :: utf8.string) -> bool:
+  persistent_hash_map.t_contains(m.value, key)
+
+pub fn t_map_assoc(m :: transient_map, key :: utf8.string, item :: value):
+  persistent_hash_map.t_assoc(m.value, key, item)
+
+pub fn t_map_dissoc(m :: transient_map, key :: utf8.string):
+  persistent_hash_map.t_dissoc(m.value, key)
+
+pub fn t_map_persistent(m :: transient_map) -> map_value:
+  map_value{kind: kind_map, value: persistent_hash_map.t_persistent(m.value)}
+
+// --------------------------------------------------------------------- sets
+
+pub fn hash_key(v :: eq) -> u32:
+  hash(v as value)
+
+pub fn equal_key(left :: eq, right :: eq) -> bool:
+  equal(left as value, right as value)
+
+pub fn set_empty() -> set_value:
+  set_value{kind: kind_set, value: persistent_hash_set.empty(hash_key, equal_key)}
+
+pub fn get_set(v :: value) -> (bool, set_value?):
+  match v
+  | found :: set_value: return (true, found)
+  | _: return (false, null)
+  unreachable
+
+pub fn require_set(v :: value) -> set_value:
+  let (found, out) = get_set(v)
+  if !found:
+    unreachable
+  out!
+
+pub fn set_count(s :: set_value) -> i32:
+  persistent_hash_set.count(s.value)
+
+pub fn set_contains(s :: set_value, item :: value) -> bool:
+  persistent_hash_set.contains(s.value, item)
+
+pub fn set_add(s :: set_value, item :: value) -> set_value:
+  let raw = persistent_hash_set.add(s.value, item)
+  if raw == s.value:
+    return s
+  set_value{kind: kind_set, value: raw}
+
+pub fn set_remove(s :: set_value, item :: value) -> set_value:
+  let raw = persistent_hash_set.remove(s.value, item)
+  if raw == s.value:
+    return s
+  set_value{kind: kind_set, value: raw}
+
+type set_each_context = {
+  context :: eq?,
+  visit :: set_visit,
+}
+
+fn set_each_adapter(context :: eq?, item :: eq?):
+  let state = context! as set_each_context
+  state.visit(state.context, item! as value)
+
+pub fn set_each(s :: set_value, context :: eq?, seen :: set_visit):
+  let state = set_each_context{context: context, visit: seen}
+  persistent_hash_set.each(s.value, state, set_each_adapter)
+
+pub fn set_union(left :: set_value, right :: set_value) -> set_value:
+  set_value{
+    kind: kind_set,
+    value: persistent_hash_set.union(left.value, right.value),
+  }
+
+pub fn set_intersection(left :: set_value, right :: set_value) -> set_value:
+  set_value{
+    kind: kind_set,
+    value: persistent_hash_set.intersection(left.value, right.value),
+  }
+
+pub fn set_difference(left :: set_value, right :: set_value) -> set_value:
+  set_value{
+    kind: kind_set,
+    value: persistent_hash_set.difference(left.value, right.value),
+  }
+
+pub fn set_as_transient(s :: set_value) -> transient_set:
+  transient_set{value: persistent_hash_set.as_transient(s.value)}
+
+pub fn t_set_count(s :: transient_set) -> i32:
+  persistent_hash_set.t_count(s.value)
+
+pub fn t_set_contains(s :: transient_set, item :: value) -> bool:
+  persistent_hash_set.t_contains(s.value, item)
+
+pub fn t_set_add(s :: transient_set, item :: value):
+  persistent_hash_set.t_add(s.value, item)
+
+pub fn t_set_remove(s :: transient_set, item :: value):
+  persistent_hash_set.t_remove(s.value, item)
+
+pub fn t_set_persistent(s :: transient_set) -> set_value:
+  set_value{kind: kind_set, value: persistent_hash_set.t_persistent(s.value)}
+
+// ------------------------------------------------------------- ordered maps
+
+pub fn ordered_map_empty() -> ordered_map_value:
+  ordered_map_value{
+    kind: kind_ordered_map,
+    value: store_empty(utf8.hash_key, utf8.equal_key),
+  }
+
+pub fn get_ordered_map(v :: value) -> (bool, ordered_map_value?):
+  match v
+  | found :: ordered_map_value: return (true, found)
+  | _: return (false, null)
+  unreachable
+
+pub fn require_ordered_map(v :: value) -> ordered_map_value:
+  let (found, out) = get_ordered_map(v)
+  if !found:
+    unreachable
+  out!
+
+pub fn ordered_map_count(m :: ordered_map_value) -> i32:
+  store_count(m.value)
+
+pub fn ordered_map_get(m :: ordered_map_value, key :: utf8.string) -> (bool, value?):
+  let (found, out) = store_get(m.value, key)
+  if !found:
+    return (false, null)
+  (true, out! as value)
+
+pub fn ordered_map_contains(m :: ordered_map_value, key :: utf8.string) -> bool:
+  store_contains(m.value, key)
+
+pub fn ordered_map_assoc(
+  m :: ordered_map_value,
+  key :: utf8.string,
+  item :: value,
+) -> ordered_map_value:
+  let raw = store_assoc(m.value, key, item)
+  if raw == m.value:
+    return m
+  ordered_map_value{kind: kind_ordered_map, value: raw}
+
+pub fn ordered_map_dissoc(
+  m :: ordered_map_value,
+  key :: utf8.string,
+) -> ordered_map_value:
+  let raw = store_dissoc(m.value, key)
+  if raw == m.value:
+    return m
+  ordered_map_value{kind: kind_ordered_map, value: raw}
+
+pub fn ordered_map_each(m :: ordered_map_value, context :: eq?, seen :: map_visit):
+  var cursor = 0
+  while cursor < persistent_vector.count(m.value.entries):
+    let (next, e) = store_next(m.value, cursor)
+    cursor = next
+    if e != null:
+      seen(context, e!.key as utf8.string, e!.value! as value)
+
+pub fn ordered_map_as_transient(m :: ordered_map_value) -> transient_ordered_map:
+  transient_ordered_map{value: store_as_transient(m.value)}
+
+pub fn t_ordered_map_count(m :: transient_ordered_map) -> i32:
+  t_store_count(m.value)
+
+pub fn t_ordered_map_get(
+  m :: transient_ordered_map,
+  key :: utf8.string,
+) -> (bool, value?):
+  let (found, out) = t_store_get(m.value, key)
+  if !found:
+    return (false, null)
+  (true, out! as value)
+
+pub fn t_ordered_map_contains(m :: transient_ordered_map, key :: utf8.string) -> bool:
+  t_store_contains(m.value, key)
+
+pub fn t_ordered_map_assoc(
+  m :: transient_ordered_map,
+  key :: utf8.string,
+  item :: value,
+):
+  t_store_assoc(m.value, key, item)
+
+pub fn t_ordered_map_dissoc(m :: transient_ordered_map, key :: utf8.string):
+  t_store_dissoc(m.value, key)
+
+pub fn t_ordered_map_persistent(m :: transient_ordered_map) -> ordered_map_value:
+  ordered_map_value{kind: kind_ordered_map, value: t_store_persistent(m.value)}
+
+// ------------------------------------------------------------- ordered sets
+
+pub fn ordered_set_empty() -> ordered_set_value:
+  ordered_set_value{
+    kind: kind_ordered_set,
+    value: store_empty(hash_key, equal_key),
+  }
+
+pub fn get_ordered_set(v :: value) -> (bool, ordered_set_value?):
+  match v
+  | found :: ordered_set_value: return (true, found)
+  | _: return (false, null)
+  unreachable
+
+pub fn require_ordered_set(v :: value) -> ordered_set_value:
+  let (found, out) = get_ordered_set(v)
+  if !found:
+    unreachable
+  out!
+
+pub fn ordered_set_count(s :: ordered_set_value) -> i32:
+  store_count(s.value)
+
+pub fn ordered_set_contains(s :: ordered_set_value, item :: value) -> bool:
+  store_contains(s.value, item)
+
+pub fn ordered_set_add(s :: ordered_set_value, item :: value) -> ordered_set_value:
+  let raw = store_assoc(s.value, item, 0 as i31)
+  if raw == s.value:
+    return s
+  ordered_set_value{kind: kind_ordered_set, value: raw}
+
+pub fn ordered_set_remove(s :: ordered_set_value, item :: value) -> ordered_set_value:
+  let raw = store_dissoc(s.value, item)
+  if raw == s.value:
+    return s
+  ordered_set_value{kind: kind_ordered_set, value: raw}
+
+pub fn ordered_set_each(s :: ordered_set_value, context :: eq?, seen :: set_visit):
+  var cursor = 0
+  while cursor < persistent_vector.count(s.value.entries):
+    let (next, e) = store_next(s.value, cursor)
+    cursor = next
+    if e != null:
+      seen(context, e!.key as value)
+
+type ordered_set_union_context = { out :: mut ordered_set_value }
+
+fn ordered_set_union_add(context :: eq?, item :: value):
+  let state = context! as ordered_set_union_context
+  state.out = ordered_set_add(state.out, item)
+
+pub fn ordered_set_union(
+  left :: ordered_set_value,
+  right :: ordered_set_value,
+) -> ordered_set_value:
+  let state = ordered_set_union_context{out: left}
+  ordered_set_each(right, state, ordered_set_union_add)
+  state.out
+
+type ordered_set_filter_context = {
+  other :: ordered_set_value,
+  out :: mut ordered_set_value,
+  keep_present :: bool,
+}
+
+fn ordered_set_filter_add(context :: eq?, item :: value):
+  let state = context! as ordered_set_filter_context
+  if ordered_set_contains(state.other, item) == state.keep_present:
+    state.out = ordered_set_add(state.out, item)
+
+pub fn ordered_set_intersection(
+  left :: ordered_set_value,
+  right :: ordered_set_value,
+) -> ordered_set_value:
+  let state = ordered_set_filter_context{
+    other: right,
+    out: ordered_set_empty(),
+    keep_present: true,
+  }
+  ordered_set_each(left, state, ordered_set_filter_add)
+  state.out
+
+pub fn ordered_set_difference(
+  left :: ordered_set_value,
+  right :: ordered_set_value,
+) -> ordered_set_value:
+  let state = ordered_set_filter_context{
+    other: right,
+    out: ordered_set_empty(),
+    keep_present: false,
+  }
+  ordered_set_each(left, state, ordered_set_filter_add)
+  state.out
+
+pub fn ordered_set_as_transient(s :: ordered_set_value) -> transient_ordered_set:
+  transient_ordered_set{value: store_as_transient(s.value)}
+
+pub fn t_ordered_set_count(s :: transient_ordered_set) -> i32:
+  t_store_count(s.value)
+
+pub fn t_ordered_set_contains(s :: transient_ordered_set, item :: value) -> bool:
+  t_store_contains(s.value, item)
+
+pub fn t_ordered_set_add(s :: transient_ordered_set, item :: value):
+  t_store_assoc(s.value, item, 0 as i31)
+
+pub fn t_ordered_set_remove(s :: transient_ordered_set, item :: value):
+  t_store_dissoc(s.value, item)
+
+pub fn t_ordered_set_persistent(s :: transient_ordered_set) -> ordered_set_value:
+  ordered_set_value{kind: kind_ordered_set, value: t_store_persistent(s.value)}
+
+// ----------------------------------------------------------------- equality
+
+type map_equal_context = {
+  right :: map_value,
+  equal :: mut bool,
+}
+
+fn map_equal_entry(context :: eq?, key :: utf8.string, item :: value):
+  let state = context! as map_equal_context
+  if !state.equal:
+    return
+  let (found, other) = map_get(state.right, key)
+  if !found:
+    state.equal = false
+    return
+  if !equal(item, other!):
+    state.equal = false
+
+type set_equal_context = {
+  right :: set_value,
+  equal :: mut bool,
+}
+
+fn set_equal_entry(context :: eq?, item :: value):
+  let state = context! as set_equal_context
+  if !state.equal:
+    return
+  if !set_contains(state.right, item):
+    state.equal = false
+
+// Ordered collections compare in encounter order, which is what makes them
+// distinct from their unordered counterparts rather than a view of them.
+fn ordered_map_equal(left :: ordered_map_value, right :: ordered_map_value) -> bool:
+  if ordered_map_count(left) != ordered_map_count(right):
+    return false
+  var left_cursor = 0
+  var right_cursor = 0
+  var matched = 0
+  while matched < ordered_map_count(left):
+    let (left_next, left_entry) = store_next(left.value, left_cursor)
+    let (right_next, right_entry) = store_next(right.value, right_cursor)
+    left_cursor = left_next
+    right_cursor = right_next
+    if left_entry == null:
+      return false
+    if right_entry == null:
+      return false
+    if !utf8.equal(left_entry!.key as utf8.string, right_entry!.key as utf8.string):
+      return false
+    if !equal(left_entry!.value! as value, right_entry!.value! as value):
+      return false
+    matched += 1
+  true
+
+fn ordered_set_equal(left :: ordered_set_value, right :: ordered_set_value) -> bool:
+  if ordered_set_count(left) != ordered_set_count(right):
+    return false
+  var left_cursor = 0
+  var right_cursor = 0
+  var matched = 0
+  while matched < ordered_set_count(left):
+    let (left_next, left_entry) = store_next(left.value, left_cursor)
+    let (right_next, right_entry) = store_next(right.value, right_cursor)
+    left_cursor = left_next
+    right_cursor = right_next
+    if left_entry == null:
+      return false
+    if right_entry == null:
+      return false
+    if !equal(left_entry!.key as value, right_entry!.key as value):
+      return false
+    matched += 1
+  true
+
+// Structural. Numeric kinds stay distinct, and floats compare bit patterns, so
+// NaN equals itself and 0.0 does not equal -0.0.
+pub fn equal(left :: value, right :: value) -> bool:
+  if left == right:
+    return true
+  if left.kind != right.kind:
+    return false
+  match left
+  | _ :: null_value: return true
+  | a :: bool_value: return a.value == (right as bool_value).value
+  | a :: string_value: return utf8.equal(a.value, (right as string_value).value)
+  | a :: i32_value: return a.value == (right as i32_value).value
+  | a :: i64_value: return a.value == (right as i64_value).value
+  | a :: f32_value:
+      return a.value.to_bits() == (right as f32_value).value.to_bits()
+  | a :: f64_value:
+      return a.value.to_bits() == (right as f64_value).value.to_bits()
+  | a :: vector_value:
+      let b = right as vector_value
+      if vector_count(a) != vector_count(b):
+        return false
+      for i in 0 ..< vector_count(a):
+        if !equal(vector_at(a, i), vector_at(b, i)):
+          return false
+      return true
+  | a :: map_value:
+      let b = right as map_value
+      if map_count(a) != map_count(b):
+        return false
+      let state = map_equal_context{right: b, equal: true}
+      map_each(a, state, map_equal_entry)
+      return state.equal
+  | a :: any_value: return any_equal(a.value, (right as any_value).value)
+  | a :: set_value:
+      let b = right as set_value
+      if set_count(a) != set_count(b):
+        return false
+      let state = set_equal_context{right: b, equal: true}
+      set_each(a, state, set_equal_entry)
+      return state.equal
+  | a :: ordered_map_value:
+      return ordered_map_equal(a, right as ordered_map_value)
+  | a :: ordered_set_value:
+      return ordered_set_equal(a, right as ordered_set_value)
+  | a :: record_value: return record_equal(a, right as record_value)
+  | _: unreachable
+  unreachable
+
+// ------------------------------------------------------------------ hashing
+
+fn hash_tag(k :: i32) -> u32:
+  hashing.i32_seeded(k, 0x4a56414c)
+
+type hash_unordered_context = {
+  sum :: mut u32,
+  xor :: mut u32,
+}
+
+// Map and set hashing has to be order independent, so the per-entry hashes are
+// combined with operations that commute.
+fn hash_unordered_add(state :: hash_unordered_context, h :: u32):
+  state.sum = state.sum + h * 0x9e3779b1
+  state.xor = state.xor ^ h.rotl(h & 31)
+
+fn hash_map_entry(context :: eq?, key :: utf8.string, item :: value):
+  let state = context! as hash_unordered_context
+  let combined = hashing.add_i32(utf8.hash(key), hash(item))
+  hash_unordered_add(state, hashing.finalize(combined, 8))
+
+fn hash_set_entry(context :: eq?, item :: value):
+  hash_unordered_add(context! as hash_unordered_context, hash(item))
+
+fn hash_ordered_map(v :: ordered_map_value) -> u32:
+  var state = hash_tag(kind_ordered_map)
+  var cursor = 0
+  while cursor < persistent_vector.count(v.value.entries):
+    let (next, e) = store_next(v.value, cursor)
+    cursor = next
+    if e != null:
+      state = hashing.add_i32(state, utf8.hash(e!.key as utf8.string))
+      state = hashing.add_i32(state, hash(e!.value! as value))
+  hashing.finalize(state, ordered_map_count(v) * 8)
+
+fn hash_ordered_set(v :: ordered_set_value) -> u32:
+  var state = hash_tag(kind_ordered_set)
+  var cursor = 0
+  while cursor < persistent_vector.count(v.value.entries):
+    let (next, e) = store_next(v.value, cursor)
+    cursor = next
+    if e != null:
+      state = hashing.add_i32(state, hash(e!.key as value))
+  hashing.finalize(state, ordered_set_count(v) * 4)
+
+pub fn hash(v :: value) -> u32:
+  match v
+  | _ :: null_value: return hash_tag(kind_null)
+  | found :: bool_value:
+      let bit = if found.value | 1 | 0
+      return hashing.i32_seeded(bit, hash_tag(kind_bool))
+  | found :: string_value:
+      return hashing.i32_seeded(utf8.hash(found.value), hash_tag(kind_string))
+  | found :: i32_value:
+      return hashing.i32_seeded(found.value, hash_tag(kind_i32))
+  | found :: i64_value:
+      let bits = found.value
+      let state = hashing.add_i32(hash_tag(kind_i64), bits as i32)
+      return hashing.finalize(hashing.add_i32(state, (bits as u64 >> 32) as i32), 8)
+  | found :: f32_value:
+      return hashing.i32_seeded(found.value.to_bits(), hash_tag(kind_f32))
+  | found :: f64_value:
+      let bits = found.value.to_bits()
+      let state = hashing.add_i32(hash_tag(kind_f64), bits as i32)
+      return hashing.finalize(hashing.add_i32(state, (bits as u64 >> 32) as i32), 8)
+  | found :: vector_value:
+      var state = hash_tag(kind_vector)
+      for i in 0 ..< vector_count(found):
+        state = hashing.add_i32(state, hash(vector_at(found, i)))
+      return hashing.finalize(state, vector_count(found) * 4)
+  | found :: map_value:
+      let state = hash_unordered_context{sum: 0, xor: 0}
+      map_each(found, state, hash_map_entry)
+      let combined = hashing.add_i32(hash_tag(kind_map), state.sum)
+      return hashing.finalize(
+        hashing.add_i32(combined, state.xor),
+        map_count(found) * 8,
+      )
+  | _ :: any_value:
+      // WebAssembly exposes reference equality but no stable identity hash. A
+      // constant preserves equal-implies-same-hash; many opaque values collide.
+      return hash_tag(kind_any)
+  | found :: set_value:
+      let state = hash_unordered_context{sum: 0, xor: 0}
+      set_each(found, state, hash_set_entry)
+      let combined = hashing.add_i32(hash_tag(kind_set), state.sum)
+      return hashing.finalize(
+        hashing.add_i32(combined, state.xor),
+        set_count(found) * 4,
+      )
+  | found :: ordered_map_value: return hash_ordered_map(found)
+  | found :: ordered_set_value: return hash_ordered_set(found)
+  | found :: record_value: return record_hash(found)
+  | _: unreachable
+  unreachable
+
+// ------------------------------------------------------- records, the parts
+// that close the loop with `data/record.wap`.
+
+pub fn record_to_map(r :: record_value) -> map_value:
+  map_value{kind: kind_map, value: r.values}
+
+pub fn record_equal(left :: record_value, right :: record_value) -> bool:
+  if left.definition != right.definition:
+    return false
+  equal(record_to_map(left), record_to_map(right))
+
+pub fn record_hash(r :: record_value) -> u32:
+  let state = hashing.add_i32(hash_tag(kind_record), utf8.hash(r.definition.name))
+  hashing.add_i32(state, hash(record_to_map(r)))

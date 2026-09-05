@@ -205,36 +205,37 @@ fn Lowering::note_fn(self : Lowering, f : @wap.FnDecl, foreign : Bool) -> Unit {
 fn Lowering::emit(self : Lowering, m : @wap.Module) -> @ast.LocModule {
   let out : @ast.LocModule = []
   let parents = self.parents()
-  // Nominal types, in one recursive group so that declaration order in the
-  // source does not constrain the types that refer to each other.
-  let group : Array[
-    @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location],
-  ] = []
-  // Function types that mention no other declared type are declared on their
-  // own, ahead of the group. Wax refuses to coerce a function's name to a
-  // function type declared inside a `rec` group -- the reference implementation
-  // does the same -- so leaving them in it would make `each(xs, visit_fn)`
-  // unspellable in any module that declares two types. See
-  // the "a callback type survives a second type declaration" test in
-  // `wap/repro_test.mbt`.
-  let standalone : Array[
+  // Nominal types, grouped by what actually refers to what. Each group becomes
+  // one Wax `rec`, and the groups are emitted in dependency order, so
+  // declaration order in the source still constrains nothing.
+  //
+  // One group for everything is simpler, and is what this did first. It is also
+  // wrong in a way that only shows up later: Wax will not coerce a function's
+  // name to a function type declared inside a `rec` group -- the reference
+  // implementation refuses it too -- so a callback type that happened to share
+  // a group with unrelated records made `each(xs, callback)` unspellable.
+  // Types that do not refer to each other have no business sharing a recursion
+  // group, and once they do not, the question stops arising.
+  let named : Array[String] = []
+  let defs : Array[@wap.TypeDef] = []
+  let entries : Array[
     @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location],
   ] = []
   for d in m.decls {
     match d {
       TypeD(name~, def~, span~, ..) =>
         match self.type_decl(name, def, span, parents) {
-          Some(entry) =>
-            if self.free_standing_func(def) {
-              standalone.push(entry)
-            } else {
-              group.push(entry)
-            }
+          Some(entry) => {
+            named.push(name)
+            defs.push(def)
+            entries.push(entry)
+          }
           None => ()
         }
       _ => ()
     }
   }
+  let groups = self.type_groups(named, defs)
   for d in m.decls {
     match d {
       Const(c) => out.push(self.const_field(c))
@@ -260,22 +261,20 @@ fn Lowering::emit(self : Lowering, m : @wap.Module) -> @ast.LocModule {
       _ => ()
     }
   }
-  if group.length() > 0 {
-    let at = group[0].info
+  // In front of everything else, and in dependency order: inserting at 0 in
+  // reverse puts the first group first.
+  for i = groups.length() - 1; i >= 0; i = i - 1 {
+    let field : Array[
+      @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location],
+    ] = []
+    for j in groups[i] {
+      field.push(entries[j])
+    }
+    let at = field[0].info
     out.insert(
       0,
       (
-        { desc: Type(group), info: at, } :
-        @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]),
-    )
-  }
-  // In front of it, so that a record in the group may name one of them.
-  for i = standalone.length() - 1; i >= 0; i = i - 1 {
-    let entry = standalone[i]
-    out.insert(
-      0,
-      (
-        { desc: Type([entry]), info: entry.info, } :
+        { desc: Type(field), info: at, } :
         @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]),
     )
   }
@@ -283,61 +282,137 @@ fn Lowering::emit(self : Lowering, m : @wap.Module) -> @ast.LocModule {
 }
 
 ///|
-/// True when a function type can be declared outside the recursive group.
+/// The declared types, as strongly connected components in dependency order.
 ///
-/// It can when nothing in its signature names another declared type, which is
-/// the case for every callback the standard library takes: they are written
-/// over `eq`, `i32` and the like. One that does mention a declared type stays
-/// in the group, where it may need it -- and where Wax will then refuse the
-/// implicit coercion, which is upstream's behaviour rather than this port's.
-fn Lowering::free_standing_func(self : Lowering, def : @wap.TypeDef) -> Bool {
-  match def {
-    Alias(Func(params~, results~)) => {
-      for t in params {
-        if self.mentions_declared(t) {
-          return false
-        }
+/// Tarjan's algorithm finishes a component only after everything it can reach,
+/// so the components come out with dependencies first -- which is the order Wax
+/// needs, since a type may only name one that is already declared.
+fn Lowering::type_groups(
+  self : Lowering,
+  named : Array[String],
+  defs : Array[@wap.TypeDef],
+) -> Array[Array[Int]] {
+  let n = named.length()
+  let at : Map[String, Int] = Map([])
+  for i in 0..<n {
+    at[named[i]] = i
+  }
+  let edges : Array[Array[Int]] = []
+  for i in 0..<n {
+    let names : Array[String] = []
+    self.type_deps(defs[i], names)
+    let row : Array[Int] = []
+    for name in names {
+      match at.get(name) {
+        // A name from another module was declared before this one was lowered,
+        // so it constrains nothing here.
+        Some(j) => if !row.contains(j) { row.push(j) }
+        None => ()
       }
-      for t in results {
-        if self.mentions_declared(t) {
-          return false
-        }
-      }
-      true
     }
-    _ => false
+    edges.push(row)
+  }
+  strong_components(edges)
+}
+
+///|
+/// Tarjan's strongly-connected components, dependencies first.
+fn strong_components(edges : Array[Array[Int]]) -> Array[Array[Int]] {
+  let n = edges.length()
+  let index = Array::make(n, -1)
+  let low = Array::make(n, 0)
+  let on_stack = Array::make(n, false)
+  let stack : Array[Int] = []
+  let out : Array[Array[Int]] = []
+  // A one-element array rather than a mutable local, because the walk below is
+  // recursive and has to share it.
+  let counter = [0]
+  fn visit(v : Int) -> Unit {
+    index[v] = counter[0]
+    low[v] = counter[0]
+    counter[0] = counter[0] + 1
+    stack.push(v)
+    on_stack[v] = true
+    for w in edges[v] {
+      if index[w] == -1 {
+        visit(w)
+        if low[w] < low[v] {
+          low[v] = low[w]
+        }
+      } else if on_stack[w] && index[w] < low[v] {
+        low[v] = index[w]
+      }
+    }
+    if low[v] == index[v] {
+      let component : Array[Int] = []
+      while stack.length() > 0 {
+        let w = stack.unsafe_pop()
+        on_stack[w] = false
+        component.push(w)
+        if w == v {
+          break
+        }
+      }
+      // Back into declaration order, so a group reads the way it was written.
+      component.rev_in_place()
+      out.push(component)
+    }
+  }
+
+  for v in 0..<n {
+    if index[v] == -1 {
+      visit(v)
+    }
+  }
+  out
+}
+
+///|
+/// The declared types a type declaration names.
+fn Lowering::type_deps(
+  self : Lowering,
+  def : @wap.TypeDef,
+  out : Array[String],
+) -> Unit {
+  match def {
+    Record(parent~, fields~) => {
+      match parent {
+        Some(p) => out.push(p)
+        None => ()
+      }
+      for f in fields {
+        self.collect_named(f.typ, out)
+      }
+    }
+    Alias(t) => self.collect_named(t, out)
+    _ => ()
   }
 }
 
 ///|
-/// Whether a type expression names a type that becomes a Wax declaration.
-fn Lowering::mentions_declared(self : Lowering, t : @wap.Type) -> Bool {
+/// Every declared type a type expression names, however deeply.
+fn Lowering::collect_named(
+  self : Lowering,
+  t : @wap.Type,
+  out : Array[String],
+) -> Unit {
   match t {
-    Named(n) => self.nominal(n)
-    Nullable(inner) => self.mentions_declared(inner)
-    ArrayOf(inner) => self.mentions_declared(inner)
-    Tuple(ts) => {
+    Named(n) => if self.nominal(n) { out.push(n) }
+    Nullable(inner) => self.collect_named(inner, out)
+    ArrayOf(inner) => self.collect_named(inner, out)
+    Tuple(ts) =>
       for x in ts {
-        if self.mentions_declared(x) {
-          return true
-        }
+        self.collect_named(x, out)
       }
-      false
-    }
     Func(params~, results~) => {
       for x in params {
-        if self.mentions_declared(x) {
-          return true
-        }
+        self.collect_named(x, out)
       }
       for x in results {
-        if self.mentions_declared(x) {
-          return true
-        }
+        self.collect_named(x, out)
       }
-      false
     }
-    _ => false
+    _ => ()
   }
 }
 

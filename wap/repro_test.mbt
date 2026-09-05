@@ -126,21 +126,42 @@ test "repro: a callback type survives a second type declaration" {
 }
 
 ///|
-/// The other half of the rule: a function type that names a declared type
-/// cannot leave the group, because a record in the group may name it back.
-/// Wax's refusal then stands, and that is upstream's behaviour rather than
-/// this port's -- the test records it so a future change to the grouping has
-/// to decide about it deliberately.
-test "repro: a callback type over a declared type stays in the group" {
+/// The other half of the rule. A function type only has to share a group when
+/// it is genuinely in a cycle with what it names -- here the record holds the
+/// callback and the callback takes the record. Wax's refusal then stands, and
+/// that is upstream's behaviour rather than this port's; the test records it so
+/// that a future change to the grouping has to decide about it deliberately.
+test "repro: a callback type in a cycle stays in the group" {
   let src =
     #|module m
-    #|type item = { x :: i32 }
+    #|type item = { cb :: visit }
     #|type visit = fn(item)
     #|fn note(it :: item):
     #|  ()
     #|fn each(seen :: visit):
-    #|  seen(item{x: 1})
+    #|  seen(item{cb: seen})
     #|export "run" fn run():
     #|  each(note)
   assert_true(try_wat(src).contains("FAILED"))
+}
+
+///|
+/// And a chain is not a cycle: `holder` names `visit` and `visit` names `item`,
+/// but nothing names `holder`, so all three are separate groups and the
+/// callback is passed by name.
+test "repro: a callback type over a declared type is not a cycle" {
+  let src =
+    #|module m
+    #|type item = { x :: i32 }
+    #|type visit = fn(item)
+    #|type holder = { cb :: visit }
+    #|fn note(it :: item):
+    #|  ()
+    #|fn each(h :: holder):
+    #|  h.cb(item{x: 1})
+    #|export "run" fn run():
+    #|  each(holder{cb: note})
+  let w = try_wat(src)
+  assert_false(w.contains("FAILED"))
+  assert_false(w.contains("ref.cast"))
 }
