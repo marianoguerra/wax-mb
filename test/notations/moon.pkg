@@ -1,0 +1,15 @@
+import {
+}
+
+// The only place all three notations meet. `wap` and `was` are separate
+// published modules that do not depend on each other -- wap lowers to the Wax
+// AST and was prints one, and composing them is the caller's business. This is
+// the caller.
+import {
+  "marianoguerra/error-report" @er,
+  "marianoguerra/wap",
+  "marianoguerra/was",
+  "marianoguerra/was/print",
+  "marianoguerra/wax/diagnostic",
+  "moonbitlang/core/test",
+} for "test"

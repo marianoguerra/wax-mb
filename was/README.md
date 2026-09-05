@@ -16,11 +16,20 @@ export "sum" fn sum(arr :: &ints) -> i32:
   total
 ```
 
-That file and its `.wax` original compile to the same bytes. The test suite
-asserts exactly that, on ten corpus programs and on the whole of
-`stdlib/collections/hashing.wax` — byte equality of the emitted wasm, which
-fails on a wrong signedness, a wrong field order, a wrong label or an
-instruction in the wrong place.
+That file and its `.wax` original compile to the same bytes. Three harnesses
+assert it, over ten corpus programs and the whole of
+`stdlib/collections/hashing.wax`:
+
+- **the pair** — compile the `.wax` and the `.was` and compare the bytes;
+- **the round trip** — read the `.was`, print it, read that, compare the bytes.
+  This tests the *reader* harder than the printer: a form printed differently
+  from how it was written still has to mean the same thing;
+- **`wax -f was`** — take Wax's own parse tree, print it, read it back, compare
+  against compiling the `.wax` directly. No was parse tree anywhere in that
+  path, so it asks only whether the notation can say what Wax produced.
+
+Byte equality is the assertion because it fails on a wrong signedness, a wrong
+field order, a wrong label or an instruction in the wrong place.
 
 ## What changed, and why
 
@@ -63,7 +72,13 @@ moon add marianoguerra/was
 @was.compile_string(src)          // -> Result[Bytes, Diagnostics]
 @was.compile_string_to_wat(src)   // the same module, printed
 @was.fields(src)                  // -> the Wax AST, and nothing further
+@was.print_module(fields)         // -> the other direction
+@was.format_string(src)           // read it, print it back
 ```
+
+`print_module` is what makes `wax -f was` and `wap -f was` real. It takes any
+Wax AST -- from this reader, from Wax's own parser, from `marianoguerra/wap`'s
+lowering, from a generator -- and writes it as was.
 
 `fields` is the seam. What comes back is indistinguishable from what the Wax
 parser produces for the equivalent `.wax` file, so a project can read was, add
@@ -80,6 +95,7 @@ that caused it.
 |---|---|
 | `marianoguerra/was` | the facade: source to Wax AST, wasm or wat |
 | `marianoguerra/was/read` | the reader |
+| `marianoguerra/was/print` | the printer |
 
 ## What is covered
 
@@ -96,9 +112,11 @@ arguments, `if`, `do`, `loop`, `while` with a step, `match`, `dispatch`,
 
 ## What is not
 
-- **No printer.** `was` reads; it does not render a Wax AST back as shrubbery.
-  That is what would make `wax -f was` and `wap -f was` real, and it is the
-  obvious next thing.
+- **The printer needs a value to fit on a line.** A conditional used as a value
+  prints as `(if c | a | b)`, which shrubbery allows inside parentheses but
+  only when each branch is one expression. A multi-instruction branch in a
+  value position has no inline spelling and prints a marker that fails to read
+  back, loudly, rather than something plausible.
 - **`?:` is gone.** Its `:` would open a block. Write `if c | a | b`, which is
   an expression here.
 - **One-element array literals need the type.** `ints[0]` is a literal and

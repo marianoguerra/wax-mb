@@ -251,10 +251,78 @@ pub fn expr(i : @ast.Instr[@basic.Location], min_prec? : Int = 0) -> String {
     Select(c, a, b) =>
       "select(" + expr(c) + ", " + expr(a) + ", " + expr(b) + ")"
     Sequence(xs) => "(" + xs.map(x => expr(x)).join(", ") + ")"
-    // The block-shaped forms have no inline spelling; a caller that reaches
-    // here is printing one in a value position, which `stmt` handles instead.
-    _ => "/* unprintable inline */"
+    // A conditional in a value position -- which is what `&&` and `||` lower
+    // to. Shrubbery allows a group inside `(…)` to carry alternatives, so
+    // `(if c | a | b)` is the inline form; it needs each branch to be a single
+    // expression, which is exactly when an `if` is being used as a value.
+    If(cond~, if_block~, else_block~, ..) =>
+      match (single(if_block), else_block.bind(single)) {
+        (Some(a), Some(b)) =>
+          "(if " + expr(cond) + " | " + expr(a) + " | " + expr(b) + ")"
+        (Some(a), None) => "(if " + expr(cond) + " | " + expr(a) + ")"
+        _ => unprintable("if")
+      }
+    Match(scrutinee~, arms~, default~) =>
+      match single(default) {
+        Some(d) => {
+          let parts = []
+          for a in arms {
+            let (pat, body) = a
+            match single(body) {
+              Some(x) => parts.push("| " + pattern_text(pat) + ": " + expr(x))
+              None => return unprintable("match")
+            }
+          }
+          "(match " +
+          expr(scrutinee) +
+          " " +
+          parts.join(" ") +
+          " | _: " +
+          expr(d) +
+          ")"
+        }
+        None => unprintable("match")
+      }
+    Block(block~, ..) =>
+      match single(block) {
+        Some(x) => expr(x, min_prec~)
+        None => unprintable("do")
+      }
+    _ => unprintable("this instruction")
   }
+}
+
+///|
+/// The one instruction a block holds, when it holds exactly one that can be
+/// written inline.
+fn single(b : @ast.Body[@basic.Location]) -> @ast.Instr[@basic.Location]? {
+  if b.desc.length() == 1 && not_block_or_inlinable(b.desc[0]) {
+    Some(b.desc[0])
+  } else {
+    None
+  }
+}
+
+///|
+/// True when an instruction has an inline spelling.
+fn not_block_or_inlinable(i : @ast.Instr[@basic.Location]) -> Bool {
+  match i.desc {
+    If(..) | Match(..) | Block(..) => true
+    Loop(..)
+    | While(..)
+    | Try(..)
+    | TryCatch(..)
+    | TryTable(..)
+    | Dispatch(..)
+    | IfAnnotation(..) => false
+    _ => true
+  }
+}
+
+///|
+/// A marker that fails loudly rather than producing plausible-looking was.
+fn unprintable(what : String) -> String {
+  "#{cannot-print-" + what + "-inline}"
 }
 
 ///|
