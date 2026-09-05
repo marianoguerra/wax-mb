@@ -756,6 +756,18 @@ fn parse_postfix(c : Cursor) -> @wap.Node raise ParseError {
             c.i += 1
             e = braced(Some(name), gs, e.span, c.src)
           }
+          // `geometry.point{x: 1}` -- the same, for a type from another
+          // module. Nothing else gives braces a meaning after a field access,
+          // and a type annotation already accepts the qualified name, so the
+          // constructor should not be the one place it cannot be written.
+          Field(recv, name) =>
+            match recv.it {
+              Var(module_) => {
+                c.i += 1
+                e = braced(Some(module_ + "." + name), gs, e.span, c.src)
+              }
+              _ => break
+            }
           _ => break
         }
       Op(".") => {

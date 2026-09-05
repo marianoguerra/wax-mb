@@ -1,0 +1,645 @@
+// Runtime-defined immutable records, ported from `stdlib/data/record.wax`.
+//
+// A schema maps names to a runtime type, a default and an optional validator; a
+// finalized definition is a factory, and an instance holds only the factory and
+// a map with every field in it. Definitions and values are immutable, and
+// validator callbacks must be pure.
+//
+// The types it works on -- `record_value`, `record_type`, `record_schema`,
+// `record_field`, `runtime_type` and its variants -- are declared in
+// `data/immutable_value.wap` rather than here, together with `record_to_map`,
+// `record_equal` and `record_hash`. In the .wax files those three live in
+// record.wax and call `jv_equal`, which calls them back; concatenated into one
+// namespace that is fine, and as two wap modules it is a cycle. Moving the
+// three one-liners that close it leaves this module importing `jv` and nothing
+// importing this one.
+//
+// Everything else is the .wax file with the prefix dropped: `jv_record_set` is
+// `record.set`, `jv_type_i32` is `record.type_i32`, and the status constants
+// keep their names.
+
+module record
+
+import collections.persistent_hash_map
+import data.immutable_value
+import text.utf8
+
+pub const ok = 0
+pub const unknown_field = 1
+pub const duplicate_field = 2
+pub const type_mismatch = 3
+pub const field_invalid = 4
+pub const value_invalid = 5
+
+pub const type_kind_null = 0
+pub const type_kind_bool = 1
+pub const type_kind_string = 2
+pub const type_kind_i32 = 3
+pub const type_kind_i64 = 4
+pub const type_kind_f32 = 5
+pub const type_kind_f64 = 6
+pub const type_kind_vector = 7
+pub const type_kind_map = 8
+pub const type_kind_opaque = 9
+pub const type_kind_set = 10
+pub const type_kind_record = 11
+pub const type_kind_any = 12
+pub const type_kind_or = 13
+pub const type_kind_ordered_map = 14
+pub const type_kind_ordered_set = 15
+
+pub type schema_visit = fn(eq?, utf8.string, jv.runtime_type, jv.value)
+pub type visit = fn(eq?, utf8.string, jv.value)
+
+pub type transient = {
+  definition :: jv.record_type,
+  values :: persistent_hash_map.transient,
+}
+
+// ---------------------------------------------------------- runtime types
+
+fn type_scalar(kind :: i32) -> jv.runtime_type:
+  jv.type_scalar{kind: kind}
+
+pub fn type_null() -> jv.runtime_type:
+  type_scalar(type_kind_null)
+
+pub fn type_bool() -> jv.runtime_type:
+  type_scalar(type_kind_bool)
+
+pub fn type_string() -> jv.runtime_type:
+  type_scalar(type_kind_string)
+
+pub fn type_i32() -> jv.runtime_type:
+  type_scalar(type_kind_i32)
+
+pub fn type_i64() -> jv.runtime_type:
+  type_scalar(type_kind_i64)
+
+pub fn type_f32() -> jv.runtime_type:
+  type_scalar(type_kind_f32)
+
+pub fn type_f64() -> jv.runtime_type:
+  type_scalar(type_kind_f64)
+
+pub fn type_opaque() -> jv.runtime_type:
+  type_scalar(type_kind_opaque)
+
+pub fn type_any() -> jv.runtime_type:
+  type_scalar(type_kind_any)
+
+pub fn type_vector(element :: jv.runtime_type) -> jv.runtime_type:
+  jv.type_vector_value{kind: type_kind_vector, element: element}
+
+pub fn type_map(value :: jv.runtime_type) -> jv.runtime_type:
+  jv.type_map_value{kind: type_kind_map, value: value}
+
+pub fn type_set(element :: jv.runtime_type) -> jv.runtime_type:
+  jv.type_set_value{kind: type_kind_set, element: element}
+
+pub fn type_ordered_map(value :: jv.runtime_type) -> jv.runtime_type:
+  jv.type_ordered_map_value{kind: type_kind_ordered_map, value: value}
+
+pub fn type_ordered_set(element :: jv.runtime_type) -> jv.runtime_type:
+  jv.type_ordered_set_value{kind: type_kind_ordered_set, element: element}
+
+pub fn type_record(definition :: jv.record_type) -> jv.runtime_type:
+  jv.type_record_value{kind: type_kind_record, definition: definition}
+
+pub fn type_or(left :: jv.runtime_type, right :: jv.runtime_type) -> jv.runtime_type:
+  jv.type_or_value{kind: type_kind_or, left: left, right: right}
+
+pub fn type_optional(value :: jv.runtime_type) -> jv.runtime_type:
+  type_or(type_null(), value)
+
+pub fn type_kind(t :: jv.runtime_type) -> i32:
+  t.kind
+
+// ------------------------------------------------------------- validation
+
+type validate_context = {
+  element :: jv.runtime_type,
+  valid :: mut bool,
+}
+
+fn validate_vector_entry(context :: eq?, index :: i32, value :: jv.value):
+  let state = context! as validate_context
+  if state.valid:
+    if !type_accepts(state.element, value):
+      state.valid = false
+
+fn validate_map_entry(context :: eq?, key :: utf8.string, value :: jv.value):
+  let state = context! as validate_context
+  if state.valid:
+    if !type_accepts(state.element, value):
+      state.valid = false
+
+fn validate_set_entry(context :: eq?, value :: jv.value):
+  let state = context! as validate_context
+  if state.valid:
+    if !type_accepts(state.element, value):
+      state.valid = false
+
+// Collection types check their contents, and an ordered collection is not
+// accepted where an unordered one was asked for.
+pub fn type_accepts(t :: jv.runtime_type, value :: jv.value) -> bool:
+  match t
+  | found :: jv.type_vector_value:
+      let (is_vector, v) = jv.get_vector(value)
+      if !is_vector:
+        return false
+      let state = validate_context{element: found.element, valid: true}
+      jv.vector_each(v!, state, validate_vector_entry)
+      return state.valid
+  | found :: jv.type_map_value:
+      let (is_map, m) = jv.get_map(value)
+      if !is_map:
+        return false
+      let state = validate_context{element: found.value, valid: true}
+      jv.map_each(m!, state, validate_map_entry)
+      return state.valid
+  | found :: jv.type_set_value:
+      let (is_set, s) = jv.get_set(value)
+      if !is_set:
+        return false
+      let state = validate_context{element: found.element, valid: true}
+      jv.set_each(s!, state, validate_set_entry)
+      return state.valid
+  | found :: jv.type_ordered_map_value:
+      let (is_map, m) = jv.get_ordered_map(value)
+      if !is_map:
+        return false
+      let state = validate_context{element: found.value, valid: true}
+      jv.ordered_map_each(m!, state, validate_map_entry)
+      return state.valid
+  | found :: jv.type_ordered_set_value:
+      let (is_set, s) = jv.get_ordered_set(value)
+      if !is_set:
+        return false
+      let state = validate_context{element: found.element, valid: true}
+      jv.ordered_set_each(s!, state, validate_set_entry)
+      return state.valid
+  | found :: jv.type_record_value:
+      match value
+      | r :: jv.record_value: return r.definition == found.definition
+      | _: return false
+      unreachable
+  | found :: jv.type_or_value:
+      if type_accepts(found.left, value):
+        return true
+      return type_accepts(found.right, value)
+  | found :: jv.type_scalar:
+      if found.kind == type_kind_any:
+        return true
+      let expected = if found.kind == type_kind_opaque
+      | jv.kind_any
+      | found.kind
+      return jv.kind(value) == expected
+  | _: unreachable
+  unreachable
+
+// ----------------------------------------------------------------- schemas
+
+pub fn schema_empty() -> jv.record_schema:
+  jv.record_schema{
+    fields: persistent_hash_map.empty(utf8.hash_key, utf8.equal_key),
+    defaults: persistent_hash_map.empty(utf8.hash_key, utf8.equal_key),
+  }
+
+pub fn schema_count(s :: jv.record_schema) -> i32:
+  persistent_hash_map.count(s.fields)
+
+pub fn schema_has(s :: jv.record_schema, field :: utf8.string) -> bool:
+  persistent_hash_map.contains(s.fields, field)
+
+pub fn schema_get_field(
+  s :: jv.record_schema,
+  field :: utf8.string,
+) -> (bool, jv.record_field?):
+  let (found, value) = persistent_hash_map.get(s.fields, field)
+  if !found:
+    return (false, null)
+  (true, value! as jv.record_field)
+
+pub fn field_type(f :: jv.record_field) -> jv.runtime_type:
+  f.value_type
+
+pub fn field_default(f :: jv.record_field) -> jv.value:
+  f.default_value
+
+// The validators a schema gets when none was given. They are named rather than
+// inline so that every field carries one and no call site has to test for null.
+pub fn accept_field(context :: eq?, value :: jv.value) -> bool:
+  true
+
+pub fn accept_value(context :: eq?, r :: eq) -> bool:
+  true
+
+fn validate_field(f :: jv.record_field, value :: jv.value) -> i32:
+  if !type_accepts(f.value_type, value):
+    return type_mismatch
+  if !f.validator(f.validator_context, value):
+    return field_invalid
+  ok
+
+pub fn schema_try_add_validated(
+  s :: jv.record_schema,
+  field :: utf8.string,
+  value_type :: jv.runtime_type,
+  default_value :: jv.value,
+  validator_context :: eq?,
+  validator :: jv.field_validator,
+) -> (i32, jv.record_schema?):
+  if schema_has(s, field):
+    return (duplicate_field, null)
+  let spec = jv.record_field{
+    value_type: value_type,
+    default_value: default_value,
+    validator_context: validator_context,
+    validator: validator,
+  }
+  let status = validate_field(spec, default_value)
+  if status != ok:
+    return (status, null)
+  (
+    ok,
+    jv.record_schema{
+      fields: persistent_hash_map.assoc(s.fields, field, spec),
+      defaults: persistent_hash_map.assoc(s.defaults, field, default_value),
+    },
+  )
+
+pub fn schema_add_validated(
+  s :: jv.record_schema,
+  field :: utf8.string,
+  value_type :: jv.runtime_type,
+  default_value :: jv.value,
+  validator_context :: eq?,
+  validator :: jv.field_validator,
+) -> jv.record_schema:
+  let (status, out) = schema_try_add_validated(
+    s,
+    field,
+    value_type,
+    default_value,
+    validator_context,
+    validator,
+  )
+  if status != ok:
+    unreachable
+  out!
+
+pub fn schema_try_add(
+  s :: jv.record_schema,
+  field :: utf8.string,
+  value_type :: jv.runtime_type,
+  default_value :: jv.value,
+) -> (i32, jv.record_schema?):
+  schema_try_add_validated(s, field, value_type, default_value, null, accept_field)
+
+pub fn schema_add(
+  s :: jv.record_schema,
+  field :: utf8.string,
+  value_type :: jv.runtime_type,
+  default_value :: jv.value,
+) -> jv.record_schema:
+  schema_add_validated(s, field, value_type, default_value, null, accept_field)
+
+type schema_each_context = {
+  context :: eq?,
+  visit :: schema_visit,
+}
+
+fn schema_each_adapter(context :: eq?, key :: eq?, value :: eq?):
+  let state = context! as schema_each_context
+  let spec = value! as jv.record_field
+  state.visit(state.context, key! as utf8.string, spec.value_type, spec.default_value)
+
+pub fn schema_each(s :: jv.record_schema, context :: eq?, seen :: schema_visit):
+  let state = schema_each_context{context: context, visit: seen}
+  persistent_hash_map.each(s.fields, state, schema_each_adapter)
+
+// ------------------------------------------------------------- definitions
+
+fn candidate(definition :: jv.record_type, values :: persistent_hash_map.map) -> jv.record_value:
+  jv.record_value{kind: jv.kind_record, definition: definition, values: values}
+
+fn validate_candidate(r :: jv.record_value) -> i32:
+  if !r.definition.validator(r.definition.validator_context, r):
+    return value_invalid
+  ok
+
+pub fn type_try_create_validated(
+  name :: utf8.string,
+  s :: jv.record_schema,
+  validator_context :: eq?,
+  validator :: jv.record_validator,
+) -> (i32, jv.record_type?):
+  let definition = jv.record_type{
+    name: name,
+    schema: s,
+    validator_context: validator_context,
+    validator: validator,
+  }
+  let status = validate_candidate(candidate(definition, s.defaults))
+  if status != ok:
+    return (status, null)
+  (ok, definition)
+
+pub fn type_create_validated(
+  name :: utf8.string,
+  s :: jv.record_schema,
+  validator_context :: eq?,
+  validator :: jv.record_validator,
+) -> jv.record_type:
+  let (status, out) = type_try_create_validated(name, s, validator_context, validator)
+  if status != ok:
+    unreachable
+  out!
+
+pub fn type_create(name :: utf8.string, s :: jv.record_schema) -> jv.record_type:
+  type_create_validated(name, s, null, accept_value)
+
+pub fn type_name(definition :: jv.record_type) -> utf8.string:
+  definition.name
+
+pub fn type_schema(definition :: jv.record_type) -> jv.record_schema:
+  definition.schema
+
+pub fn default(definition :: jv.record_type) -> jv.record_value:
+  candidate(definition, definition.schema.defaults)
+
+// ------------------------------------------------------------------ values
+
+pub fn get(value :: jv.value) -> (bool, jv.record_value?):
+  match value
+  | found :: jv.record_value: return (true, found)
+  | _: return (false, null)
+  unreachable
+
+pub fn require(value :: jv.value) -> jv.record_value:
+  let (found, out) = get(value)
+  if !found:
+    unreachable
+  out!
+
+pub fn definition(r :: jv.record_value) -> jv.record_type:
+  r.definition
+
+pub fn count(r :: jv.record_value) -> i32:
+  schema_count(r.definition.schema)
+
+pub fn has_field(r :: jv.record_value, field :: utf8.string) -> bool:
+  schema_has(r.definition.schema, field)
+
+pub fn get_field(r :: jv.record_value, field :: utf8.string) -> (bool, jv.value?):
+  let (found, value) = persistent_hash_map.get(r.values, field)
+  if !found:
+    return (false, null)
+  (true, value! as jv.value)
+
+pub fn at(r :: jv.record_value, field :: utf8.string) -> jv.value:
+  let (found, value) = get_field(r, field)
+  if !found:
+    unreachable
+  value!
+
+pub fn try_set(
+  r :: jv.record_value,
+  field :: utf8.string,
+  value :: jv.value,
+) -> (i32, jv.record_value?):
+  let (found, spec) = schema_get_field(r.definition.schema, field)
+  if !found:
+    return (unknown_field, null)
+  let status = validate_field(spec!, value)
+  if status != ok:
+    return (status, null)
+  let (_, old) = get_field(r, field)
+  if jv.equal(old!, value):
+    return (ok, r)
+  let out = candidate(r.definition, persistent_hash_map.assoc(r.values, field, value))
+  let out_status = validate_candidate(out)
+  if out_status != ok:
+    return (out_status, null)
+  (ok, out)
+
+pub fn set(r :: jv.record_value, field :: utf8.string, value :: jv.value) -> jv.record_value:
+  let (status, out) = try_set(r, field, value)
+  if status != ok:
+    unreachable
+  out!
+
+pub fn try_reset(r :: jv.record_value, field :: utf8.string) -> (i32, jv.record_value?):
+  let (found, spec) = schema_get_field(r.definition.schema, field)
+  if !found:
+    return (unknown_field, null)
+  try_set(r, field, spec!.default_value)
+
+pub fn reset(r :: jv.record_value, field :: utf8.string) -> jv.record_value:
+  let (status, out) = try_reset(r, field)
+  if status != ok:
+    unreachable
+  out!
+
+pub fn clear(r :: jv.record_value) -> jv.record_value:
+  if r.values == r.definition.schema.defaults:
+    return r
+  default(r.definition)
+
+// ------------------------------------------------------- building from a map
+
+type build_context = {
+  definition :: jv.record_type,
+  values :: persistent_hash_map.transient,
+  strict :: bool,
+  status :: mut i32,
+  failed_field :: mut utf8.string?,
+  changed :: mut bool,
+}
+
+fn build_entry(context :: eq?, key :: utf8.string, value :: jv.value):
+  let state = context! as build_context
+  if state.status != ok:
+    return
+  let (found, spec) = schema_get_field(state.definition.schema, key)
+  if !found:
+    if state.strict:
+      state.status = unknown_field
+      state.failed_field = key
+    return
+  let status = validate_field(spec!, value)
+  if status != ok:
+    state.status = status
+    state.failed_field = key
+    return
+  let (old_found, old) = persistent_hash_map.t_get(state.values, key)
+  if old_found:
+    if jv.equal(old! as jv.value, value):
+      return
+  persistent_hash_map.t_assoc(state.values, key, value)
+  state.changed = true
+
+// The overrides are applied into a transient, so a wide update is one copy
+// rather than one per field. `strict` decides whether an unknown field is an
+// error or is ignored; the .wax API exposes both rather than silently ignoring.
+fn try_apply_map(
+  definition :: jv.record_type,
+  initial :: persistent_hash_map.map,
+  overrides :: jv.map_value,
+  strict :: bool,
+) -> (i32, utf8.string?, jv.record_value?):
+  let values = persistent_hash_map.as_transient(initial)
+  let state = build_context{
+    definition: definition,
+    values: values,
+    strict: strict,
+    status: ok,
+    failed_field: null,
+    changed: false,
+  }
+  jv.map_each(overrides, state, build_entry)
+  let persistent = persistent_hash_map.t_persistent(values)
+  if state.status != ok:
+    return (state.status, state.failed_field, null)
+  let values_out = if state.changed | persistent | initial
+  let out = candidate(definition, values_out)
+  let status = validate_candidate(out)
+  if status != ok:
+    return (status, null, null)
+  (ok, null, out)
+
+pub fn try_from_map(
+  definition :: jv.record_type,
+  overrides :: jv.map_value,
+) -> (i32, utf8.string?, jv.record_value?):
+  try_apply_map(definition, definition.schema.defaults, overrides, true)
+
+pub fn from_map(definition :: jv.record_type, overrides :: jv.map_value) -> jv.record_value:
+  let (status, _, out) = try_from_map(definition, overrides)
+  if status != ok:
+    unreachable
+  out!
+
+pub fn try_from_map_lenient(
+  definition :: jv.record_type,
+  overrides :: jv.map_value,
+) -> (i32, utf8.string?, jv.record_value?):
+  try_apply_map(definition, definition.schema.defaults, overrides, false)
+
+pub fn from_map_lenient(
+  definition :: jv.record_type,
+  overrides :: jv.map_value,
+) -> jv.record_value:
+  let (status, _, out) = try_from_map_lenient(definition, overrides)
+  if status != ok:
+    unreachable
+  out!
+
+pub fn try_merge(
+  r :: jv.record_value,
+  overrides :: jv.map_value,
+) -> (i32, utf8.string?, jv.record_value?):
+  let (status, field, out) = try_apply_map(r.definition, r.values, overrides, true)
+  if status == ok:
+    if out!.values == r.values:
+      return (status, field, r)
+  (status, field, out)
+
+pub fn merge(r :: jv.record_value, overrides :: jv.map_value) -> jv.record_value:
+  let (status, _, out) = try_merge(r, overrides)
+  if status != ok:
+    unreachable
+  out!
+
+pub fn try_merge_lenient(
+  r :: jv.record_value,
+  overrides :: jv.map_value,
+) -> (i32, utf8.string?, jv.record_value?):
+  let (status, field, out) = try_apply_map(r.definition, r.values, overrides, false)
+  if status == ok:
+    if out!.values == r.values:
+      return (status, field, r)
+  (status, field, out)
+
+pub fn merge_lenient(r :: jv.record_value, overrides :: jv.map_value) -> jv.record_value:
+  let (status, _, out) = try_merge_lenient(r, overrides)
+  if status != ok:
+    unreachable
+  out!
+
+pub fn to_map(r :: jv.record_value) -> jv.map_value:
+  jv.record_to_map(r)
+
+type each_context = {
+  context :: eq?,
+  visit :: visit,
+}
+
+fn each_adapter(context :: eq?, key :: eq?, value :: eq?):
+  let state = context! as each_context
+  state.visit(state.context, key! as utf8.string, value! as jv.value)
+
+pub fn each(r :: jv.record_value, context :: eq?, seen :: visit):
+  let state = each_context{context: context, visit: seen}
+  persistent_hash_map.each(r.values, state, each_adapter)
+
+// --------------------------------------------------------------- transients
+
+pub fn as_transient(r :: jv.record_value) -> transient:
+  transient{
+    definition: r.definition,
+    values: persistent_hash_map.as_transient(r.values),
+  }
+
+pub fn t_count(t :: transient) -> i32:
+  persistent_hash_map.t_count(t.values)
+
+pub fn t_get(t :: transient, field :: utf8.string) -> (bool, jv.value?):
+  let (found, value) = persistent_hash_map.t_get(t.values, field)
+  if !found:
+    return (false, null)
+  (true, value! as jv.value)
+
+pub fn t_try_set(t :: transient, field :: utf8.string, value :: jv.value) -> i32:
+  let (found, spec) = schema_get_field(t.definition.schema, field)
+  if !found:
+    return unknown_field
+  let status = validate_field(spec!, value)
+  if status != ok:
+    return status
+  let (old_found, old) = persistent_hash_map.t_get(t.values, field)
+  if old_found:
+    if jv.equal(old! as jv.value, value):
+      return ok
+  persistent_hash_map.t_assoc(t.values, field, value)
+  ok
+
+pub fn t_set(t :: transient, field :: utf8.string, value :: jv.value):
+  if t_try_set(t, field, value) != ok:
+    unreachable
+
+pub fn t_try_reset(t :: transient, field :: utf8.string) -> i32:
+  let (found, spec) = schema_get_field(t.definition.schema, field)
+  if !found:
+    return unknown_field
+  t_try_set(t, field, spec!.default_value)
+
+pub fn t_reset(t :: transient, field :: utf8.string):
+  if t_try_reset(t, field) != ok:
+    unreachable
+
+// The freeze is consuming even when the whole-record validator rejects the
+// result: the builder's map has already been handed over.
+pub fn t_try_persistent(t :: transient) -> (i32, jv.record_value?):
+  let out = candidate(t.definition, persistent_hash_map.t_persistent(t.values))
+  let status = validate_candidate(out)
+  if status != ok:
+    return (status, null)
+  (ok, out)
+
+pub fn t_persistent(t :: transient) -> jv.record_value:
+  let (status, out) = t_try_persistent(t)
+  if status != ok:
+    unreachable
+  out!

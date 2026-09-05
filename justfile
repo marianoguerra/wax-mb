@@ -100,6 +100,16 @@ wap-stdlib *args:
 wap-stdlib-embed:
     tools/gen-stdlib-test.py
 
+# Compiling is not the same as working. This builds the two example modules to
+# wasm, runs them in Node's WebAssembly GC runtime, and checks what they return.
+# `just wap-stdlib-test --against-reference` re-derives those numbers from the
+# .wax originals through the pinned reference binary.
+#
+# Run the ported stdlib and check its answers.
+[group('dev')]
+wap-stdlib-test *args:
+    tools/wap-stdlib-test.sh {{args}}
+
 # Uses MoonBit state-machine models and a WHATWG TextDecoder UTF-8 oracle,
 # then runs the generated Wax module in Node's WebAssembly GC runtime.
 #
@@ -205,6 +215,7 @@ ci:
     git diff --exit-code
     moon test --target all
     moon run --target native tools/wapc
+    tools/wap-stdlib-test.sh
     tools/collections-test.sh
     tools/hashing-test.sh
     tools/stdlib-test.sh

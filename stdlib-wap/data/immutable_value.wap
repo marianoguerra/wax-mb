@@ -101,7 +101,17 @@ pub type type_or_value :: runtime_type = {
 }
 
 pub type field_validator = fn(eq?, value) -> bool
-pub type record_validator = fn(eq?, record_value) -> bool
+
+// The whole-record validator takes an `eq` and casts, where the .wax file's
+// `jv_record_validator` takes a `&jv_record_value`. It has to: `record_type`
+// holds the validator, `record_value` holds the definition, so a validator
+// written over `record_value` is inside that cycle -- and Wax will not coerce
+// a function's name to a function type declared inside a recursion group. The
+// .wax file has the same problem and answers it by typing the field `&func`
+// and casting at the call site; wap has no `func`, so the generality moves
+// into the parameter instead. A field validator needs none of this: nothing in
+// the cycle names `record_field`.
+pub type record_validator = fn(eq?, eq) -> bool
 
 pub type record_field = {
   value_type :: runtime_type,

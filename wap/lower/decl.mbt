@@ -55,6 +55,16 @@ pub fn lower_program(units : Array[Input]) -> Lowered {
   for u in units {
     l.modules[u.module_.name] = ()
     l.line_maps[u.module_.name] = LineMap::of(u.source)
+    // An `import` names a path; the alias is the name the module at that path
+    // declares. Both are known here and nowhere later, so the mapping is built
+    // now. The resolver names each source `<dotted path>.wap`.
+    let fname = u.source.fname
+    let path = if fname.has_suffix(".wap") {
+      fname[:fname.length() - 4].to_owned()
+    } else {
+      fname
+    }
+    l.module_of_path[path] = u.module_.name
   }
   // Types first, across every module: a module may name another's types
   // regardless of which was declared first.
@@ -91,9 +101,18 @@ fn Lowering::collect_types(self : Lowering, m : @wap.Module) -> Unit {
   for d in m.decls {
     match d {
       Import(path) => {
-        // The alias is the module's own declared name, not the path.
+        // The alias is the module's own declared name, not the path. They
+        // agree most of the time, and the fallback is for a single-module
+        // compile, where there is no registry of paths to look in.
+        let dotted = StringBuilder()
+        for i, part in path {
+          if i > 0 {
+            dotted.write_string(".")
+          }
+          dotted.write_string(part)
+        }
         let last = path[path.length() - 1]
-        seen[last] = ()
+        seen[self.module_of_path.get(dotted.to_string()).unwrap_or(last)] = ()
       }
       _ => ()
     }

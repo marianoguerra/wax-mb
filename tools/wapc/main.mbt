@@ -171,6 +171,7 @@ fn main raise {
   let mut root = "stdlib-wap"
   let mut wat = false
   let mut wax = false
+  let mut out_file = ""
   let wanted = []
   let mut i = 1
   while i < args.length() {
@@ -181,6 +182,10 @@ fn main raise {
       }
       "--wat" => wat = true
       "--wax" => wax = true
+      "--out" => {
+        i = i + 1
+        out_file = args[i]
+      }
       "--help" | "-h" => {
         usage()
         return
@@ -218,7 +223,23 @@ fn main raise {
       continue
     }
     match compile_one(files, path) {
-      Ok(w) => if wat { println(w) } else { println("ok    " + path) }
+      Ok(w) =>
+        if wat {
+          println(w)
+        } else {
+          // The wasm, for actually running the thing rather than reading it.
+          // `compile_one` stops at the wat, so this is a second pass over an
+          // already-checked program; it is a dev tool and the cost is a second
+          // of nobody's time.
+          if out_file != "" {
+            let src = files.read[path + ".wap"]
+            match @wap.compile_program(path, src, files) {
+              Ok(bytes) => @fs.write_bytes_to_file(out_file, bytes)
+              Err(_) => println("wapc: could not emit wasm for " + path)
+            }
+          }
+          println("ok    " + path)
+        }
       Err(message) => {
         println("FAIL  " + path)
         println(message)

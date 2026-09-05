@@ -1,0 +1,57 @@
+// The immutable-data example, ported from `stdlib/data/example.wax`.
+//
+// The .wax file opens with "Concatenate the immutable-data profile before this
+// example". Here the profile is named, and the names stay in their own modules:
+// `jv` for the values, `record` for the runtime-typed records, `utf8` for the
+// strings.
+
+module example
+
+import data.immutable_value
+import data.record
+import text.utf8
+
+export "immutable_data_example" fn run() -> i32:
+  let name = utf8.from_bytes("Wax")
+  let tags = jv.set_add(jv.set_empty(), jv.string(name))
+  let ordered_tags = jv.ordered_set_add(
+    jv.ordered_set_add(jv.ordered_set_empty(), jv.i32(7)),
+    jv.string(name),
+  )
+  let numbers = jv.vector_push(
+    jv.vector_push(jv.vector_empty(), jv.i32(7)),
+    jv.i64(8),
+  )
+  var object = jv.map_assoc(
+    jv.map_assoc(jv.map_empty(), utf8.from_bytes("name"), jv.string(name)),
+    utf8.from_bytes("items"),
+    numbers,
+  )
+  object = jv.map_assoc(object, utf8.from_bytes("tags"), tags)
+  let ordered_object = jv.ordered_map_assoc(
+    jv.ordered_map_assoc(
+      jv.ordered_map_empty(),
+      utf8.from_bytes("name"),
+      jv.string(name),
+    ),
+    utf8.from_bytes("items"),
+    numbers,
+  )
+  let schema = record.schema_add(
+    record.schema_empty(),
+    utf8.from_bytes("value"),
+    record.type_i32(),
+    jv.i32(0),
+  )
+  let cell_type = record.type_create(utf8.from_bytes("Cell"), schema)
+  let cell = record.set(
+    record.default(cell_type),
+    utf8.from_bytes("value"),
+    jv.i32(9),
+  )
+  jv.map_count(object)
+    + jv.vector_count(numbers)
+    + jv.set_count(tags)
+    + jv.ordered_map_count(ordered_object)
+    + jv.ordered_set_count(ordered_tags)
+    + jv.require_i32(record.at(cell, utf8.from_bytes("value")))

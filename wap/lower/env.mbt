@@ -57,6 +57,10 @@ priv struct Lowering {
   modules : Map[String, Unit]
   /// Which modules each module may name, by the importing module.
   imports : Map[String, Map[String, Unit]]
+  /// The name each module DECLARES, by the dotted path it was found at. An
+  /// import names a path; everything after it names the module, and those are
+  /// not required to agree.
+  module_of_path : Map[String, String]
   /// Names another module is allowed to reach.
   visible : Map[String, Unit]
   /// One per module, keyed by module name.
@@ -126,6 +130,7 @@ fn Lowering::new(module_name : String, entry~ : ModuleSource) -> Lowering {
     current: module_name,
     modules: Map([]),
     imports: Map([]),
+    module_of_path: Map([]),
     visible: Map([]),
     line_maps: Map([]),
     here: LineMap::of(entry),
