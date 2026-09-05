@@ -1,9 +1,48 @@
 # Changelog
 
-All notable changes to `marianoguerra/wax` and `marianoguerra/wax-cli`.
+All notable changes to `marianoguerra/wax`, `marianoguerra/wax-cli` and
+`marianoguerra/wap`.
 
-The two modules are versioned together and released from one repository, so a
-release note here covers both unless it says otherwise.
+`wax` and `wax-cli` are versioned together and released from one repository, so
+a release note here covers both unless it says otherwise. `wap` is a separate
+package on its own version line: it depends on a published `wax` rather than on
+this tree, and a wap release does not imply a wax one.
+
+## [wap 0.1.0] — 2026-09-05
+
+The first release of `marianoguerra/wap`: **W**eb**A**ssembly's **P**ascal, an
+Oberon-level language on [shrubbery](https://docs.racket-lang.org/shrubbery/)
+notation that compiles through the Wax AST. It reads notation with
+`marianoguerra/shrubbery` and reports with `marianoguerra/error-report`.
+
+### Added
+
+- **A public, constructible AST** (`marianoguerra/wap/ast`), which does not
+  import `marianoguerra/wax`. A project that generates wap — a schema compiler,
+  a DSL back end — builds values and hands them to `marianoguerra/wap/lower`;
+  emitting source text is not a supported way to use this compiler, it is the
+  thing the AST exists to avoid. Spans are error-report spans, so a generator
+  that has them gets Wax type errors pointing at its own syntax, and one that
+  does not gets fresh synthetic locations rather than colliding bindings.
+- **The language**: modules with name mangling, `const`, record types with
+  single inheritance, array/function/enumeration types, subranges, sets over
+  enumerations, `impl` blocks with static and type-switch dispatch, nullable
+  references, tuples as multi-value results and destructuring bindings,
+  `let`/`var`, `if` in three shapes, `while` with an optional step, `for` over
+  ranges and arrays, `loop`, labelled `break`/`continue`, `match` over types and
+  over values, `as`/`is`/`!`, host imports, and `import was` signatures.
+- **Signedness in the type.** `i32` and `u32` are both wasm i32 and differ only
+  in the instruction an operator selects, so wap has one spelling per operator
+  where Wax has `<`/`<s`/`<u`. The same rule decides `&&` and `||`: logical and
+  short-circuiting on `bool`, bitwise on integers.
+- **`stdlib-wap/`**, ports of two standard library modules, compiled by `wap`'s
+  own tests — the showcase and the regression suite are the same files.
+
+### Known gaps
+
+- `import a.b` is recorded but not resolved: compilation is one file at a time.
+- A value `match` lowers to a comparison chain, never to `dispatch`.
+- `let` immutability, subrange bounds and untyped set literals are not enforced.
 
 ## [0.2.1] — 2026-09-03
 
