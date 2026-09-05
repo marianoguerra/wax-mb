@@ -365,12 +365,24 @@ fn Lowering::has_subtype(self : Lowering, record : String) -> Bool {
 
 ///|
 /// The Wax `as i32_u` family.
+///
+/// The float targets are here for the same reason the integer ones are: each
+/// name is one instruction and the signedness picks it. `f64.convert_i64_s`
+/// and `f64.convert_i64_u` read the same bits and answer different numbers, so
+/// there is nothing for wap to infer -- the source type says how the integer
+/// is signed, not how the conversion should read it. Going the other way,
+/// `x as i32_s` on a float is `i32.trunc_f32_s`, which is why the integer
+/// names already covered the truncations.
 fn signed_cast(name : String) -> (@ast.NumType, @wasm_types.Signage)? {
   match name {
     "i32_s" => Some((I32, Signed))
     "i32_u" => Some((I32, Unsigned))
     "i64_s" => Some((I64, Signed))
     "i64_u" => Some((I64, Unsigned))
+    "f32_s" => Some((F32, Signed))
+    "f32_u" => Some((F32, Unsigned))
+    "f64_s" => Some((F64, Signed))
+    "f64_u" => Some((F64, Unsigned))
     _ => None
   }
 }

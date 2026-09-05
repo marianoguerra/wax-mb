@@ -6,7 +6,7 @@
 // source text on the way to wasm, it becomes `@ast` values directly.
 name = "marianoguerra/wap"
 
-version = "0.2.0"
+version = "0.2.1"
 
 import {
   "marianoguerra/error-report@0.1.0",

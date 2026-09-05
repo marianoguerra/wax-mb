@@ -165,3 +165,52 @@ test "repro: a callback type over a declared type is not a cycle" {
   assert_false(w.contains("FAILED"))
   assert_false(w.contains("ref.cast"))
 }
+
+///|
+/// An integer-to-float conversion. Wax spells it `n as f64_s`, and every one of
+/// the four is a real instruction -- `f64.convert_i64_s` and its siblings -- so
+/// the signedness is not decoration: it names which instruction to emit.
+test "repro: integer to float conversion" {
+  let src =
+    #|module m
+    #|fn f(x :: i64) -> f64:
+    #|  x as f64_s
+    #|fn g(x :: i32) -> f64:
+    #|  x as f64_u
+    #|fn h(x :: i32) -> f32:
+    #|  x as f32_s
+  let wat = try_wat(src)
+  assert_false(wat.contains("FAILED"))
+  assert_true(wat.contains("f64.convert_i64_s"))
+  assert_true(wat.contains("f64.convert_i32_u"))
+  assert_true(wat.contains("f32.convert_i32_s"))
+}
+
+///|
+/// The other direction already worked, because a float truncation is named by
+/// the INTEGER it produces. It saturates: wap has no spelling for the trapping
+/// variant, so every cast it builds is non-strict.
+test "repro: float to integer truncation" {
+  let src =
+    #|module m
+    #|fn f(x :: f64) -> i32:
+    #|  x as i32_s
+  assert_true(try_wat(src).contains("i32.trunc_sat_f64_s"))
+}
+
+///|
+/// A signedness names an integer/float conversion, so neither pair that stays
+/// inside one family is an instruction. Wax refuses both, and wap now reaches
+/// that refusal rather than a different one about a cast with no signedness.
+test "repro: a signed cast that crosses no family is refused" {
+  let same_float =
+    #|module m
+    #|fn f(x :: f64) -> f32:
+    #|  x as f32_s
+  let same_int =
+    #|module m
+    #|fn f(x :: i32) -> i32:
+    #|  x as i32_s
+  assert_true(try_wat(same_float).contains("FAILED"))
+  assert_true(try_wat(same_int).contains("FAILED"))
+}

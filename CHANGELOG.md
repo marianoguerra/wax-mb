@@ -8,6 +8,37 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## [wap 0.2.1] — 2026-09-05
+
+### Fixed
+
+- **An integer cannot be converted to a float.** `x as f64_s` was rejected:
+  `signed_cast` knew the four integer names and nothing else, so a float target
+  fell through to a cast carrying no signedness, which Wax refuses — correctly,
+  since `f64.convert_i64_s` and `f64.convert_i64_u` are different instructions.
+  `f32_s`, `f32_u`, `f64_s` and `f64_u` now lower like their integer siblings.
+  The other direction already worked, because a truncation is named by the
+  integer it produces.
+
+  Nothing in `wap/` or `stdlib-wap/` crosses between an integer and a float —
+  `data/immutable_value` keeps the four numeric arms apart and never converts —
+  which is why a whole standard library went by without reaching it. Found by a
+  port of `tgc/rt` from [tutuca](https://github.com/marianoguerra/tutuca), whose
+  language has one number: every arithmetic operation answers an `f64`, so the
+  crossing is on the first line rather than never.
+
+### Known gaps
+
+Two more, both from the same port, both expressible in Wax and not in wap:
+
+- An imported function cannot be bound to a **named** function type.
+  `import_group` builds an inline signature, so `#[import] fn get_field:
+  tg_get(...)` — which is how a link checks a rec group's own type rather than
+  a structurally identical singleton — has no wap spelling.
+- No mutable module-level globals: `Decl` has `Const` and no `Var`. Porting
+  anything that uses a global as an out-parameter means rethinking it as a
+  tuple return rather than translating it.
+
 ## [wap 0.2.0] — 2026-09-05
 
 The whole Wax standard library, ported. Nine modules, and each port was a

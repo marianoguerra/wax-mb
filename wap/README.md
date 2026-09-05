@@ -52,6 +52,21 @@ and `||`: logical and short-circuiting on `bool`, bitwise on integers.
 Shrubbery's `|` introduces alternatives, so there is no separate bitwise
 spelling to give them.
 
+Conversions are the exception, and keep Wax's spelling:
+
+```
+fn c(x :: i64) -> f64: x as f64_s          // f64.convert_i64_s
+fn d(x :: f64) -> i32: x as i32_s          // i32.trunc_sat_f64_s
+```
+
+A conversion is not an operator on two values of a known type -- it is one
+instruction chosen by how the SOURCE bits are to be read, and the target type
+alone does not say. `f64.convert_i64_s` and `f64.convert_i64_u` answer
+different numbers for the same input, so the suffix stays. It reads the source
+in both directions: `as f64_s` converts an integer, `as i32_s` truncates a
+float. wap builds the non-trapping form, so an out-of-range truncation
+saturates rather than trapping.
+
 ## Modules
 
 Every declaration is private to its module unless it is written `pub`, and a
