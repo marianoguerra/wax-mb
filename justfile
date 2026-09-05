@@ -80,6 +80,17 @@ hashing-test:
 hashing-bench size="4096" rounds="2000":
     tools/hashing-bench.sh {{size}} {{rounds}}
 
+# A wap module imports another by its dotted path, so nothing in `stdlib-wap/`
+# can be checked one file at a time. `tools/wapc` is the `Loader` over a
+# directory that the wap README describes and the library deliberately does not
+# ship -- reading a file costs `moonbitlang/x`.
+#
+# Compile every module in stdlib-wap. `just wap-stdlib collections.hashing` for
+# one, and add `--wat` to see the output.
+[group('dev')]
+wap-stdlib *args:
+    moon run --target native tools/wapc -- {{args}}
+
 # Uses MoonBit state-machine models and a WHATWG TextDecoder UTF-8 oracle,
 # then runs the generated Wax module in Node's WebAssembly GC runtime.
 #

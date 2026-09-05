@@ -1,0 +1,19 @@
+// The driver for `stdlib-wap/`: a `Loader` over the filesystem, which is the
+// one implementation the wap README describes and nothing in the repository
+// had. It is a dev tool rather than part of `wap` itself, for the same reason
+// the Wax CLI is a separate module -- reading files costs `moonbitlang/x`, and
+// a library that only compiles source should not make its consumers pay it.
+import {
+  "marianoguerra/error-report" @er,
+  "marianoguerra/error-report/render",
+  "marianoguerra/wap",
+  "marianoguerra/wap/resolve",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/compile",
+  "marianoguerra/wax/diagnostic",
+  "moonbitlang/core/env",
+  "moonbitlang/x/fs",
+  "moonbitlang/x/sys",
+}
+
+pkgtype(kind: "executable")
