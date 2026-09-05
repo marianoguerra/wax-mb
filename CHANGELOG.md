@@ -8,6 +8,60 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## [wap 0.2.0] — 2026-09-05
+
+The whole Wax standard library, ported. Nine modules, and each port was a
+question put to the compiler rather than an exercise in retyping — three of
+them came back as gaps in wap rather than as mistakes in the port, which is
+what most of this release is.
+
+### Changed
+
+- **An import's alias is the name the module declares, not the last segment of
+  its path.** `import data.immutable_value` brings in a module that calls
+  itself `jv`, and everything after it says `jv.i32`. The code carried a
+  comment saying exactly this directly above the line that took the path's last
+  segment, and the README said it too; both are now true. **This rebinds names
+  in existing programs** whose declared module name and file name differ.
+- **Nominal types are grouped by strongly connected component**, by Tarjan, and
+  emitted in dependency order — not all into one `rec` group. Wax will not
+  coerce a function's name to a function type declared inside a recursion
+  group, so a single group made `phm_each(m, state, entry_fn)` an error in any
+  module with more than one type, while working in a module with one; that is
+  Wax's rule and it stands, but types which do not refer to each other have no
+  business sharing a group and provoking it. A record holding a callback that
+  takes the record keeps the old behaviour. Both halves have a test.
+- **A function type that names no other declared type is emitted on its own**,
+  ahead of the group, where a record inside the group can still refer to it.
+
+### Added
+
+- **A record literal can name a qualified type**: `jv.record_field{...}`, which
+  is what a module that builds another's values has to write. A type annotation
+  already accepted the qualified name, and nothing else gives braces a meaning
+  after a field access, so the constructor is no longer the one place the name
+  cannot be written.
+- **`stdlib-wap/` is complete**: the persistent vector, hash map and hash set
+  and their transient halves, `text/utf8`, `collections/hashing`,
+  `data/immutable_value`, `data/record`, and the two examples. The embedded
+  copies in `wap/stdlib_test.mbt` are generated from those sources rather than
+  pasted, and CI regenerates and diffs them — they exist because `moon test`
+  also runs on wasm, where a test cannot read a file, so this module carries
+  its own evidence. [`stdlib-wap/README.md`](../stdlib-wap/README.md) records
+  what each port changed and why.
+- **The examples are run, not merely compiled.** Both are built to wasm and
+  executed under Node, and return what their `.wax` originals return.
+
+### Known gaps
+
+- An array literal names its type and there is no spelling for a qualified one:
+  `hashing.bytes[0 ** n]` reads `hashing` as the array type.
+- No labelled block. `break` and `continue` take a label, but Wax's
+  `'unit: do { ... br 'unit; }` has to become a multi-arm `if`.
+- Unchanged from 0.1.0: a value `match` lowers to a comparison chain rather
+  than to `dispatch`, and `let` immutability, subrange bounds and untyped set
+  literals are not enforced.
+
 ## [was 0.1.0] — 2026-09-05
 
 The first release of `marianoguerra/was`: Wax in
