@@ -16,6 +16,7 @@ and covers all three.
 |---|---|---|
 | `lib/` | `marianoguerra/wax` | yes -- **and it has no dependencies**; keep it that way |
 | `cli/` | `marianoguerra/wax-cli` | yes; `moonbitlang/x` lives here |
+| `was/` | `marianoguerra/was` | yes; depends on `wax`, `shrubbery` and `error-report` |
 | `wap/` | `marianoguerra/wap` | yes; depends on `wax`, `shrubbery` and `error-report` |
 | `.` (root) | `marianoguerra/wax-dev` | no: `test/`, `tools/`, `printer_pp/` |
 
@@ -35,7 +36,7 @@ Two rules follow from the split, and both are load-bearing:
   name that has to stay public. Do not "fix" a harness import by widening
   `lib/`'s surface without deciding that the name is a promise.
 
-`wap/` is a front end and never a back end: it reaches Wax through
+`was/` and `wap/` are front ends and never back ends: it reaches Wax through
 `marianoguerra/wax/ast`, `.../ast/build` and `.../compile`, and never through
 the Wax parser. A wap program does not become Wax source text on its way to
 wasm. `wap/ast` additionally does not import `marianoguerra/wax` at all, so a

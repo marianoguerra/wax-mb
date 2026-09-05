@@ -1,12 +1,61 @@
 # Changelog
 
-All notable changes to `marianoguerra/wax`, `marianoguerra/wax-cli` and
-`marianoguerra/wap`.
+All notable changes to `marianoguerra/wax`, `marianoguerra/wax-cli`,
+`marianoguerra/was` and `marianoguerra/wap`.
 
 `wax` and `wax-cli` are versioned together and released from one repository, so
-a release note here covers both unless it says otherwise. `wap` is a separate
-package on its own version line: it depends on a published `wax` rather than on
-this tree, and a wap release does not imply a wax one.
+a release note here covers both unless it says otherwise. `was` and `wap` are
+separate packages on their own version lines: each depends on a published `wax`
+rather than on this tree, and neither release implies a wax one.
+
+## [was 0.1.0] — 2026-09-05
+
+The first release of `marianoguerra/was`: Wax in
+[shrubbery](https://docs.racket-lang.org/shrubbery/) notation. A second reader
+for the same language, producing the same AST — not a language above Wax, and
+not a subset of it.
+
+### Added
+
+- **The reader** (`marianoguerra/was/read`): types with `open`, supertypes,
+  `descriptor`/`describes` and the `..` splice; `rec` groups; functions,
+  globals, tags, memories, tables, element and data segments, import groups,
+  module features and `cfg` conditionals; and for instructions `let`,
+  assignment and its compound forms, `:=`, every binary and unary operator,
+  `as`/`is`/`on`, casts including `as i32_u` and `as ?descriptor(d)`, struct and
+  array literals in all four array forms, field and element access and
+  assignment, calls, labelled arguments, `if`, `do`, `loop`, `while` with a
+  step, `match`, `dispatch`, `try`/`catch` and `try on [...]`, the whole `br`
+  family, `return`, `become`, `throw`, `throw_ref` and `suspend`.
+- **Spans mapped rather than synthesised**, so a Wax type error found after the
+  read lands on the `.was` line that caused it.
+- **`stdlib-was/`**, translations compiled beside their originals.
+
+### Notation
+
+Five characters were already spoken for, and every difference from Wax follows
+from one of them: `:` opens a block, so annotations take `::` and bodies take
+indentation; `'…'` is a bracket pair, so labels take `~` and character literals
+take `char"A"`; `#` is reserved, so attributes become prefix modifiers; a bare
+`|` introduces alternatives, so bitwise or takes `||` and the array forms move
+their type outside the brackets; and no operator may contain a letter, so
+`<s`/`<u` become `<~`/`<$`. A bare operator stays the one Wax leaves
+unannotated, so all three of its forms survive and the notation changes no
+meanings.
+
+### Tested by byte equality
+
+Ten corpus programs and the whole of `stdlib/collections/hashing.wax` are
+compiled in both notations and their wasm compared byte for byte — which fails
+on a wrong signedness, a wrong field order, a wrong label, or an instruction in
+the wrong place.
+
+### Known gaps
+
+- No printer: was reads, and does not render a Wax AST back as shrubbery.
+- `?:` is gone; `if c | a | b` is the expression form.
+- A one-element array literal is told from an index by whether the name is a
+  declared type, so a local shadowing a type name reads as the type.
 
 ## [wap 0.1.0] — 2026-09-05
 

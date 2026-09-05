@@ -1,0 +1,18 @@
+// The was front end.
+//
+// `read` is the interesting entry point: it stops at the Wax AST, which is
+// where a was file and a .wax file become the same thing.
+import {
+  "marianoguerra/error-report" @er,
+  "marianoguerra/was/read",
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/compile",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/feature",
+  "marianoguerra/wax/warning",
+}
+
+import {
+  "moonbitlang/core/test",
+  "marianoguerra/wax",
+} for "test"

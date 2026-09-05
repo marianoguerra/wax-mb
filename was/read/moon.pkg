@@ -1,0 +1,21 @@
+// Shrubbery notation in, Wax AST out.
+//
+// There is no intermediate representation: a was group becomes an `@ast` node
+// directly, which is the whole claim -- was is a notation for Wax, not a
+// language that compiles to it.
+import {
+  "marianoguerra/error-report" @er,
+  "marianoguerra/shrubbery/ast" @sh,
+  "marianoguerra/shrubbery/basic" @shbasic,
+  "marianoguerra/shrubbery/error" @sherror,
+  "marianoguerra/shrubbery/parser" @shparser,
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/wasm/types" @wasm_types,
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/string",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

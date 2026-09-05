@@ -15,15 +15,16 @@ fn add(x: i32, y: i32) -> i32 {
 
 and compiles to the same bytecode as the equivalent stack-machine WAT.
 
-## Four modules
+## Five modules
 
-This repository is a `moon.work` workspace. Three of its modules are published;
-the fourth is the harness that keeps them honest.
+This repository is a `moon.work` workspace. Four of its modules are published;
+the fifth is the harness that keeps them honest.
 
 | | | |
 |---|---|---|
 | [`lib/`](lib/README.md) | `marianoguerra/wax` | the language. **No dependencies** outside `moonbitlang/core`. |
 | [`cli/`](cli/README.md) | `marianoguerra/wax-cli` | the `wax-mb` binary: convert, format, check. |
+| [`was/`](was/README.md) | `marianoguerra/was` | Wax in [shrubbery](https://docs.racket-lang.org/shrubbery/) notation: a second reader, producing the same AST. |
 | [`wap/`](wap/README.md) | `marianoguerra/wap` | **W**eb**A**ssembly's **P**ascal: an Oberon-level language on shrubbery notation, compiled through the Wax AST. |
 | `.` (the root) | `marianoguerra/wax-dev` | not published: the differential suite, the corpus, the porting tools, the alternative layout engine. |
 
@@ -57,7 +58,32 @@ function's identifiers cannot share one location.
 
 See [`lib/README.md`](lib/README.md) for both paths in full.
 
-## A third way in: wap
+## A third way in: was
+
+[`was/`](was/README.md) is the same language in
+[shrubbery](https://docs.racket-lang.org/shrubbery/) notation — the same AST,
+the same checker, the same bytes:
+
+```
+type ints = [i32]
+
+export "sum" fn sum(arr :: &ints) -> i32:
+  let total :: i32 = 0
+  let i :: i32 = 0
+  while i <~ arr.length():
+    total += arr[i]
+    i += 1
+  total
+```
+
+Everything that changed was forced by the notation: `:` opens a block so
+annotations take `::`, `'…'` is a bracket pair so labels take `~`, a bare `|`
+introduces alternatives so bitwise or takes `||`, and no shrubbery operator may
+contain a letter so `<s`/`<u` become `<~`/`<$`. `was`'s tests compile ten corpus
+programs and the whole of `stdlib/collections/hashing.wax` in both notations and
+compare the emitted wasm byte for byte.
+
+## A fourth way in: wap
 
 [`wap/`](wap/README.md) is a higher-level surface for the same back end, in
 [shrubbery](https://docs.racket-lang.org/shrubbery/) notation rather than Wax's

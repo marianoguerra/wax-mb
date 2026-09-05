@@ -1,0 +1,67 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/was/read"
+
+import {
+  "marianoguerra/error-report",
+}
+
+// Values
+pub fn as_id(@marianoguerra/shrubbery/ast.Node) -> String?
+
+pub fn as_kw(@marianoguerra/shrubbery/ast.Node) -> String?
+
+pub fn as_op(@marianoguerra/shrubbery/ast.Node) -> String?
+
+pub fn as_str(@marianoguerra/shrubbery/ast.Node) -> String?
+
+pub fn[T] fail_at(String, @error-report.Span, source~ : @error-report.SourceId, help? : String) -> T raise ReadError
+
+pub fn has_source(@error-report.Span) -> Bool
+
+pub fn is_id(@marianoguerra/shrubbery/ast.Node, String) -> Bool
+
+pub fn is_op(@marianoguerra/shrubbery/ast.Node, String) -> Bool
+
+pub fn node_span(@marianoguerra/shrubbery/ast.Node) -> @error-report.Span
+
+pub let nowhere : @error-report.Span
+
+pub fn raw_text(@marianoguerra/shrubbery/ast.Node) -> String
+
+pub fn read_module(String, fname? : String) -> Read raise ReadError
+
+pub fn split(@marianoguerra/shrubbery/ast.Node) -> Parts
+
+pub fn terms_span(ArrayView[@marianoguerra/shrubbery/ast.Node]) -> @error-report.Span
+
+pub fn to_span(@marianoguerra/shrubbery/basic.Span) -> @error-report.Span
+
+// Errors
+pub(all) suberror ReadError {
+  ReadError(@error-report.Report)
+}
+pub fn ReadError::report(Self) -> @error-report.Report
+
+// Types and methods
+pub(all) struct Parts {
+  head : Array[@marianoguerra/shrubbery/ast.Node]
+  block : Array[@marianoguerra/shrubbery/ast.Node]?
+  alts : Array[Array[@marianoguerra/shrubbery/ast.Node]]?
+  span : @error-report.Span
+}
+
+pub struct Read {
+  fields : Array[@marianoguerra/wax/basic.Annotated[@marianoguerra/wax/ast.ModuleField[@marianoguerra/wax/basic.Location], @marianoguerra/wax/basic.Location]]
+  sources : @error-report.Sources
+  source : @error-report.SourceId
+  diagnostics : Array[@error-report.Report]
+}
+pub fn Read::diagnostics(Self) -> Array[@error-report.Report]
+pub fn Read::fields(Self) -> Array[@marianoguerra/wax/basic.Annotated[@marianoguerra/wax/ast.ModuleField[@marianoguerra/wax/basic.Location], @marianoguerra/wax/basic.Location]]
+pub fn Read::source(Self) -> @error-report.SourceId
+pub fn Read::sources(Self) -> @error-report.Sources
+
+// Type aliases
+pub using @error-report {type Span}
+
+// Traits

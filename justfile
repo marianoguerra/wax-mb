@@ -424,11 +424,12 @@ parser-messages: build
 # the repository root), so they cannot end up in either package by accident --
 # see moon.work.
 #
-# List the files the three published modules would ship.
+# List the files the four published modules would ship.
 [group('ship')]
 package:
     moon -C lib package --list
     moon -C cli package --list
+    moon -C was package --list
     moon -C wap package --list
 
 # Everything `publish` does except the upload, including extracting the packaged
@@ -449,20 +450,22 @@ package:
 publish-dry: ci
     tools/publish-dry.sh lib
     tools/publish-dry.sh cli
+    tools/publish-dry.sh was
     tools/publish-dry.sh wap
 
-# The library first: wax-cli and wap both pin a version of it that must already
-# exist on the registry. Refresh the registry after publishing the library so
+# The library first: wax-cli, was and wap all pin a version of it that must
+# already exist on the registry. Refresh the registry after publishing the library so
 # their build plans can resolve that exact newly-published version.
 #
 # `-C` on both, for the reason above: never a bare `moon publish` here.
 #
-# Publish all three modules to mooncakes.io, after the full CI gate. Not reversible.
+# Publish all four modules to mooncakes.io, after the full CI gate. Not reversible.
 [group('ship')]
 publish: ci
     moon -C lib publish
     moon update
     moon -C cli publish
+    moon -C was publish
     moon -C wap publish
 
 # Serve the API documentation at http://127.0.0.1:3000.
