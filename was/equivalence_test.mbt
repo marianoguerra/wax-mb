@@ -7,40 +7,9 @@
 // wrong label, or an instruction in the wrong place.
 
 ///|
-/// Compile both and require the same bytes.
-fn same(name : String, wax_src : String, was_src : String) -> Unit raise {
-  let from_wax = match @wax.compile_string(wax_src, fname=name + ".wax") {
-    Ok(b) => b
-    Err(_) => {
-      fail(name + ": the .wax original did not compile")
-      return
-    }
-  }
-  let from_was = match @was.compile_string(was_src, fname=name + ".was") {
-    Ok(b) => b
-    Err(d) => {
-      for r in d.was {
-        println(name + " WAS: " + r.message)
-      }
-      let sb = StringBuilder()
-      let sink = @diagnostic.buffer_sink(sb)
-      let theme = @diagnostic.get_theme(is_tty=false)
-      for r in d.wax {
-        @diagnostic.output_error(sink, theme, Human, Some(was_src), r)
-      }
-      println(sb.to_string())
-      fail(name + ": the .was translation did not compile")
-      return
-    }
-  }
-  if from_was != from_wax {
-    fail(name + ": the two notations produced different wasm")
-  }
-}
-
-///|
-test "factorial: if with a result type" {
-  same(
+/// Every pair: a corpus program and its was translation.
+let cases : Array[(String, String, String)] = [
+  (
     "factorial",
     (
       #|#[export = "factorial"]
@@ -58,12 +27,8 @@ test "factorial: if with a result type" {
       #|    1
       #|  | n * factorial(n - 1)
     ),
-  )
-}
-
-///|
-test "find_first_zero: an array, a labelled loop and a branch" {
-  same(
+  ),
+  (
     "find_first_zero",
     (
       #|type ints = [i32];
@@ -100,12 +65,8 @@ test "find_first_zero: an array, a labelled loop and a branch" {
       #|    br ~search
       #|  unreachable
     ),
-  )
-}
-
-///|
-test "rgb_channel: a dispatch table" {
-  same(
+  ),
+  (
     "rgb_channel",
     (
       #|#[export = "rgb_channel"]
@@ -126,12 +87,8 @@ test "rgb_channel: a dispatch table" {
       #|  | ~green: return (value & 255) << 8
       #|  | ~red: return (value & 255) << 16
     ),
-  )
-}
-
-///|
-test "sum_list: records, a type match and a cast" {
-  same(
+  ),
+  (
     "sum_list",
     (
       #|type cell = { value: i32 };
@@ -156,12 +113,8 @@ test "sum_list: records, a type match and a cast" {
       #|  | x :: &cell: return x.value
       #|  | _: return 0
     ),
-  )
-}
-
-///|
-test "make_point: a struct literal with punned fields" {
-  same(
+  ),
+  (
     "make_point",
     (
       #|type point = { x: i32, y: i32 };
@@ -189,12 +142,8 @@ test "make_point: a struct literal with punned fields" {
       #|  let dy = p1.y - p2.y
       #|  dx * dx + dy * dy
     ),
-  )
-}
-
-///|
-test "try_divide: tags, throw and a catch arm" {
-  same(
+  ),
+  (
     "try_divide",
     (
       #|tag divide_by_zero();
@@ -231,12 +180,8 @@ test "try_divide: tags, throw and a catch arm" {
       #|    safe_divide(a, b)
       #|  | divide_by_zero: 0
     ),
-  )
-}
-
-///|
-test "compute_and_log: an import group" {
-  same(
+  ),
+  (
     "compute_and_log",
     (
       #|import "env" {
@@ -261,12 +206,8 @@ test "compute_and_log: an import group" {
       #|  log(result)
       #|  result
     ),
-  )
-}
-
-///|
-test "sum_bytes: linear memory and an unsigned comparison" {
-  same(
+  ),
+  (
     "sum_bytes",
     (
       #|memory mem: i32 [1];
@@ -293,12 +234,8 @@ test "sum_bytes: linear memory and an unsigned comparison" {
       #|    p += 1
       #|  total
     ),
-  )
-}
-
-///|
-test "counter: a mutable field and a struct set" {
-  same(
+  ),
+  (
     "counter",
     (
       #|type counter = { value: mut i32 };
@@ -330,12 +267,8 @@ test "counter: a mutable field and a struct set" {
       #|export "get_value" fn get_value(c :: &counter) -> i32:
       #|  c.value
     ),
-  )
-}
-
-///|
-test "inference: literals that take their type from the context" {
-  same(
+  ),
+  (
     "inference",
     (
       #|type point = { x: i32, y: i32 };
@@ -365,5 +298,61 @@ test "inference: literals that take their type from the context" {
       #|  let a :: &ints = ints[0 ** 16]
       #|  a
     ),
-  )
+  ),
+]
+
+///|
+/// Compile both and require the same bytes.
+fn same(name : String, wax_src : String, was_src : String) -> Unit raise {
+  let from_wax = match @wax.compile_string(wax_src, fname=name + ".wax") {
+    Ok(b) => b
+    Err(_) => {
+      fail(name + ": the .wax original did not compile")
+      return
+    }
+  }
+  let from_was = match @was.compile_string(was_src, fname=name + ".was") {
+    Ok(b) => b
+    Err(d) => {
+      for r in d.was {
+        println(name + " WAS: " + r.message)
+      }
+      let sb = StringBuilder()
+      let sink = @diagnostic.buffer_sink(sb)
+      let theme = @diagnostic.get_theme(is_tty=false)
+      for r in d.wax {
+        @diagnostic.output_error(sink, theme, Human, Some(was_src), r)
+      }
+      println(sb.to_string())
+      fail(name + ": the .was translation did not compile")
+      return
+    }
+  }
+  if from_was != from_wax {
+    fail(name + ": the two notations produced different wasm")
+  }
+}
+
+///|
+test "every corpus pair: the two notations are one module" {
+  for c in cases {
+    let (name, wax_src, was_src) = c
+    same(name, wax_src, was_src)
+  }
+}
+
+///|
+test "every was translation survives a round trip through the printer" {
+  for c in cases {
+    let (name, _, was_src) = c
+    roundtrip(name, was_src)
+  }
+}
+
+///|
+test "wax -f was: every corpus program, printed from Wax's own AST" {
+  for c in cases {
+    let (name, wax_src, _) = c
+    wax_to_was(name, wax_src)
+  }
 }

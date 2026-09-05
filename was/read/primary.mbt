@@ -190,6 +190,10 @@ fn Reader::braced(
     Some(e) =>
       match e.desc {
         Get(n) => (Some(n), None)
+        // `descriptor(d){...}` -- the descriptor is `d`, not the call that
+        // spells it. Wax writes this `{ descriptor(d)| ... }`.
+        Call(f, args) if f.desc is Get({ name: "descriptor", .. }) &&
+          args.length() == 1 => (None, Some(args[0]))
         _ => (None, Some(e))
       }
   }

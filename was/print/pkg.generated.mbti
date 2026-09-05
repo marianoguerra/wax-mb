@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/was/print"
+
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/wasm/types",
+}
+
+// Values
+pub fn block_type(@ast.FuncType) -> String
+
+pub fn expr(@ast.Instr[@basic.Location], min_prec? : Int) -> String
+
+pub fn heaptype(@types.HeapType[@ast.Ident]) -> String
+
+pub fn instr(@ast.Instr[@basic.Location]) -> String
+
+pub fn module_(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> String
+
+pub fn muttype(@types.MutType[@types.StorageType[@ast.Ident]]) -> String
+
+pub fn params(@ast.FuncType) -> String
+
+pub fn reftype(@types.RefType[@ast.Ident]) -> String
+
+pub fn results(@ast.FuncType) -> String
+
+pub fn signature(@ast.FuncType) -> String
+
+pub fn storagetype(@types.StorageType[@ast.Ident]) -> String
+
+pub fn valtype(@types.ValType[@ast.Ident]) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

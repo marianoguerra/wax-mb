@@ -1,0 +1,15 @@
+// The Wax AST, printed as shrubbery notation.
+//
+// This is the other half of the claim `was` makes. The reader says a .was file
+// denotes a Wax AST; the printer says every Wax AST can be written as one, and
+// the two together say the notation is total. The test is a round trip:
+// read, print, read again, and compile both to the same bytes.
+import {
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/wasm/types" @wasm_types,
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

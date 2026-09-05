@@ -56,6 +56,39 @@ fn Reader::form(
       Some(self.instr(Suspend(name, args), at))
     }
     "throw_ref" => Some(self.instr(ThrowRef(self.expr_all(rest)), at))
+    // Wax spells this `c ? a : b`, whose `:` would open a block here.
+    "select" => {
+      if rest.length() != 1 {
+        fail_at(
+          "`select` takes three parenthesised expressions",
+          at,
+          source=self.src,
+        )
+      }
+      match rest[0].it {
+        Parens(gs) =>
+          if gs.length() == 3 {
+            Some(
+              self.instr(
+                Select(self.group(gs[0]), self.group(gs[1]), self.group(gs[2])),
+                at,
+              ),
+            )
+          } else {
+            fail_at(
+              "`select` takes three expressions",
+              node_span(rest[0]),
+              source=self.src,
+            )
+          }
+        _ =>
+          fail_at(
+            "`select` takes three parenthesised expressions",
+            at,
+            source=self.src,
+          )
+      }
+    }
     "br" => {
       let (l, r) = self.label_and_rest(rest, "br")
       Some(

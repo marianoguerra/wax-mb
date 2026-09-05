@@ -21,6 +21,10 @@ pub fn compile_string_to_wat(String, fname? : String, features? : @feature.Set, 
 
 pub fn fields(String, fname? : String) -> Result[Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@error-report.Report]]
 
+pub fn format_string(String, fname? : String) -> Result[String, Array[@error-report.Report]]
+
+pub fn print_module(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> String
+
 pub fn to_wax(String, fname? : String) -> Result[@read.Read, Array[@error-report.Report]]
 
 // Errors

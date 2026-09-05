@@ -101,3 +101,30 @@ pub fn fields(
       }
   }
 }
+
+///|
+/// Print a Wax module as was source.
+///
+/// This is the other half of the notation: `fields` says what a .was file
+/// denotes, and this says that every Wax module can be written as one. The
+/// tests close the loop -- read, print, read again, and compare the wasm --
+/// which is what makes `wax -f was` and `wap -f was` something other than a
+/// hope.
+pub fn print_module(fields : @ast.LocModule) -> String {
+  @print.module_(fields)
+}
+
+///|
+/// Reformat was source: read it and print it back.
+///
+/// The type checker does not run, because a canonical layout is a front-end
+/// question and a module that does not check still has one.
+pub fn format_string(
+  src : String,
+  fname? : String = "input.was",
+) -> Result[String, Array[@er.Report]] {
+  match fields(src, fname~) {
+    Err(rs) => Err(rs)
+    Ok(f) => Ok(@print.module_(f))
+  }
+}

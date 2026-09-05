@@ -4,6 +4,7 @@
 // where a was file and a .wax file become the same thing.
 import {
   "marianoguerra/error-report" @er,
+  "marianoguerra/was/print",
   "marianoguerra/was/read",
   "marianoguerra/wax/ast",
   "marianoguerra/wax/compile",
