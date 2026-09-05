@@ -13,7 +13,16 @@
 
 module hashing
 
-type bytes = [u8]
+pub type bytes = [u8]
+
+// A byte array of a given length, zero filled.
+//
+// It lives here because the type does. An array literal names its type, and
+// wap has no spelling for a qualified one -- `hashing.bytes[0 ** n]` reads
+// `hashing` as the array type -- so a module that wants one of these asks for
+// it rather than writing it out.
+pub fn bytes_new(length :: i32) -> bytes:
+  bytes[0 ** length]
 
 fn mix_i32(value :: u32) -> u32:
   var mixed = value * 0xcc9e2d51
@@ -37,7 +46,7 @@ fn finalize(state :: u32, byte_length :: u32) -> u32:
 fn i32_seeded(value :: u32, seed :: u32) -> u32:
   finalize(add_i32(seed, value), 4)
 
-export "hash_i32" fn i32_value(value :: u32) -> u32:
+export "hash_i32" pub fn i32_value(value :: u32) -> u32:
   i32_seeded(value, 0)
 
 fn bytes_seeded(data :: bytes, seed :: u32) -> u32:
@@ -61,19 +70,19 @@ fn bytes_seeded(data :: bytes, seed :: u32) -> u32:
     state ^= mix_i32(tail)
   finalize(state, length)
 
-export "hash_bytes" fn bytes_value(data :: bytes) -> u32:
+export "hash_bytes" pub fn bytes_value(data :: bytes) -> u32:
   bytes_seeded(data, 0)
 
-fn i31_key(key :: eq) -> u32:
+pub fn i31_key(key :: eq) -> u32:
   i32_value(key as i32_s)
 
-fn equal_i31_key(left :: eq, right :: eq) -> bool:
+pub fn equal_i31_key(left :: eq, right :: eq) -> bool:
   (left as i32_s) == (right as i32_s)
 
-fn bytes_key(key :: eq) -> u32:
+pub fn bytes_key(key :: eq) -> u32:
   bytes_value(key as bytes)
 
-export "equal_bytes" fn equal_bytes_key(left :: eq, right :: eq) -> bool:
+export "equal_bytes" pub fn equal_bytes_key(left :: eq, right :: eq) -> bool:
   if left == right:
     return true
   let a = left as bytes

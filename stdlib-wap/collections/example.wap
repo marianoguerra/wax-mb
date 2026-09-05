@@ -1,0 +1,36 @@
+// The collections example, ported from `stdlib/collections/example.wax`.
+//
+// The .wax file opens with an instruction rather than a comment:
+//
+//   Concatenate persistent_hash_map.wax and persistent_vector.wax before this
+//   file, then compile the result as one Wax module.
+//
+// That instruction is what wap's module system replaces, so this file is the
+// smallest thing in the ported library that shows the difference. It names
+// what it needs, the names stay separate, and nothing has to be assembled in
+// the right order by hand.
+
+module example
+
+import collections.persistent_hash_map
+import collections.persistent_vector
+
+type key = { id :: i32 }
+
+fn hash(k :: eq) -> u32:
+  (k as key).id
+
+fn equal(left :: eq, right :: eq) -> bool:
+  (left as key).id == (right as key).id
+
+export "collections_example" fn run() -> i32:
+  let k = key{id: 42}
+  let map = persistent_hash_map.assoc(
+    persistent_hash_map.empty(hash, equal),
+    k,
+    7 as i31,
+  )
+  let (found, value) = persistent_hash_map.get(map, k)
+  let vector = persistent_vector.push(persistent_vector.empty(), value)
+  let present = if found | 1 | 0
+  present + (persistent_vector.at(vector, 0)! as i32_s)

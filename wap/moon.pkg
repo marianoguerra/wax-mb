@@ -19,3 +19,5 @@ import {
   "moonbitlang/core/test",
   "marianoguerra/wap/ast" @wapast,
 } for "test"
+
+formatter(ignore: [ "stdlib_test.mbt" ])

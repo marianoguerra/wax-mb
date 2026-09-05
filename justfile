@@ -91,6 +91,15 @@ hashing-bench size="4096" rounds="2000":
 wap-stdlib *args:
     moon run --target native tools/wapc -- {{args}}
 
+# The wap module's own tests compile the same sources, and cannot read files --
+# `moon test` runs on wasm too -- so they carry them as string literals. This
+# rewrites those from `stdlib-wap/`, and CI diffs the result.
+#
+# Re-embed stdlib-wap into wap's own test suite.
+[group('dev')]
+wap-stdlib-embed:
+    tools/gen-stdlib-test.py
+
 # Uses MoonBit state-machine models and a WHATWG TextDecoder UTF-8 oracle,
 # then runs the generated Wax module in Node's WebAssembly GC runtime.
 #
@@ -192,7 +201,10 @@ ci:
     git diff --exit-code
     moon fmt
     git diff --exit-code
+    tools/gen-stdlib-test.py
+    git diff --exit-code
     moon test --target all
+    moon run --target native tools/wapc
     tools/collections-test.sh
     tools/hashing-test.sh
     tools/stdlib-test.sh

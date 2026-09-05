@@ -28,7 +28,7 @@ type node = {
   slots :: mut slots,
 }
 
-type vector = {
+pub type vector = {
   count :: i32,
   shift :: i32,
   root :: node,
@@ -111,10 +111,10 @@ fn pop_tail(level :: i32, n :: node, index :: i32) -> node?:
   out.slots[subidx] = null
   out
 
-export "pv_empty" fn empty() -> vector:
+export "pv_empty" pub fn empty() -> vector:
   vector{count: 0, shift: shift_bits, root: node_new(null), tail: slots[null ** 0]}
 
-export "pv_count" fn count(v :: vector) -> i32:
+export "pv_count" pub fn count(v :: vector) -> i32:
   v.count
 
 fn get(v :: vector, index :: i32) -> (i32, eq?):
@@ -125,13 +125,13 @@ fn get(v :: vector, index :: i32) -> (i32, eq?):
   let found = array_for(v, index)
   (1, found[index & mask])
 
-export "pv_at" fn at(v :: vector, index :: i32) -> eq?:
+export "pv_at" pub fn at(v :: vector, index :: i32) -> eq?:
   let (ok, value) = get(v, index)
   if ok == 0:
     unreachable
   value
 
-export "pv_push" fn push(v :: vector, value :: eq?) -> vector:
+export "pv_push" pub fn push(v :: vector, value :: eq?) -> vector:
   if v.count == 0x7fffffff:
     unreachable
   if v.tail.len() < branching:
@@ -155,7 +155,7 @@ export "pv_push" fn push(v :: vector, value :: eq?) -> vector:
   | root = push_tail(shift, v.root, tail_node, v.count - 1)
   vector{count: v.count + 1, shift: shift, root: root, tail: slots[value]}
 
-export "pv_assoc" fn assoc(v :: vector, index :: i32, value :: eq?) -> vector:
+export "pv_assoc" pub fn assoc(v :: vector, index :: i32, value :: eq?) -> vector:
   if index == v.count:
     return push(v, value)
   if index < 0:
@@ -186,7 +186,7 @@ fn peek(v :: vector) -> (i32, eq?):
     return (0, null)
   (1, v.tail[v.tail.len() - 1])
 
-export "pv_pop" fn pop(v :: vector) -> vector:
+export "pv_pop" pub fn pop(v :: vector) -> vector:
   if v.count == 0:
     unreachable
   if v.count == 1:
@@ -208,6 +208,6 @@ export "pv_pop" fn pop(v :: vector) -> vector:
       shift -= shift_bits
   vector{count: v.count - 1, shift: shift, root: root, tail: new_tail}
 
-export "pv_each" fn each(v :: vector, context :: eq?, seen :: visit):
+export "pv_each" pub fn each(v :: vector, context :: eq?, seen :: visit):
   for i in 0 ..< v.count:
     seen(context, i, at(v, i))

@@ -1,0 +1,291 @@
+// Owned UTF-8 strings, ported from `stdlib/text/utf8.wax`.
+//
+// Construction validates and copies. The copy is not a policy choice: a
+// WebAssembly GC array cannot be filled dynamically once it is declared
+// immutable, so the type owns a mutable byte array and never lets it out. The
+// .wax file says to treat `storage_internal` as opaque after vendoring; here
+// the module says it, because a field of a `pub type` is still only reachable
+// through this module's own functions.
+//
+// One shape from the original could not be carried over. Wax has labelled
+// blocks, and the validator uses one as a `switch`:
+//
+//     'unit: do {
+//       if first <=u 0x7f { i += 1; br 'unit; }
+//       ...
+//     }
+//
+// wap has labelled `break` and `continue` but no labelled block, so each of
+// those becomes an arm of a multi-arm `if`, which is what the block was
+// standing in for. The arms are in the same order and the bounds are the same
+// ones -- Unicode Table 3-7's well-formed byte ranges.
+
+module utf8
+
+import collections.hashing
+
+type visit = fn(eq?, i32, i32, u32)
+
+pub type string = {
+  storage_internal :: hashing.bytes,
+  byte_length :: i32,
+  codepoint_length :: i32,
+  hash :: u32,
+}
+
+fn continuation(byte :: u32) -> bool:
+  if byte < 0x80:
+    return false
+  if byte > 0xbf:
+    return false
+  true
+
+// The answer is `(well_formed, codepoints)`: one pass decides both, and a
+// caller that has already validated does not pay for a second walk.
+fn validate(data :: hashing.bytes) -> (bool, i32):
+  var i = 0
+  var count = 0
+  let length = data.len()
+  while i < length:
+    let first :: u32 = data[i]
+    if
+    | first <= 0x7f:
+        i += 1
+    | first <= 0xc1:
+        return (false, 0)
+    | first <= 0xdf:
+        if i + 1 >= length:
+          return (false, 0)
+        if !continuation(data[i + 1]):
+          return (false, 0)
+        i += 2
+    | first <= 0xef:
+        if i + 2 >= length:
+          return (false, 0)
+        let second :: u32 = data[i + 1]
+        if !continuation(second):
+          return (false, 0)
+        if !continuation(data[i + 2]):
+          return (false, 0)
+        if first == 0xe0:
+          if second < 0xa0:
+            return (false, 0)
+        if first == 0xed:
+          if second > 0x9f:
+            return (false, 0)
+        i += 3
+    | first <= 0xf4:
+        if i + 3 >= length:
+          return (false, 0)
+        let second :: u32 = data[i + 1]
+        if !continuation(second):
+          return (false, 0)
+        if !continuation(data[i + 2]):
+          return (false, 0)
+        if !continuation(data[i + 3]):
+          return (false, 0)
+        if first == 0xf0:
+          if second < 0x90:
+            return (false, 0)
+        if first == 0xf4:
+          if second > 0x8f:
+            return (false, 0)
+        i += 4
+    | _:
+        return (false, 0)
+    count += 1
+  (true, count)
+
+fn copy_storage(data :: hashing.bytes, start :: i32, length :: i32) -> hashing.bytes:
+  let out = hashing.bytes_new(length)
+  if length != 0:
+    out.copy(0, data, start, length)
+  out
+
+fn new_valid(data :: hashing.bytes, codepoints :: i32) -> string:
+  let owned = copy_storage(data, 0, data.len())
+  string{
+    storage_internal: owned,
+    byte_length: owned.len(),
+    codepoint_length: codepoints,
+    hash: hashing.bytes_value(owned),
+  }
+
+export "utf8_try_from_bytes" pub fn try_from_bytes(data :: hashing.bytes) -> (bool, string?):
+  let (valid, codepoints) = validate(data)
+  if !valid:
+    return (false, null)
+  (true, new_valid(data, codepoints))
+
+export "utf8_from_bytes" pub fn from_bytes(data :: hashing.bytes) -> string:
+  let (valid, value) = try_from_bytes(data)
+  if !valid:
+    unreachable
+  value!
+
+export "utf8_empty" pub fn empty() -> string:
+  new_valid(hashing.bytes_new(0), 0)
+
+export "utf8_copy_bytes" pub fn copy_bytes(value :: string) -> hashing.bytes:
+  copy_storage(value.storage_internal, 0, value.byte_length)
+
+export "utf8_byte_length" pub fn byte_length(value :: string) -> i32:
+  value.byte_length
+
+export "utf8_codepoint_length" pub fn codepoint_length(value :: string) -> i32:
+  value.codepoint_length
+
+export "utf8_is_empty" pub fn is_empty(value :: string) -> bool:
+  value.byte_length == 0
+
+export "utf8_get_byte" pub fn get_byte(value :: string, index :: i32) -> (bool, u32):
+  if index < 0:
+    return (false, 0)
+  if index >= value.byte_length:
+    return (false, 0)
+  (true, value.storage_internal[index])
+
+export "utf8_at_byte" pub fn at_byte(value :: string, index :: i32) -> u32:
+  let (found, byte) = get_byte(value, index)
+  if !found:
+    unreachable
+  byte
+
+// The hash is cached, so an inequality is usually one comparison. It is
+// MurmurHash3 and not cryptographic.
+export "utf8_equal" pub fn equal(left :: string, right :: string) -> bool:
+  if left == right:
+    return true
+  if left.hash != right.hash:
+    return false
+  if left.byte_length != right.byte_length:
+    return false
+  for i in 0 ..< left.byte_length:
+    if left.storage_internal[i] != right.storage_internal[i]:
+      return false
+  true
+
+export "utf8_compare" pub fn compare(left :: string, right :: string) -> i32:
+  let length = if left.byte_length < right.byte_length
+  | left.byte_length
+  | right.byte_length
+  for i in 0 ..< length:
+    let a :: u32 = left.storage_internal[i]
+    let b :: u32 = right.storage_internal[i]
+    if a < b:
+      return -1
+    if a > b:
+      return 1
+  if left.byte_length < right.byte_length:
+    return -1
+  if left.byte_length > right.byte_length:
+    return 1
+  0
+
+export "utf8_hash" pub fn hash(value :: string) -> u32:
+  value.hash
+
+pub fn hash_key(key :: eq) -> u32:
+  hash(key as string)
+
+pub fn equal_key(left :: eq, right :: eq) -> bool:
+  equal(left as string, right as string)
+
+export "utf8_concat" pub fn concat(left :: string, right :: string) -> string:
+  if left.byte_length == 0:
+    return right
+  if right.byte_length == 0:
+    return left
+  if left.byte_length > 0x7fffffff - right.byte_length:
+    unreachable
+  let length = left.byte_length + right.byte_length
+  let storage = hashing.bytes_new(length)
+  storage.copy(0, left.storage_internal, 0, left.byte_length)
+  storage.copy(left.byte_length, right.storage_internal, 0, right.byte_length)
+  string{
+    storage_internal: storage,
+    byte_length: length,
+    codepoint_length: left.codepoint_length + right.codepoint_length,
+    hash: hashing.bytes_value(storage),
+  }
+
+// A slice is taken in bytes but refuses to cut a code point in half, so an
+// offset has to land on a boundary at both ends.
+export "utf8_is_boundary" pub fn is_boundary(value :: string, offset :: i32) -> bool:
+  if offset < 0:
+    return false
+  if offset > value.byte_length:
+    return false
+  if offset == 0:
+    return true
+  if offset == value.byte_length:
+    return true
+  !continuation(value.storage_internal[offset])
+
+export "utf8_try_slice_bytes" pub fn try_slice_bytes(
+  value :: string,
+  start :: i32,
+  length :: i32,
+) -> (bool, string?):
+  if start < 0:
+    return (false, null)
+  if length < 0:
+    return (false, null)
+  if start > value.byte_length:
+    return (false, null)
+  if length > value.byte_length - start:
+    return (false, null)
+  let end = start + length
+  if !is_boundary(value, start):
+    return (false, null)
+  if !is_boundary(value, end):
+    return (false, null)
+  if start == 0:
+    if length == value.byte_length:
+      return (true, value)
+  let storage = copy_storage(value.storage_internal, start, length)
+  let (_, codepoints) = validate(storage)
+  (true, new_valid(storage, codepoints))
+
+export "utf8_slice_bytes" pub fn slice_bytes(
+  value :: string,
+  start :: i32,
+  length :: i32,
+) -> string:
+  let (valid, slice) = try_slice_bytes(value, start, length)
+  if !valid:
+    unreachable
+  slice!
+
+export "utf8_each_codepoint" pub fn each_codepoint(
+  value :: string,
+  context :: eq?,
+  seen :: visit,
+):
+  var offset = 0
+  var index = 0
+  while offset < value.byte_length:
+    let first :: u32 = value.storage_internal[offset]
+    var scalar :: u32 = 0
+    var width = 0
+    if
+    | first <= 0x7f:
+        scalar = first
+        width = 1
+    | first <= 0xdf:
+        scalar = (first & 0x1f) << 6 || (value.storage_internal[offset + 1] & 0x3f)
+        width = 2
+    | first <= 0xef:
+        scalar = (first & 0x0f) << 12
+          || (value.storage_internal[offset + 1] & 0x3f) << 6
+          || (value.storage_internal[offset + 2] & 0x3f)
+        width = 3
+    | _:
+        scalar = (first & 0x07) << 18
+          || (value.storage_internal[offset + 1] & 0x3f) << 12
+          || (value.storage_internal[offset + 2] & 0x3f) << 6
+          || (value.storage_internal[offset + 3] & 0x3f)
+        width = 4
+    seen(context, index, offset, scalar)
+    offset += width
+    index += 1
