@@ -1,0 +1,20 @@
+// The wap AST lowered to the Wax AST.
+//
+// This is the only package that knows both languages. Everything it produces is
+// an ordinary `@ast` value that a hand-written .was file could also produce,
+// which is what makes `wap -f was` possible and what makes the lowering
+// checkable: the printed expansion is the specification.
+import {
+  "marianoguerra/error-report" @er,
+  "marianoguerra/wap/ast" @wap,
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/ast/build",
+  "marianoguerra/wax/basic",
+  "marianoguerra/wax/wasm/types" @wasm_types,
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/core/string",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

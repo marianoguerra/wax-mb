@@ -15,15 +15,16 @@ fn add(x: i32, y: i32) -> i32 {
 
 and compiles to the same bytecode as the equivalent stack-machine WAT.
 
-## Three modules
+## Four modules
 
-This repository is a `moon.work` workspace. Two of its modules are published;
-the third is the harness that keeps them honest.
+This repository is a `moon.work` workspace. Three of its modules are published;
+the fourth is the harness that keeps them honest.
 
 | | | |
 |---|---|---|
 | [`lib/`](lib/README.md) | `marianoguerra/wax` | the language. **No dependencies** outside `moonbitlang/core`. |
 | [`cli/`](cli/README.md) | `marianoguerra/wax-cli` | the `wax-mb` binary: convert, format, check. |
+| [`wap/`](wap/README.md) | `marianoguerra/wap` | **W**eb**A**ssembly's **P**ascal: an Oberon-level language on shrubbery notation, compiled through the Wax AST. |
 | `.` (the root) | `marianoguerra/wax-dev` | not published: the differential suite, the corpus, the porting tools, the alternative layout engine. |
 
 The split is not cosmetic. A module's dependencies are fetched by everyone who
@@ -55,6 +56,36 @@ has no source spans of its own to thread should mint them with
 function's identifiers cannot share one location.
 
 See [`lib/README.md`](lib/README.md) for both paths in full.
+
+## A third way in: wap
+
+[`wap/`](wap/README.md) is a higher-level surface for the same back end, in
+[shrubbery](https://docs.racket-lang.org/shrubbery/) notation rather than Wax's
+own. It adds what Oberon has and Wax does not -- modules, enumerations, sets,
+subranges, type extension, `for`, tuples -- and takes away what wasm has and
+Oberon does not: linear memory, exceptions, continuations, SIMD, tables.
+
+```
+module sieve
+
+type flags = [bool]
+
+export "count_primes" fn count(n :: u32) -> u32:
+  var marked = flags[false ** (n + 1)]
+  var total = 0
+  for i in 2 .. n:
+    if marked[i]:
+      continue
+    total += 1
+  total
+```
+
+Two properties are the point. Every wap construct becomes Wax AST and nothing
+else, so what a `for` costs is a thing you can print. And what wap cannot say,
+Wax says: write it in Wax, declare the signature with `import was`, call it.
+
+`stdlib-wap/` holds ports of the Wax standard library, and `wap/`'s tests
+compile them -- the showcase and the regression suite are the same files.
 
 ## Equivalence, not resemblance
 

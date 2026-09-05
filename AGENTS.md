@@ -16,6 +16,7 @@ and covers all three.
 |---|---|---|
 | `lib/` | `marianoguerra/wax` | yes -- **and it has no dependencies**; keep it that way |
 | `cli/` | `marianoguerra/wax-cli` | yes; `moonbitlang/x` lives here |
+| `wap/` | `marianoguerra/wap` | yes; depends on `wax`, `shrubbery` and `error-report` |
 | `.` (root) | `marianoguerra/wax-dev` | no: `test/`, `tools/`, `printer_pp/` |
 
 The root is a module rather than a bare workspace so that `test/corpus/`,
@@ -33,6 +34,13 @@ Two rules follow from the split, and both are load-bearing:
   what keeps the API honest -- whatever the harness needs is, by construction, a
   name that has to stay public. Do not "fix" a harness import by widening
   `lib/`'s surface without deciding that the name is a promise.
+
+`wap/` is a front end and never a back end: it reaches Wax through
+`marianoguerra/wax/ast`, `.../ast/build` and `.../compile`, and never through
+the Wax parser. A wap program does not become Wax source text on its way to
+wasm. `wap/ast` additionally does not import `marianoguerra/wax` at all, so a
+generator that builds wap values does not compile a type checker to do it --
+the same rule, and for the same reason, as `lib/`'s two ways in.
 
 `lib/internal/*` is enforced by the compiler: `marianoguerra/wax/internal/x` is
 importable only from inside `marianoguerra/wax`, so neither `cli` nor `dev` can

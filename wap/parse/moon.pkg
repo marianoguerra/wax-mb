@@ -1,0 +1,20 @@
+// Shrubbery notation in, wap AST out.
+//
+// Grouping is already decided by `marianoguerra/shrubbery` before this package
+// runs: it receives a tree of groups, blocks and alternatives and has only to
+// say what they mean. Everything here is therefore about MEANING, never about
+// indentation -- there is no lexer, no layout algorithm and no ambiguity about
+// where a block ends.
+import {
+  "marianoguerra/error-report" @er,
+  "marianoguerra/shrubbery/ast" @sh,
+  "marianoguerra/shrubbery/basic" @shbasic,
+  "marianoguerra/shrubbery/error" @sherror,
+  "marianoguerra/shrubbery/parser" @shparser,
+  "marianoguerra/wap/ast" @wap,
+  "moonbitlang/core/string",
+}
+
+import {
+  "moonbitlang/core/test",
+} for "test"

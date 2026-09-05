@@ -1,0 +1,199 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wap/ast"
+
+import {
+  "marianoguerra/error-report",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn has_source(@error-report.Span) -> Bool
+
+pub let nowhere : @error-report.Span
+
+// Errors
+
+// Types and methods
+pub(all) struct Arm {
+  pat : Pattern
+  body : Array[Node]
+  span : @error-report.Span
+} derive(Eq, @debug.Debug)
+
+pub(all) enum AssignOp {
+  Set
+  OpSet(BinOp)
+} derive(Eq, @debug.Debug)
+
+pub(all) enum BinOp {
+  Add
+  Sub
+  Mul
+  Div
+  Rem
+  Shl
+  Shr
+  BitAnd
+  BitOr
+  BitXor
+  Eq
+  Ne
+  Lt
+  Gt
+  Le
+  Ge
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Binder {
+  name : String
+  typ : Type?
+  span : @error-report.Span
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ConstDecl {
+  name : String
+  typ : Type?
+  value : Node
+  export_name : String?
+  import_name : String?
+  span : @error-report.Span
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Decl {
+  ModuleName(String)
+  Import(Array[String])
+  ImportWas(file~ : String, funcs~ : Array[FnDecl], consts~ : Array[ConstDecl])
+  ImportHost(module_~ : String, funcs~ : Array[FnDecl], consts~ : Array[ConstDecl])
+  Const(ConstDecl)
+  TypeD(name~ : String, def~ : TypeDef, span~ : @error-report.Span)
+  Fn(FnDecl)
+  Impl(typ~ : String, methods~ : Array[FnDecl], span~ : @error-report.Span)
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Expr {
+  Int(String)
+  Float(String)
+  BoolLit(Bool)
+  CharLit(Char)
+  StrLit(String)
+  Null
+  TupleLit(Array[Node])
+  SetLit(Array[Node])
+  Var(String)
+  Field(Node, String)
+  Index(Node, Node)
+  RecordLit(typ~ : String?, fields~ : Array[(String, Node?)])
+  RecordDefault(typ~ : String?)
+  ArrayLit(typ~ : String?, items~ : Array[Node])
+  ArrayRepeat(typ~ : String?, value~ : Node, count~ : Node)
+  Call(Node, Array[Node])
+  MethodCall(Node, String, Array[Node])
+  Bin(BinOp, Node, Node)
+  Un(UnOp, Node)
+  AndAlso(Node, Node)
+  OrElse(Node, Node)
+  InSet(Node, Node)
+  Cast(Node, Type)
+  Test(Node, Type)
+  NonNull(Node)
+  Bind(binders~ : Array[Binder], value~ : Node?, mutable~ : Bool)
+  Assign(targets~ : Array[Node], op~ : AssignOp, value~ : Node)
+  Block(Array[Node])
+  If(arms~ : Array[(Node?, Array[Node])], typ~ : Type?)
+  While(label~ : String?, cond~ : Node, step~ : Node?, body~ : Array[Node])
+  ForRange(label~ : String?, var_~ : String, from~ : Node, to~ : Node, inclusive~ : Bool, by~ : Node?, body~ : Array[Node])
+  ForIn(label~ : String?, var_~ : String, seq~ : Node, body~ : Array[Node])
+  Loop(label~ : String?, body~ : Array[Node])
+  Break(String?)
+  Continue(String?)
+  Return(Node?)
+  Match(scrutinee~ : Node, arms~ : Array[Arm], typ~ : Type?)
+  Unreachable
+  Nop
+  Drop(Node)
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Field {
+  name : String
+  mut_ : Bool
+  typ : Type
+  span : @error-report.Span
+} derive(Eq, @debug.Debug)
+
+pub(all) struct FnDecl {
+  name : String
+  receiver : String?
+  params : Array[Param]
+  results : Array[Type]
+  body : Array[Node]?
+  export_name : String?
+  import_name : String?
+  is_start : Bool
+  span : @error-report.Span
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Module {
+  name : String
+  decls : Array[Decl]
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Node {
+  it : Expr
+  span : @error-report.Span
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Param {
+  name : String
+  typ : Type
+  span : @error-report.Span
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Pattern {
+  PType(name~ : String?, typ~ : Type)
+  PNull
+  PInt(String)
+  PRange(low~ : String, high~ : String)
+  PSet(Array[Pattern])
+  PWild
+} derive(Eq, @debug.Debug)
+
+pub(all) enum Type {
+  I8
+  I16
+  I32
+  I64
+  U8
+  U16
+  U32
+  U64
+  F32
+  F64
+  Bool
+  Char
+  Named(String)
+  Nullable(Type)
+  ArrayOf(Type)
+  Tuple(Array[Type])
+  Func(params~ : Array[Type], results~ : Array[Type])
+  Any
+  Eq
+  I31
+} derive(Eq, @debug.Debug)
+
+pub(all) enum TypeDef {
+  Record(parent~ : String?, fields~ : Array[Field])
+  Enum(Array[(String, Int?)])
+  SetOf(String)
+  Subrange(low~ : Int, high~ : Int)
+  Alias(Type)
+} derive(Eq, @debug.Debug)
+
+pub(all) enum UnOp {
+  Neg
+  Not
+} derive(Eq, @debug.Debug)
+
+// Type aliases
+pub using @error-report {type Span}
+
+// Traits

@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wap/lower"
+
+import {
+  "marianoguerra/error-report",
+  "marianoguerra/wax/basic",
+}
+
+// Values
+pub fn lower_module(@marianoguerra/wap/ast.Module, text? : String, fname? : String, src? : @error-report.SourceId) -> Lowered
+
+// Errors
+
+// Types and methods
+pub struct Lowered {
+  fields : Array[@basic.Annotated[@marianoguerra/wax/ast.ModuleField[@basic.Location], @basic.Location]]
+  diagnostics : Array[@error-report.Report]
+}
+pub fn Lowered::diagnostics(Self) -> Array[@error-report.Report]
+pub fn Lowered::fields(Self) -> Array[@basic.Annotated[@marianoguerra/wax/ast.ModuleField[@basic.Location], @basic.Location]]
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,20 @@
+// The wap front end.
+//
+// `to_wax` is the interesting entry point: it stops at the Wax AST, which is
+// what a project embedding wap wants when it is going to add fields of its own
+// before compiling. `compile_string` runs the rest of Wax's pipeline.
+import {
+  "marianoguerra/error-report" @er,
+  "marianoguerra/wap/lower",
+  "marianoguerra/wap/parse",
+  "marianoguerra/wax/ast",
+  "marianoguerra/wax/compile",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/feature",
+  "marianoguerra/wax/warning",
+}
+
+import {
+  "moonbitlang/core/test",
+  "marianoguerra/wap/ast" @wapast,
+} for "test"

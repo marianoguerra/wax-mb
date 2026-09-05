@@ -21,13 +21,13 @@ root="$(dirname "$here")"
 
 mod="${1:-}"
 case "$mod" in
-  lib | cli) ;;
+  lib | cli | wap) ;;
   "")
-    echo "publish-dry: usage: $0 lib|cli" >&2
+    echo "publish-dry: usage: $0 lib|cli|wap" >&2
     exit 2
     ;;
   *)
-    echo "publish-dry: '$mod' is not a published module; only lib and cli are." >&2
+    echo "publish-dry: '$mod' is not a published module; only lib, cli and wap are." >&2
     echo "publish-dry: the repository root is 'marianoguerra/wax-dev', which is" >&2
     echo "publish-dry: the harness and must never reach the registry." >&2
     exit 2

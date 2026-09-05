@@ -1,0 +1,10 @@
+// The wap AST, and nothing else.
+//
+// This package deliberately does NOT import `marianoguerra/wax`. A code
+// generator that wants wasm without emitting source text builds values from
+// here and hands them to `marianoguerra/wap/lower`; only the lowering needs to
+// know what a Wax AST looks like.
+import {
+  "marianoguerra/error-report" @er,
+  "moonbitlang/core/debug",
+}

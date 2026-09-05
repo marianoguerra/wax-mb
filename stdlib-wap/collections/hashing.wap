@@ -1,0 +1,86 @@
+// MurmurHash3 x86-32 for wap byte arrays and boxed integer keys.
+//
+// A port of `stdlib/collections/hashing.wax`. Two things are worth comparing
+// against the original. The `wax_hash_` prefix on every name is gone: the
+// module supplies it, and the emitted names are `hashing__*`. And the `>>u`
+// spellings are gone with it -- the state is a `u32`, so `>>` is already the
+// logical shift, and a signed shift would be a different type rather than a
+// different operator.
+//
+// `||` is bitwise or here, not logical: shrubbery's `|` introduces
+// alternatives, so `||` carries both meanings and the operand type decides
+// which -- the same rule that decides `>>`.
+
+module hashing
+
+type bytes = [u8]
+
+fn mix_i32(value :: u32) -> u32:
+  var mixed = value * 0xcc9e2d51
+  mixed = mixed.rotl(15)
+  mixed * 0x1b873593
+
+// Add one 32-bit word to the state. A composite key's hash begins with its
+// seed, adds each field, then finalizes with the total byte length.
+fn add_i32(state :: u32, value :: u32) -> u32:
+  let out = state ^ mix_i32(value)
+  out.rotl(13) * 5 + 0xe6546b64
+
+fn finalize(state :: u32, byte_length :: u32) -> u32:
+  var out = state ^ byte_length
+  out ^= out >> 16
+  out *= 0x85ebca6b
+  out ^= out >> 13
+  out *= 0xc2b2ae35
+  out ^ out >> 16
+
+fn i32_seeded(value :: u32, seed :: u32) -> u32:
+  finalize(add_i32(seed, value), 4)
+
+export "hash_i32" fn i32_value(value :: u32) -> u32:
+  i32_seeded(value, 0)
+
+fn bytes_seeded(data :: bytes, seed :: u32) -> u32:
+  var state = seed
+  let length = data.len()
+  var offset :: u32 = 0
+  while offset + 4 <= length:
+    let word = data[offset]
+      || data[offset + 1] << 8
+      || data[offset + 2] << 16
+      || data[offset + 3] << 24
+    state = add_i32(state, word)
+    offset += 4
+  let remaining = length - offset
+  if remaining != 0:
+    var tail :: u32 = data[offset]
+    if remaining >= 2:
+      tail ||= data[offset + 1] << 8
+    if remaining == 3:
+      tail ||= data[offset + 2] << 16
+    state ^= mix_i32(tail)
+  finalize(state, length)
+
+export "hash_bytes" fn bytes_value(data :: bytes) -> u32:
+  bytes_seeded(data, 0)
+
+fn i31_key(key :: eq) -> u32:
+  i32_value(key as i32_s)
+
+fn equal_i31_key(left :: eq, right :: eq) -> bool:
+  (left as i32_s) == (right as i32_s)
+
+fn bytes_key(key :: eq) -> u32:
+  bytes_value(key as bytes)
+
+export "equal_bytes" fn equal_bytes_key(left :: eq, right :: eq) -> bool:
+  if left == right:
+    return true
+  let a = left as bytes
+  let b = right as bytes
+  if a.len() != b.len():
+    return false
+  for i in 0 ..< a.len():
+    if a[i] != b[i]:
+      return false
+  true
