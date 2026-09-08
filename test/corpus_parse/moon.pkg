@@ -7,7 +7,6 @@ import {
   "marianoguerra/wax/syntax/trivia",
   "moonbitlang/x/fs",
   "moonbitlang/core/json",
-  "moonbitlang/core/test",
   "moonbitlang/core/cmp",
   "marianoguerra/wax/ast",
   "marianoguerra/wax/basic",

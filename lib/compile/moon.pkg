@@ -17,7 +17,3 @@ import {
   "marianoguerra/wax/wasm/bin" @wasm_bin,
   "marianoguerra/wax/wasm/wat" @to_wat,
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

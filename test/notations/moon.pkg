@@ -11,5 +11,4 @@ import {
   "marianoguerra/was",
   "marianoguerra/was/print",
   "marianoguerra/wax/diagnostic",
-  "moonbitlang/core/test",
 } for "test"

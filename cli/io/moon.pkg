@@ -2,6 +2,16 @@ import {
   "moonbitlang/core/encoding/utf8",
 }
 
+// `@utf8` is used only by io_native.mbt, and an import is package-wide: there
+// is no per-target import, only the per-target FILE selection below. So on
+// wasm, wasm-gc and js the import is genuinely unused and warning 29 fires,
+// which `moon check --deny-warn` turns into a failure. Suppressed here rather
+// than worked around, because the alternative -- encoding UTF-8 in
+// io_other.mbt, whose every function aborts -- would be code written to quiet
+// a warning. The block has one entry, so nothing else hides behind this.
+
+warnings = "-unused_package"
+
 options(
   "native-stub": [ "io_stub.c" ],
   targets: {

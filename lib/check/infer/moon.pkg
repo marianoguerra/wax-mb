@@ -6,7 +6,3 @@ import {
   "marianoguerra/wax/fmt" @output,
   "marianoguerra/wax/syntax/trivia",
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

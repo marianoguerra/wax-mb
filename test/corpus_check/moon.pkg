@@ -13,5 +13,4 @@ import {
   "marianoguerra/wax/message",
   "moonbitlang/x/fs",
   "moonbitlang/core/json",
-  "moonbitlang/core/test",
 } for "test"

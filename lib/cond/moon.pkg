@@ -5,7 +5,3 @@ import {
   "marianoguerra/wax/message",
   "moonbitlang/core/encoding/utf8",
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

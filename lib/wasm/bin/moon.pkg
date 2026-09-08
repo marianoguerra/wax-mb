@@ -9,5 +9,4 @@ import {
   // A black-box test package would otherwise see it as `@bin`, which is
   // the directory name rather than the name this codebase reads it as.
   "marianoguerra/wax/wasm/bin" @wasm_bin,
-  "moonbitlang/core/test",
 } for "test"

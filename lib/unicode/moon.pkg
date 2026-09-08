@@ -2,7 +2,3 @@ import {
   "marianoguerra/wax/unicode/widths",
   "moonbitlang/core/encoding/utf8",
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

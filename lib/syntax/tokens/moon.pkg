@@ -9,7 +9,7 @@ formatter(ignore: [ "tokens.mbt" ])
 
 rule(
   name: "moonyacc",
-  command: "moon runwasm moonbitlang/yacc@0.7.18 --mode only-tokens $input -o $output",
+  command: "moonx moonbitlang/yacc@0.7.19 --mode only-tokens $input -o $output",
 )
 
 dev_build(

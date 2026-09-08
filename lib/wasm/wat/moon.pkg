@@ -8,7 +8,3 @@ import {
   "marianoguerra/wax/syntax/trivia",
   "marianoguerra/wax/basic",
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

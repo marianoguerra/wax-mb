@@ -16,7 +16,6 @@ import {
 }
 
 import {
-  "moonbitlang/core/test",
   "marianoguerra/wap/ast" @wapast,
 } for "test"
 

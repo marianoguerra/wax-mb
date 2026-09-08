@@ -14,6 +14,5 @@ import {
 }
 
 import {
-  "moonbitlang/core/test",
   "marianoguerra/wax",
 } for "test"

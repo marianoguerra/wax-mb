@@ -10,7 +10,7 @@ version = "0.1.0"
 
 import {
   "marianoguerra/error-report@0.1.0",
-  "marianoguerra/shrubbery@0.1.0",
+  "marianoguerra/shrubbery@0.1.1",
   "marianoguerra/wax@0.2.1",
 }
 

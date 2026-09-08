@@ -151,7 +151,7 @@ def main() -> int:
         sys.exit(f"reference grammar missing: {REF_MLY}\nrun tools/fetch-reference-source.sh")
 
     dump = subprocess.run(
-        ["moon", "runwasm", "moonbitlang/yacc@0.7.18", "--",
+        ["moonx", "moonbitlang/yacc@0.7.19", "--",
          "--print-as-mly-without-actions", "parser.mbty"],
         cwd=ROOT / "lib" / "syntax" / "parser", capture_output=True, text=True,
     )

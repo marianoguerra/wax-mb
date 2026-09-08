@@ -14,7 +14,3 @@ import {
   "marianoguerra/wap/ast" @wap,
   "moonbitlang/core/string",
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

@@ -8,5 +8,4 @@ import {
   // A black-box test package would otherwise see it as `@store`, which is
   // the directory name rather than the name this codebase reads it as.
   "marianoguerra/wax/check/store" @type_store,
-  "moonbitlang/core/test",
 } for "test"

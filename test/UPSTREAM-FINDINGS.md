@@ -58,7 +58,7 @@ present) reproduces this bug.
 
 # Findings about MoonYacc
 
-Reference: `moonbitlang/yacc@0.7.18`, invoked via `moon runwasm`.
+Reference: `moonbitlang/yacc@0.7.19`, invoked via `moonx`.
 
 ## 2. `%nonassoc` panics instead of installing an error action
 
@@ -273,7 +273,7 @@ wrong character. The four affected corpus files are listed in
 ever starts agreeing -- so an upstream fix surfaces as a failing test rather
 than as silent drift.
 
-## 10. `--table` emits deprecated `suberror` syntax
+## 10. `--table` emits `suberror` syntax the compiler no longer parses
 
 The default (direct-style) engine writes each semantic-value wrapper as
 
@@ -287,15 +287,21 @@ but the table engine writes the older payload form for the same declaration:
 priv suberror YYObj_Int Int
 ```
 
-which the compiler deprecates (warning 27, `deprecated_syntax`). There are 93 of
-them, so `moon check --deny-warn` fails on a project that selects `--table`
-until the package suppresses the warning — which suppresses it for the
-hand-written files too. The two engines generate the same declarations from the
-same grammar, so this is one code path lagging the other, not a language
-requirement.
+The two engines generate the same declarations from the same grammar, so this is
+one code path lagging the other, not a language requirement.
 
-`grammar/moon.pkg` carries `-27` for this reason. Drop it when MoonYacc's table
-engine catches up; `moon check --deny-warn` then says so immediately.
+It was a warning (27, `deprecated_syntax`) until moonc 0.10.12, which stopped
+parsing the payload form altogether: the declaration is read as a constant
+constructor and every use of one is then an error. 93 declarations, 1667
+errors — the table engine simply does not compile any more.
+
+`lib/syntax/parser/moon.pkg` rewrites the 93 lines into the brace form with a
+`sed` after the generator rather than suppressing anything, since there is now
+nothing to suppress. Drop the rewrite when MoonYacc's table engine catches up.
+
+The same release of the engine (0.7.19) did fix its other half of this: the
+reductions now emit `guard!` rather than a bare `guard`, so `-87`
+(`guard_inexhaustive`) is gone from that package as well.
 
 ## 11. The error value carries no automaton state
 

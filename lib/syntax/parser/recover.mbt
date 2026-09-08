@@ -169,7 +169,7 @@ fn drive_recovering(
           _ => None
         }
       Shift(next) => {
-        guard lookahead is Some(la)
+        guard! lookahead is Some(la)
         data.push(la.1)
         stack.push(next)
         state = next

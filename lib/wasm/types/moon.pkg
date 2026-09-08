@@ -7,5 +7,4 @@ import {
   // A black-box test package would otherwise see it as `@types`, which is
   // the directory name rather than the name this codebase reads it as.
   "marianoguerra/wax/wasm/types" @wasm_types,
-  "moonbitlang/core/test",
 } for "test"

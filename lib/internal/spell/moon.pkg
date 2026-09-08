@@ -2,7 +2,3 @@ import {
   "moonbitlang/core/cmp",
   "moonbitlang/core/int",
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

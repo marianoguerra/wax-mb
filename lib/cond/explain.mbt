@@ -32,7 +32,11 @@ fn Env::render_atom(
         (false, false) => ">="
       }
       let ver = match style {
-        Wat => limit.to_string()
+        // `Show::to_string` rather than `limit.to_string()`: the latter is a
+        // promotion from `impl Show for Version`, which the compiler now
+        // deprecates. Calling through the trait keeps the fix here rather
+        // than in `wax`'s published interface, which an `extend` would widen.
+        Wat => Show::to_string(limit)
         Wax => "(\{limit.major}, \{limit.minor}, \{limit.patch})"
       }
       "\{prefix}\{name(v)} \{op} \{ver}"

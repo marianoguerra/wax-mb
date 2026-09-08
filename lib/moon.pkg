@@ -19,7 +19,6 @@ import {
 // example cannot rot. The AST-first example needs the packages an embedder
 // would import, which the facade itself does not.
 import {
-  "moonbitlang/core/test",
   "marianoguerra/wax",
   "marianoguerra/wax/ast",
   "marianoguerra/wax/ast/build",

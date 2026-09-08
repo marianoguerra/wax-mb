@@ -10,7 +10,3 @@ import {
   "marianoguerra/wap/lower",
   "marianoguerra/wap/parse",
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

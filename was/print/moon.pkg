@@ -9,7 +9,3 @@ import {
   "marianoguerra/wax/basic",
   "marianoguerra/wax/wasm/types" @wasm_types,
 }
-
-import {
-  "moonbitlang/core/test",
-} for "test"

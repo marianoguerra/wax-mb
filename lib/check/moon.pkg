@@ -27,7 +27,6 @@ import {
   // A black-box test package would otherwise see it as `@check`, which is
   // the directory name rather than the name this codebase reads it as.
   "marianoguerra/wax/check" @typing,
-  "moonbitlang/core/test",
   "marianoguerra/wax/cond",
   "marianoguerra/wax/unicode",
 } for "test"

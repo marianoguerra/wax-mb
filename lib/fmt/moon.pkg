@@ -15,5 +15,4 @@ import {
   // the directory name rather than the name this codebase reads it as.
   "marianoguerra/wax/fmt" @output,
   "marianoguerra/wax/syntax/parser" @grammar,
-  "moonbitlang/core/test",
 } for "test"

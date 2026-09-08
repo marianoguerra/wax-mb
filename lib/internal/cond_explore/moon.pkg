@@ -7,6 +7,5 @@ import {
 }
 
 import {
-  "moonbitlang/core/test",
   "marianoguerra/wax/wasm/types" @wasm_types,
 } for "test"
