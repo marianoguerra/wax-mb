@@ -1,12 +1,12 @@
 name = "marianoguerra/wax-cli"
 
-version = "0.2.1"
+version = "0.2.2"
 
 // The command-line tool, separated from the library so that `moonbitlang/x`
 // (filesystem and process access) is a cost only the people who want a binary
 // pay. Everything language-related is in `marianoguerra/wax`.
 import {
-  "marianoguerra/wax@0.2.1",
+  "marianoguerra/wax@0.2.2",
   "moonbitlang/x@0.5.1",
 }
 

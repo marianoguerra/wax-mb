@@ -8,6 +8,58 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## [wap 0.3.0] — 2026-09-09
+
+### Added
+
+- **`Node::TailCall(Node, Array[Node])`** — a proper tail call an AST-first
+  front end can ask for by name. The lowering treats it as a terminator and
+  emits `return_call`, so a function that recurses per element runs in constant
+  stack. There is no surface syntax for it: wap's own parser never produces one,
+  and a module that does not build its AST directly cannot tell the difference.
+
+  This is why the minor rather than the patch slot. `Node` is `pub(all)`, so a
+  consumer matching it exhaustively stops compiling on the new variant even
+  though nothing it already wrote changed meaning.
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.2.2` and `marianoguerra/shrubbery@0.1.1`.
+
+## [was 0.1.1] — 2026-09-09
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.2.2` and `marianoguerra/shrubbery@0.1.1`. No
+  API or behaviour change; released so that a `was` build resolves a `wax` that
+  compiles on moonc 0.10.12.
+
+## [0.2.2] — 2026-09-09
+
+Covers `wax` and `wax-cli`. A toolchain release: no API change, no behaviour
+change, and every oracle reports what it reported at 0.2.1.
+
+### Fixed
+
+- **0.2.1 does not compile on moonc 0.10.12.** That compiler stopped parsing
+  `priv suberror E T`, and MoonYacc's `--table` engine emits it — so the
+  `syntax/parser/parser.mbt` that ships inside the package declared 93 constant
+  constructors and then rejected all 1667 uses of one. The declarations are now
+  generated in the brace form the direct-style engine already used for the same
+  grammar. Anyone on the current toolchain needs this release to build `wax` at
+  all.
+
+### Changed
+
+- `wax-cli` depends on `moonbitlang/x@0.5.1`; the parser is generated with
+  `moonbitlang/yacc@0.7.19` through `moonx`, which replaces `moon runwasm`
+  after 2026-09-14.
+- Two warning suppressions are gone from the parser package rather than carried:
+  the rewrite above retires `-27`, and 0.7.19 emitting `guard!` retires `-87`.
+  Both had applied to the hand-written files too, and `-87` was hiding a real
+  non-exhaustive `guard` in `recover.mbt` — now `guard!`, where the panic is the
+  intent.
+
 ## [wap 0.2.1] — 2026-09-05
 
 ### Fixed

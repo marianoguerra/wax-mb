@@ -6,12 +6,12 @@
 // source text on the way to wasm, it becomes `@ast` values directly.
 name = "marianoguerra/wap"
 
-version = "0.2.1"
+version = "0.3.0"
 
 import {
   "marianoguerra/error-report@0.1.0",
   "marianoguerra/shrubbery@0.1.1",
-  "marianoguerra/wax@0.2.1",
+  "marianoguerra/wax@0.2.2",
 }
 
 readme = "README.md"
