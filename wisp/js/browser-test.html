@@ -1,0 +1,30 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Wisp browser smoke test</title>
+<pre id="result">running</pre>
+<script type="module">
+import * as bridge from '../../_build/js/debug/build/marianoguerra/wisp/bridge/bridge.js';
+import {createCompiler} from './compiler.mjs';
+import {instantiate} from './runtime.mjs';
+import {wallClock, standardSchemas} from './protocols.mjs';
+import {createSandbox} from './sandbox.mjs';
+globalThis.testDone = (async () => {
+  const compile = createCompiler(bridge);
+  const pure = await instantiate(compile('export fn run(): map(fn(x): x + 1, [1, 2])'));
+  const result = await pure.run('run');
+  if (result[0] !== 2n || result[1] !== 3n) throw new Error('wrong pure result');
+  const sandbox = await createSandbox({
+    source: 'require clock :: std.clock.Wall.v1\nexport fn run(clock): clock.now_ms()',
+    schemas: standardSchemas,
+    compilerURL: new URL('../../_build/js/debug/build/marianoguerra/wisp/bridge/bridge.js', location.href),
+  }, {clock: wallClock(async () => 42n)}, {timeoutMs: 30000});
+  try {
+    if (await sandbox.run('run') !== 42n) throw new Error('wrong JSPI result');
+  } finally { sandbox.close(); }
+  document.querySelector('#result').textContent = 'PASS: GC closures, JSPI, worker protocols';
+  return 'PASS';
+})().catch(error => {
+  document.querySelector('#result').textContent = 'FAIL: ' + error.stack;
+  return 'FAIL';
+});
+</script>

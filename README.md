@@ -15,10 +15,10 @@ fn add(x: i32, y: i32) -> i32 {
 
 and compiles to the same bytecode as the equivalent stack-machine WAT.
 
-## Five modules
+## Workspace modules
 
 This repository is a `moon.work` workspace. Four of its modules are published;
-the fifth is the harness that keeps them honest.
+it also contains the development harness and the experimental Wisp language.
 
 | | | |
 |---|---|---|
@@ -26,6 +26,7 @@ the fifth is the harness that keeps them honest.
 | [`cli/`](cli/README.md) | `marianoguerra/wax-cli` | the `wax-mb` binary: convert, format, check. |
 | [`was/`](was/README.md) | `marianoguerra/was` | Wax in [shrubbery](https://docs.racket-lang.org/shrubbery/) notation: a second reader, producing the same AST. |
 | [`wap/`](wap/README.md) | `marianoguerra/wap` | **W**eb**A**ssembly's **P**ascal: an Oberon-level language on shrubbery notation, compiled through the Wax AST. |
+| [`wisp/`](wisp/README.md) | `marianoguerra/wisp` | experimental immutable functional scripting through wap, with lexical capabilities and JSPI embedding. |
 | `.` (the root) | `marianoguerra/wax-dev` | not published: the differential suite, the corpus, the porting tools, the alternative layout engine. |
 
 The split is not cosmetic. A module's dependencies are fetched by everyone who

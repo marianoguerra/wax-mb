@@ -47,6 +47,9 @@ jobs:
       - name: test
         run: moon test --target all
 
+      - name: immutable scripting and JSPI protocols
+        run: bash tools/wisp-test.sh
+
       - name: persistent collections
         run: tools/collections-test.sh
 

@@ -7,10 +7,10 @@ OCaml to MoonBit.
 Wax is a Rust-like surface syntax for WebAssembly. The reference implementation
 is [ocsigen/wax](https://github.com/ocsigen/wax).
 
-## Three modules in one workspace
+## Modules in one workspace
 
 `moon.work` lists them. Every `moon` command below runs at the repository root
-and covers all three.
+and covers the workspace.
 
 | directory | module | published |
 |---|---|---|
@@ -18,6 +18,7 @@ and covers all three.
 | `cli/` | `marianoguerra/wax-cli` | yes; `moonbitlang/x` lives here |
 | `was/` | `marianoguerra/was` | yes; depends on `wax`, `shrubbery` and `error-report` |
 | `wap/` | `marianoguerra/wap` | yes; depends on `wax`, `shrubbery` and `error-report` |
+| `wisp/` | `marianoguerra/wisp` | experimental; immutable scripting through the public wap AST |
 | `.` (root) | `marianoguerra/wax-dev` | no: `test/`, `tools/`, `printer_pp/` |
 
 The root is a module rather than a bare workspace so that `test/corpus/`,
@@ -56,6 +57,14 @@ the same rule, and for the same reason, as `lib/`'s two ways in.
 `lib/internal/*` is enforced by the compiler: `marianoguerra/wax/internal/x` is
 importable only from inside `marianoguerra/wax`, so neither `cli` nor `dev` can
 reach it.
+
+`wisp/` builds wap AST values directly. Its script modules have declarations
+only; no module values, globals, or initialization are allowed. Runtime state
+is invocation-local. Never edit `wisp/runtime_generated.mbt`: run
+`python3 tools/gen-wisp-runtime.py` after changing its trusted sources. The
+generator embeds the persistent vector and HAMT implementations without exports or
+constant globals. `bash tools/wisp-test.sh` verifies real Wasm GC, tail calls,
+JSPI, and the host protocol/worker boundary in Node 24+.
 
 ## Package layout in `lib/`
 

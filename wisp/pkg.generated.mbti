@@ -1,0 +1,25 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "marianoguerra/wisp"
+
+// Values
+pub fn compile(String, modules? : Map[String, String], protocols? : Map[String, Array[String]]) -> Artifact raise ScriptError
+
+// Errors
+pub suberror ScriptError {
+  ScriptError(String)
+}
+pub impl Show for ScriptError
+
+// Types and methods
+pub struct Artifact {
+  wasm : Bytes
+  wat : String
+  manifest : Json
+}
+pub fn Artifact::manifest(Self) -> Json
+pub fn Artifact::wasm(Self) -> Bytes
+pub fn Artifact::wat(Self) -> String
+
+// Type aliases
+
+// Traits

@@ -243,7 +243,7 @@ fn Lowering::expr(
         at,
       )
     }
-    Call(callee, args) => {
+    Call(callee, args) | TailCall(callee, args) => {
       let f = match callee.it {
         Var(n) => self.var_ref(n, callee.span)
         _ => self.expr(callee, None)
@@ -265,7 +265,14 @@ fn Lowering::expr(
         }
         out.push(self.expr(a, hint))
       }
-      @ast.build(Call(f, out), at)
+      @ast.build(
+        if e.it is TailCall(_, _) {
+          TailCall(f, out)
+        } else {
+          Call(f, out)
+        },
+        at,
+      )
     }
     MethodCall(recv, name, args) => self.method_call(recv, name, args, sp)
     Bin(op, a, b) => self.binary(op, a, b, sp)

@@ -1,0 +1,692 @@
+// Trusted implementation. Scripts cannot name this module or its storage.
+module rt
+import collections.persistent_vector
+import collections.persistent_hash_map
+
+type bytes = [u8]
+type values = [eq?]
+type context = {
+  fuel :: mut i64,
+  allocation :: mut i64,
+  max_size :: i32,
+  depth :: mut i32,
+  max_depth :: i32,
+  error :: mut i32,
+  offset :: mut i32,
+  source :: mut i32,
+}
+type value = { kind :: i32 }
+type integer :: value = { n :: i64 }
+type floating :: value = { n :: f64 }
+type boolean :: value = { n :: bool }
+type text :: value = { data :: bytes }
+type sequence :: value = { data :: values }
+type vector_value :: value = { tree :: persistent_vector.vector }
+type map_value :: value = { index :: persistent_hash_map.map, entries :: persistent_vector.vector }
+type map_entry = { key :: eq?, item :: eq? }
+type key_box = { context :: context, value :: eq? }
+type record_value :: value = { name :: bytes, keys :: values, data :: values }
+type code = fn(context, eq?, values) -> eq?
+type closure :: value = { code :: code, env :: eq? }
+type capability :: value = { id :: i32 }
+type bound_method :: value = { cap :: eq, method :: bytes }
+
+import "wisp":
+  import "invoke" fn invoke(c :: context, cap :: eq, method :: bytes, args :: values) -> eq?
+
+export "context" fn new_context(fuel :: i64, allocation :: i64, size :: i32, depth :: i32) -> context:
+  context{fuel: fuel, allocation: allocation, max_size: size, depth: 0, max_depth: depth, error: 0, offset: 0, source: 0}
+
+fn die(c :: context, code :: i32):
+  c.error = code
+  unreachable
+
+export "error" fn error(c :: context) -> i32: c.error
+export "offset" fn offset(c :: context) -> i32: c.offset
+export "source" fn source(c :: context) -> i32: c.source
+
+fn tick(c :: context, cost :: i64):
+  if cost < 0 || c.fuel < cost: die(c, 1)
+  c.fuel -= cost
+
+fn allocate(c :: context, count :: i32, width :: i64):
+  if count < 0 || count > c.max_size: die(c, 2)
+  let cost :: i64 = (count as i64_u) * width + 32
+  if c.allocation < cost: die(c, 2)
+  c.allocation -= cost
+  tick(c, (count as i64_u) + 1)
+
+fn enter(c :: context):
+  tick(c, 1)
+  if c.depth >= c.max_depth: die(c, 3)
+  c.depth += 1
+
+fn leave(c :: context): c.depth -= 1
+
+export "kind" fn kind(v :: eq?) -> i32:
+  if v == null | 0 | (v as value).kind
+
+export "integer" fn int(c :: context, n :: i64) -> eq:
+  allocate(c, 1, 8)
+  integer{kind: 1, n: n}
+
+export "float" fn float(c :: context, n :: f64) -> eq:
+  allocate(c, 1, 8)
+  floating{kind: 2, n: n}
+
+export "boolean" fn bool(c :: context, n :: bool) -> eq:
+  allocate(c, 1, 4)
+  boolean{kind: 3, n: n}
+
+export "integer_value" fn int_value(c :: context, v :: eq?) -> i64:
+  if kind(v) != 1: die(c, 4)
+  (v as integer).n
+
+export "float_value" fn float_value(c :: context, v :: eq?) -> f64:
+  if kind(v) != 2: die(c, 4)
+  (v as floating).n
+
+fn truth(v :: eq?) -> bool:
+  if v == null: return false
+  if kind(v) == 3: return (v as boolean).n
+  true
+
+export "boolean_value" fn bool_value(v :: eq?) -> bool: truth(v)
+
+export "bytes" fn bytes_new(c :: context, n :: i32) -> bytes:
+  allocate(c, n, 1)
+  bytes[0 ** n]
+export "byte_set" fn byte_set(a :: bytes, i :: i32, v :: u32): a[i] = v
+export "byte_get" fn byte_get(a :: bytes, i :: i32) -> u32: a[i]
+export "byte_count" fn byte_count(a :: bytes) -> i32: a.len()
+
+export "text" fn string(c :: context, data :: bytes, keyword :: bool) -> eq:
+  allocate(c, 1, 8)
+  let tag = if keyword | 5 | 4
+  text{kind: tag, data: data}
+export "text_bytes" fn text_bytes(v :: eq?) -> bytes: (v as text).data
+
+export "values" fn values_new(c :: context, n :: i32) -> values:
+  allocate(c, n, 8)
+  values[null ** n]
+export "value_set" fn value_set(a :: values, i :: i32, v :: eq?): a[i] = v
+export "value_get" fn value_get(a :: values, i :: i32) -> eq?: a[i]
+export "value_count" fn value_count(a :: values) -> i32: a.len()
+
+fn seq(c :: context, tag :: i32, a :: values) -> eq:
+  if tag == 8 || tag == 12:
+    reserve_vector(c)
+    var out :: eq = map_value{kind: tag, index: persistent_hash_map.empty(key_hash, key_equal), entries: persistent_vector.empty()}
+    var i = 0
+    while i < a.len():
+      let item = if tag == 8 | a[i + 1] | a[i]
+      out = map_assoc(c, out, a[i], item)
+      let step = if tag == 8 | 2 | 1
+      i += step
+    return out
+  if tag == 6:
+    reserve_vector(c)
+    var tree = persistent_vector.empty()
+    for i in 0 ..< a.len():
+      reserve_vector(c)
+      tree = persistent_vector.push(tree, a[i])
+    return vector_value{kind: 6, tree: tree}
+  allocate(c, 1, 8)
+  sequence{kind: tag, data: a}
+
+export "sequence" fn bridge_seq(c :: context, tag :: i32, a :: values) -> eq:
+  if tag == 8:
+    if a.len() % 2 != 0: die(c, 6)
+    var out :: eq = seq(c, 8, values_new(c, 0))
+    var i = 0
+    while i < a.len():
+      out = assoc(c, out, a[i], a[i + 1])
+      i += 2
+    return out
+  if tag == 12:
+    var out :: eq = seq(c, 12, values_new(c, 0))
+    for i in 0 ..< a.len(): out = conj(c, out, a[i])
+    return out
+  if tag != 6 && tag != 7: die(c, 4)
+  seq(c, tag, a)
+export "sequence_values" fn seq_values(c :: context, v :: eq?) -> values:
+  if kind(v) == 8 || kind(v) == 12:
+    let m = v as map_value
+    let width = if kind(v) == 8 | 2 | 1
+    let out = values_new(c, persistent_hash_map.count(m.index) * width)
+    var at = 0
+    for i in 0 ..< persistent_vector.count(m.entries):
+      tick(c, 8)
+      let slot = persistent_vector.at(m.entries, i)
+      if slot != null:
+        let entry = slot as map_entry
+        out[at] = entry.key
+        if width == 2: out[at + 1] = entry.item
+        at += width
+    return out
+  if kind(v) == 6:
+    let tree = (v as vector_value).tree
+    let out = values_new(c, persistent_vector.count(tree))
+    for i in 0 ..< out.len(): out[i] = persistent_vector.at(tree, i)
+    return out
+  (v as sequence).data
+
+// An upper bound for the allocations and primitive work of one persistent
+// vector operation for an i32-sized vector (at most seven trie levels).
+fn reserve_vector(c :: context):
+  if c.allocation < 8192: die(c, 2)
+  c.allocation -= 8192
+  tick(c, 256)
+export "record_keys" fn record_keys(v :: eq?) -> values: (v as record_value).keys
+export "record_values" fn record_values(v :: eq?) -> values: (v as record_value).data
+export "record_name" fn record_name(v :: eq?) -> bytes: (v as record_value).name
+
+export "capability" fn cap(c :: context, id :: i32) -> eq:
+  allocate(c, 1, 4)
+  capability{kind: 10, id: id}
+
+fn method(c :: context, cap :: eq?, name :: bytes) -> eq:
+  if kind(cap) != 10: die(c, 4)
+  allocate(c, 1, 16)
+  bound_method{kind: 11, cap: cap!, method: name}
+
+fn member(c :: context, receiver :: eq?, name :: bytes) -> eq?:
+  if kind(receiver) == 10: return method(c, receiver, name)
+  get(c, receiver, string(c, name, true), null)
+
+fn checked_bool(c :: context, v :: eq?) -> bool:
+  if kind(v) != 3: die(c, 4)
+  (v as boolean).n
+
+fn function(c :: context, code :: code, env :: eq?) -> eq:
+  allocate(c, 1, 16)
+  closure{kind: 9, code: code, env: env}
+
+fn apply(c :: context, f :: eq?, args :: values) -> eq?:
+  tick(c, 1)
+  if kind(f) == 5:
+    if args.len() != 1 && args.len() != 2: die(c, 6)
+    let default :: eq? = if args.len() == 2 | args[1] | null
+    return get(c, args[0], f, default)
+  if kind(f) == 11:
+    let m = f as bound_method
+    return invoke(c, m.cap, m.method, args)
+  if kind(f) != 9: die(c, 5)
+  let fn_ = f as closure
+  let target = fn_.code
+  target(c, fn_.env, args)
+
+fn arity(c :: context, args :: values, n :: i32):
+  if args.len() != n: die(c, 6)
+
+fn same_bytes(c :: context, a :: bytes, b :: bytes) -> bool:
+  if a.len() != b.len(): return false
+  for i in 0 ..< a.len():
+    tick(c, 1)
+    if a[i] != b[i]: return false
+  true
+
+fn equal(c :: context, a :: eq?, b :: eq?) -> bool:
+  enter(c)
+  let result = equal_inner(c, a, b)
+  leave(c)
+  result
+
+fn equal_inner(c :: context, a :: eq?, b :: eq?) -> bool:
+  if a == b: return true
+  let ka = kind(a)
+  let kb = kind(b)
+  if ka != kb && !((ka == 6 || ka == 7) && (kb == 6 || kb == 7)): return false
+  if ka == 0: return true
+  if ka == 1: return (a as integer).n == (b as integer).n
+  if ka == 2:
+    let x = (a as floating).n
+    let y = (b as floating).n
+    return x == y || (x != x && y != y)
+  if ka == 3: return (a as boolean).n == (b as boolean).n
+  if ka == 4 || ka == 5: return same_bytes(c, (a as text).data, (b as text).data)
+  if ka == 6 || ka == 7:
+    let x = seq_values(c, a)
+    let y = seq_values(c, b)
+    if x.len() != y.len(): return false
+    for i in 0 ..< x.len():
+      if !equal(c, x[i], y[i]): return false
+    return true
+  if ka == 8 || ka == 12:
+    let x = seq_values(c, a)
+    let y = seq_values(c, b)
+    if x.len() != y.len(): return false
+    var i = 0
+    while i < x.len():
+      let j = find(c, b, x[i])
+      if j < 0: return false
+      if ka == 8:
+        if !equal(c, x[i + 1], get(c, b, x[i], null)): return false
+      let step = if ka == 8 | 2 | 1
+      i += step
+    return true
+  if ka == 13:
+    let x = a as record_value
+    let y = b as record_value
+    if !same_bytes(c, x.name, y.name): return false
+    for i in 0 ..< x.data.len():
+      if !equal(c, x.data[i], y.data[i]): return false
+    return true
+  false
+
+fn key(c :: context, v :: eq?):
+  enter(c)
+  let k = kind(v)
+  if k == 9 || k == 10 || k == 11: die(c, 7)
+  if k == 6 || k == 7 || k == 8 || k == 12:
+    let a = seq_values(c, v)
+    for i in 0 ..< a.len(): key(c, a[i])
+  if k == 13:
+    let a = (v as record_value).data
+    for i in 0 ..< a.len(): key(c, a[i])
+  leave(c)
+
+fn find(c :: context, seq_ :: eq?, k :: eq?) -> i32:
+  if kind(seq_) == 8 || kind(seq_) == 12:
+    key(c, k)
+    allocate(c, 1, 16)
+    let probe = key_box{context: c, value: k}
+    tick(c, 8)
+    let (found, value) = persistent_hash_map.get((seq_ as map_value).index, probe)
+    if !found: return -1
+    return (value as integer).n as i32
+  let a = (seq_ as sequence).data
+  var i = 0
+  while i < a.len():
+    if equal(c, a[i], k): return i
+    i += 1
+  -1
+
+fn count(c :: context, v :: eq?) -> i32:
+  let k = kind(v)
+  if k == 0: return 0
+  if k == 4:
+    let a = (v as text).data
+    var n = 0
+    for i in 0 ..< a.len():
+      tick(c, 1)
+      if (a[i] && 192) != 128: n += 1
+    return n
+  if k == 6 || k == 7 || k == 8 || k == 12:
+    if k == 8 || k == 12: return persistent_hash_map.count((v as map_value).index)
+    if k == 6: return persistent_vector.count((v as vector_value).tree)
+    let n = (v as sequence).data.len()
+    return n
+  if k == 13: return (v as record_value).data.len()
+  die(c, 4)
+  unreachable
+
+fn get(c :: context, v :: eq?, k :: eq?, default :: eq?) -> eq?:
+  let tag = kind(v)
+  if tag == 0: return default
+  if tag == 4: return string_at(c, v, int_value(c, k), default)
+  if tag == 8 || tag == 12:
+    let i = find(c, v, k)
+    if i < 0: return default
+    let entry = persistent_vector.at((v as map_value).entries, i) as map_entry
+    return entry.item
+  if tag == 13:
+    let r = v as record_value
+    for i in 0 ..< r.keys.len():
+      if equal(c, r.keys[i], k): return r.data[i]
+    return default
+  if tag != 6 && tag != 7: die(c, 4)
+  let i = int_value(c, k)
+  if tag == 6:
+    let tree = (v as vector_value).tree
+    tick(c, 8)
+    if i < 0 || i >= (persistent_vector.count(tree) as i64_u): return default
+    return persistent_vector.at(tree, i as i32)
+  let a = (v as sequence).data
+  if i < 0 || i >= (a.len() as i64_u): return default
+  a[i as i32]
+
+fn assoc(c :: context, v :: eq?, k :: eq?, item :: eq?) -> eq:
+  let tag = kind(v)
+  if tag == 0: return assoc(c, seq(c, 8, values_new(c, 0)), k, item)
+  if tag == 8: return map_assoc(c, v, k, item)
+  if tag == 13: return record_assoc(c, v, k, item)
+  if tag == 6:
+    let tree = (v as vector_value).tree
+    let index = int_value(c, k)
+    let length = persistent_vector.count(tree)
+    if index < 0 || index > (length as i64_u): die(c, 8)
+    if index == (length as i64_u): return conj(c, v, item)
+    reserve_vector(c)
+    return vector_value{kind: 6, tree: persistent_vector.assoc(tree, index as i32, item)}
+  die(c, 4)
+  unreachable
+
+fn conj(c :: context, v :: eq?, item :: eq?) -> eq:
+  let tag = kind(v)
+  if tag == 0: return conj(c, seq(c, 7, values_new(c, 0)), item)
+  if tag == 8:
+    if kind(item) != 6 && kind(item) != 7: die(c, 4)
+    let entry = seq_values(c, item)
+    if entry.len() != 2: die(c, 6)
+    return assoc(c, v, entry[0], entry[1])
+  if tag == 12: return map_assoc(c, v, item, item)
+  if tag == 6:
+    let tree = (v as vector_value).tree
+    if persistent_vector.count(tree) >= c.max_size: die(c, 2)
+    reserve_vector(c)
+    return vector_value{kind: 6, tree: persistent_vector.push(tree, item)}
+  if tag != 7: die(c, 4)
+  let a = (v as sequence).data
+  let out = values_new(c, a.len() + 1)
+  for i in 0 ..< a.len(): out[i + 1] = a[i]
+  out[0] = item
+  seq(c, tag, out)
+
+fn binary(c :: context, op :: i32, a :: eq?, b :: eq?) -> eq:
+  tick(c, 1)
+  if op == 5: return bool(c, equal(c, a, b))
+  if op == 6: return bool(c, !equal(c, a, b))
+  if kind(a) != kind(b): die(c, 4)
+  if kind(a) == 2:
+    let x = (a as floating).n
+    let y = (b as floating).n
+    if op == 0: return float(c, x + y)
+    if op == 1: return float(c, x - y)
+    if op == 2: return float(c, x * y)
+    if op == 3: return float(c, x / y)
+    if op == 7: return bool(c, x < y)
+    if op == 8: return bool(c, x <= y)
+    if op == 9: return bool(c, x > y)
+    if op == 10: return bool(c, x >= y)
+    die(c, 4)
+  let x = int_value(c, a)
+  let y = int_value(c, b)
+  if op == 7: return bool(c, x < y)
+  if op == 8: return bool(c, x <= y)
+  if op == 9: return bool(c, x > y)
+  if op == 10: return bool(c, x >= y)
+  var z :: i64 = 0
+  if
+  | op == 0:
+      z = x + y
+      if (y > 0 && z < x) || (y < 0 && z > x): die(c, 9)
+  | op == 1:
+      z = x - y
+      if (y < 0 && z < x) || (y > 0 && z > x): die(c, 9)
+  | op == 2:
+      if (x == -9223372036854775808 && y == -1) || (y == -9223372036854775808 && x == -1): die(c, 9)
+      z = x * y
+      if y != 0:
+        if z / y != x: die(c, 9)
+  | else:
+      if y == 0: die(c, 10)
+      if x == -9223372036854775808 && y == -1: die(c, 9)
+      z = if op == 3 | x / y | x % y
+  int(c, z)
+
+fn builtin(c :: context, name :: i32, args :: values) -> eq?:
+  tick(c, 1)
+  if name == 0: return seq(c, 7, args)
+  if name == 1:
+    var out :: eq = seq(c, 12, values_new(c, 0))
+    for i in 0 ..< args.len(): out = conj(c, out, args[i])
+    return out
+  if name == 2:
+    arity(c, args, 1)
+    return int(c, count(c, args[0]) as i64_u)
+  if name == 3:
+    if args.len() != 2 && args.len() != 3: die(c, 6)
+    let default :: eq? = if args.len() == 3 | args[2] | null
+    return get(c, args[0], args[1], default)
+  if name == 4:
+    arity(c, args, 3)
+    return assoc(c, args[0], args[1], args[2])
+  if name == 5:
+    arity(c, args, 2)
+    return conj(c, args[0], args[1])
+  if name == 6:
+    arity(c, args, 1)
+    return bool(c, !truth(args[0]))
+  if name == 7 || name == 8:
+    arity(c, args, 2)
+    let src = elements(c, args[1])
+    var out :: eq = seq(c, 6, values_new(c, 0))
+    for i in 0 ..< src.len():
+      let a = values_new(c, 1)
+      a[0] = src[i]
+      enter(c)
+      let result = apply(c, args[0], a)
+      leave(c)
+      if name == 7 || truth(result):
+        let item = if name == 7 | result | src[i]
+        out = conj(c, out, item)
+    return out
+  if name == 9:
+    arity(c, args, 3)
+    let src = elements(c, args[2])
+    var out = args[1]
+    for i in 0 ..< src.len():
+      let a = values_new(c, 2)
+      a[0] = out
+      a[1] = src[i]
+      enter(c)
+      out = apply(c, args[0], a)
+      leave(c)
+    return out
+  if name == 10:
+    arity(c, args, 1)
+    let src = elements(c, args[0])
+    if src.len() == 0: return null
+    return src[0]
+  if name == 11:
+    arity(c, args, 1)
+    if args[0] == null: return seq(c, 7, values_new(c, 0))
+    let src = elements(c, args[0])
+    let n = if src.len() == 0 | 0 | src.len() - 1
+    let out = values_new(c, n)
+    for i in 0 ..< n: out[i] = src[i + 1]
+    return seq(c, 7, out)
+  if name == 12:
+    arity(c, args, 2)
+    let v = args[0]
+    let k = kind(v)
+    if k == 0: return bool(c, false)
+    if k == 13:
+      let r = v as record_value
+      for i in 0 ..< r.keys.len():
+        if equal(c, r.keys[i], args[1]): return bool(c, true)
+      return bool(c, false)
+    if k == 8 || k == 12: return bool(c, find(c, v, args[1]) >= 0)
+    let i = int_value(c, args[1])
+    return bool(c, i >= 0 && i < (count(c, v) as i64_u))
+  if name == 13:
+    arity(c, args, 2)
+    let src = elements(c, args[1])
+    var out = args[0]
+    for i in 0 ..< src.len(): out = conj(c, out, src[i])
+    return out
+  if name == 14:
+    arity(c, args, 1)
+    let n = int_value(c, args[0])
+    let x = n as f64_s
+    if x >= 9223372036854775808.0 || (x as i64_s) != n: die(c, 9)
+    return float(c, x)
+  if name == 15:
+    arity(c, args, 1)
+    let x = float_value(c, args[0])
+    if x != x || x < -9223372036854775808.0 || x >= 9223372036854775808.0: die(c, 9)
+    let n = x as i64_s
+    if (n as f64_s) != x: die(c, 9)
+    return int(c, n)
+  if name == 16:
+    arity(c, args, 2)
+    let tag = kind(args[0])
+    if tag != 8 && tag != 12: die(c, 4)
+    return map_dissoc(c, args[0], args[1])
+  if name == 17:
+    arity(c, args, 1)
+    return int(c, hash(c, args[0]) as i64_u)
+  die(c, 4)
+  unreachable
+
+fn key_hash(v :: eq) -> u32:
+  let k = v as key_box
+  hash(k.context, k.value)
+
+fn key_equal(a :: eq, b :: eq) -> bool:
+  let x = a as key_box
+  let y = b as key_box
+  equal(x.context, x.value, y.value)
+
+fn reserve_map(c :: context, count :: i32):
+  // At most seven trie levels plus one linear collision array copy. Equality
+  // callbacks and hashing meter their own traversal separately.
+  let bytes :: i64 = (count as i64_u) * 32 + 16384
+  if c.allocation < bytes: die(c, 2)
+  c.allocation -= bytes
+  tick(c, (count as i64_u) + 512)
+
+fn map_assoc(c :: context, v :: eq?, k :: eq?, item :: eq?) -> eq:
+  let m = v as map_value
+  key(c, k)
+  let slot = find(c, v, k)
+  let length = persistent_hash_map.count(m.index)
+  let width = if kind(v) == 8 | 2 | 1
+  if slot < 0 && length >= c.max_size / width: die(c, 2)
+  if slot >= 0 && kind(v) == 12: return v!
+  if slot < 0 && persistent_vector.count(m.entries) > length * 2 + 32:
+    let compacted = seq(c, kind(v), seq_values(c, v))
+    return map_assoc(c, compacted, k, item)
+  reserve_map(c, length)
+  reserve_vector(c)
+  if slot >= 0:
+    let old = persistent_vector.at(m.entries, slot) as map_entry
+    let entry = map_entry{key: old.key, item: item}
+    return map_value{kind: kind(v), index: m.index, entries: persistent_vector.assoc(m.entries, slot, entry)}
+  let entry = map_entry{key: k, item: item}
+  let at = persistent_vector.count(m.entries)
+  if at >= c.max_size: die(c, 2)
+  let probe = key_box{context: c, value: k}
+  let index = persistent_hash_map.assoc(m.index, probe, int(c, at as i64_u))
+  map_value{kind: kind(v), index: index, entries: persistent_vector.push(m.entries, entry)}
+
+fn map_dissoc(c :: context, v :: eq?, k :: eq?) -> eq:
+  let m = v as map_value
+  let slot = find(c, v, k)
+  if slot < 0: return v!
+  reserve_map(c, persistent_hash_map.count(m.index))
+  reserve_vector(c)
+  let index = persistent_hash_map.dissoc(m.index, key_box{context: c, value: k})
+  map_value{kind: kind(v), index: index, entries: persistent_vector.assoc(m.entries, slot, null)}
+
+fn replace_field(c :: context, v :: eq?, k :: eq?, item :: eq?) -> values:
+  let r = v as record_value
+  let out = values_new(c, r.data.len())
+  var found = false
+  for i in 0 ..< out.len():
+    out[i] = r.data[i]
+    if equal(c, r.keys[i], k):
+      found = true
+      out[i] = item
+  if !found: die(c, 8)
+  out
+
+fn string_at(c :: context, v :: eq?, index :: i64, default :: eq?) -> eq?:
+  if index < 0: return default
+  let data = (v as text).data
+  var point :: i64 = 0
+  var start = 0
+  while start < data.len():
+    tick(c, 1)
+    var end = start + 1
+    while end < data.len() && (data[end] && 192) == 128:
+      tick(c, 1)
+      end += 1
+    if point == index:
+      let out = bytes_new(c, end - start)
+      for j in 0 ..< out.len(): out[j] = data[start + j]
+      return string(c, out, false)
+    point += 1
+    start = end
+  default
+
+fn hash(c :: context, v :: eq?) -> u32:
+  enter(c)
+  let h = hash_inner(c, v)
+  leave(c)
+  h
+
+fn elements(c :: context, v :: eq?) -> values:
+  let tag = kind(v)
+  if tag == 0: return values_new(c, 0)
+  if tag == 4:
+    let n = count(c, v)
+    let out = values_new(c, n)
+    for i in 0 ..< n: out[i] = string_at(c, v, i as i64_u, null)
+    return out
+  if tag == 13:
+    let r = v as record_value
+    let out = values_new(c, r.keys.len())
+    for i in 0 ..< out.len():
+      let pair = values_new(c, 2)
+      pair[0] = r.keys[i]
+      pair[1] = r.data[i]
+      out[i] = seq(c, 6, pair)
+    return out
+  let data = seq_values(c, v)
+  if tag != 8: return data
+  let out = values_new(c, data.len() / 2)
+  for i in 0 ..< out.len():
+    let pair = values_new(c, 2)
+    pair[0] = data[i * 2]
+    pair[1] = data[i * 2 + 1]
+    out[i] = seq(c, 6, pair)
+  out
+
+fn hash_inner(c :: context, v :: eq?) -> u32:
+  let tag = kind(v)
+  if tag == 0: return 0
+  if tag == 9 || tag == 10 || tag == 11: die(c, 7)
+  if tag == 1:
+    let bits = (v as integer).n as u64
+    return (bits ^ (bits >> 32)) as u32
+  if tag == 2:
+    let x = (v as floating).n
+    if x == 0.0: return 23
+    if x != x: return 2143289344
+    let bits = x.to_bits() as u64
+    return ((bits ^ (bits >> 32)) as u32) + 23
+  if tag == 3:
+    if (v as boolean).n: return 1231
+    return 1237
+  if tag == 4 || tag == 5:
+    var h :: u32 = tag as u32
+    let data_bytes = (v as text).data
+    for i in 0 ..< data_bytes.len():
+      tick(c, 1)
+      h = h * 31 + data_bytes[i]
+    return h
+  if tag == 13:
+    let r = v as record_value
+    var h :: u32 = 13
+    for i in 0 ..< r.name.len():
+      tick(c, 1)
+      h = h * 31 + r.name[i]
+    for i in 0 ..< r.data.len(): h = h * 31 + hash(c, r.data[i])
+    return h
+  let data = seq_values(c, v)
+  var h :: u32 = 1
+  if tag == 8 || tag == 12:
+    h = tag as u32
+    var i = 0
+    while i < data.len():
+      let kh = hash(c, data[i])
+      if tag == 8
+      | h += kh ^ hash(c, data[i + 1])
+      | h += kh
+      let step = if tag == 8 | 2 | 1
+      i += step
+    return h
+  for i in 0 ..< data.len(): h = h * 31 + hash(c, data[i])
+  h

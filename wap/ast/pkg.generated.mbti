@@ -88,6 +88,7 @@ pub(all) enum Expr {
   ArrayLit(typ~ : String?, items~ : Array[Node])
   ArrayRepeat(typ~ : String?, value~ : Node, count~ : Node)
   Call(Node, Array[Node])
+  TailCall(Node, Array[Node])
   MethodCall(Node, String, Array[Node])
   Bin(BinOp, Node, Node)
   Un(UnOp, Node)

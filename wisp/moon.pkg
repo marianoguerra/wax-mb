@@ -1,0 +1,15 @@
+import {
+  "marianoguerra/error-report" @er,
+  "marianoguerra/shrubbery" @shrub,
+  "marianoguerra/shrubbery/ast" @sh,
+  "marianoguerra/wap/ast" @w,
+  "marianoguerra/wap/parse" @wp,
+  "marianoguerra/wap/lower",
+  "marianoguerra/wax/compile",
+  "marianoguerra/wax/diagnostic",
+  "marianoguerra/wax/message",
+  "marianoguerra/wax/basic",
+  "moonbitlang/core/encoding/utf8",
+}
+
+formatter(ignore: [ "runtime_generated.mbt" ])

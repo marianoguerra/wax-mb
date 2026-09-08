@@ -217,6 +217,8 @@ pub(all) enum Expr {
 
   // -- application --------------------------------------------------------
   Call(Node, Array[Node])
+  /// An explicit proper tail call, primarily for AST-first functional compilers.
+  TailCall(Node, Array[Node])
   /// `xs.len()`, `p.area()` -- resolved to a field access plus call, an
   /// intrinsic, or a method, by the lowering.
   MethodCall(Node, String, Array[Node])

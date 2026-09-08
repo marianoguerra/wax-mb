@@ -31,10 +31,15 @@ rather than on this tree, and neither release implies a wax one.
 
 Two more, both from the same port, both expressible in Wax and not in wap:
 
-- An imported function cannot be bound to a **named** function type.
-  `import_group` builds an inline signature, so `#[import] fn get_field:
-  tg_get(...)` — which is how a link checks a rec group's own type rather than
-  a structurally identical singleton — has no wap spelling.
+- **No function can be given a named function type** — neither a definition nor
+  an import. Both `func_field` and `import_group` build an inline signature and
+  leave the AST's `typ` slot `None`, and Wax then mints a fresh singleton type
+  for the function, which will not coerce to a named one declared inside a
+  `rec` group. So a function cannot be stored in a struct field whose type is a
+  named function type in its own recursion group — any vtable or callback
+  table. Wax spells the fix `fn c_get: tg_get(...)`; wap has no syntax for it.
+  An embedder can set `typ` on the lowered field itself, which Wax then checks
+  against the inline signature rather than silently accepting.
 - No mutable module-level globals: `Decl` has `Const` and no `Var`. Porting
   anything that uses a global as an out-parameter means rethinking it as a
   tuple return rather than translating it.

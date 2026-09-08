@@ -444,7 +444,7 @@ fn Lowering::arm_body(
 /// and nothing around it -- receives a value.
 fn is_terminator(e : @wap.Node) -> Bool {
   match e.it {
-    Return(_) | Break(_) | Continue(_) | Unreachable => true
+    Return(_) | TailCall(_, _) | Break(_) | Continue(_) | Unreachable => true
     _ => false
   }
 }

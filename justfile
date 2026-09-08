@@ -48,6 +48,7 @@ test:
 [group('dev')]
 test-all:
     moon test --target all
+    bash tools/wisp-test.sh
 
 # Builds generated Wax state-machine traces from MoonBit QuickCheck samples,
 # then executes the compiled WebAssembly GC module in Node.
@@ -214,6 +215,7 @@ ci:
     tools/gen-stdlib-test.py
     git diff --exit-code
     moon test --target all
+    bash tools/wisp-test.sh
     moon run --target native tools/wapc
     tools/wap-stdlib-test.sh
     tools/collections-test.sh

@@ -4,4 +4,5 @@ members = [
   "./cli",
   "./wap",
   "./was",
+  "./wisp",
 ]
