@@ -8,6 +8,70 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## [0.3.0] — 2026-09-10
+
+Covers `wax` and `wax-cli`. Five fixes in the front end and the checker, and
+the minor slot rather than the patch one because three things left the public
+API on the way.
+
+### Fixed
+
+- **A `br_table` of 16000 labels cost a gigabyte.** `case_labels` is
+  right-recursive — the `else` is the base case — so the parser action copied
+  the whole tail on every reduction: quadratic in the label count. The spec
+  suite's `br_table.0` has a table that size, and reprinting it allocated 130M
+  idents, 1075 MB, where the reference does the same file in 20. It is 24.9 MB
+  and 0.11s now. Only the semantic actions changed, so the generated automaton
+  is byte-identical and every recorded parser state still means what it meant.
+
+- **A statement's holes were counted one at a time.** `_ - _` on an empty stack
+  said it expected one value where it expects two, and with a value on the
+  stack the caret landed on whichever hole noticed rather than on the
+  statement's first. A statement's holes are now one run: counted together
+  before it is typed, reported once, anchored where the reference anchors it.
+
+- **A negated hole swallowed its own leftover.** The poisoned-result rule
+  belongs to a binary operator, and had been copied onto the unary one — so
+  `- _` produced an `Error` value, which poisons the stack on push, which hid
+  the "This value remains on the stack" that follows the underflow. A unary
+  operator answers a failed operand with a real recovery type, and the value it
+  leaves is a real value.
+
+- **The two hole reports were ordered by phase, not by position.** `10 - _`
+  reports the ordering fault first and `1; _ + (2 * _)` reports the underflow
+  first; the underflow now rides on the same emission-order walk as the
+  ordering check, so both come out where they belong.
+
+- **A leftover with no locatable value pointed one column too far.** The caret
+  sits on the scope's closing bracket, not on the empty span after it.
+
+### Removed
+
+Three items left `marianoguerra/wax`'s public API with the hole-run rewrite.
+Nothing in the language changed; a consumer that named one of them stops
+compiling, which is what the minor slot is for.
+
+- `@check.report_missing_hole` — replaced by `@check.report_hole_underflow`,
+  which takes the statement's underflow rather than a placeholder cell.
+- `@check.Operands.missing_holes` — the placeholder registry. The report is
+  routed by position now, so nothing read it.
+- `@infer.same_cell` — the identity test that registry existed for.
+
+## [wap 0.3.1] — 2026-09-10
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.3.0`. No API or behaviour change of its own;
+  released so that a `wap` build resolves the wax whose checker reports a
+  stack underflow correctly.
+
+## [was 0.1.2] — 2026-09-10
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.3.0`, for the same reason and with the same
+  scope as `wap 0.3.1`.
+
 ## [wap 0.3.0] — 2026-09-09
 
 ### Added
