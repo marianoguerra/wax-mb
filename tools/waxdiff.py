@@ -1326,18 +1326,31 @@ def _is_finding9(
     string at the top level the span is finding 9's, while the message is a
     message-table miss, and reporting the pair as a fuzz find buries the real
     ones under a divergence already recorded.
+
+    Spans that AGREE are not this divergence, and saying they are costs a find
+    rather than saving one: the exemption gets set, grading then sees nothing to
+    excuse, and the entry's own tripwire reports the file as a stale exemption.
+    A one-character span that happens to land on a quote is enough to reach
+    that, so the difference is what the test is about.
     """
     if len(want) != len(got) or not want:
         return False
+    # Offsets are BYTE offsets, so the character under one has to be found in
+    # the encoded source. Indexing the str would be right only until something
+    # multi-byte appeared earlier in the file -- an em-dash in a comment was
+    # enough to hide the shape this exists to recognise.
+    raw = src.encode("utf-8")
     gated = set(policy["gated"])
     for w, g in zip(want, got):
         for k in set(w) | set(g):
             if w.get(k) != g.get(k) and k in gated and k not in SPAN_FIELDS:
                 return False
-        start, end = g.get("startOffset"), g.get("endOffset")
-        if start is None or end is None or not 0 <= start < len(src):
+        if not any(w.get(k) != g.get(k) for k in SPAN_FIELDS):
             return False
-        if src[start] != '"':
+        start, end = g.get("startOffset"), g.get("endOffset")
+        if start is None or end is None or not 0 <= start < len(raw):
+            return False
+        if raw[start : start + 1] != b'"':
             return False
         if w.get("endOffset") != end or w.get("startOffset") != end - 1:
             return False
