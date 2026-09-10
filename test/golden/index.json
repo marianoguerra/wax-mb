@@ -4,7 +4,7 @@
   "counts": {
     "syntax-bad": 130,
     "compiles-clean": 1522,
-    "type-bad": 296
+    "type-bad": 299
   },
   "files": {
     "cram/all-errors-semantic-raise__module-else.wax": {
@@ -3187,9 +3187,27 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
+    "fuzz/hole-order-before-underflow.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "fuzz/hole-run-underflow.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
     "fuzz/missing-params-then-syntax-error.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "fuzz/negated-hole-underflow.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },

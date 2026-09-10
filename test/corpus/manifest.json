@@ -4,7 +4,8 @@
     "cram": 310,
     "docs": 219,
     "wat": 259,
-    "spec": 1158
+    "spec": 1158,
+    "fuzz": 5
   },
   "files": {
     "cram/all-errors-semantic-raise__module-else.wax": {
@@ -1597,8 +1598,17 @@
     "fuzz/hint-attr-then-syntax-error.wax": {
       "origin": "diff-fuzzing find, minimized: a statement-position attribute that is not a hint, followed by a syntax error"
     },
+    "fuzz/hole-order-before-underflow.wax": {
+      "origin": "diff-fuzzing find, minimized: the hole-order fault precedes the underflow here, and follows it in hole-run-underflow -- the two reports are ordered by position, not by phase"
+    },
+    "fuzz/hole-run-underflow.wax": {
+      "origin": "diff-fuzzing find, minimized: a statement's holes underflow together -- two wanted, one there -- and the report belongs to the statement, not to the hole that noticed"
+    },
     "fuzz/missing-params-then-syntax-error.wax": {
       "origin": "diff-fuzzing find, minimized: an action-recorded error before a syntax error the reference reaches first"
+    },
+    "fuzz/negated-hole-underflow.wax": {
+      "origin": "diff-fuzzing find, minimized: a unary operator answers an underflowed hole with a real recovery type, so the value it leaves is reported as a leftover"
     },
     "spec/wasm-test-suite__core__address__address.0.wax": {
       "origin": "test/wasm-test-suite/core/address.wast -> address.0.wasm (wasm->wax)"

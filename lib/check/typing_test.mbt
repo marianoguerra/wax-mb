@@ -730,20 +730,21 @@ test "the bottoms in a join" {
 }
 
 ///|
-/// An underflow is reported at the HOLE that ends up consuming it, because the
-/// pop that noticed it does not know how the missing values are distributed.
-/// And once, however many holes consume the batch.
-test "an underflow is reported at the hole" {
+/// A statement's underflow is one fact about the statement, counted across ALL
+/// of its holes and reported once, wherever the caller says the first hole is.
+/// The pop itself stays quiet: it knows the counts and not the shape.
+test "an underflow is reported once, where the caller points" {
   let ops = @typing.Operands::new()
-  // Two values wanted, none available.
+  // Two values wanted by one statement, none available.
   let (cells, batch) = ops.pop_many(2)
   inspect(cells.length(), content="2")
   inspect(batch is Some(_), content="true")
-  // Nothing said yet: the pop records placeholders and stays quiet.
+  // Nothing said yet.
   let d = @diagnostic.collector()
   inspect(d.collected().length(), content="0")
-  // The hole that consumes the first placeholder reports, at its own location.
-  @typing.report_missing_hole(ops, d, loc_at(40, 41), cells[0])
+  // The statement's first hole is where it lands.
+  let held : Ref[@typing.MissingBatch?] = @ref.new(batch)
+  @typing.report_hole_underflow(d, loc_at(40, 41), held)
   inspect(d.collected().length(), content="1")
   inspect(d.collected()[0].loc.start.cnum, content="40")
   inspect(
@@ -752,16 +753,12 @@ test "an underflow is reported at the hole" {
     // first missing value, where `pop_args` counts down from the last.
     content="Expecting 2 value(s) from the stack, but there are 0.",
   )
-  // The second hole of the same batch says nothing more.
-  @typing.report_missing_hole(ops, d, loc_at(50, 51), cells[1])
+  // The rest of the statement says nothing more, including the fallback that
+  // covers a hole recovery dropped.
+  @typing.report_hole_underflow(d, loc_at(50, 51), held)
   inspect(d.collected().length(), content="1")
-  // A cell that was never a placeholder is not one now.
-  @typing.report_missing_hole(
-    ops,
-    d,
-    loc_at(60, 61),
-    @infer.Cell::make(Unknown),
-  )
+  // A statement that never underflowed has nothing to report.
+  @typing.report_hole_underflow(d, loc_at(60, 61), @ref.new(None))
   inspect(d.collected().length(), content="1")
 }
 

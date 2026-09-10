@@ -1,0 +1,2 @@
+{"severity":"error","file":"test/corpus/fuzz/hole-run-underflow.wax","startLine":3,"startColumn":2,"endLine":3,"endColumn":3,"startOffset":16,"endOffset":17,"message":"Expecting 2 value(s) from the stack, but there are 1.","warning":null,"hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/fuzz/hole-run-underflow.wax","startLine":1,"startColumn":3,"endLine":1,"endColumn":4,"startOffset":3,"endOffset":4,"message":"The function 'f' is never used.","warning":"unused-field","hint":null,"related":[]}

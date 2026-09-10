@@ -53,25 +53,66 @@ fn reject_control_holes(
 /// `value_loc` is the first value-producing operand met in emission order, and
 /// stays put once set: it is the value a later hole would have to reach under,
 /// so it is where the reader is shown the conflict.
+///
+/// `run` is here because this walk carries the statement's UNDERFLOW report too
+/// -- see `HoleOrder::walk`.
 priv struct HoleOrder {
   ctx : @typing_env.ModuleContext
+  run : HoleRun
   mut value_loc : @basic.Location?
   mut reported : Bool
 }
 
 ///|
-/// Report a hole that would have to reach under a value already pushed.
+/// What the incoming stack owes a statement: how many values its holes will
+/// take, and where the FIRST of those holes is in emission order.
 ///
-/// A statement with no hole in it anywhere cannot fail this, which is worth the
+/// Ported from `count_holes` in wax/src/lib-wax/typing.ml, and read where the
+/// reference reads it -- `with_holes`, before the statement is typed rather
+/// than after. Both halves are what the underflow message is made of. The count
+/// is what it says was expected, so a statement's holes have to be counted
+/// TOGETHER: `_ - _` wants two values, not one value twice. The location is
+/// where the reference always anchors it, whatever the shape -- its `pop_many`
+/// takes from the top down, so the values that ARE there land on the trailing
+/// holes and the missing ones on the leading ones, and the first hole is the
+/// first to hold a missing value.
+///
+/// A block-like construct is a boundary: its body is checked on a stack of its
+/// own and every statement in there gets a demand of its own, so the walk stops
+/// there -- which is exactly where `hole_operands` stops.
+fn hole_demand(i : @ast.Instr[@basic.Location]) -> (Int, @basic.Location?) {
+  if i.desc is Hole {
+    return (1, Some(i.info))
+  }
+  let mut n = 0
+  let mut first : @basic.Location? = None
+  // Unlike the typed walk above, an intrinsic's operands are counted: the
+  // reference's `count_holes` runs before typing, where a call is just a call.
+  for c in hole_operands(i, intrinsic=_ => false) {
+    let (k, loc) = hole_demand(c)
+    n = n + k
+    if first is None {
+      first = loc
+    }
+  }
+  (n, first)
+}
+
+///|
+/// Say what is wrong with a statement's holes: one that would have to reach
+/// under a value already pushed, and one the stack had nothing to give.
+///
+/// A statement with no hole in it anywhere has neither, which is worth the
 /// early test: the walk is otherwise run over every statement of every body.
-fn check_hole_order(
+fn check_holes(
   ctx : @typing_env.ModuleContext,
+  run : HoleRun,
   node : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> Unit {
   if count_holes(node) == 0 {
     return
   }
-  HoleOrder::{ ctx, value_loc: None, reported: false, }.walk(node)
+  HoleOrder::{ ctx, run, value_loc: None, reported: false, }.walk(node)
 }
 
 ///|
@@ -84,6 +125,26 @@ fn HoleOrder::walk(
   self : HoleOrder,
   node : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> Unit {
+  // The statement's underflow, reported from THIS walk rather than from the
+  // typing that popped the value. Both reports are one construct's worth of
+  // news about the same statement, and the reference emits them from one
+  // emission-order walk, so their relative order follows position rather than
+  // typing order: `10 - _` reports the ordering fault at `10` first, while
+  // `1; _ + (2 * _)` reports the underflow at the leading hole first. Typing
+  // cannot produce that -- it reaches the holes of a distribution point
+  // BACKWARDS, so that each takes the stack slot meant for it (see
+  // `Checker::call`).
+  //
+  // `run.first` rather than this node: the reference's pending list hands the
+  // missing values to the LEADING holes, so its report always lands on the
+  // statement's first hole whichever one noticed the underflow.
+  if node.desc is Hole {
+    report_hole_underflow(
+      self.ctx.diagnostics,
+      self.run.first.unwrap_or(node.info.1),
+      self.run.batch,
+    )
+  }
   // A compound assignment reads its target before evaluating its right-hand
   // side: `x op= e` is `x = x op e`, and the implicit `x` is pushed first. The
   // typed tree keeps the compound spelling, so that read exists only here --
@@ -132,7 +193,10 @@ fn operands(
   i : @ast.Instr[@typing_env.InferredAnnotation],
 ) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
   let out = []
-  for c in hole_operands(i) {
+  // An intrinsic's callee names an opcode rather than producing a function
+  // reference, so it carries no type -- which is also what tells the two kinds
+  // of call apart on the TYPED tree.
+  for c in hole_operands(i, intrinsic=f => f.info.0.length() == 0) {
     if c.info.0.length() > 0 {
       out.push(c)
     }
@@ -148,9 +212,10 @@ fn operands(
 /// a call's callee, emitted after the arguments it is applied to, and a
 /// `StructDesc`'s descriptor, emitted after the fields -- both typed first, for
 /// their type, and both emitted last.
-fn hole_operands(
-  i : @ast.Instr[@typing_env.InferredAnnotation],
-) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
+fn[I] hole_operands(
+  i : @ast.Instr[I],
+  intrinsic~ : (@ast.Instr[I]) -> Bool,
+) -> Array[@ast.Instr[I]] {
   match i.desc {
     // Value-less, operand-less, or a boundary.
     Block(..)
@@ -252,14 +317,16 @@ fn hole_operands(
       out
     }
     // An intrinsic is written as a call but is not one: its callee names an
-    // opcode rather than producing a function reference, so it carries no type.
-    // What its parentheses hold is then a MIXTURE of stack operands and static
-    // immediates -- a lane index, a vector constant's sixteen bytes -- in an
-    // order the surface form does not show. Left unwalked rather than guessed
-    // at: mistaking an immediate for a value is a report about code that is
-    // fine, which is worse than missing one about code that is not.
+    // opcode rather than producing a function reference. What its parentheses
+    // hold is then a MIXTURE of stack operands and static immediates -- a lane
+    // index, a vector constant's sixteen bytes -- in an order the surface form
+    // does not show, which is why the hole-ORDER walk asks to have it left
+    // unwalked: mistaking an immediate for a value is a report about code that
+    // is fine, which is worse than missing one about code that is not. The
+    // demand COUNT walks it anyway, because the reference's `count_holes` does:
+    // its operands really are popped, whatever their emission order.
     Call(f, args) | TailCall(f, args) =>
-      if f.info.0.length() == 0 {
+      if intrinsic(f) {
         []
       } else {
         let out = args.copy()

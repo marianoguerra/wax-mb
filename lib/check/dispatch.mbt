@@ -19,6 +19,34 @@
 // match was incomplete; it is not needed once the compiler can.
 
 ///|
+/// The hole demand of the statement being typed: what `with_holes` set up, and
+/// how much of it the holes met so far have taken.
+///
+/// One per statement, shared by every hole in it, which is the whole point --
+/// an underflow is a fact about the statement ("it wanted two values and there
+/// was one"), not about the hole that happened to notice.
+struct HoleRun {
+  /// The underflow, once one has happened. Shared, so a second hole popping the
+  /// poisoned stack is tracked under it rather than starting a report of its
+  /// own.
+  batch : Ref[MissingBatch?]
+  /// Every hole in the statement, counted before it was typed.
+  expected : Int
+  /// The first hole in emission order, which is where the reference anchors the
+  /// report. `None` when the statement has no hole at all.
+  first : @basic.Location?
+  /// How many of them have taken a value, which is `pop_any`'s `current`.
+  mut taken : Int
+}
+
+///|
+/// A statement with no holes: what every hole-free statement runs under, and
+/// what a hole reached outside any `with_holes` falls back to.
+fn HoleRun::none() -> HoleRun {
+  { batch: @ref.new(None), expected: 0, first: None, taken: 0, }
+}
+
+///|
 /// One run of the checker over one function body.
 pub struct Checker {
   ctx : @typing_env.ModuleContext
@@ -27,11 +55,45 @@ pub struct Checker {
   /// came from, and how often. Empty unless recovery from an error inside one
   /// produced a shape the lowering never emits.
   unpeeled : Map[String, Int]
+  /// Set by `with_holes` around each statement; see `HoleRun`.
+  mut holes : HoleRun
 }
 
 ///|
 pub fn Checker::new(ctx : @typing_env.ModuleContext, ops : Operands) -> Checker {
-  { ctx, ops, unpeeled: Map([]), }
+  { ctx, ops, unpeeled: Map([]), holes: HoleRun::none(), }
+}
+
+///|
+/// Type one statement under a hole run of its own.
+///
+/// Ported from `with_holes` in wax/src/lib-wax/typing.ml. The reference pops
+/// all of them up front into a pending list each hole then draws its slot
+/// from; this port lets every hole pop for itself, in an order chosen so the
+/// slots still line up -- see the backwards pass in `Checker::call`. What the
+/// two have to share is the ACCOUNTING, which is a property of the statement:
+/// one underflow batch, sized by the statement's whole demand, reported once,
+/// at the first hole.
+fn Checker::with_holes(
+  self : Checker,
+  i : @ast.Instr[@basic.Location],
+  f : () -> @ast.Instr[@typing_env.InferredAnnotation],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let saved = self.holes
+  let (expected, first) = hole_demand(i)
+  let run = { batch: @ref.new(None), expected, first, taken: 0, }
+  self.holes = run
+  let out = f()
+  // On the finished statement, which is where the walk's two ingredients are
+  // both available: the operands in emission order, and the types that say
+  // whether a cast emits anything.
+  check_holes(self.ctx, run, out)
+  // The walk is the ordinary anchor, and it has just had its turn. It reports
+  // nothing when recovery dropped every hole before it could reach one, and
+  // then the statement itself is what is left to point at.
+  report_hole_underflow(self.ctx.diagnostics, i.info, run.batch)
+  self.holes = saved
+  out
 }
 
 ///|
@@ -148,10 +210,27 @@ pub fn Checker::statement(
     }
 
     // --- A hole: a value the surrounding call will supply ---
+    //
+    // Nothing is reported here. The pop records the counts in the statement's
+    // batch and stays quiet; where the caret goes is a question about the
+    // statement's shape, which the walk over the finished statement answers --
+    // see `Checker::with_holes` and `HoleOrder::walk`.
     Hole => {
-      let batch : Ref[MissingBatch?] = @ref.new(None)
-      let ty = self.ops.pop_any(batch, 0, 1)
-      report_missing_hole(self.ops, ctx.diagnostics, loc, ty)
+      // The statement's run, when this hole is one it counted. `hole_demand`
+      // and the typing below are two walks over the same tree, and this is
+      // where they would disagree: a hole the demand stopped short of would
+      // otherwise pop under a `current` past the run's `expected` and report a
+      // count that is not about it. No corpus file reaches it -- the branch
+      // never fired over all 1951 -- so it is a guard on the two walks staying
+      // in step, not a path with behaviour of its own.
+      let run = self.holes
+      let (batch, current, expected) = if run.taken < run.expected {
+        (run.batch, run.taken, run.expected)
+      } else {
+        (@ref.new(None), 0, 1)
+      }
+      let ty = self.ops.pop_any(batch, current, expected)
+      run.taken += 1
       self.rebuild(i, [ty])
     }
 
@@ -608,16 +687,17 @@ pub fn Checker::statement(
         expected: i.expected,
       }
     }
+    // No poisoned-result rule here, unlike `BinOpI` above and unlike the shape
+    // of the two arms otherwise: `type_unop` answers an `Error` operand with a
+    // real recovery type (`i32` for `!`, `Number` for `-`/`+`), and the
+    // reference keeps it. The difference is visible: `- _` on an empty stack
+    // leaves a genuine value, so the underflow is followed by "This value
+    // remains on the stack", where an `Error` result would have poisoned the
+    // stack and swallowed the second report.
     UnOpI(op, e) => {
       let e_ = self.expression(e)
       let typ = expression_type(ctx, e_.info)
-      let poisoned = typ.get() is Error
       let ty = type_unop(ctx.diagnostics, op, e.info, typ)
-      let ty = if poisoned {
-        @infer.Cell::make(@infer.InferredType::Error)
-      } else {
-        ty
-      }
       {
         desc: UnOpI(op, e_),
         info: annotate([ty], loc),

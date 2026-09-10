@@ -136,5 +136,5 @@ test "recovery leaves a clean parse alone" {
     let joined = sample.join("\n  ")
     fail("\{differing.length()} of \{checked} differ:\n  \{joined}")
   }
-  inspect(checked, content="1818")
+  inspect(checked, content="1821")
 }

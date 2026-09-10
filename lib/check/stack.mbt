@@ -32,12 +32,15 @@ pub(all) enum Stack {
 }
 
 ///|
-/// One pending-value underflow: the counts to report, and whether they have
-/// been.
+/// One statement's pending-value underflow: the counts to report, and whether
+/// they have been.
 ///
-/// The placeholder cell recorded alongside lets the hole that ends up consuming
-/// it report at its own location, rather than the popping code needing to know
-/// how the missing values are distributed.
+/// One per STATEMENT, shared by every hole in it (see `HoleRun`), because that
+/// is what the message says: the statement wanted this many values and the
+/// stack had that many. Which hole noticed does not come into it -- the
+/// reference distributes its pending values so that the missing ones always
+/// land on the leading holes, and this port finds the same anchor by walking
+/// the finished statement (see `HoleOrder::walk`).
 struct MissingBatch {
   mut hole_reported : Bool
   hole_actual : Int
@@ -54,17 +57,14 @@ pub(all) enum StackKind {
 } derive(Eq, Debug)
 
 ///|
-/// The stack, and the underflow placeholders accumulated while checking one
-/// function.
+/// The operand stack of the function being checked.
 pub struct Operands {
   mut stack : Stack
-  /// Reset per function.
-  missing_holes : Array[(@infer.Cell[@infer.InferredType], MissingBatch)]
 }
 
 ///|
 pub fn Operands::new() -> Operands {
-  { stack: Empty, missing_holes: [], }
+  { stack: Empty, }
 }
 
 ///|
@@ -84,10 +84,11 @@ pub fn[A] Operands::with_empty(self : Operands, f : () -> A) -> (A, Stack) {
 ///|
 /// Take the top operand's type, whatever it is.
 ///
-/// No diagnostic is emitted here. The placeholder is recorded with its counts
-/// so the hole that consumes it reports at its own location, and an underflow
-/// POISONS the stack -- so one missing value is tracked once rather than once
-/// per subsequent pop.
+/// No diagnostic is emitted here: the pop knows the counts but not where to put
+/// the caret, so it records them in `batch` and stays quiet. An underflow
+/// POISONS the stack, so one missing value is recorded once rather than once
+/// per subsequent pop, and the second hole of the same statement finds the
+/// batch already there.
 pub fn Operands::pop_any(
   self : Operands,
   batch : Ref[MissingBatch?],
@@ -96,30 +97,18 @@ pub fn Operands::pop_any(
 ) -> @infer.Cell[@infer.InferredType] {
   match self.stack {
     Unreachable => @infer.Cell::make(Unknown)
-    Poisoned => {
-      let cell = @infer.Cell::make(@infer.InferredType::Error)
-      // Poisoned by this very run's underflow: this value is missing too, so
-      // track it under the same batch, and the report lands on the first hole
-      // without a value. A stack poisoned BEFORE this run keeps plain, silent
-      // placeholders.
-      if batch.val is Some(b) {
-        self.missing_holes.push((cell, b))
-      }
-      cell
-    }
+    Poisoned => @infer.Cell::make(@infer.InferredType::Error)
     Cons(_, ty, rest) => {
       self.stack = rest
       ty
     }
     Empty => {
       let cell = @infer.Cell::make(@infer.InferredType::Error)
-      let b = {
+      batch.val = Some({
         hole_reported: false,
         hole_actual: current,
         hole_expected: expected,
-      }
-      batch.val = Some(b)
-      self.missing_holes.push((cell, b))
+      })
       self.stack = Poisoned
       cell
     }

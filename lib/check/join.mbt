@@ -163,47 +163,30 @@ fn nullable_of(r : @wasm_types.RefType[@ast.Ident]) -> @infer.InferredValType {
 }
 
 ///|
-/// Report the underflow behind the value a hole just consumed.
+/// Report the underflow a statement's holes ran into, once.
 ///
-/// The report points at the HOLE, which is the most precise anchor a missing
-/// value has -- the pop that noticed the underflow does not know how the
-/// missing values are distributed across the holes that will consume them, so
-/// it records a placeholder and says nothing.
+/// The pop that noticed it said nothing: it knew the counts but not where the
+/// caret goes, which is a question about the statement's SHAPE. The answer is
+/// the statement's first hole in emission order, and both callers have already
+/// worked out which location that is -- `HoleOrder::walk`, which finds it by
+/// walking the finished statement, and `Checker::with_holes`, which falls back
+/// to the statement itself when recovery dropped every hole before the walk
+/// could reach one.
 ///
-/// One report per underflow: the batch is marked, and the fallback covers a
-/// placeholder that never reached a hole because recovery dropped it.
-pub fn report_missing_hole(
-  ops : Operands,
+/// The reference arrives at the same anchor from the other end: its `pop_many`
+/// hands the missing values to the LEADING holes, so the first hole to consume
+/// one is always the first hole. Routing by position rather than by placeholder
+/// identity is what lets this port pop a statement's holes in whatever order
+/// puts the right stack slot in each of them (see `Checker::call`).
+pub fn report_hole_underflow(
   diagnostics : @diagnostic.Context,
   location : @basic.Location,
-  ty : @infer.Cell[@infer.InferredType],
+  batch : Ref[MissingBatch?],
 ) -> Unit {
-  let mut found : MissingBatch? = None
-  let kept : Array[(@infer.Cell[@infer.InferredType], MissingBatch)] = []
-  for entry in ops.missing_holes {
-    // Identity, not equality: two placeholders are the same missing value only
-    // if they are the same cell.
-    if @infer.same_cell(entry.0, ty) {
-      found = Some(entry.1)
-    } else {
-      kept.push(entry)
-    }
-  }
-  guard found is Some(batch) else { return }
-  ops.missing_holes.clear()
-  for e in kept {
-    ops.missing_holes.push(e)
-  }
-  if !batch.hole_reported {
-    batch.hole_reported = true
-    short_stack(
-      diagnostics,
-      Holes,
-      location,
-      batch.hole_actual,
-      batch.hole_expected,
-    )
-  }
+  guard batch.val is Some(b) else { return }
+  guard !b.hole_reported else { return }
+  b.hole_reported = true
+  short_stack(diagnostics, Holes, location, b.hole_actual, b.hole_expected)
 }
 
 ///|

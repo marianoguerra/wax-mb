@@ -153,9 +153,9 @@ pub fn report_empty_exits(@diagnostic.Context, @infer.Collecting) -> Unit
 
 pub fn report_exact_mismatches(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], Array[(@basic.Location?, @infer.Cell[@infer.InferredType])]) -> Unit
 
-pub fn report_leftovers(Stack, @diagnostic.Context, @basic.Location, (Stack) -> String) -> Unit
+pub fn report_hole_underflow(@diagnostic.Context, @basic.Location, @ref.Ref[MissingBatch?]) -> Unit
 
-pub fn report_missing_hole(Operands, @diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType]) -> Unit
+pub fn report_leftovers(Stack, @diagnostic.Context, @basic.Location, (Stack) -> String) -> Unit
 
 pub fn report_uninitialized(@env.ModuleContext, @ast.Ident) -> Unit
 
@@ -194,12 +194,15 @@ pub struct Checker {
   ctx : @env.ModuleContext
   ops : Operands
   unpeeled : Map[String, Int]
+  mut holes : HoleRun
 }
 pub fn Checker::check(Self, @infer.Cell[@infer.InferredType], @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::expression(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::gaps(Self) -> Array[(String, Int)]
 pub fn Checker::new(@env.ModuleContext, Operands) -> Self
 pub fn Checker::statement(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
+
+type HoleRun
 
 pub(all) enum MethodCall {
   Atomic(@atomics.Family)
@@ -215,7 +218,6 @@ type MissingBatch
 
 pub struct Operands {
   mut stack : Stack
-  missing_holes : Array[(@infer.Cell[@infer.InferredType], MissingBatch)]
 }
 pub fn Operands::new() -> Self
 pub fn Operands::pop(Self, @store.SubtypingInfo, @diagnostic.Context, StackKind, @basic.Location, Int, Int, @infer.Cell[@infer.InferredType]) -> Unit
