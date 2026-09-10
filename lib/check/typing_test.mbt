@@ -805,10 +805,12 @@ test "leftover values" {
     ),
   )
   // Values with no usable location are still real values -- name the construct
-  // and list what is there, rather than saying nothing.
+  // and list what is there, rather than saying nothing. The caret lands on the
+  // scope's LAST character, its closing bracket, which is where the reference
+  // puts it; the scope's end is one column past that.
   inspect(
     report(ops => ops.push(None, @infer.valtype_cell(@infer.i32_valtype))),
-    content="20: Some values remain on the stack: i32.",
+    content="19: Some values remain on the stack: i32.",
   )
 }
 

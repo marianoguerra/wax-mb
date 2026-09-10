@@ -1344,6 +1344,63 @@ def _is_finding9(
     return True
 
 
+# Every syntax message the reference emits is derived from its LR automaton,
+# and both of the generator's renderings open the same way: the bare
+# expected-token list, or Menhir's hedged "Assuming that the X is complete"
+# form. A check written into a semantic action never does.
+_SYNTAX_MESSAGE = ("Expecting ", "Assuming that ")
+
+
+def _is_finding12(want: list[dict], got: list[dict], policy: dict) -> bool:
+    """Do these diagnostics differ only in the way finding 12 describes?
+
+    Finding 12 is the two automata reducing at different moments: one performs
+    a default reduction, runs the semantic action, and reports the check inside
+    it; the other consults the lookahead first, finds it erroneous, and reports
+    the syntax error instead. Neither side ever produces BOTH, which is why the
+    first-in-the-file preference rule that settles the rest of this class cannot
+    settle this one. See test/UPSTREAM-FINDINGS.md finding 12.
+
+    On the corpus it is handled by naming the two files it affects, one per
+    direction (SPAN_EXEMPT). A mutant has no name to put on a list, and the
+    shape is cheap for a mutator to reach -- `fn f` followed by anything that is
+    not a signature is already enough -- so here it is recognised by its SHAPE,
+    the way finding 9 is: one diagnostic each, differing messages, disjoint
+    spans, and the LATER of the two being the syntax error while the earlier one
+    is not. Both halves of that last test are load-bearing. Two syntax errors at
+    different spans are a real find, and so is one message reported twice in two
+    places -- neither can be the reduction timing, because in both of those the
+    two implementations ran the same action.
+    """
+    if len(want) != 1 or len(got) != 1:
+        return False
+    w, g = want[0], got[0]
+    gated = set(policy["gated"])
+    for k in set(w) | set(g):
+        if w.get(k) != g.get(k) and k in gated and k not in SPAN_FIELDS:
+            return False
+    if w.get("message") == g.get("message"):
+        return False
+    bounds = []
+    for d in (w, g):
+        start, end = d.get("startOffset"), d.get("endOffset")
+        if start is None or end is None:
+            return False
+        bounds.append((start, end))
+    (ws, we), (gs, ge) = bounds
+    if we <= gs:
+        first, second = w, g
+    elif ge <= ws:
+        first, second = g, w
+    else:
+        # Overlapping spans are one error placed two ways, not two errors of
+        # which each side produced a different one.
+        return False
+    return str(second.get("message", "")).startswith(
+        _SYNTAX_MESSAGE
+    ) and not str(first.get("message", "")).startswith(_SYNTAX_MESSAGE)
+
+
 def _reference_reproduces_instability(impl: list[str], path: Path) -> bool:
     """Is the reference unstable on this input, in exactly the same way we are?
 
@@ -1398,6 +1455,9 @@ def grade(impl: list[str], src: str, policy: dict, oracles: list[int]) -> list[F
             )
             if _is_finding9(src, want, got, policy):
                 SPAN_EXEMPT["mutant.wax"] = "finding 9 (string span)"
+                exempted = True
+            elif _is_finding12(want, got, policy):
+                SPAN_EXEMPT["mutant.wax"] = "finding 12 (action timing)"
                 exempted = True
         out = Outcome()
         if 1 in oracles:

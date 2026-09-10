@@ -330,8 +330,9 @@ pub fn report_leftovers(
     return
   }
   if locs.is_empty() {
-    // Real values, none of them locatable.
-    non_empty_stack(diagnostics, location, render(st))
+    // Real values, none of them locatable. The caret goes on the scope's
+    // closing bracket, the same place a missing result gets one.
+    non_empty_stack(diagnostics, loc_last_char(location), render(st))
     return
   }
   // The topmost carries the caret; the rest, descending, are related labels

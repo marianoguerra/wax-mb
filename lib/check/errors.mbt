@@ -185,13 +185,17 @@ fn leftover_values(
 /// They are still real values -- they just carry an error-recovery placeholder
 /// location rather than a source span -- so name the construct and list what is
 /// there instead of saying nothing.
+///
+/// `location` is the caret span the caller chose, not the scope: the scope's
+/// closing bracket is what the reference points at, and an empty span at the
+/// scope's end sits one column past it.
 fn non_empty_stack(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   rendered : String,
 ) -> Unit {
   ctx.report(
-    { start: location.end, end: location.end, },
+    location,
     Error,
     @message.text("Some values remain on the stack:")
     .seq(@message.text(rendered))

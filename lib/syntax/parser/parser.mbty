@@ -792,9 +792,19 @@ semi_list[T](X : T) -> Array[T]
 
 // The comma-separated case labels of a br_table/dispatch bracket, ending in the
 // mandatory `else <default>`.
+//
+// The list is built REVERSED, and each use site reverses it once. The rule is
+// right-recursive -- the `else` is the base case -- so the obvious action,
+// `([$1, ..ls], d)`, copies the whole tail on every reduction: quadratic in the
+// label count. That is not academic. The spec suite's br_table.0 has a table of
+// ~16000 labels, and copying built 130M idents for it, 1 GB of them, against a
+// reference that does the same file in 20 MB. Pushing onto the array the inner
+// reduction already returned is linear, and the productions are untouched, so
+// the automaton -- and with it every state number parser_messages.mbt keys on
+// -- is exactly the one this grammar generated before.
 case_labels -> (Array[Ident], Ident)
   : ELSE label { ([], $2) }
-  | label "," case_labels { let (ls, d) = $3; ([$1, ..ls], d) }
+  | label "," case_labels { let (ls, d) = $3; ls.push($1); (ls, d) }
   ;
 
 // ===========================================================================
@@ -804,6 +814,7 @@ case_labels -> (Array[Ident], Ident)
 blockinstr -> Instr[Location]
   : DISPATCH expression "[" case_labels "]" "{" semi_list(dispatch_arm) "}" {
       let (cases, default) = $4
+      cases.rev_in_place() // case_labels accumulates in reverse; see its rule
       with_loc($sloc, Dispatch(index=$2, cases~, default~, arms=$7))
     }
   | MATCH expression "{" semi_list(match_arm) match_default "}" {
@@ -1165,7 +1176,9 @@ statement -> Instr[Location]
   | BR label ioption(expression) { with_loc($sloc, Br($2, $3)) }
   | BR_TABLE "[" case_labels "]" expression {
       let (lst, l) = $3
-      with_loc($sloc, BrTable([..lst, l], $5))
+      lst.rev_in_place() // case_labels accumulates in reverse; see its rule
+      lst.push(l)
+      with_loc($sloc, BrTable(lst, $5))
     }
   | RETURN ioption(expression) { with_loc($sloc, Return($2)) }
   | THROW tag_name "(" expression_list ")" {
