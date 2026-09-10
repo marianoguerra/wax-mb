@@ -1404,15 +1404,21 @@ def _is_finding12(want: list[dict], got: list[dict], policy: dict) -> bool:
 def _reference_reproduces_instability(impl: list[str], path: Path) -> bool:
     """Is the reference unstable on this input, in exactly the same way we are?
 
-    Finding 8: a comment that ends a block attaches to the block's last child,
-    so reformatting hoists it out -- upstream's own behaviour, which this port
-    reproduces. The corpus handles it by naming the three files it affects
-    (NON_IDEMPOTENT_UPSTREAM); a mutant has no name to put on a list, and
-    generated input hits it often, so here it is recognised by asking the
-    reference directly.
+    Reprint parity is the gate, so matching the reference means inheriting its
+    instability, and two recorded findings produce it. Finding 8: a comment that
+    ends a block attaches to the block's last child, so reformatting hoists it
+    out -- the reprint reads back, and says something else. Finding 7: a page
+    size of 2^63 is printed through a signed shift, so it comes out negative and
+    the reprint does not read back at all. The corpus handles both by naming the
+    three files they affect (NON_IDEMPOTENT_UPSTREAM); a mutant has no name to
+    put on a list, and generated input reaches both often, so here they are
+    recognised by asking the reference directly.
 
-    "In the same way" is the whole test: both must drift, and to the same bytes.
-    A mutant where only we drift is a real find and stays one.
+    "In the same way" is the whole test, and it is the same test either way:
+    hand the reference OUR reprint and require it to come apart exactly as ours
+    does -- to the same bytes when both read it back, with the same complaint
+    when neither can. A mutant where only we drift, or only we are stuck, is a
+    real find and stays one.
     """
     once = impl_run(impl, str(path), "-f", "wax")
     if once.code != 0:
@@ -1425,12 +1431,24 @@ def _reference_reproduces_instability(impl: list[str], path: Path) -> bool:
         ref_twice = wax(tmp, "-f", "wax")
     finally:
         os.unlink(tmp)
-    return (
-        ours_twice.code == 0
-        and ref_twice.code == 0
-        and ours_twice.out != once.out
-        and ref_twice.out == ours_twice.out
-    )
+    if ours_twice.code != ref_twice.code:
+        return False
+    if ours_twice.code != 0:
+        # Neither can read the reprint back. Both ran over the same temporary
+        # path, so the rendered diagnostics are comparable as they stand; a
+        # difference in what they object to means we are stuck on something
+        # else, which is a find.
+        #
+        # A REJECTION is the only thing excused here. A run that died -- a
+        # signal from the memory cap, a crash -- or one this harness timed out
+        # is not a shared reading of the file, and two of them are two facts
+        # worth having rather than one to wave through.
+        return (
+            ours_twice.code > 0
+            and ours_twice.err == ref_twice.err
+            and ours_twice.err.strip() != b"waxdiff: timed out"
+        )
+    return ours_twice.out != once.out and ref_twice.out == ours_twice.out
 
 
 def grade(impl: list[str], src: str, policy: dict, oracles: list[int]) -> list[Failure]:

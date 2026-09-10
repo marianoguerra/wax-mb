@@ -454,23 +454,29 @@ and the span exemptions from 7 files under one wrong cause to 6 under two right
 ones.
 
 **A fuzzer has to recognise every recorded divergence by SHAPE**, because a
-mutant has no name to put on an exemption list. Two filters exist for that, and
-the second was added later, when `just fuzz` reported a find that turned out to
-be finding 8:
+mutant has no name to put on an exemption list. Three filters exist for that,
+each added the day a campaign reported a find that turned out to be a divergence
+already written down:
 
 - **Finding 9** (the reference points a syntax error at a string's closing
   quote): same diagnostics, differing only in span, the reference's span being
   the last character of ours and ours starting at a quote. Only the GATED fields
   have to agree — the message may differ for an unrelated reason (a
   message-table miss), and requiring it to match buried the real finds.
-- **Finding 8** (a comment ending a block escapes it on reformat): the reference
-  is asked directly whether it is unstable on the same input, and whether it
-  drifts to the same bytes. A mutant where only WE drift stays a find. The check
-  runs only once an idempotence failure has been reported, so the ordinary
-  mutant pays nothing for it.
-
-With both, a 250-mutant campaign reports one find, and that one is a fresh
-instance of finding 12's class rather than noise.
+- **Findings 8 and 7** (a comment ending a block escapes it on reformat; a
+  `pagesize` of 2^63 prints through a signed shift): the reference is asked
+  directly whether OUR reprint comes apart in its hands exactly as it does in
+  ours — to the same bytes when both read it back (8), with the same complaint
+  when neither can (7). A mutant where only WE drift, or only we are stuck,
+  stays a find, and so does a run that died or timed out rather than rejecting
+  the file. The check runs only once an idempotence failure has been reported,
+  so the ordinary mutant pays nothing for it.
+- **Finding 12** (a semantic check in an action fires at a different moment):
+  one diagnostic each, differing messages, disjoint spans, and the LATER of the
+  two being the syntax error while the earlier one is not. Both halves of that
+  last test are load-bearing: two syntax errors at different spans are a real
+  find, and so is one message reported in two places, because in both of those
+  the two implementations ran the same action.
 
 **Summary.** The corpus is fixed: 2112 files, all hand-written, generated from
 the spec suite, or extracted from docs. It exercises what someone thought to
