@@ -149,6 +149,16 @@ generator not yet existing. It would have silently disagreed with the sources.
 `fetch-reference.sh` verifies the binary's sha256 and **fails loudly if
 upstream's `edge` release moved**, since `edge` is rebuilt on every push to main.
 
+It tries a **mirror first**: `mirror_repo` / `mirror_release` name a release of
+this repository's own holding a copy of exactly the pinned build. That is not a
+convenience. Upstream publishes no per-commit asset and one tagged release 328
+commits back, so when `edge` is rebuilt the binary the goldens were produced by
+stops being obtainable from upstream at all — and without it the goldens cannot
+be regenerated and the harness self-test cannot run at the pinned commit ever
+again. `sha256` is still the authority for both sources; a mirror that does not
+serve the pin is refused like any other download, so the mirror cannot quietly
+become a second oracle.
+
 ## The suite is hermetic; keep it that way
 
 `test/corpus/` and `test/golden/` are **committed**. That is what lets

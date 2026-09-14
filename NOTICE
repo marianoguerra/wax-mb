@@ -11,6 +11,15 @@ Version 2.0.
   that project's sources and produced by its binary. The pinned upstream
   commit is recorded in tools/reference.json.
 
+  This repository also REDISTRIBUTES an unmodified upstream build of that
+  compiler, as the release named by `mirror_release` in tools/reference.json.
+  Upstream publishes only a floating 'edge' asset, rebuilt on every push, so
+  the exact build these goldens were produced by is otherwise unobtainable
+  once it moves. The copy is byte-for-byte the artifact ocsigen/wax released
+  for the pinned commit -- tools/fetch-reference.sh verifies its sha256
+  against the pin before installing it, from either source -- and it is
+  redistributed under the same Apache License, Version 2.0.
+
 This product includes software developed by Milky2018
 (https://github.com/Milky2018/wasmoon), licensed under the Apache License,
 Version 2.0.

@@ -127,9 +127,21 @@ jobs:
   #
   # A find is minimized and printed here; turning one into a permanent test is
   # `waxdiff.py adopt` + `waxdiff.py golden`, a deliberate local act.
+  #
+  # Non-blocking, for the reason `harness-self-test` above already carries: it
+  # fetches the floating `edge` asset, so an upstream rebuild stops this job
+  # before it grades a single mutant, and the nightly then reports a stale pin
+  # under the name of a fuzzer. `drift` is the job that names that cause.
+  #
+  # The cost is real and worth stating: a genuine find no longer turns the run
+  # red either. It is still minimized and printed in this job's log, and the
+  # step summary still shows the job as failed -- what changes is that the
+  # nightly's red is reserved for the hermetic gate, which is the part that says
+  # something about the commit.
   fuzz:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
