@@ -6,9 +6,7 @@ import {
   "marianoguerra/wap/parse" @wp,
   "marianoguerra/wap/lower",
   "marianoguerra/wax/compile",
-  "marianoguerra/wax/diagnostic",
   "marianoguerra/wax/message",
-  "marianoguerra/wax/basic",
   "moonbitlang/core/encoding/utf8",
 }
 

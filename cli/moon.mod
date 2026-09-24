@@ -19,3 +19,7 @@ license = "Apache-2.0"
 keywords = [ "wax", "webassembly", "wasm", "cli", "formatter" ]
 
 description = "The wax-mb command-line tool: convert, format and check Wax source"
+
+// See lib/moon.mod for why warning 79 is off.
+
+warnings = "-implicit_impl_as_method"

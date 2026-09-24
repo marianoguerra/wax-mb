@@ -4,7 +4,6 @@ import {
 import {
   "marianoguerra/wax/syntax/parser" @grammar,
   "marianoguerra/wax/ast",
-  "marianoguerra/wax/basic",
   "marianoguerra/wax/check" @typing,
   "marianoguerra/wax/check/env" @typing_env,
   "marianoguerra/wax/check/store" @type_store,

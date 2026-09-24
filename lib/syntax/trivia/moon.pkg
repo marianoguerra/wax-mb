@@ -1,8 +1,6 @@
 import {
   "marianoguerra/wax/basic",
-  "moonbitlang/core/set",
 }
 
 import {
-  "moonbitlang/core/debug",
 } for "test"

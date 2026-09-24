@@ -695,7 +695,7 @@ test "the descriptor clauses wrap the composite type" {
       supertypes: [],
       descriptor: None,
       describes: None,
-      composite: CompositeType::Struct(empty_struct),
+      composite: @wasm_bin.CompositeType::Struct(empty_struct),
     } : @wasm_bin.SubType)
   n.types.push(open_struct)
   n.types.push({ ..open_struct, supertypes: [0], })

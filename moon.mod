@@ -34,3 +34,7 @@ import {
 license = "Apache-2.0"
 
 description = "Development harness for wax-mb: the differential suite, the corpus tools, and the alternative layout engine"
+
+// See lib/moon.mod for why warning 79 is off.
+
+warnings = "-implicit_impl_as_method"

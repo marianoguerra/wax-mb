@@ -14,7 +14,7 @@ test "a post-order run folds back to the tree it came from" {
     { start: 1, head: 1, end: 2, loc: @basic.dummy_loc, },
     { start: 0, head: 2, end: 3, loc: @basic.dummy_loc, },
   ]
-  let tree = fold(body, spans)
+  let tree = @wat.fold(body, spans)
   inspect(tree.length(), content="1")
   inspect(tree[0].head is I32Add, content="true")
   inspect(tree[0].operands.length(), content="2")
@@ -33,7 +33,7 @@ test "a node with no head of its own leaves its children alone" {
     { start: 1, head: 1, end: 2, loc: @basic.dummy_loc, },
     { start: 0, head: 2, end: 2, loc: @basic.dummy_loc, },
   ]
-  let tree = fold(body, spans)
+  let tree = @wat.fold(body, spans)
   inspect(tree.length(), content="2")
   inspect(tree[0].head is LocalGet(0), content="true")
   inspect(tree[1].head is LocalGet(1), content="true")
@@ -53,7 +53,7 @@ test "two statements stay two" {
     { start: 2, head: 2, end: 3, loc: @basic.dummy_loc, },
     { start: 2, head: 3, end: 4, loc: @basic.dummy_loc, },
   ]
-  let tree = fold(body, spans)
+  let tree = @wat.fold(body, spans)
   inspect(tree.length(), content="2")
   inspect(tree[0].head is Drop, content="true")
   inspect(tree[0].operands.length(), content="1")

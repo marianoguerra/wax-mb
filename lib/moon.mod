@@ -27,3 +27,14 @@ keywords = [
 ]
 
 description = "The Wax language in MoonBit: parser, formatter, type checker, and wasm/wat emitters"
+
+// Warning 79 (implicit_impl_as_method) is off by default per the MoonBit docs
+// (E0079, "disabled by default starting in version 0.10.4"), but moonc
+// v0.10.14 reports it, and CI's `--deny-warn` turns every derive(Eq, Debug, ...)
+// on a public type into an error. Nothing here relies on promotion: the .mbti
+// records none of these impls' methods as methods. Declaring them with
+// `pub extend T with Trait::{...}` would make ~340 names a public promise, and
+// that is an API decision, not a toolchain fix -- so the warning is turned back
+// off in every module of the workspace instead.
+
+warnings = "-implicit_impl_as_method"

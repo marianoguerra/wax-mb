@@ -23,3 +23,7 @@ license = "Apache-2.0"
 keywords = [ "was", "wax", "webassembly", "wasm", "shrubbery", "parser" ]
 
 description = "Was: Wax in shrubbery notation -- a reader that produces the Wax AST"
+
+// See lib/moon.mod for why warning 79 is off.
+
+warnings = "-implicit_impl_as_method"

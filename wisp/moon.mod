@@ -12,3 +12,7 @@ import {
 license = "Apache-2.0"
 
 description = "Lexically scoped immutable scripting through wap"
+
+// See lib/moon.mod for why warning 79 is off.
+
+warnings = "-implicit_impl_as_method"

@@ -14,5 +14,4 @@ import {
   "marianoguerra/wax/ast/build",
   "marianoguerra/wax/basic",
   "marianoguerra/wax/compile",
-  "marianoguerra/wax/emit/wasm",
 } for "test"

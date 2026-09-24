@@ -23,3 +23,7 @@ license = "Apache-2.0"
 keywords = [ "wap", "wax", "webassembly", "wasm", "shrubbery", "compiler" ]
 
 description = "Wap: an Oberon-level language on shrubbery notation, compiled through the Wax AST"
+
+// See lib/moon.mod for why warning 79 is off.
+
+warnings = "-implicit_impl_as_method"

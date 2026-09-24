@@ -3,7 +3,6 @@ import {
   "marianoguerra/wax/cond",
   "marianoguerra/wax/diagnostic",
   "marianoguerra/wax/message",
-  "marianoguerra/wax/warning",
 }
 
 import {

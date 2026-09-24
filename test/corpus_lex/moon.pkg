@@ -3,7 +3,6 @@ import {
 
 import {
   "marianoguerra/wax/syntax/lexer",
-  "marianoguerra/wax/syntax/tokens",
   "moonbitlang/x/fs",
   "moonbitlang/core/json",
   "moonbitlang/core/test",
