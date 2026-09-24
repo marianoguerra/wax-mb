@@ -176,4 +176,4 @@ jobs:
       - name: check the pinned reference still matches upstream edge
         env:
           GH_TOKEN: ${{ github.token }}
-        run: tools/fetch-reference.sh
+        run: tools/fetch-reference.sh --upstream

@@ -19,14 +19,26 @@
 #      reference.json, and the `drift` job, which exists to say so on a
 #      schedule.
 #
+# `--upstream` skips the mirror. That is what the `drift` job runs: it exists to
+# say whether 'edge' still serves the pin, and a mirror that answers first would
+# keep it green long after upstream moved.
+#
 # sha256 is the authority for both. A mirror that does not match the pin is
 # refused like any other download -- the point of a mirror is to keep serving
 # the pinned bytes, not to become a second source of truth.
 set -euo pipefail
 
+UPSTREAM_ONLY=
+case "${1:-}" in
+  "") ;;
+  --upstream) UPSTREAM_ONLY=1 ;;
+  *) echo "usage: $0 [--upstream]" >&2; exit 2 ;;
+esac
+
 cd "$(dirname "$0")"
 
-json() { python3 -c "import json,sys;print(json.load(open('reference.json')).get('$1',''))"; }
+REF="$PWD/reference.json"
+json() { python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('$1',''))" "$REF"; }
 
 REPO=$(json repo)
 RELEASE=$(json release)
@@ -38,7 +50,13 @@ WANT_VERSION=$(json reports_version)
 
 have_sha() { sha256sum "$ASSET" | cut -d' ' -f1; }
 
-if [ -x "$ASSET" ] && [ "$(have_sha)" = "$WANT_SHA" ]; then
+# A check, not an install: work somewhere a rebuilt 'edge' cannot overwrite (and
+# then delete) a good copy of the pin in tools/.
+if [ -n "$UPSTREAM_ONLY" ]; then
+  cd "$(mktemp -d)"
+fi
+
+if [ -z "$UPSTREAM_ONLY" ] && [ -x "$ASSET" ] && [ "$(have_sha)" = "$WANT_SHA" ]; then
   echo "reference: $ASSET already present and matches the pin"
   exit 0
 fi
@@ -47,7 +65,7 @@ fi
 # network are all reasons to fall through to upstream rather than to stop. A
 # mirror that downloads something WRONG is a different matter, and the sha256
 # check below catches it.
-if [ -n "$MIRROR_REPO" ] && [ -n "$MIRROR_RELEASE" ]; then
+if [ -z "$UPSTREAM_ONLY" ] && [ -n "$MIRROR_REPO" ] && [ -n "$MIRROR_RELEASE" ]; then
   echo "reference: trying the mirror $MIRROR_REPO@$MIRROR_RELEASE"
   gh release download "$MIRROR_RELEASE" --repo "$MIRROR_REPO" \
     --pattern "$ASSET" --clobber -D . 2>/dev/null || true
