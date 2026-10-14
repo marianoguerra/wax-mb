@@ -7,7 +7,7 @@
 
 ///|
 /// Precedence, matching the reader's table, which matches Wax's.
-fn prec_of(op : @ast.BinOp) -> Int {
+fn prec_of(op : @ast.BinOp) -> Int32 {
   match op {
     Eq | Ne | Lt(_) | Gt(_) | Le(_) | Ge(_) => 3
     Or => 5
@@ -114,7 +114,7 @@ fn string_text(b : Bytes) -> String {
 
 ///|
 /// An expression, parenthesised when the context binds tighter than it does.
-pub fn expr(i : @ast.Instr[@basic.Location], min_prec? : Int = 0) -> String {
+pub fn expr(i : @ast.Instr[@basic.Location], min_prec~ : Int32 = 0) -> String {
   match i.desc {
     Int(s) => s
     Float(s) => s

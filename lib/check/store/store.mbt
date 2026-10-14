@@ -10,10 +10,10 @@
 /// rejected rather than left to silently corrupt the subtyping relation.
 suberror MalformedRecGroup {
   /// A `Rec` back-reference that does not name a member of this group.
-  BackReferenceOutOfGroup(Int, Int)
+  BackReferenceOutOfGroup(Int32, Int32)
   /// A `Def` naming a type that is not defined yet -- including one in this
   /// very group, which has to be spelled `Rec`.
-  UndefinedReference(Int)
+  UndefinedReference(Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -33,9 +33,9 @@ pub impl Show for MalformedRecGroup with fn output(self, logger) {
 pub struct TypeStore {
   /// Structurally equal rec groups share an entry, which is what makes a
   /// canonical index canonical.
-  interned : Map[RecType[RefIndex], Int]
+  interned : Map[RecType[RefIndex], Int32]
   /// The index the next freshly added type would receive.
-  mut last_index : Int
+  mut last_index : Int32
   /// Every group registered, in order, each with the index its first member
   /// received.
   ///
@@ -44,7 +44,7 @@ pub struct TypeStore {
   /// order, so the name and the reversal both go -- keeping either would be
   /// carrying over the shape of the other language's data structure, and
   /// keeping the reversal silently mis-resolves every intra-group reference.
-  groups : Array[(Int, RecType[RefIndex])]
+  groups : Array[(Int32, RecType[RefIndex])]
 }
 
 ///|
@@ -55,7 +55,7 @@ pub fn TypeStore::new() -> TypeStore {
 ///|
 /// The index the next freshly added type would receive, i.e. how many types are
 /// currently defined.
-pub fn TypeStore::last_index(self : TypeStore) -> Int {
+pub fn TypeStore::last_index(self : TypeStore) -> Int32 {
   self.last_index
 }
 
@@ -68,7 +68,7 @@ fn TypeStore::check_normalized(
   group : RecType[RefIndex],
 ) -> Unit raise MalformedRecGroup {
   let n = group.length()
-  let seen : Ref[MalformedRecGroup?] = @ref.new(None)
+  let seen : Ref[MalformedRecGroup?] = Ref(None)
   for st in group {
     // `map` visits every reference; the result is discarded, only the check
     // matters. The reference does the same thing, mapping to a dummy index.
@@ -115,7 +115,7 @@ pub fn TypeStore::add_rectype(
 ///|
 /// Resolve a reference to an absolute canonical index: a `Def` already is one,
 /// a `Rec` is the group's `pos`-th member counting from `base`.
-fn resolve_ref(base : Int, r : RefIndex) -> Id {
+fn resolve_ref(base : Int32, r : RefIndex) -> Id {
   match r {
     Def(id) => id
     Rec(pos) => { index: base + pos, }

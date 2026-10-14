@@ -24,8 +24,8 @@
 /// An identity pair yields `Some([])`: the cast is real in the source -- it
 /// pins a width the checker used -- and nothing at all in the output.
 fn numeric_cast(
-  from : @wasm_types.ValType[Int],
-  to : @wasm_types.ValType[Int],
+  from : @wasm_types.ValType[Int32],
+  to : @wasm_types.ValType[Int32],
 ) -> Array[@wasm_bin.Instruction]? {
   if from == to {
     return Some([])
@@ -57,7 +57,7 @@ fn numeric_cast(
 /// only at the edges, which is exactly where a wrong choice is hardest to
 /// notice.
 fn signed_cast(
-  from : @wasm_types.ValType[Int],
+  from : @wasm_types.ValType[Int32],
   to : @ast.NumType,
   signage : @wasm_types.Signage,
   strict : Bool,
@@ -110,10 +110,10 @@ fn signed_cast(
 /// same way the equivalent double cast would.
 fn cast_prologue(
   out : Array[@wasm_bin.Instruction],
-  from : @wasm_types.ValType[Int],
+  from : @wasm_types.ValType[Int32],
   target : @ast.CastType,
-) -> @wasm_types.ValType[Int] {
-  let i31ref : @wasm_types.RefType[Int] = { nullable: false, typ: I31, }
+) -> @wasm_types.ValType[Int32] {
+  let i31ref : @wasm_types.RefType[Int32] = { nullable: false, typ: I31, }
   match (from, target) {
     // `r as i32_s/u`: an i31 is already one, and anything else in the `any`
     // hierarchy is cast to one first. The `i31.get` follows in the match.
@@ -190,7 +190,7 @@ fn i31_get(signage : @wasm_types.Signage) -> @wasm_bin.Instruction {
 fn Lowering::cast_instruction(
   self : Lowering,
   out : Array[@wasm_bin.Instruction],
-  from : @wasm_types.ValType[Int],
+  from : @wasm_types.ValType[Int32],
   target : @ast.CastType,
   node : @ast.Instr[@typing_env.InferredAnnotation],
   loc : @basic.Location,

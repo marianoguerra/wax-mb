@@ -52,7 +52,7 @@ priv struct BinaryWriter {
   /// The reference does the same thing with a mutable `Encoder.hint_sink`,
   /// reset to a no-op outside code encoding, for the same reason: the offset is
   /// only knowable at the moment the opcode is written.
-  sink : Array[(Int, InstrHints)]?
+  sink : Array[(Int32, InstrHints)]?
 }
 
 ///|
@@ -62,7 +62,9 @@ fn BinaryWriter::new() -> BinaryWriter {
 
 ///|
 /// A writer that collects the hints of the instructions written into it.
-fn BinaryWriter::new_with_sink(sink : Array[(Int, InstrHints)]) -> BinaryWriter {
+fn BinaryWriter::new_with_sink(
+  sink : Array[(Int32, InstrHints)],
+) -> BinaryWriter {
   { buf: @buffer.Buffer::Buffer(), sink: Some(sink), }
 }
 
@@ -75,7 +77,7 @@ fn BinaryWriter::record_hint(self : BinaryWriter, hints : InstrHints) -> Unit {
 }
 
 ///|
-fn BinaryWriter::write_byte(self : BinaryWriter, b : Int) -> Unit {
+fn BinaryWriter::write_byte(self : BinaryWriter, b : Int32) -> Unit {
   self.buf.write_byte((b & 0xFF).to_byte())
 }
 
@@ -91,7 +93,7 @@ fn BinaryWriter::write_bytes(self : BinaryWriter, bytes : Bytes) -> Unit {
 /// binary format and arrives as a wrapped-around `Int`. Widening through
 /// `UInt` rather than sign-extending is what keeps that from encoding as ten
 /// bytes of sign extension.
-fn BinaryWriter::write_u32(self : BinaryWriter, val : Int) -> Unit {
+fn BinaryWriter::write_u32(self : BinaryWriter, val : Int32) -> Unit {
   let mut v = val.reinterpret_as_uint()
   while true {
     let byte = (v & 0x7F).reinterpret_as_int()
@@ -121,7 +123,7 @@ fn BinaryWriter::write_u64(self : BinaryWriter, val : UInt64) -> Unit {
 
 ///|
 /// Signed LEB128, 32-bit.
-fn BinaryWriter::write_s32(self : BinaryWriter, val : Int) -> Unit {
+fn BinaryWriter::write_s32(self : BinaryWriter, val : Int32) -> Unit {
   let mut v = val
   while true {
     let byte = v & 0x7F
@@ -426,8 +428,8 @@ fn encode_block_type(
 /// as an access to memory 0.
 fn encode_memarg(
   w : BinaryWriter,
-  memidx : Int,
-  align : Int,
+  memidx : Int32,
+  align : Int32,
   offset : Int64,
 ) -> Unit {
   if memidx == 0 {
@@ -442,7 +444,7 @@ fn encode_memarg(
 ///|
 /// The nullability bits `br_on_cast` and `br_on_cast_fail` carry ahead of their
 /// two heap types.
-fn cast_flags(from : RefType, to : RefType) -> Int {
+fn cast_flags(from : RefType, to : RefType) -> Int32 {
   (if from.nullable { 1 } else { 0 }) | (if to.nullable { 2 } else { 0 })
 }
 

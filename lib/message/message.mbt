@@ -66,7 +66,7 @@ pub fn styled(style : @colors.Style, s : String) -> Message {
 }
 
 ///|
-pub fn int(n : Int) -> Message {
+pub fn int(n : Int32) -> Message {
   Atom(Constant, false, n.to_string())
 }
 
@@ -124,7 +124,7 @@ pub fn group(m : Message) -> Message {
 
 ///|
 /// `"a, b or c"` -- commas, with `conj` before the last item.
-pub fn enumerate(items : Array[Message], conj? : String = "or") -> Message {
+pub fn enumerate(items : Array[Message], conj~ : String = "or") -> Message {
   match items.length() {
     0 => Empty
     1 => items[0]

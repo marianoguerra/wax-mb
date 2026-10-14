@@ -901,15 +901,15 @@ fn Ctx::hint_attrs(
 
 ///|
 /// `metadata.code.instr_freq`: never optimize.
-let never_opt : Int = 0
+let never_opt : Int32 = 0
 
 ///|
 /// `metadata.code.instr_freq`: always optimize.
-let always_opt : Int = 127
+let always_opt : Int32 = 127
 
 ///|
 /// Decode a frequency byte back to the ratio it stands for.
-fn freq_ratio_string(f : Int) -> String {
+fn freq_ratio_string(f : Int32) -> String {
   // The byte is an offset base-2 logarithm, so 32 means once per call.
   let e = f - 32
   if e >= 0 {
@@ -922,7 +922,7 @@ fn freq_ratio_string(f : Int) -> String {
 }
 
 ///|
-fn percent_string(p : Int) -> String {
+fn percent_string(p : Int32) -> String {
   if p % 100 == 0 {
     (p / 100).to_string()
   } else {

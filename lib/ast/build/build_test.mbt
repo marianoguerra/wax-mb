@@ -128,7 +128,7 @@ test "spans keep a generated function's locals apart" {
 ///|
 test "a `Spans` never returns the same span twice" {
   let s = @build.Spans::new()
-  let seen : Map[Int, Unit] = Map([])
+  let seen : Map[Int32, Unit] = Map([])
   for _ in 0..<100 {
     seen[s.fresh().start.cnum] = ()
   }

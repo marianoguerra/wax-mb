@@ -553,7 +553,7 @@ test "stack switching" {
 ///|
 /// Byte length of the encoded instructions, so a test can name just the tail it
 /// cares about rather than a whole module.
-fn _tail_len(instrs : Array[@wasm_bin.Instruction]) -> Int raise {
+fn _tail_len(instrs : Array[@wasm_bin.Instruction]) -> Int32 raise {
   @wasm_bin.encode(one_func(instrs)).length() -
   @wasm_bin.encode(one_func([])).length()
 }

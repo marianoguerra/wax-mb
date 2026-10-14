@@ -38,7 +38,7 @@ pub(all) enum Status {
 /// Taken from argv[0] rather than fixed: the reference's own cram tests run it
 /// as `wax`, and a program that calls itself something other than what the
 /// user typed is reporting about a program the user did not run.
-let prog_name : Ref[String] = @ref.new("wax-mb")
+let prog_name : Ref[String] = Ref("wax-mb")
 
 ///|
 /// Set the name from argv[0]. Anything without a path is used as it stands.
@@ -59,7 +59,7 @@ pub fn prog() -> String {
 }
 
 ///|
-pub fn Status::code(self : Status) -> Int {
+pub fn Status::code(self : Status) -> Int32 {
   match self {
     Ok => 0
     Usage => 123
@@ -146,7 +146,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
       _ => ()
     }
   }
-  fn need_value(flag : String, at : Int) -> Result[String, (Status, String)] {
+  fn need_value(flag : String, at : Int32) -> Result[String, (Status, String)] {
     if at + 1 < argv.length() {
       Ok(argv[at + 1])
     } else {
@@ -165,7 +165,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
         )
       _ => (a, None)
     }
-    fn value(at : Int) -> Result[String, (Status, String)] {
+    fn value(at : Int32) -> Result[String, (Status, String)] {
       match inline_value {
         Some(v) => Ok(v)
         None => need_value(name, at)

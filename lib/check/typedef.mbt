@@ -32,7 +32,7 @@ let reserved_type_names : Array[String] = [
 ///|
 /// Whether a reference is to a type already defined when member `current` of
 /// the group is reached: any `Def`, or a `Rec` member strictly before it.
-fn defined_before(current : Int, r : @type_store.RefIndex) -> Bool {
+fn defined_before(current : Int32, r : @type_store.RefIndex) -> Bool {
   match r {
     Def(_) => true
     Rec(pos) => pos < current
@@ -54,7 +54,7 @@ fn defined_before(current : Int, r : @type_store.RefIndex) -> Bool {
 fn n_subtype(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
-  current : Int,
+  current : Int32,
   st : @ast.SubType,
 ) -> @type_store.SubType[@type_store.RefIndex]? {
   guard comptype(ctx, diagnostics, st.typ) is Some(typ) else { return None }

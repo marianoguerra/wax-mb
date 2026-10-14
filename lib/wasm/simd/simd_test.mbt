@@ -66,7 +66,7 @@ test "every offered memory method is recognised" {
 /// A vector load's natural alignment is the bytes it actually reads, which for
 /// the widening and zero-filling loads is not 16.
 test "natural alignment follows the bytes touched" {
-  fn align(n : String) -> Int {
+  fn align(n : String) -> Int32 {
     match @simd.mem_method(n) {
       None => -1
       Some(m) => m.nat_align
@@ -127,7 +127,7 @@ test "memory method signatures" {
 /// The registry builds the instruction the encoder will write, so this is where
 /// a name and an opcode are tied together.
 test "memory methods build the right instruction" {
-  fn built(n : String, lane : Int) -> String {
+  fn built(n : String, lane : Int32) -> String {
     match @simd.mem_method(n) {
       None => "none"
       Some(m) => (m.build)(0, 4, 8L, lane) |> @debug.to_string
@@ -253,7 +253,7 @@ test "free functions and methods" {
 /// The registry builds the instruction the encoder writes, so a Wax name and an
 /// opcode are tied together here.
 test "the registry builds the right instruction" {
-  fn built(n : String, lanes : Array[Int]) -> String {
+  fn built(n : String, lanes : Array[Int32]) -> String {
     match @simd.classify(n) {
       None => "none"
       Some(i) => (i.build)(lanes) |> @debug.to_string

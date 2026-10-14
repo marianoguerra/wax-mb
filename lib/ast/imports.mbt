@@ -27,4 +27,4 @@ pub type StorageType = @wasm_types.StorageType[Ident]
 pub type FieldType = @wasm_types.FieldType[Ident]
 
 ///|
-using @wasm_types {type AddressType, type Signage, type Cond, type V128}
+using @wasm_types {type AddressType, type Signage, type Cond, type V128Literal}

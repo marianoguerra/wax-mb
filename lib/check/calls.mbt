@@ -191,7 +191,7 @@ fn lookup_cont_inner(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
-  location? : @basic.Location? = None,
+  location~ : @basic.Location? = None,
 ) -> @ast.Ident? {
   guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
     return None

@@ -16,7 +16,7 @@ struct Render {
 /// A reporting context.
 pub struct Context {
   /// How many errors to queue before flushing.
-  max : Int
+  max : Int32
   queue : Array[Diagnostic]
   source : String?
   /// Labels added to every diagnostic reported here.
@@ -69,8 +69,8 @@ pub fn Context::collected(self : Context) -> Array[Diagnostic] {
 /// `source` is still worth threading: a lint that inspects the original text
 /// runs against this context.
 pub fn collector(
-  parent? : Context? = None,
-  source? : String? = None,
+  parent~ : Context? = None,
+  source~ : String? = None,
 ) -> Context {
   let c = {
     max: @int.MAX_VALUE,
@@ -121,11 +121,11 @@ pub fn Context::report(
   loc : @basic.Location,
   severity : Severity,
   message : @message.Message,
-  warning? : @warning.Warning? = None,
-  universal? : Bool = false,
-  hint? : @message.Message? = None,
-  edit? : Edit? = None,
-  related? : Array[Label] = [],
+  warning~ : @warning.Warning? = None,
+  universal~ : Bool = false,
+  hint~ : @message.Message? = None,
+  edit~ : Edit? = None,
+  related~ : Array[Label] = [],
 ) -> Unit {
   let all_related = self.related.copy()
   all_related.append(related)
@@ -186,12 +186,12 @@ pub fn[T] run(
   palette : @colors.Theme,
   source : String?,
   f : (Context) -> T,
-  format? : OutputFormat = Human,
-  related? : Array[Label] = [],
-  exit_on_error? : Bool = true,
-  policy? : @warning.Policy = @warning.default_policy,
-  is_tty? : Bool = false,
-  max? : Int = 1,
+  format~ : OutputFormat = Human,
+  related~ : Array[Label] = [],
+  exit_on_error~ : Bool = true,
+  policy~ : @warning.Policy = @warning.default_policy,
+  is_tty~ : Bool = false,
+  max~ : Int32 = 1,
 ) -> (T, Context) {
   let ctx = {
     max,

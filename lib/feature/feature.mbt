@@ -103,7 +103,7 @@ pub fn configure(specs : Array[(Feature, Bool)]) -> Set {
 ///|
 /// The process-wide configuration, installed once from the command line -- the
 /// same shape as the warning policy.
-let global_specs : Ref[Array[(Feature, Bool)]] = @ref.new([])
+let global_specs : Ref[Array[(Feature, Bool)]] = Ref([])
 
 ///|
 pub fn set_config(specs : Array[(Feature, Bool)]) -> Unit {

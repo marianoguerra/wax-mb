@@ -28,7 +28,7 @@ fn export_clauses(
 
 ///|
 /// A guarded export, as a field: `(export "n" (func $f))`.
-fn export_field(m : @wasm_bin.Module, k : Int) -> Sexp {
+fn export_field(m : @wasm_bin.Module, k : Int32) -> Sexp {
   let e = m.exports[k]
   let (kind, i) = match e.desc {
     Func(i) => ("func", i)
@@ -127,7 +127,7 @@ fn readable(b : Bytes) -> Bool {
 
 ///|
 /// Two lowercase hex digits.
-fn hex2(c : Int) -> String {
+fn hex2(c : Int32) -> String {
   let digits = [
     "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f",
   ]
@@ -140,7 +140,7 @@ fn hex2(c : Int) -> String {
 /// Unlike an operand, where an index is a valid spelling, a FIELD written
 /// `(elem 3 ...)` would name the index in the wrong space -- so an unnamed
 /// field carries no identifier at all and takes its index from its position.
-fn opt_id(names : Map[Int, Bytes], k : Int) -> Array[Sexp] {
+fn opt_id(names : Map[Int32, Bytes], k : Int32) -> Array[Sexp] {
   match names.get(k) {
     Some(b) => [Atom(ident(b))]
     None => []
@@ -150,7 +150,7 @@ fn opt_id(names : Map[Int, Bytes], k : Int) -> Array[Sexp] {
 ///|
 /// A defined type: `(type $n (struct ...))`, or the `sub` form when it is not
 /// final or has a supertype.
-fn subtype_field(m : @wasm_bin.Module, k : Int) -> Sexp {
+fn subtype_field(m : @wasm_bin.Module, k : Int32) -> Sexp {
   let t = m.types[k]
   let head = block([Atom("type"), ..opt_id(m.names.types, k)])
   let body = comptype(m, k, t.composite)
@@ -200,7 +200,7 @@ fn describes_clauses(
 /// the field names live.
 fn comptype(
   m : @wasm_bin.Module,
-  of_ : Int,
+  of_ : Int32,
   c : @wasm_bin.CompositeType,
 ) -> Sexp {
   match c {
@@ -234,7 +234,7 @@ fn comptype(
 fn functype(
   m : @wasm_bin.Module,
   ft : @wasm_bin.FuncType,
-  names? : Map[Int, Bytes] = Map([]),
+  names~ : Map[Int32, Bytes] = Map([]),
 ) -> Array[Sexp] {
   let out : Array[Sexp] = []
   // Named parameters take a group each; unnamed ones share one. Same rule a
@@ -323,8 +323,8 @@ fn tabletype(m : @wasm_bin.Module, t : @wasm_bin.TableType) -> Array[Sexp] {
 /// it moves to the next line whole rather than splitting across the name.
 fn typeuse(
   m : @wasm_bin.Module,
-  k : Int,
-  owner? : @wasm_bin.ParamOwner? = None,
+  k : Int32,
+  owner~ : @wasm_bin.ParamOwner? = None,
 ) -> Array[Sexp] {
   // The two clauses are independent, and a declaration may write either or
   // both: `fn f: ft(i32)` names a type AND spells the signature out.
@@ -368,7 +368,7 @@ fn typeuse(
 ///
 /// A COMPACT group is one entry standing for a run of imports from the same
 /// module, and it is written as one field with an `item` per name.
-fn import_field(m : @wasm_bin.Module, k : Int) -> Sexp {
+fn import_field(m : @wasm_bin.Module, k : Int32) -> Sexp {
   let i = m.imports[k]
   let at = import_slots(m, k)
   match i.group {
@@ -424,7 +424,7 @@ fn compact_import(
   m : @wasm_bin.Module,
   i : @wasm_bin.Import,
   g : @wasm_bin.ImportGroup,
-  at : Map[String, Int],
+  at : Map[String, Int32],
 ) -> Sexp {
   let out : Array[Sexp] = [block([Atom("import"), Atom(quoted(i.mod_name))])]
   match g {
@@ -460,7 +460,7 @@ fn compact_item(
   m : @wasm_bin.Module,
   name : Bytes,
   d : @wasm_bin.ImportDesc,
-  at : Map[String, Int],
+  at : Map[String, Int32],
 ) -> Sexp {
   let (kind, id, typ, _) = import_parts(m, d, at)
   let inner : Array[Sexp] = [Atom(kind)]
@@ -481,8 +481,8 @@ fn compact_item(
 fn group_is_named(
   m : @wasm_bin.Module,
   d : @wasm_bin.ImportDesc,
-  n : Int,
-  at : Map[String, Int],
+  n : Int32,
+  at : Map[String, Int32],
 ) -> Bool {
   let names = match d {
     Func(_, _) => m.names.functions
@@ -513,7 +513,7 @@ fn kind_of(d : @wasm_bin.ImportDesc) -> String {
 }
 
 ///|
-fn bump(at : Map[String, Int], kind : String) -> Unit {
+fn bump(at : Map[String, Int32], kind : String) -> Unit {
   at[kind] = at.get(kind).unwrap_or(0) + 1
 }
 
@@ -522,8 +522,8 @@ fn bump(at : Map[String, Int], kind : String) -> Unit {
 ///
 /// A compact group holds several imports in one entry, so the count advances
 /// by what the entry stands for rather than by one.
-fn import_slots(m : @wasm_bin.Module, k : Int) -> Map[String, Int] {
-  let at : Map[String, Int] = Map([])
+fn import_slots(m : @wasm_bin.Module, k : Int32) -> Map[String, Int32] {
+  let at : Map[String, Int32] = Map([])
   for j in 0..<k {
     match m.imports[j].group {
       None => bump(at, kind_of(m.imports[j].desc))
@@ -546,7 +546,7 @@ fn import_slots(m : @wasm_bin.Module, k : Int) -> Map[String, Int] {
 fn import_parts(
   m : @wasm_bin.Module,
   d : @wasm_bin.ImportDesc,
-  at : Map[String, Int],
+  at : Map[String, Int32],
 ) -> (String, Array[Sexp], Array[Sexp], @wasm_bin.ExportDesc) {
   let k = kind_of(d)
   let n = at.get(k).unwrap_or(0)
@@ -587,7 +587,7 @@ fn import_parts(
 
 ///|
 /// A global: its type, then the constant expression that initialises it.
-fn global_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
+fn global_field(m : @wasm_bin.Module, k : Int32) -> Sexp raise WatError {
   let g = m.globals[k]
   let at = k + imported_count(m, "global")
   let head : Array[Sexp] = [Atom("global")]
@@ -606,7 +606,7 @@ fn global_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
 }
 
 ///|
-fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
+fn tag_field(m : @wasm_bin.Module, k : Int32) -> Sexp {
   let at = k + imported_count(m, "tag")
   let head : Array[Sexp] = [Atom("tag")]
   for x in opt_id(m.names.tags, at) {
@@ -622,7 +622,7 @@ fn tag_field(m : @wasm_bin.Module, k : Int) -> Sexp {
 }
 
 ///|
-fn memory_field(m : @wasm_bin.Module, k : Int) -> Sexp {
+fn memory_field(m : @wasm_bin.Module, k : Int32) -> Sexp {
   let at = k + imported_count(m, "memory")
   let head : Array[Sexp] = [Atom("memory")]
   for x in opt_id(m.names.memories, at) {
@@ -638,7 +638,7 @@ fn memory_field(m : @wasm_bin.Module, k : Int) -> Sexp {
 }
 
 ///|
-fn table_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
+fn table_field(m : @wasm_bin.Module, k : Int32) -> Sexp raise WatError {
   let t = m.tables[k]
   let at = k + imported_count(m, "table")
   let head : Array[Sexp] = [Atom("table")]
@@ -661,7 +661,7 @@ fn table_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
 }
 
 ///|
-fn elem_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
+fn elem_field(m : @wasm_bin.Module, k : Int32) -> Sexp raise WatError {
   let e = m.elems[k]
   let head : Array[Sexp] = [Atom("elem")]
   for x in opt_id(m.names.elem, k) {
@@ -710,8 +710,8 @@ fn elem_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
 ///|
 /// The functions a segment names, when every element is a bare `ref.func` and
 /// nothing else.
-fn func_indices(init : Array[Array[@wasm_bin.Instruction]]) -> Array[Int]? {
-  let out : Array[Int] = []
+fn func_indices(init : Array[Array[@wasm_bin.Instruction]]) -> Array[Int32]? {
+  let out : Array[Int32] = []
   for e in init {
     guard e.length() == 1 && e[0] is RefFunc(f) else { return None }
     out.push(f)
@@ -720,7 +720,7 @@ fn func_indices(init : Array[Array[@wasm_bin.Instruction]]) -> Array[Int]? {
 }
 
 ///|
-fn data_field(m : @wasm_bin.Module, k : Int) -> Sexp raise WatError {
+fn data_field(m : @wasm_bin.Module, k : Int32) -> Sexp raise WatError {
   let d = m.datas[k]
   let head : Array[Sexp] = [Atom("data")]
   for x in opt_id(m.names.data, k) {
@@ -779,7 +779,7 @@ fn expr(name : String, body : Array[Sexp]) -> Sexp {
 
 ///|
 /// How many items of a kind the imports took before the defined ones start.
-fn imported_count(m : @wasm_bin.Module, of_ : String) -> Int {
+fn imported_count(m : @wasm_bin.Module, of_ : String) -> Int32 {
   import_slots(m, m.imports.length()).get(of_).unwrap_or(0)
 }
 
@@ -791,7 +791,7 @@ fn imported_count(m : @wasm_bin.Module, of_ : String) -> Int {
 fn const_expr(
   m : @wasm_bin.Module,
   body : Array[@wasm_bin.Instruction],
-  spans? : Array[@wasm_bin.Span] = [],
+  spans~ : Array[@wasm_bin.Span] = [],
 ) -> Array[Sexp] raise WatError {
   let ctx = {
     m,

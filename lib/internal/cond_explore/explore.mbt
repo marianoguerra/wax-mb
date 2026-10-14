@@ -19,7 +19,7 @@
 /// optional. Hitting it is reported rather than passed over: a truncated
 /// exploration has checked a subset, and saying so is the difference between
 /// "no errors" and "no errors found so far".
-let max_configurations : Int = 4096
+let max_configurations : Int32 = 4096
 
 ///|
 /// One diagnostic, and the assumption under which it is reachable.
@@ -44,8 +44,8 @@ pub fn[Cfg] check_all(
   diagnostics : @diagnostic.Context,
   specialize~ : (@cond.Env, @cond.T, (@cond.T) -> Unit, (@cond.T) -> Unit) -> Cfg,
   check~ : (@diagnostic.Context, Cfg) -> Unit,
-  truncation_location? : @basic.Location? = None,
-  explain? : ((@cond.Env, @cond.T) -> String?)? = None,
+  truncation_location~ : @basic.Location? = None,
+  explain~ : ((@cond.Env, @cond.T) -> String?)? = None,
 ) -> Unit {
   let explain = match explain {
     Some(f) => f

@@ -20,7 +20,7 @@
 /// A code point above U+FFFF is stored in MoonBit as a surrogate PAIR (two
 /// UTF-16 code units) but encodes to four UTF-8 bytes, so callers iterating by
 /// character must not also add anything for the low surrogate.
-fn utf8_len_of_char(c : Char) -> Int {
+fn utf8_len_of_char(c : Char) -> Int32 {
   let n = c.to_int()
   if n < 0x80 {
     1
@@ -35,7 +35,7 @@ fn utf8_len_of_char(c : Char) -> Int {
 
 ///|
 /// The UTF-8 byte length of `v`.
-pub fn utf8_len(v : StringView) -> Int {
+pub fn utf8_len(v : StringView) -> Int32 {
   let mut n = 0
   for c in v {
     n += utf8_len_of_char(c)

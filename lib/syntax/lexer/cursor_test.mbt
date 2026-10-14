@@ -47,7 +47,7 @@ test "newline advances the line and moves bol past the break" {
 }
 
 ///|
-fn drain_to(c : @lexer.Cursor, byte : Int) -> Unit {
+fn drain_to(c : @lexer.Cursor, byte : Int32) -> Unit {
   while c.pos().cnum < byte && c.bump() is Some(_) {
 
   }

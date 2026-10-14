@@ -82,11 +82,11 @@ fn eval(n : Node, assign : Map[Atom, Bool]) -> Bool? {
 ///     constant it is also required to differ from.
 fn theory_consistent(assign : Map[Atom, Bool]) -> Bool {
   // Version variables: the tightest bounds seen so far.
-  let upper : Map[Int, (Version, Bool)] = Map([])
-  let lower : Map[Int, (Version, Bool)] = Map([])
+  let upper : Map[Int32, (Version, Bool)] = Map([])
+  let lower : Map[Int32, (Version, Bool)] = Map([])
   // String variables: what they must and must not equal.
-  let eq : Map[Int, Bytes] = Map([])
-  let ne : Map[Int, Array[Bytes]] = Map([])
+  let eq : Map[Int32, Bytes] = Map([])
+  let ne : Map[Int32, Array[Bytes]] = Map([])
   for entry in assign {
     let (atom, value) = entry
     match atom {
@@ -167,7 +167,7 @@ fn theory_consistent(assign : Map[Atom, Bool]) -> Bool {
 fn search(
   node : Node,
   atoms : Array[Atom],
-  i : Int,
+  i : Int32,
   assign : Map[Atom, Bool],
 ) -> Map[Atom, Bool]? {
   match eval(node, assign) {
@@ -239,7 +239,7 @@ pub fn equal(a : T, b : T) -> Bool {
 /// The exploration driver does need to dedup assumptions, and asks the weaker
 /// structural question instead -- see `canonical_key`, which is cheap and whose
 /// asymmetry is safe for exactly that use.
-pub fn hash(_ : T) -> Int {
+pub fn hash(_ : T) -> Int32 {
   0
 }
 

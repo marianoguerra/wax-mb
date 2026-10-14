@@ -93,7 +93,7 @@ pub fn render(p : @printer.Printer, theme : @colors.Theme, m : Message) -> Unit 
 /// A margin wide enough that a hard-broken message still emits one physical
 /// line per break. A stray break is harmless: JSON escapes it, so one object
 /// still occupies one physical line.
-const FLAT_MARGIN : Int = 1_000_000
+const FLAT_MARGIN : Int32 = 1_000_000
 
 ///|
 /// Render flat and ANSI-free, for the JSON and short output formats.

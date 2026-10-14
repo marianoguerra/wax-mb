@@ -21,7 +21,7 @@ pub fn lower_module(
   ],
   /// Whether an unresolved `#[if(..)]` may be lowered rather than refused.
   /// Only the TEXT form may: the binary has nowhere to put one.
-  keep_conditionals? : Bool = false,
+  keep_conditionals~ : Bool = false,
 ) -> @wasm_bin.Module raise LowerError {
   // A module with an UNRESOLVED conditional cannot be emitted at all, and the
   // check belongs here rather than at the first one reached: the reference
@@ -231,7 +231,7 @@ fn Lowering::flush_start(
 /// written type through the layout to say anything more.
 fn Lowering::functype_matches(
   self : Lowering,
-  emitted : Int,
+  emitted : Int32,
   sign : @ast.FuncType,
 ) -> Bool {
   guard self.layout.types.get(emitted) is Some(t) else { return true }
@@ -243,7 +243,7 @@ fn Lowering::functype_matches(
 ///|
 /// How many imports of this kind are already there, which is the index the
 /// next one takes.
-fn imports_so_far(m : @wasm_bin.Module, want : Int) -> Int {
+fn imports_so_far(m : @wasm_bin.Module, want : Int32) -> Int32 {
   let mut n = 0
   for i in m.imports {
     // A COMPACT group is one entry standing for a run of imports, so the count
@@ -267,7 +267,7 @@ fn imports_so_far(m : @wasm_bin.Module, want : Int) -> Int {
 
 ///|
 /// Which index space an import takes a slot in.
-fn import_kind(d : @wasm_bin.ImportDesc) -> Int {
+fn import_kind(d : @wasm_bin.ImportDesc) -> Int32 {
   match d {
     Func(_, _) => 0
     Table(_) => 1
@@ -380,7 +380,7 @@ fn quoted_bytes(b : Bytes) -> String {
   for k in 0..<b.length() {
     let c = b[k].to_int()
     if c >= 0x20 && c < 0x7F && c != 0x22 && c != 0x5C {
-      out.write_char(Int::unsafe_to_char(c))
+      out.write_char(Int32::unsafe_to_char(c))
     } else {
       out.write_string("\\" + digits[c / 16] + digits[c % 16])
     }
@@ -654,7 +654,7 @@ fn Lowering::field(
     // because the text format writes the field where the source put it and the
     // section says nothing about that.
     Type(decls) => {
-      let placed : Array[Int] = []
+      let placed : Array[Int32] = []
       for d in decls {
         let ti = self.type_index_of(d.desc.0, d.info)
         placed.push(ti)
@@ -761,7 +761,7 @@ fn Lowering::function_body(
 fn Lowering::claim_slot(
   self : Lowering,
   name : @ast.Ident,
-  slot : Int,
+  slot : Int32,
   loc : @basic.Location,
 ) -> Unit raise LowerError {
   let key = name.loc.start.cnum
@@ -776,7 +776,7 @@ fn Lowering::claim_slot(
 fn Lowering::collect_locals(
   self : Lowering,
   instrs : Array[@ast.Instr[@typing_env.InferredAnnotation]],
-  start : Int,
+  start : Int32,
 ) -> Unit raise LowerError {
   let mut next = start
   fn visit(
@@ -950,7 +950,7 @@ fn Lowering::func_index(
   self : Lowering,
   name : @ast.Ident,
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   match self.resolve(self.indices.funcs, name.name, loc) {
     Some(i) => i
     None => raise Unresolved("function index", loc)
@@ -967,7 +967,7 @@ fn Lowering::resolve(
   space : Space,
   name : String,
   loc : @basic.Location,
-) -> Int? {
+) -> Int32? {
   space.resolve(name, guards_at(self.conditionals, loc), d => {
     guards_at(self.conditionals, d)
   })
@@ -978,12 +978,12 @@ fn Lowering::resolve(
 fn guards_at(
   conds : Array[@wasm_bin.CondGroup],
   loc : @basic.Location,
-) -> Array[(Int, Bool)] {
+) -> Array[(Int32, Bool)] {
   fn covers(outer : @basic.Location, inner : @basic.Location) -> Bool {
     inner.start.cnum >= outer.start.cnum && inner.end.cnum <= outer.end.cnum
   }
 
-  let out : Array[(Int, Bool)] = []
+  let out : Array[(Int32, Bool)] = []
   for k, c in conds {
     if covers(c.then_, loc) {
       out.push((k, true))
@@ -1109,7 +1109,7 @@ fn Lowering::valtype_index(
   self : Lowering,
   v : @wasm_types.ValType[@ast.Ident],
   loc : @basic.Location,
-) -> @wasm_types.ValType[Int] raise LowerError {
+) -> @wasm_types.ValType[Int32] raise LowerError {
   match v {
     I32 => I32
     I64 => I64
@@ -1131,15 +1131,15 @@ fn Lowering::tag_type_index(
   self : Lowering,
   name : @ast.Ident,
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   guard self.ctx.tags.find_no_mark(name.name) is Some(ft) else {
     raise Unresolved("tag signature", loc)
   }
-  let params : Array[@wasm_types.ValType[Int]] = []
+  let params : Array[@wasm_types.ValType[Int32]] = []
   for p in ft.params {
     params.push(self.valtype_index(p.desc.1, loc))
   }
-  let results : Array[@wasm_types.ValType[Int]] = []
+  let results : Array[@wasm_types.ValType[Int32]] = []
   for r in ft.results {
     results.push(self.valtype_index(r, loc))
   }
@@ -1154,7 +1154,7 @@ fn Lowering::tag_index(
   self : Lowering,
   name : @ast.Ident,
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   match self.indices.tags.get(name.name) {
     Some(i) => i
     None => raise Unresolved("tag index", loc)
@@ -1166,7 +1166,7 @@ fn Lowering::memory_index(
   self : Lowering,
   name : @ast.Ident,
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   match self.indices.memories.get(name.name) {
     Some(i) => i
     None => raise Unresolved("memory index", loc)
@@ -1178,7 +1178,7 @@ fn Lowering::table_index(
   self : Lowering,
   name : @ast.Ident,
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   match self.indices.tables.get(name.name) {
     Some(i) => i
     None => raise Unresolved("table index", loc)
@@ -1191,7 +1191,7 @@ fn Lowering::reftype_index(
   self : Lowering,
   r : @wasm_types.RefType[@ast.Ident],
   loc : @basic.Location,
-) -> @wasm_types.RefType[Int] raise LowerError {
+) -> @wasm_types.RefType[Int32] raise LowerError {
   let typ = match r.typ {
     Type(n) | Exact(n) => {
       let i = self.type_index_of(n, loc)
@@ -1354,7 +1354,7 @@ fn note_param_names(
   sign : @ast.FuncType?,
 ) -> Unit {
   guard sign is Some(ft) else { return }
-  let names : Map[Int, Bytes] = Map([])
+  let names : Map[Int32, Bytes] = Map([])
   for k, p in ft.params {
     if p.desc.0 is Some(id) {
       names[k] = utf8_of(id.name)
@@ -1474,7 +1474,7 @@ fn Lowering::claim_name(self : Lowering, base : String) -> String {
 fn Lowering::derived_pages(
   self : Lowering,
   data : Array[@ast.MemData[@typing_env.InferredAnnotation]],
-  page_size_log2 : Int?,
+  page_size_log2 : Int32?,
   loc : @basic.Location,
 ) -> UInt64 raise LowerError {
   ignore(self)
@@ -1517,7 +1517,7 @@ fn Lowering::derived_pages(
 fn Lowering::compact_group(
   self : Lowering,
   m : @wasm_bin.Module,
-  n : Int,
+  n : Int32,
   loc : @basic.Location,
 ) -> Unit {
   ignore(loc)

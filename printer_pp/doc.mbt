@@ -34,14 +34,14 @@ priv enum Node {
   /// A literal, at the display width the builder measured it at. The width is
   /// carried rather than recomputed because it is not the string's length: a
   /// colour escape occupies no columns, and a CJK character occupies two.
-  Text(Int, String)
+  Text(Int32, String)
   Brk(@printer.BreakStrength)
   /// A group: its kind, an identity, and its body. The identity is what lets
   /// the lowering memoise a group it reaches twice -- which it does whenever an
   /// enclosing group has to be built both flat and broken.
-  Group(@printer.GKind, Int, Array[Node])
+  Group(@printer.GKind, Int32, Array[Node])
   /// Break-indentation, relative to the enclosing group's base column.
-  Nest(Int, Array[Node])
+  Nest(Int32, Array[Node])
   /// Body emitted only when the enclosing group is laid out broken.
   IfBroken(Array[Node])
   /// A break `prune` removed. A hole rather than a deletion, so pruning can
@@ -60,7 +60,7 @@ priv struct Level {
 priv enum Scope {
   SRoot
   SGroup(@printer.GKind)
-  SNest(Int)
+  SNest(Int32)
   SIfBroken
 }
 
@@ -161,19 +161,19 @@ fn prune(root : Array[Node]) -> Unit {
 /// exactly what a `@pp.Doc` decides at render time and cannot be asked for
 /// here.
 priv struct Pruner {
-  run : Array[(Array[Node], Int)]
+  run : Array[(Array[Node], Int32)]
   mut strength : @printer.BreakStrength
   mut seen_text : Bool
   /// The current frame's base, as an offset.
-  mut fb : Int
+  mut fb : Int32
   /// Nesting accumulated within the current frame.
-  mut nd : Int
+  mut nd : Int32
   /// The indent the pending line would land at: the last break's `fb + nd`.
-  mut pend : Int
+  mut pend : Int32
   /// `pend` at the run's first break -- the origin the offsets are from.
-  mut origin : Int
+  mut origin : Int32
   /// How much further right the run's last break indents than its first.
-  mut delta : Int
+  mut delta : Int32
   /// Whether a group opened between the run's FIRST and LAST break, which is
   /// what makes the choice of surviving break more than a formality. A group
   /// opening after the last break does not count: nothing indents to it.

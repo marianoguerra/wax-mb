@@ -16,7 +16,7 @@
 /// or table an access reaches, which is memory 0 or table 0 unless said
 /// otherwise. A NAMED one is always written -- the name is what the source
 /// wrote, and dropping it would change the text even though the index is 0.
-fn opt_index(names : Map[Int, Bytes], k : Int) -> String {
+fn opt_index(names : Map[Int32, Bytes], k : Int32) -> String {
   match names.get(k) {
     Some(b) => " " + ident(b)
     None => if k == 0 { "" } else { " " + k.to_string() }
@@ -24,7 +24,7 @@ fn opt_index(names : Map[Int, Bytes], k : Int) -> String {
 }
 
 ///|
-fn memidx(names : @wasm_bin.Names, k : Int) -> String {
+fn memidx(names : @wasm_bin.Names, k : Int32) -> String {
   opt_index(names.memories, k)
 }
 
@@ -33,10 +33,10 @@ fn memidx(names : @wasm_bin.Names, k : Int) -> String {
 /// from the defaults.
 fn memarg(
   name : String,
-  mem : Int,
-  align : Int,
+  mem : Int32,
+  align : Int32,
   offset : Int64,
-  natural : Int,
+  natural : Int32,
   names : @wasm_bin.Names,
 ) -> String {
   let out = StringBuilder()

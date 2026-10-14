@@ -18,7 +18,7 @@ pub fn parse_int64(s : String) -> Int64? {
 ///|
 /// The magnitude and sign of an integer literal, or `None` if it does not fit
 /// `width` bits under either the signed or the unsigned reading.
-fn parse_integer(s : String, width : Int) -> UInt64? {
+fn parse_integer(s : String, width : Int32) -> UInt64? {
   let (sign, body) = split_sign(s)
   let (digits, radix) = if body.has_prefix("0x") {
     (body[2:].to_owned(), 16)
@@ -99,7 +99,7 @@ pub fn is_int8(s : String) -> Bool {
 
 ///|
 /// The literal as a signed 32-bit value, or `None` if it does not fit one.
-fn signed_int32(s : String) -> Int? {
+fn signed_int32(s : String) -> Int32? {
   guard is_int32(s) else { return None }
   guard parse_integer(s, 32) is Some(bits) else { return None }
   let v = bits.to_int()

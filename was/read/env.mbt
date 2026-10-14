@@ -8,7 +8,7 @@
 ///|
 priv struct Reader {
   fname : String
-  line_starts : Array[Int]
+  line_starts : Array[Int32]
   src : @er.SourceId
   diagnostics : Array[@er.Report]
   /// The type names this file declares.
@@ -19,7 +19,7 @@ priv struct Reader {
   /// has nowhere to put a marker that shrubbery keeps. A trailing comma does
   /// not survive the reader, and `|` is the alternatives marker.
   type_names : Map[String, Unit]
-  mut counter : Int
+  mut counter : Int32
 }
 
 ///|
@@ -67,7 +67,7 @@ fn Reader::loc(self : Reader, span : Span) -> @basic.Location {
 }
 
 ///|
-fn Reader::position(self : Reader, offset : Int) -> @basic.Position {
+fn Reader::position(self : Reader, offset : Int32) -> @basic.Position {
   let mut lo = 0
   let mut hi = self.line_starts.length() - 1
   while lo < hi {
@@ -123,7 +123,7 @@ fn Reader::blk(
 /// A cursor over the terms of one group.
 priv struct Cursor {
   ts : Array[@sh.Node]
-  mut i : Int
+  mut i : Int32
   r : Reader
 }
 

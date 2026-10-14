@@ -16,7 +16,7 @@
 ///|
 /// The natural alignment of a memory access, in bytes: the width it reads or
 /// writes.
-pub fn mem_natural_align(meth : String) -> Int {
+pub fn mem_natural_align(meth : String) -> Int32 {
   match meth {
     "load8" | "store8" => 1
     "load16" | "store16" => 2
@@ -58,7 +58,7 @@ let max_align : UInt64 = 16UL
 pub fn check_memarg(
   diagnostics : @diagnostic.Context,
   address_type : @wasm_types.AddressType,
-  natural : Int,
+  natural : Int32,
   align : @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?,
   offset : @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?,
 ) -> Unit {
@@ -98,7 +98,7 @@ pub fn check_memarg(
 /// bytes however it is being read, so `i8x16.extract_lane` admits 0..15 and
 /// `f64x2.extract_lane` only 0..1 -- and the value on the stack is the same
 /// v128 in both cases. A shuffle names two vectors' lanes at once, hence 32.
-pub fn lane_bound(imm : @simd.Imm) -> Int? {
+pub fn lane_bound(imm : @simd.Imm) -> Int32? {
   match imm {
     NoImm => None
     Lane(shape) => Some(shape.lane_count())
@@ -118,7 +118,7 @@ pub fn lane_bound(imm : @simd.Imm) -> Int? {
 /// both of its lane checks, for exactly that reason.
 pub fn check_lane_immediate(
   diagnostics : @diagnostic.Context,
-  bound : Int,
+  bound : Int32,
   lane : @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location],
 ) -> Unit {
   guard lane.desc is Int(_) else {
@@ -137,7 +137,7 @@ pub fn check_lane_immediate(
 /// Derived from the access width rather than from a shape: a `load8_lane` reads
 /// one byte into one of sixteen byte lanes, a `load64_lane` eight bytes into
 /// one of two.
-pub fn mem_lane_bound(natural_align : Int) -> Int {
+pub fn mem_lane_bound(natural_align : Int32) -> Int32 {
   16 / natural_align
 }
 
@@ -223,7 +223,7 @@ fn mem_immediates(
   diagnostics : @diagnostic.Context,
   location : @basic.Location,
   example : String,
-  nstack : Int,
+  nstack : Int32,
   has_lane~ : Bool,
   found : Map[
     String,
@@ -262,7 +262,7 @@ fn mem_immediates(
   }
   fn pick(
     name : String,
-    k : Int,
+    k : Int32,
   ) -> @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]? {
     match found.get(name) {
       Some(e) => Some(e)

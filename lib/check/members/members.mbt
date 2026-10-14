@@ -41,8 +41,8 @@ pub(all) struct ValueMethod {
 ///|
 fn meth(
   name : String,
-  binary? : Bool = false,
-  result? : MethodResult = Same,
+  binary~ : Bool = false,
+  result~ : MethodResult = Same,
 ) -> ValueMethod {
   { name, binary, result, }
 }

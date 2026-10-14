@@ -47,7 +47,7 @@ fn load_index() -> Array[Case] raise {
 /// exhaust the stack, and a test that dies on real input measures nothing.
 fn count(
   root : @ast.Instr[@typing_env.InferredAnnotation],
-  seen : Array[Int],
+  seen : Array[Int32],
 ) -> Unit {
   let stack = [root]
   while stack.length() > 0 {
@@ -88,7 +88,7 @@ test "the checker annotates every node it reaches" {
   let seen = [0, 0]
   let mut files = 0
   let mut clean = 0
-  let messages : Map[String, Int] = Map([])
+  let messages : Map[String, Int32] = Map([])
   for c in load_index() {
     // The reference's own rejections: nothing here to annotate.
     if c.bucket == "syntax-bad" {
@@ -126,7 +126,7 @@ test "the checker annotates every node it reaches" {
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
     content="nodes 180520 poisoned 0 files 1821 clean 1646",
   )
-  let top : Array[(String, Int)] = []
+  let top : Array[(String, Int32)] = []
   for m, n in messages {
     top.push((m, n))
   }

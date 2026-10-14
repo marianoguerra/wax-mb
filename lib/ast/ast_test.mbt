@@ -4,7 +4,7 @@
 // their own span must keep it.
 
 ///|
-fn loc(a : Int, b : Int) -> @basic.Location {
+fn loc(a : Int32, b : Int32) -> @basic.Location {
   {
     start: { fname: "t.wax", lnum: 1, bol: 0, cnum: a, },
     end: { fname: "t.wax", lnum: 1, bol: 0, cnum: b, },

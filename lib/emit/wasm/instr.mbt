@@ -67,7 +67,7 @@ fn Lowering::detached(
 fn Lowering::rebase(
   self : Lowering,
   spans : Array[@wasm_bin.Span],
-  base : Int,
+  base : Int32,
 ) -> Unit {
   for sp in spans {
     self.spans.push({
@@ -143,7 +143,7 @@ fn Lowering::lower_hints(
     // not resolve drops that entry rather than the whole hint: the section is
     // advisory, and a partial list is still true.
     targets: h.targets.map(x => {
-      let out : Array[(Int, Int)] = []
+      let out : Array[(Int32, Int32)] = []
       for entry in x.value {
         if self.indices.funcs.get(entry.0.name) is Some(f) {
           out.push((f, entry.1))
@@ -781,7 +781,7 @@ fn Lowering::hinted(
     Try(label~, typ~, block~, catches~, catch_all~) => {
       let bt = self.block_type(typ, loc)
       let body = self.body(label, block.desc)
-      let handlers : Array[(Int, Array[@wasm_bin.Instruction])] = []
+      let handlers : Array[(Int32, Array[@wasm_bin.Instruction])] = []
       for c in catches {
         guard self.indices.tags.get(c.0.name) is Some(t) else {
           raise Unresolved("tag", loc)
@@ -839,7 +839,7 @@ fn Lowering::hinted(
       guard labels.length() >= 1 else {
         raise Unresolved("br_table targets", loc)
       }
-      let targets : Array[Int] = []
+      let targets : Array[Int32] = []
       for k in 0..<(labels.length() - 1) {
         targets.push(self.depth(labels[k], loc))
       }
@@ -1094,7 +1094,7 @@ fn Lowering::hinted(
       let units = if f.typ is Packed(I16) {
         utf16_units(bytes, loc)
       } else {
-        let out : Array[Int] = []
+        let out : Array[Int32] = []
         for k in 0..<bytes.length() {
           out.push(bytes[k].to_int())
         }
@@ -1536,10 +1536,10 @@ fn Lowering::fused_atomic_load(
 /// same order.
 fn Lowering::field_index(
   self : Lowering,
-  t : Int,
+  t : Int32,
   declared : Array[@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]],
   name : String,
-) -> (Int, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]])? {
+) -> (Int32, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]])? {
   guard self.source_types.get(t) is Some(sub) else { return None }
   guard sub.typ is Struct(fields) else { return None }
   for k, f in fields {
@@ -1599,7 +1599,7 @@ fn Lowering::indirect_call(
 fn Lowering::table_of(
   self : Lowering,
   recv : @ast.Instr[@typing_env.InferredAnnotation],
-) -> Int? {
+) -> Int32? {
   guard recv.desc is Get(name) else { return None }
   // A LOCAL of the same name shadows the table, which is the order the checker
   // resolved it in too.
@@ -1781,8 +1781,8 @@ fn atomic_op(
 /// non-null target, and the check the instruction carries would reject it.
 fn br_on_cast_source(
   operand : @ast.Instr[@typing_env.InferredAnnotation],
-  target : @wasm_types.RefType[Int],
-) -> @wasm_types.RefType[Int] {
+  target : @wasm_types.RefType[Int32],
+) -> @wasm_types.RefType[Int32] {
   match node_last_reftype(operand) {
     Some(r) => r
     None =>
@@ -1796,7 +1796,7 @@ fn br_on_cast_source(
 fn lane_immediate(
   a : @ast.Instr[@typing_env.InferredAnnotation],
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   let value = if a.desc is Labelled(_, v) { v } else { a }
   guard value.desc is Int(s) else { raise Unresolved("lane immediate", loc) }
   parse_i64(s, loc).to_int()
@@ -1812,7 +1812,7 @@ fn Lowering::descriptor_target(
   i : @ast.Instr[@typing_env.InferredAnnotation],
   nullable : Bool,
   loc : @basic.Location,
-) -> @wasm_types.RefType[Int] raise LowerError {
+) -> @wasm_types.RefType[Int32] raise LowerError {
   ignore(self)
   guard node_last_reftype(i) is Some(r) else {
     raise Unresolved("descriptor branch type", loc)
@@ -1839,7 +1839,7 @@ fn labelled_tag(
 fn labelled_lane(
   args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   for a in args {
     if a.desc is Labelled(label, _) && label.name == "lane" {
       return lane_immediate(a, loc)
@@ -1972,7 +1972,7 @@ fn Lowering::functype_of(
   self : Lowering,
   typ : @ast.FuncType,
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   self.block_functype_index(typ, loc)
 }
 
@@ -1981,12 +1981,12 @@ fn Lowering::block_functype_index(
   self : Lowering,
   typ : @ast.FuncType,
   loc : @basic.Location,
-) -> Int raise LowerError {
-  let params : Array[@wasm_types.ValType[Int]] = []
+) -> Int32 raise LowerError {
+  let params : Array[@wasm_types.ValType[Int32]] = []
   for p in typ.params {
     params.push(self.valtype_index(p.desc.1, loc))
   }
-  let results : Array[@wasm_types.ValType[Int]] = []
+  let results : Array[@wasm_types.ValType[Int32]] = []
   for r in typ.results {
     results.push(self.valtype_index(r, loc))
   }
@@ -2008,7 +2008,7 @@ fn Lowering::depth(
   self : Lowering,
   label : @ast.Ident,
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   match self.depth_of(label.name) {
     Some(d) => d
     None => raise Unresolved("branch target", loc)
@@ -2026,7 +2026,7 @@ fn Lowering::catch_handler(
   c : @ast.Catch,
   loc : @basic.Location,
 ) -> @wasm_bin.CatchHandler raise LowerError {
-  fn tag_of(t : @ast.Ident) -> Int raise LowerError {
+  fn tag_of(t : @ast.Ident) -> Int32 raise LowerError {
     match self.indices.tags.get(t.name) {
       Some(i) => i
       None => raise Unresolved("catch tag", loc)
@@ -2047,11 +2047,14 @@ fn Lowering::catch_handler(
 /// An `i16` array holds code units rather than bytes, so a literal destined for
 /// one is decoded and re-encoded. An astral scalar becomes a surrogate PAIR,
 /// which is why the count can differ from the character count.
-fn utf16_units(b : Bytes, loc : @basic.Location) -> Array[Int] raise LowerError {
+fn utf16_units(
+  b : Bytes,
+  loc : @basic.Location,
+) -> Array[Int32] raise LowerError {
   guard @unicode.utf8_text(b) is Some(text) else {
     raise NotLowered("non-UTF-8 string in a code-unit array", loc)
   }
-  let out : Array[Int] = []
+  let out : Array[Int32] = []
   for k in 0..<text.length() {
     out.push(text[k].to_int())
   }
@@ -2120,7 +2123,7 @@ fn Lowering::type_index_of(
   self : Lowering,
   name : @ast.Ident,
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   // By NAME first. Two declarations of one shape share a store entry but not an
   // emitted index, and a reference that names one of them means that one.
   if self.layout.by_name.get(name.name) is Some(emitted) {
@@ -2141,7 +2144,7 @@ fn Lowering::tag_of(
   self : Lowering,
   tag : @ast.Ident,
   loc : @basic.Location,
-) -> Int raise LowerError {
+) -> Int32 raise LowerError {
   match self.indices.tags.get(tag.name) {
     Some(i) => i
     None => raise Unresolved("tag", loc)
@@ -2189,7 +2192,7 @@ fn Lowering::cont_method(
   self : Lowering,
   meth : @ast.Ident,
   args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
-  ct : Int,
+  ct : Int32,
   handlers : Array[@ast.OnClause],
   loc : @basic.Location,
 ) -> @wasm_bin.Instruction raise LowerError {

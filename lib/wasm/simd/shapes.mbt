@@ -51,7 +51,7 @@ pub fn Shape::of_str(s : String) -> Shape? {
 ///|
 /// How many lanes the shape has. Also the number of literals a constant of that
 /// shape takes, and the exclusive bound on a lane index.
-pub fn Shape::lane_count(self : Shape) -> Int {
+pub fn Shape::lane_count(self : Shape) -> Int32 {
   match self {
     I8x16 => 16
     I16x8 => 8
@@ -147,7 +147,7 @@ pub fn const_shape_of_name(name : String) -> Shape? {
 
 ///|
 /// How many lane literals a constant of this shape takes.
-pub fn const_arity(s : Shape) -> Int {
+pub fn const_arity(s : Shape) -> Int32 {
   s.lane_count()
 }
 

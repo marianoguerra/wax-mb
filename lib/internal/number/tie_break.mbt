@@ -17,8 +17,8 @@
 priv struct Exact {
   mantissa : BigInt
   /// Base 2 for a hex literal, base 10 for a decimal one.
-  base : Int
-  exponent : Int
+  base : Int32
+  exponent : Int32
 }
 
 ///|
@@ -141,7 +141,7 @@ fn exact_decimal(body : String) -> Exact? {
 
 ///|
 /// A finite double as `mantissa * 2^exponent`, exactly.
-fn exact_of_double(d : Double) -> (BigInt, Int) {
+fn exact_of_double(d : Double) -> (BigInt, Int32) {
   let bits = d.abs().reinterpret_as_int64()
   let raw_exp = ((bits >> 52) & 0x7FF).to_int()
   let raw_frac = bits & 0xF_FFFF_FFFF_FFFF
@@ -154,7 +154,7 @@ fn exact_of_double(d : Double) -> (BigInt, Int) {
 }
 
 ///|
-fn pow_big(base : Int, e : Int) -> BigInt {
+fn pow_big(base : Int32, e : Int32) -> BigInt {
   let mut r = 1N
   let b = BigInt::from_int(base)
   for _ in 0..<e {
@@ -170,7 +170,7 @@ fn pow_big(base : Int, e : Int) -> BigInt {
 ///
 /// Both sides are `m * b^e`; cross-multiplying by the positive powers clears
 /// every denominator and leaves two integers to compare.
-fn compare_literal_to_double(s : String, d : Double) -> Int? {
+fn compare_literal_to_double(s : String, d : Double) -> Int32? {
   guard exact_of_literal(s) is Some(lit) else { return None }
   let (dm, de) = exact_of_double(d)
   // Left is lit.mantissa * base^exponent; right is dm * 2^de.

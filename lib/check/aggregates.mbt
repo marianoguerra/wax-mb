@@ -18,7 +18,7 @@ pub fn lookup_func_type(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
-  location? : @basic.Location? = None,
+  location~ : @basic.Location? = None,
 ) -> @ast.FuncType? {
   guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
     return None
@@ -38,7 +38,7 @@ pub fn lookup_struct_type(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
-  location? : @basic.Location? = None,
+  location~ : @basic.Location? = None,
 ) -> Array[
   @basic.Annotated[
     (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
@@ -63,7 +63,7 @@ pub fn lookup_array_type(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
-  location? : @basic.Location? = None,
+  location~ : @basic.Location? = None,
 ) -> @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]? {
   guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
     return None
@@ -157,7 +157,7 @@ fn find_field(
     ],
   ],
   name : String,
-) -> (Int, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]])? {
+) -> (Int32, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]])? {
   for i, f in fields {
     if f.desc.0.name == name {
       return Some((i, f.desc.1))

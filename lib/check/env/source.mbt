@@ -34,7 +34,7 @@ pub fn blank_comments(s : String) -> String {
   let cs = s.to_array()
   let n = cs.length()
   let out = Array::makei(n, i => cs[i])
-  fn blank(lo : Int, hi : Int) -> Unit {
+  fn blank(lo : Int32, hi : Int32) -> Unit {
     for k in lo..<hi {
       if cs[k] != '\n' {
         out[k] = ' '

@@ -10,7 +10,7 @@
 ///|
 /// An identifier, as the text format spells one: `$name`, or the index when
 /// nothing named it.
-fn name_or(names : Map[Int, Bytes], i : Int) -> String {
+fn name_or(names : Map[Int32, Bytes], i : Int32) -> String {
   match names.get(i) {
     Some(b) => ident(b)
     None => i.to_string()
@@ -56,16 +56,16 @@ fn text_of(b : Bytes) -> String {
   while k < b.length() {
     let c = b[k].to_int()
     if c < 0x80 {
-      out.write_char(Int::unsafe_to_char(c))
+      out.write_char(Int32::unsafe_to_char(c))
       k = k + 1
     } else if c < 0xE0 && k + 1 < b.length() {
       out.write_char(
-        Int::unsafe_to_char(((c & 0x1F) << 6) | (b[k + 1].to_int() & 0x3F)),
+        Int32::unsafe_to_char(((c & 0x1F) << 6) | (b[k + 1].to_int() & 0x3F)),
       )
       k = k + 2
     } else if c < 0xF0 && k + 2 < b.length() {
       out.write_char(
-        Int::unsafe_to_char(
+        Int32::unsafe_to_char(
           ((c & 0x0F) << 12) |
           ((b[k + 1].to_int() & 0x3F) << 6) |
           (b[k + 2].to_int() & 0x3F),
@@ -74,7 +74,7 @@ fn text_of(b : Bytes) -> String {
       k = k + 3
     } else if k + 3 < b.length() {
       out.write_char(
-        Int::unsafe_to_char(
+        Int32::unsafe_to_char(
           ((c & 0x07) << 18) |
           ((b[k + 1].to_int() & 0x3F) << 12) |
           ((b[k + 2].to_int() & 0x3F) << 6) |
@@ -91,7 +91,10 @@ fn text_of(b : Bytes) -> String {
 
 ///|
 /// A value type, as the text format spells it.
-pub fn valtype(v : @wasm_types.ValType[Int], names : Map[Int, Bytes]) -> String {
+pub fn valtype(
+  v : @wasm_types.ValType[Int32],
+  names : Map[Int32, Bytes],
+) -> String {
   match v {
     I32 => "i32"
     I64 => "i64"
@@ -105,7 +108,10 @@ pub fn valtype(v : @wasm_types.ValType[Int], names : Map[Int, Bytes]) -> String 
 ///|
 /// A reference type. The nullable abstract ones have one-word spellings --
 /// `funcref` rather than `(ref null func)` -- and the format prefers them.
-pub fn reftype(r : @wasm_types.RefType[Int], names : Map[Int, Bytes]) -> String {
+pub fn reftype(
+  r : @wasm_types.RefType[Int32],
+  names : Map[Int32, Bytes],
+) -> String {
   if r.nullable {
     match r.typ {
       Func => return "funcref"
@@ -136,8 +142,8 @@ pub fn reftype(r : @wasm_types.RefType[Int], names : Map[Int, Bytes]) -> String 
 ///|
 /// A heap type.
 pub fn heaptype(
-  h : @wasm_types.HeapType[Int],
-  names : Map[Int, Bytes],
+  h : @wasm_types.HeapType[Int32],
+  names : Map[Int32, Bytes],
 ) -> String {
   match h {
     Func => "func"

@@ -16,37 +16,37 @@
 priv struct ScanState {
   mut active : Bool
   mut ghv : Bool
-  mut base : Int
+  mut base : Int32
   mut str : BreakStrength
-  mut avail : Int
+  mut avail : Int32
   mut sstack : Array[Mode]
   mut fr : Array[Frame]
-  mut ib : Int
-  mut i : Int
+  mut ib : Int32
+  mut i : Int32
 }
 
 ///|
 /// The engine.
 struct Engine {
-  width : Int
+  width : Int32
   out : StringBuilder
   /// How far breaks may indent, so deeply nested code does not march off the
   /// right margin. The analogue of Format's max_indent.
-  max_indent : Int
-  mut col : Int
+  max_indent : Int32
+  mut col : Int32
   mut emitted : Bool
   /// A pending line break: indent, and whether a blank line precedes it.
-  mut pend_line : (Int, Bool)?
+  mut pend_line : (Int32, Bool)?
   /// A pending flat separator. A line break supersedes one.
   mut pend_flat : BreakStrength?
   /// Innermost frame LAST, so push/pop are array operations.
   frames : Array[Frame]
   /// The lookahead FIFO.
   queue : Array[Token]
-  mut qhd : Int
+  mut qhd : Int32
   /// > 0 while dropping the content of an if_broken whose enclosing group is
   /// not broken -- the trailing comma of a flat list.
-  mut skip_depth : Int
+  mut skip_depth : Int32
   sc : ScanState
   mut scan_at_end : Bool
   /// Drop every token instead of laying it out. See `run_discard`.
@@ -61,7 +61,7 @@ struct Engine {
 }
 
 ///|
-pub fn Engine::new(width? : Int = 78) -> Engine {
+pub fn Engine::new(width~ : Int32 = 78) -> Engine {
   {
     width,
     out: StringBuilder(),
@@ -96,12 +96,12 @@ pub fn Engine::new(width? : Int = 78) -> Engine {
 }
 
 ///|
-fn Engine::qn(self : Engine) -> Int {
+fn Engine::qn(self : Engine) -> Int32 {
   self.queue.length() - self.qhd
 }
 
 ///|
-fn Engine::qget(self : Engine, i : Int) -> Token {
+fn Engine::qget(self : Engine, i : Int32) -> Token {
   self.queue[self.qhd + i]
 }
 
@@ -160,7 +160,7 @@ fn Engine::flush(self : Engine) -> Unit {
 }
 
 ///|
-fn Engine::break_line(self : Engine, ind : Int, blank : Bool) -> Unit {
+fn Engine::break_line(self : Engine, ind : Int32, blank : Bool) -> Unit {
   let ind = if ind > self.max_indent { self.max_indent } else { ind }
   self.pend_line = match self.pend_line {
     Some((_, b0)) => Some((ind, b0 || blank))
@@ -183,7 +183,7 @@ fn Engine::flat_sep(self : Engine, s : BreakStrength) -> Unit {
 
 ///|
 /// The column the next text would land in, accounting for pending breaks.
-fn Engine::eff_col(self : Engine) -> Int {
+fn Engine::eff_col(self : Engine) -> Int32 {
   match self.pend_line {
     Some((ind, _)) => ind
     None => self.col + (if self.pend_flat is Some(_) { 1 } else { 0 })
@@ -202,11 +202,11 @@ fn Engine::eff_col(self : Engine) -> Int {
 /// ends the line iff the mode in force is a breaking one.
 fn Engine::scan_go(
   self : Engine,
-  avail_in : Int,
+  avail_in : Int32,
   sstack : Array[Mode],
   fr : Array[Frame],
-  ib_in : Int,
-  i_in : Int,
+  ib_in : Int32,
+  i_in : Int32,
 ) -> ScanResult {
   let mut avail = avail_in
   let mut ib = ib_in

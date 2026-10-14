@@ -66,7 +66,7 @@ fn needs_vertical(s : Sexp) -> Bool {
 
 ///|
 /// The indentation one level of nesting adds.
-const INDENT : Int = 2
+const INDENT : Int32 = 2
 
 ///|
 /// Lay out a document at the width the reference uses.
@@ -77,8 +77,8 @@ const INDENT : Int = 2
 /// land on a node this printer never reaches, and vanish.
 pub fn render(
   s : Sexp,
-  top_depth? : Int = 1,
-  trivia? : @trivia.Context? = None,
+  top_depth~ : Int32 = 1,
+  trivia~ : @trivia.Context? = None,
 ) -> String {
   match trivia {
     None =>
@@ -217,11 +217,11 @@ fn retarget(content : String, kind : @trivia.TriviaKind) -> String {
 fn format(
   p : @printer.Printer,
   in_block : Bool,
-  depth : Int,
+  depth : Int32,
   first : Bool,
   s : Sexp,
   ctx : Attach,
-  within? : Array[@trivia.Entry] = [],
+  within~ : Array[@trivia.Entry] = [],
 ) -> Unit {
   match s {
     // Its comments, then the node, then whatever trailed it. What is WITHIN

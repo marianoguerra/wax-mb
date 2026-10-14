@@ -23,7 +23,7 @@ pub struct Printer {
 }
 
 ///|
-pub fn Printer::new(width? : Int = 78) -> Printer {
+pub fn Printer::new(width~ : Int32 = 78) -> Printer {
   {
     engine: Engine::new(width~),
     pending_break: None,
@@ -124,7 +124,7 @@ pub fn Printer::has_pending_eol(self : Printer) -> Bool {
 }
 
 ///|
-fn Printer::text(self : Printer, len : Int, s : String) -> Unit {
+fn Printer::text(self : Printer, len : Int32, s : String) -> Unit {
   if !self.holding_eol {
     self.force_eol()
   }
@@ -143,7 +143,7 @@ pub fn Printer::string(self : Printer, s : String) -> Unit {
 ///
 /// For text whose printed width is not its measured width -- a coloured span,
 /// where the escape sequences occupy no columns.
-pub fn Printer::string_as(self : Printer, len : Int, s : String) -> Unit {
+pub fn Printer::string_as(self : Printer, len : Int32, s : String) -> Unit {
   self.text(len, s)
 }
 
@@ -177,7 +177,7 @@ pub fn Printer::blank_line(self : Printer) -> Unit {
 
 ///|
 /// Run `f` with break-indentation increased by `n`.
-pub fn Printer::indent(self : Printer, n : Int, f : () -> Unit) -> Unit {
+pub fn Printer::indent(self : Printer, n : Int32, f : () -> Unit) -> Unit {
   self.emit(TNest(n))
   f()
   self.emit(TEnd)
@@ -196,7 +196,7 @@ fn Printer::scoped(
   self : Printer,
   kind : GKind,
   skip_space : Bool,
-  indent : Int,
+  indent : Int32,
   f : () -> Unit,
 ) -> Unit {
   if !self.holding_eol {
@@ -226,8 +226,8 @@ fn Printer::scoped(
 pub fn Printer::box(
   self : Printer,
   f : () -> Unit,
-  skip_space? : Bool = false,
-  indent? : Int = 0,
+  skip_space~ : Bool = false,
+  indent~ : Int32 = 0,
 ) -> Unit {
   self.scoped(GBox, skip_space, indent, f)
 }
@@ -237,8 +237,8 @@ pub fn Printer::box(
 pub fn Printer::hvbox(
   self : Printer,
   f : () -> Unit,
-  skip_space? : Bool = false,
-  indent? : Int = 0,
+  skip_space~ : Bool = false,
+  indent~ : Int32 = 0,
 ) -> Unit {
   self.scoped(GHv, skip_space, indent, f)
 }
@@ -247,8 +247,8 @@ pub fn Printer::hvbox(
 pub fn Printer::hovbox(
   self : Printer,
   f : () -> Unit,
-  skip_space? : Bool = false,
-  indent? : Int = 0,
+  skip_space~ : Bool = false,
+  indent~ : Int32 = 0,
 ) -> Unit {
   self.scoped(GHov, skip_space, indent, f)
 }
@@ -258,8 +258,8 @@ pub fn Printer::hovbox(
 pub fn Printer::vbox(
   self : Printer,
   f : () -> Unit,
-  skip_space? : Bool = false,
-  indent? : Int = 0,
+  skip_space~ : Bool = false,
+  indent~ : Int32 = 0,
 ) -> Unit {
   self.scoped(GV, skip_space, indent, f)
 }
@@ -269,7 +269,7 @@ pub fn Printer::vbox(
 pub fn Printer::hbox(
   self : Printer,
   f : () -> Unit,
-  skip_space? : Bool = false,
+  skip_space~ : Bool = false,
 ) -> Unit {
   self.scoped(GH, skip_space, 0, f)
 }
@@ -286,7 +286,7 @@ fn Printer::finalize(self : Printer) -> Unit {
 
 ///|
 /// Lay `f` out and return the text.
-pub fn run_string(f : (Printer) -> Unit, width? : Int = 78) -> String {
+pub fn run_string(f : (Printer) -> Unit, width~ : Int32 = 78) -> String {
   let p = Printer::new(width~)
   f(p)
   p.finalize()
@@ -300,7 +300,7 @@ pub fn run_string(f : (Printer) -> Unit, width? : Int = 78) -> String {
 /// the whole document, in the form a layout engine consumes it. It exists so an
 /// alternative engine can be fed exactly what this one is fed; see
 /// `printer_pp`.
-pub fn run_tokens(f : (Printer) -> Unit, width? : Int = 78) -> Array[Token] {
+pub fn run_tokens(f : (Printer) -> Unit, width~ : Int32 = 78) -> Array[Token] {
   let p = Printer::new(width~)
   let rec : Array[Token] = []
   p.engine.record = Some(rec)

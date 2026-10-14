@@ -11,7 +11,7 @@
 
 ///|
 /// The natural alignment, as a power of two, of an access of this width.
-fn natural_align(meth : String) -> Int {
+fn natural_align(meth : String) -> Int32 {
   match meth {
     "load8" | "store8" => 0
     "load16" | "store16" => 1
@@ -31,7 +31,7 @@ fn Lowering::memarg(
   meth : @ast.Ident,
   args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
   loc : @basic.Location,
-) -> (Int, Int64) raise LowerError {
+) -> (Int32, Int64) raise LowerError {
   self.memarg_natural(natural_align(meth.name), args, loc)
 }
 
@@ -40,10 +40,10 @@ fn Lowering::memarg(
 /// method name -- the vector accesses, whose widths the SIMD registry knows.
 fn Lowering::memarg_natural(
   self : Lowering,
-  natural : Int,
+  natural : Int32,
   args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
   loc : @basic.Location,
-) -> (Int, Int64) raise LowerError {
+) -> (Int32, Int64) raise LowerError {
   ignore(self)
   let mut align = natural
   let mut offset = 0L
@@ -69,7 +69,7 @@ fn Lowering::memarg_natural(
 
 ///|
 /// The base-2 log of a power of two.
-fn log2_exact(n : Int64, loc : @basic.Location) -> Int raise LowerError {
+fn log2_exact(n : Int64, loc : @basic.Location) -> Int32 raise LowerError {
   let mut v = n
   let mut k = 0
   guard v > 0 else { raise Unresolved("alignment", loc) }
@@ -89,8 +89,8 @@ fn log2_exact(n : Int64, loc : @basic.Location) -> Int raise LowerError {
 /// `load8` means.
 fn load_instruction(
   meth : String,
-  mem : Int,
-  align : Int,
+  mem : Int32,
+  align : Int32,
   offset : Int64,
   as_ : (@ast.NumType, @wasm_types.Signage)?,
 ) -> @wasm_bin.Instruction? {
@@ -122,10 +122,10 @@ fn load_instruction(
 /// bytes of whatever it is given.
 fn store_instruction(
   meth : String,
-  mem : Int,
-  align : Int,
+  mem : Int32,
+  align : Int32,
   offset : Int64,
-  value : @wasm_types.ValType[Int]?,
+  value : @wasm_types.ValType[Int32]?,
 ) -> @wasm_bin.Instruction? {
   // A narrow store writes the low bytes of the VALUE, so which instruction it
   // is depends on how wide that value is -- the width alone does not say. In

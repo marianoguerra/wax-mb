@@ -26,7 +26,7 @@ pub fn LaneWidth::to_str(self : LaneWidth) -> String {
 
 ///|
 /// The alignment such an access naturally has, in bytes.
-pub fn LaneWidth::nat_align(self : LaneWidth) -> Int {
+pub fn LaneWidth::nat_align(self : LaneWidth) -> Int32 {
   match self {
     L8 => 1
     L16 => 2
@@ -71,7 +71,7 @@ pub fn VecLoad::to_str(self : VecLoad) -> String {
 ///|
 /// How many bytes the load actually reads -- which is not always 16, and is
 /// what its natural alignment follows from.
-pub fn VecLoad::nat_align(self : VecLoad) -> Int {
+pub fn VecLoad::nat_align(self : VecLoad) -> Int32 {
   match self {
     Load128 => 16
     Load8x8S
@@ -126,10 +126,10 @@ pub struct MemIntrinsic {
   /// Whether a constant lane immediate follows the operands.
   lane : Bool
   /// The alignment the access naturally has, as a byte count.
-  nat_align : Int
+  nat_align : Int32
   /// Memory index, alignment exponent, offset, lane -> the instruction. The
   /// lane is ignored when `lane` is false.
-  build : (Int, Int, Int64, Int) -> @wasm_bin.Instruction
+  build : (Int32, Int32, Int64, Int32) -> @wasm_bin.Instruction
 }
 
 ///|
@@ -230,8 +230,8 @@ pub let mem_method_names : Array[String] = {
 ///|
 fn vec_load_instr(
   op : VecLoad,
-  m : Int,
-  align : Int,
+  m : Int32,
+  align : Int32,
   offset : Int64,
 ) -> @wasm_bin.Instruction {
   match op {
@@ -250,8 +250,8 @@ fn vec_load_instr(
 ///|
 fn load_splat_instr(
   w : LaneWidth,
-  m : Int,
-  align : Int,
+  m : Int32,
+  align : Int32,
   offset : Int64,
 ) -> @wasm_bin.Instruction {
   match w {
@@ -265,10 +265,10 @@ fn load_splat_instr(
 ///|
 fn load_lane_instr(
   w : LaneWidth,
-  m : Int,
-  align : Int,
+  m : Int32,
+  align : Int32,
   offset : Int64,
-  lane : Int,
+  lane : Int32,
 ) -> @wasm_bin.Instruction {
   match w {
     L8 => V128Load8Lane(m, align, offset, lane)
@@ -281,10 +281,10 @@ fn load_lane_instr(
 ///|
 fn store_lane_instr(
   w : LaneWidth,
-  m : Int,
-  align : Int,
+  m : Int32,
+  align : Int32,
   offset : Int64,
-  lane : Int,
+  lane : Int32,
 ) -> @wasm_bin.Instruction {
   match w {
     L8 => V128Store8Lane(m, align, offset, lane)

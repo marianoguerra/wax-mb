@@ -298,7 +298,7 @@ fn Ctx::fundecl(
   typ : @ast.Ident?,
   sign : @ast.FuncType?,
   tag~ : Bool,
-  exact? : Bool = false,
+  exact~ : Bool = false,
 ) -> Unit {
   // NO indent on this box: the parameter list supplies its own, and adding one
   // here would indent the parameters twice over and drag the closing `)` in

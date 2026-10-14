@@ -40,7 +40,7 @@ fn declared_result(
 /// to be load-bearing.
 pub fn fresh_collecting(
   declared : @infer.Cell[@infer.InferredType]?,
-  needed? : Bool = false,
+  needed~ : Bool = false,
 ) -> (@infer.Collecting, @infer.Cell[@infer.InferredType]) {
   let cs : @infer.Collecting = {
     collected: [],
@@ -151,7 +151,7 @@ pub fn collect_into(
   cs : @infer.Collecting,
   r : @infer.Cell[@infer.InferredType],
   check_body : () -> Unit,
-  branch_target? : Array[@infer.Cell[@infer.InferredType]]? = None,
+  branch_target~ : Array[@infer.Cell[@infer.InferredType]]? = None,
 ) -> Unit {
   let br = branch_target.unwrap_or([r])
   with_empty_stack(ops, ctx.diagnostics, location, () => {

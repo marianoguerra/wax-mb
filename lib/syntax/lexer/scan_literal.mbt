@@ -153,7 +153,7 @@ fn decode_scalar(text : String) -> Char {
 }
 
 ///|
-fn hex_val(c : Char) -> Int {
+fn hex_val(c : Char) -> Int32 {
   if c >= '0' && c <= '9' {
     c.to_int() - '0'.to_int()
   } else if c >= 'a' && c <= 'f' {

@@ -35,7 +35,7 @@ pub fn Parsed::source(self : Self) -> @er.SourceId {
 /// line", and a shrubbery diagnostic already renders through error-report.
 pub fn parse_module(
   text : String,
-  fname? : String = "input.wap",
+  fname~ : String = "input.wap",
 ) -> Parsed raise ParseError {
   let sources = @er.Sources::new()
   let source = sources.add(fname, text)
@@ -526,7 +526,7 @@ fn parse_params(
 
 ///|
 /// An integer literal as written, in any of shrubbery's radixes.
-fn int_of(text : String) -> Int? {
+fn int_of(text : String) -> Int32? {
   Some(@string.parse_int(text)) catch {
     _ => None
   }

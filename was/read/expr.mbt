@@ -122,7 +122,7 @@ fn Reader::fold(
 fn Reader::expr_from_bp(
   self : Reader,
   c : Cursor,
-  min_bp : Int,
+  min_bp : Int32,
 ) -> @ast.Instr[@basic.Location] raise ReadError {
   let mut lhs = self.unary(c)
   let mut compared = false

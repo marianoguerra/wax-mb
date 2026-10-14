@@ -25,7 +25,7 @@ fn parse_i64(s : String, loc : @basic.Location) -> Int64 raise LowerError {
 
 ///|
 /// The same, truncated to the 32 bits an `i32.const` carries.
-fn parse_i32(s : String, loc : @basic.Location) -> Int raise LowerError {
+fn parse_i32(s : String, loc : @basic.Location) -> Int32 raise LowerError {
   parse_i64(s, loc).to_int()
 }
 
@@ -153,7 +153,7 @@ fn nan_bits32(
   body : String,
   negative : Bool,
   loc : @basic.Location,
-) -> UInt raise LowerError {
+) -> UInt32 raise LowerError {
   let payload = if body == "nan" {
     0x400000U
   } else if body.has_prefix("nan:0x") {
@@ -266,7 +266,7 @@ fn hex_float(
 }
 
 ///|
-fn hex_digit(c : UInt16, loc : @basic.Location) -> Int raise LowerError {
+fn hex_digit(c : UInt16, loc : @basic.Location) -> Int32 raise LowerError {
   let n = c.to_int()
   if n >= 48 && n <= 57 {
     n - 48

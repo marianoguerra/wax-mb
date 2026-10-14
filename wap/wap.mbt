@@ -55,7 +55,7 @@ pub fn Module::diagnostics(self : Self) -> Array[@er.Report] {
 /// with whatever could be lowered, so one bad line does not hide the rest.
 pub fn to_wax(
   src : String,
-  fname? : String = "input.wap",
+  fname~ : String = "input.wap",
 ) -> Result[Module, Array[@er.Report]] {
   let parsed = @parse.parse_module(src, fname~) catch {
     @parse.ParseError(r) => return Err([r])
@@ -77,7 +77,7 @@ pub fn to_wax(
 /// Compile wap source to wasm.
 pub fn compile_string(
   src : String,
-  fname? : String = "input.wap",
+  fname~ : String = "input.wap",
   features? : @feature.Set,
   policy? : @warning.Policy,
 ) -> Result[Bytes, Diagnostics] raise @compile.CompileError {
@@ -91,7 +91,7 @@ pub fn compile_string(
 /// Compile wap source to the WebAssembly text format.
 pub fn compile_string_to_wat(
   src : String,
-  fname? : String = "input.wap",
+  fname~ : String = "input.wap",
   features? : @feature.Set,
   policy? : @warning.Policy,
 ) -> Result[String, Diagnostics] raise @compile.CompileError {
@@ -105,7 +105,7 @@ pub fn compile_string_to_wat(
 /// Parse, lower and type check, stopping before the emitters.
 pub fn check_string(
   src : String,
-  fname? : String = "input.wap",
+  fname~ : String = "input.wap",
   features? : @feature.Set,
   policy? : @warning.Policy,
 ) -> Result[(@compile.Checked, Module), Diagnostics] {

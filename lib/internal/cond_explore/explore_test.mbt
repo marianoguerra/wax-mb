@@ -6,7 +6,7 @@
 // happened to produce it.
 
 ///|
-fn loc_at(start : Int, end_ : Int) -> @basic.Location {
+fn loc_at(start : Int32, end_ : Int32) -> @basic.Location {
   {
     start: { fname: "t.wax", lnum: 1, bol: 0, cnum: start, },
     end: { fname: "t.wax", lnum: 1, bol: 0, cnum: end_, },

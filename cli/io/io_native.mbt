@@ -4,11 +4,11 @@
 /// `#borrow`: the C side only reads the buffer during the call and never
 /// retains it, so ownership stays with MoonBit.
 #borrow(s)
-extern "C" fn write_stdout(s : Bytes, len : Int) = "wax_write_stdout"
+extern "C" fn write_stdout(s : Bytes, len : Int32) = "wax_write_stdout"
 
 ///|
 #borrow(s)
-extern "C" fn write_stderr(s : Bytes, len : Int) = "wax_write_stderr"
+extern "C" fn write_stderr(s : Bytes, len : Int32) = "wax_write_stderr"
 
 ///|
 /// Write `s` to stdout as UTF-8, adding NOTHING.
@@ -48,7 +48,7 @@ pub fn eprintln(s : String) -> Unit {
 }
 
 ///|
-extern "C" fn isatty_fd(which : Int) -> Int = "wax_isatty_fd"
+extern "C" fn isatty_fd(which : Int32) -> Int32 = "wax_isatty_fd"
 
 ///|
 /// Whether stdout is a terminal.

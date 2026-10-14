@@ -38,8 +38,8 @@ pub struct Table {
 /// Keying on offsets alone is deliberate: it is cheap to hash and compare, and
 /// the filename is the same for every span in one parse.
 struct SpanKey {
-  start : Int
-  end : Int
+  start : Int32
+  end : Int32
 } derive(Eq, Hash, Compare, Debug)
 
 ///|
@@ -161,7 +161,7 @@ pub fn associate(
   // appears whose end EXCEEDS it. Equal ends keep it open, since an equal-end
   // node with a later start nests inside.
   let subtree_end = Array::make(if n > 0 { n } else { 1 }, 0)
-  let stack : Array[Int] = []
+  let stack : Array[Int32] = []
   for i in 0..<n {
     while stack.length() > 0 && arr[stack[stack.length() - 1]].end < arr[i].end {
       let t = stack.unsafe_pop()
@@ -191,9 +191,9 @@ pub fn associate(
 /// Comments anchored before `threshold`, and the rest.
 fn split_before(
   comments : Array[Entry],
-  from : Int,
-  threshold : Int,
-) -> (Array[Entry], Int) {
+  from : Int32,
+  threshold : Int32,
+) -> (Array[Entry], Int32) {
   let taken = []
   let mut i = from
   while i < comments.length() && comments[i].anchor < threshold {
@@ -215,10 +215,10 @@ fn split_before(
 /// place.
 fn get_after(
   comments : Array[Entry],
-  from : Int,
-  parent_end : Int,
-  upto : Int,
-) -> (Array[Entry], Int) {
+  from : Int32,
+  parent_end : Int32,
+  upto : Int32,
+) -> (Array[Entry], Int32) {
   let taken = []
   let mut i = from
   while i < comments.length() {
@@ -263,13 +263,13 @@ fn get_after(
 fn process_range(
   tbl : Table,
   arr : Array[SpanKey],
-  subtree_end : Array[Int],
-  last_upto : Int?,
-  lo_in : Int,
-  hi : Int,
+  subtree_end : Array[Int32],
+  last_upto : Int32?,
+  lo_in : Int32,
+  hi : Int32,
   comments : Array[Entry],
-  from_in : Int,
-) -> Int {
+  from_in : Int32,
+) -> Int32 {
   let mut lo = lo_in
   let mut from = from_in
   while lo <= hi {

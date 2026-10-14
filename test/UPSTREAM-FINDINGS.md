@@ -295,9 +295,9 @@ parsing the payload form altogether: the declaration is read as a constant
 constructor and every use of one is then an error. 93 declarations, 1667
 errors — the table engine simply does not compile any more.
 
-`lib/syntax/parser/moon.pkg` rewrites the 93 lines into the brace form with a
-`sed` after the generator rather than suppressing anything, since there is now
-nothing to suppress. Drop the rewrite when MoonYacc's table engine catches up.
+**Fixed in 0.7.25**: the table engine writes the brace form, so the `sed` that
+`lib/syntax/parser/moon.pkg` ran after the generator to rewrite the 93 lines is
+gone (left in place, it would mangle the new output).
 
 The same release of the engine (0.7.19) did fix its other half of this: the
 reductions now emit `guard!` rather than a bare `guard`, so `-87`

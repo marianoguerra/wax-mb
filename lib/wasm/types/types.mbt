@@ -136,7 +136,7 @@ pub(all) struct Limits {
   mi : UInt64
   ma : UInt64?
   address_type : AddressType
-  page_size_log2 : Int?
+  page_size_log2 : Int32?
   shared : Bool
 } derive(Eq, Debug)
 
@@ -153,7 +153,7 @@ pub(all) enum AddressType {
 /// The components stay unparsed for the same reason numeric literals do: the
 /// printer has to reproduce what was written, and a v128 can be spelled in six
 /// different shapes.
-pub(all) struct V128 {
+pub(all) struct V128Literal {
   shape : V128Shape
   components : Array[String]
 } derive(Eq, Debug)
@@ -208,7 +208,7 @@ pub(all) enum Cond {
   /// A variable, written `$name`.
   Var(@basic.Annotated[String, @basic.Location])
   Str(@basic.Annotated[Bytes, @basic.Location])
-  Version(Int, Int, Int)
+  Version(Int32, Int32, Int32)
   And(Array[Cond])
   Or(Array[Cond])
   Not(Cond)

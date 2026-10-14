@@ -28,9 +28,9 @@ pub fn Lowered::diagnostics(self : Self) -> Array[@er.Report] {
 /// synthetic locations.
 pub fn lower_module(
   m : @wap.Module,
-  text? : String = "",
-  fname? : String = "input.wap",
-  src? : @er.SourceId = 0,
+  text~ : String = "",
+  fname~ : String = "input.wap",
+  src~ : @er.SourceId = 0,
 ) -> Lowered {
   lower_program([{ module_: m, source: { fname, text, src, }, }])
 }
@@ -127,7 +127,7 @@ fn Lowering::collect_types(self : Lowering, m : @wap.Module) -> Unit {
           self.visible[q] = ()
         }
         if def is Enum(items) {
-          let ms : Map[String, Int] = Map([])
+          let ms : Map[String, Int32] = Map([])
           for it in items {
             let (n, v) = it
             let qn = self.qualify(n)
@@ -310,17 +310,17 @@ fn Lowering::type_groups(
   self : Lowering,
   named : Array[String],
   defs : Array[@wap.TypeDef],
-) -> Array[Array[Int]] {
+) -> Array[Array[Int32]] {
   let n = named.length()
-  let at : Map[String, Int] = Map([])
+  let at : Map[String, Int32] = Map([])
   for i in 0..<n {
     at[named[i]] = i
   }
-  let edges : Array[Array[Int]] = []
+  let edges : Array[Array[Int32]] = []
   for i in 0..<n {
     let names : Array[String] = []
     self.type_deps(defs[i], names)
-    let row : Array[Int] = []
+    let row : Array[Int32] = []
     for name in names {
       match at.get(name) {
         // A name from another module was declared before this one was lowered,
@@ -336,17 +336,17 @@ fn Lowering::type_groups(
 
 ///|
 /// Tarjan's strongly-connected components, dependencies first.
-fn strong_components(edges : Array[Array[Int]]) -> Array[Array[Int]] {
+fn strong_components(edges : Array[Array[Int32]]) -> Array[Array[Int32]] {
   let n = edges.length()
   let index = Array::make(n, -1)
   let low = Array::make(n, 0)
   let on_stack = Array::make(n, false)
-  let stack : Array[Int] = []
-  let out : Array[Array[Int]] = []
+  let stack : Array[Int32] = []
+  let out : Array[Array[Int32]] = []
   // A one-element array rather than a mutable local, because the walk below is
   // recursive and has to share it.
   let counter = [0]
-  fn visit(v : Int) -> Unit {
+  fn visit(v : Int32) -> Unit {
     index[v] = counter[0]
     low[v] = counter[0]
     counter[0] = counter[0] + 1
@@ -363,7 +363,7 @@ fn strong_components(edges : Array[Array[Int]]) -> Array[Array[Int]] {
       }
     }
     if low[v] == index[v] {
-      let component : Array[Int] = []
+      let component : Array[Int32] = []
       while stack.length() > 0 {
         let w = stack.unsafe_pop()
         on_stack[w] = false

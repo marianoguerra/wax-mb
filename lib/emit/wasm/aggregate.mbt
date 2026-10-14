@@ -18,7 +18,7 @@
 ///
 /// `None` when the node produced no reference, or one to an abstract heap type
 /// -- neither of which any of these instructions can take.
-fn node_type_index(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Int? {
+fn node_type_index(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Int32? {
   match node_valtype(i) {
     Some(Ref({ typ: Type(t) | Exact(t), .. })) => Some(t)
     _ => None
@@ -31,7 +31,10 @@ fn Lowering::struct_fields_of(
   self : Lowering,
   i : @ast.Instr[@typing_env.InferredAnnotation],
   loc : @basic.Location,
-) -> (Int, Array[@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]]) raise LowerError {
+) -> (
+  Int32,
+  Array[@wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]],
+) raise LowerError {
   guard node_type_index(i) is Some(t) else {
     raise Unresolved("struct type", loc)
   }
@@ -50,7 +53,7 @@ fn Lowering::array_element_of(
   self : Lowering,
   i : @ast.Instr[@typing_env.InferredAnnotation],
   loc : @basic.Location,
-) -> (Int, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) raise LowerError {
+) -> (Int32, @wasm_types.MutType[@wasm_types.StorageType[@type_store.Id]]) raise LowerError {
   guard node_type_index(i) is Some(t) else {
     raise Unresolved("array type", loc)
   }
@@ -69,7 +72,7 @@ fn Lowering::array_element_of(
 /// indices because the binary format does.
 fn index_id(
   store : @type_store.TypeStore,
-  i : Int,
+  i : Int32,
   loc : @basic.Location,
 ) -> @type_store.Id raise LowerError {
   // The other direction: an EMITTED index back to the store entry it came

@@ -94,8 +94,8 @@ pub fn enter_function_scope(
   name : @ast.Ident,
   sign : @ast.FuncType?,
   attributes : Array[@ast.Attribute],
-  label_decls? : Array[@ast.Ident] = [],
-  assigned_locals? : Map[String, Unit] = Map([]),
+  label_decls~ : Array[@ast.Ident] = [],
+  assigned_locals~ : Map[String, Unit] = Map([]),
 ) -> Array[@infer.Cell[@infer.InferredType]] {
   // Attribute everything this definition resolves -- its declared type as much
   // as its body -- to the function itself, so nothing a dead function names

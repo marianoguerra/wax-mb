@@ -23,7 +23,7 @@ pub(all) struct LexResult {
 /// mode needs a terminator to reduce on.
 pub fn tokens_from_string(
   src : String,
-  fname? : String = "",
+  fname~ : String = "",
   trivia_ctx? : @trivia.Context,
 ) -> LexResult {
   let cur = Cursor::new(src, fname~)

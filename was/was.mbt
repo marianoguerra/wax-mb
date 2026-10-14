@@ -21,7 +21,7 @@ pub fn Diagnostics::is_empty(self : Self) -> Bool {
 /// whatever could be read, so one bad line does not hide the rest.
 pub fn to_wax(
   src : String,
-  fname? : String = "input.was",
+  fname~ : String = "input.was",
 ) -> Result[@read.Read, Array[@er.Report]] {
   Ok(@read.read_module(src, fname~)) catch {
     @read.ReadError(r) => Err([r])
@@ -32,7 +32,7 @@ pub fn to_wax(
 /// Compile was source to wasm.
 pub fn compile_string(
   src : String,
-  fname? : String = "input.was",
+  fname~ : String = "input.was",
   features? : @feature.Set,
   policy? : @warning.Policy,
 ) -> Result[Bytes, Diagnostics] raise @compile.CompileError {
@@ -46,7 +46,7 @@ pub fn compile_string(
 /// Compile was source to the WebAssembly text format.
 pub fn compile_string_to_wat(
   src : String,
-  fname? : String = "input.was",
+  fname~ : String = "input.was",
   features? : @feature.Set,
   policy? : @warning.Policy,
 ) -> Result[String, Diagnostics] raise @compile.CompileError {
@@ -60,7 +60,7 @@ pub fn compile_string_to_wat(
 /// Read and type check, stopping before the emitters.
 pub fn check_string(
   src : String,
-  fname? : String = "input.was",
+  fname~ : String = "input.was",
   features? : @feature.Set,
   policy? : @warning.Policy,
 ) -> Result[@compile.Checked, Diagnostics] {
@@ -89,7 +89,7 @@ pub fn check_string(
 /// for Wax rather than a language above it.
 pub fn fields(
   src : String,
-  fname? : String = "input.was",
+  fname~ : String = "input.was",
 ) -> Result[@ast.LocModule, Array[@er.Report]] {
   match to_wax(src, fname~) {
     Err(rs) => Err(rs)
@@ -121,7 +121,7 @@ pub fn print_module(fields : @ast.LocModule) -> String {
 /// question and a module that does not check still has one.
 pub fn format_string(
   src : String,
-  fname? : String = "input.was",
+  fname~ : String = "input.was",
 ) -> Result[String, Array[@er.Report]] {
   match fields(src, fname~) {
     Err(rs) => Err(rs)

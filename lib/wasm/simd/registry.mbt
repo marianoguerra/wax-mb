@@ -33,7 +33,7 @@ pub struct Intrinsic {
   /// A free function `f(args)` rather than a method `recv.f(args)`.
   free : Bool
   /// The lane immediates, in source order, to the instruction.
-  build : (Array[Int]) -> @wasm_bin.Instruction
+  build : (Array[Int32]) -> @wasm_bin.Instruction
 }
 
 ///|
@@ -48,7 +48,7 @@ fn build_table() -> Map[String, Intrinsic] {
     result : Ty?,
     imm : Imm,
     free : Bool,
-    build : (Array[Int]) -> @wasm_bin.Instruction,
+    build : (Array[Int32]) -> @wasm_bin.Instruction,
   ) -> Unit {
     m[name] = { operands, result, imm, free, build, }
   }
@@ -521,6 +521,6 @@ pub fn method_names(recv : Ty) -> Array[String] {
 
 ///|
 /// How many operations the registry holds.
-pub fn size() -> Int {
+pub fn size() -> Int32 {
   table.length()
 }

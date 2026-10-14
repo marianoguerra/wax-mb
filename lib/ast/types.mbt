@@ -215,10 +215,10 @@ pub(all) struct Hints {
   /// The raw wire byte of an `instr_freq` hint: an offset base-2 logarithm of
   /// expected executions, so 32 means once. Kept raw so a value a hand-written
   /// binary put outside the proposal's range still round-trips.
-  freq : Hint[Int]?
+  freq : Hint[Int32]?
   /// Likely targets of an indirect call, with each one's frequency as a
   /// percentage.
-  targets : Hint[Array[(Ident, Int)]]?
+  targets : Hint[Array[(Ident, Int32)]]?
 } derive(Eq, Debug)
 
 ///|

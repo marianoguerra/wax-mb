@@ -253,7 +253,7 @@ test "map_info rebuilds the tree without disturbing it" {
 
 ///|
 /// How many instructions there are in and under `i`.
-fn[I] count(i : @ast.Instr[I]) -> Int {
+fn[I] count(i : @ast.Instr[I]) -> Int32 {
   let mut n = 0
   i.iter_instr(_ => n = n + 1)
   n

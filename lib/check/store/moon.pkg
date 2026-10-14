@@ -1,6 +1,5 @@
 import {
   "marianoguerra/wax/wasm/types" @wasm_types,
-  "moonbitlang/core/ref",
 }
 
 import {

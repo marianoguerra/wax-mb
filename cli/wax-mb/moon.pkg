@@ -4,7 +4,6 @@
 // CLI needed one of them directly, that would be a gap in the library's API
 // rather than a convenience for the CLI.
 import {
-  "moonbitlang/core/ref",
   "marianoguerra/wax",
   "marianoguerra/wax/ast",
   "marianoguerra/wax/colors",

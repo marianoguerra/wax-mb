@@ -241,7 +241,7 @@ fn u64_of_int_literal(p : (Position, Position), n : String) -> UInt64 {
 /// to Int first: a literal above Int.max would overflow the narrowing. A power
 /// of two has a single set bit, and its log2 is that bit's position, which
 /// always fits an Int.
-fn page_size_log2(p : (Position, Position), n : String) -> Int {
+fn page_size_log2(p : (Position, Position), n : String) -> Int32 {
   let v = u64_of_int_literal(p, n)
   if v != 0UL && (v & (v - 1UL)) == 0UL {
     let mut x = v
@@ -280,7 +280,7 @@ fn address_type_of(
 ///
 /// Guarded so an over-long component surfaces as a recoverable syntax error
 /// rather than a crash.
-fn int_of_version_component(p : (Position, Position), s : String) -> Int {
+fn int_of_version_component(p : (Position, Position), s : String) -> Int32 {
   @string.parse_int(s) catch {
     _ =>
       fail_at(
@@ -302,7 +302,7 @@ fn data_run(
   items : Array[DataRunItem],
 ) -> @ast.DataElem {
   if t.name == "v128" {
-    let out : Array[Annotated[@wasm_types.V128, Location]] = []
+    let out : Array[Annotated[@wasm_types.V128Literal, Location]] = []
     for it in items {
       match it {
         Vec(v) => out.push(v)
@@ -339,5 +339,5 @@ fn data_run(
 /// element type.
 priv enum DataRunItem {
   Num(Annotated[String, Location])
-  Vec(Annotated[@wasm_types.V128, Location])
+  Vec(Annotated[@wasm_types.V128Literal, Location])
 }

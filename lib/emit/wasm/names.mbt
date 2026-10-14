@@ -20,7 +20,7 @@ fn is_synthetic(name : String) -> Bool {
 
 ///|
 /// Record a name for an index, unless it was generated.
-fn note_name(into : Map[Int, Bytes], index : Int, name : String) -> Unit {
+fn note_name(into : Map[Int32, Bytes], index : Int32, name : String) -> Unit {
   if !is_synthetic(name) {
     into[index] = utf8_of(name)
   }
@@ -53,7 +53,7 @@ fn Lowering::type_names(self : Lowering, m : @wasm_bin.Module) -> Unit {
     }
     // A struct's fields are named per TYPE, so they hang off the same index.
     if sub.typ is Struct(fields) && !m.names.fields.contains(i) {
-      let per_field : Map[Int, Bytes] = Map([])
+      let per_field : Map[Int32, Bytes] = Map([])
       for k, f in fields {
         note_name(per_field, k, f.desc.0.name)
       }
@@ -114,7 +114,7 @@ fn Lowering::target_features(
 
 ///|
 /// The optimization level `#[run_once]` names.
-let run_once_level : Int = 127
+let run_once_level : Int32 = 127
 
 ///|
 /// A function's compilation priority, if it declared one.
@@ -123,8 +123,8 @@ let run_once_level : Int = 127
 /// second is meaningless without the first, which is why they are one record
 /// rather than two.
 fn function_priority(attributes : Array[@ast.Attribute]) -> @wasm_bin.Priority? {
-  let mut compilation : Int? = None
-  let mut optimization : Int? = None
+  let mut compilation : Int32? = None
+  let mut optimization : Int32? = None
   for a in attributes {
     // `#[run_once]` carries no value: it is the spelling of one particular
     // optimization level, the highest, and the section stores it as that

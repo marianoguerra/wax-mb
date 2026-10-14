@@ -4,7 +4,7 @@
 /// The output buffer and where the next line starts.
 priv struct Out {
   sb : StringBuilder
-  mut indent : Int
+  mut indent : Int32
 }
 
 ///|

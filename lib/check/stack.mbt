@@ -43,8 +43,8 @@ pub(all) enum Stack {
 /// the finished statement (see `HoleOrder::walk`).
 struct MissingBatch {
   mut hole_reported : Bool
-  hole_actual : Int
-  hole_expected : Int
+  hole_actual : Int32
+  hole_expected : Int32
 }
 
 ///|
@@ -92,8 +92,8 @@ pub fn[A] Operands::with_empty(self : Operands, f : () -> A) -> (A, Stack) {
 pub fn Operands::pop_any(
   self : Operands,
   batch : Ref[MissingBatch?],
-  current : Int,
-  expected : Int,
+  current : Int32,
+  expected : Int32,
 ) -> @infer.Cell[@infer.InferredType] {
   match self.stack {
     Unreachable => @infer.Cell::make(Unknown)
@@ -120,9 +120,9 @@ pub fn Operands::pop_any(
 /// occurred.
 pub fn Operands::pop_many(
   self : Operands,
-  count : Int,
+  count : Int32,
 ) -> (Array[@infer.Cell[@infer.InferredType]], MissingBatch?) {
-  let batch : Ref[MissingBatch?] = @ref.new(None)
+  let batch : Ref[MissingBatch?] = Ref(None)
   let out : Array[@infer.Cell[@infer.InferredType]] = []
   for n in 0..<count {
     out.push(self.pop_any(batch, n, count))
@@ -140,8 +140,8 @@ pub fn Operands::pop(
   diagnostics : @diagnostic.Context,
   kind : StackKind,
   location : @basic.Location,
-  current : Int,
-  expected : Int,
+  current : Int32,
+  expected : Int32,
   ty : @infer.Cell[@infer.InferredType],
 ) -> Unit {
   match self.stack {

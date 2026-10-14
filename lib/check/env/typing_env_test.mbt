@@ -6,7 +6,7 @@
 // than on a table lookup.
 
 ///|
-fn loc_at(start : Int, end_ : Int) -> @basic.Location {
+fn loc_at(start : Int32, end_ : Int32) -> @basic.Location {
   {
     start: { fname: "t.wax", lnum: 1, bol: 0, cnum: start, },
     end: { fname: "t.wax", lnum: 1, bol: 0, cnum: end_, },
@@ -22,11 +22,11 @@ fn var_(name : String) -> @wasm_types.Cond {
 /// With no conditionals the tables are plain name-keyed ones, and this is what
 /// says so.
 test "an unconditional table" {
-  let cond = @ref.new(@cond.true_)
+  let cond = Ref(@cond.true_)
   let ns = @typing_env.Namespace::new(cond)
-  let origin = @ref.new(@typing_env.Origin::Root)
+  let origin = Ref(@typing_env.Origin::Root)
   let diagnostics = @diagnostic.collector()
-  let t : @typing_env.Tbl[Int] = @typing_env.Tbl::new("function", ns, origin)
+  let t : @typing_env.Tbl[Int32] = @typing_env.Tbl::new("function", ns, origin)
   t.add(diagnostics, "f", loc_at(10, 11), 1)
   t.add(diagnostics, "g", loc_at(20, 21), 2)
   inspect(t.resolve("f", loc_at(30, 31)).unwrap_or(-1), content="1")
@@ -41,14 +41,14 @@ test "an unconditional table" {
 /// visible while checking the `not $debug` branch, and is visible while
 /// checking the `$debug` one.
 test "a name is visible only where its assumption can hold" {
-  let cond = @ref.new(@cond.true_)
+  let cond = Ref(@cond.true_)
   let env = @cond.Env::new()
   let ctx = @diagnostic.collector()
   let debug = env.of_cond(ctx, loc_at(0, 0), var_("debug"))
   let ns = @typing_env.Namespace::new(cond)
-  let origin = @ref.new(@typing_env.Origin::Root)
+  let origin = Ref(@typing_env.Origin::Root)
   let diagnostics = @diagnostic.collector()
-  let t : @typing_env.Tbl[Int] = @typing_env.Tbl::new("function", ns, origin)
+  let t : @typing_env.Tbl[Int32] = @typing_env.Tbl::new("function", ns, origin)
 
   // Declared inside `#[if($debug)]`.
   cond.val = debug
@@ -80,11 +80,11 @@ test "a name is visible only where its assumption can hold" {
 /// A lookup records where it was made from, because "is this referenced?" is
 /// not the same question as "does anything that can run reference it?".
 test "references are attributed to their origin" {
-  let cond = @ref.new(@cond.true_)
+  let cond = Ref(@cond.true_)
   let ns = @typing_env.Namespace::new(cond)
-  let origin = @ref.new(@typing_env.Origin::Root)
+  let origin = Ref(@typing_env.Origin::Root)
   let diagnostics = @diagnostic.collector()
-  let t : @typing_env.Tbl[Int] = @typing_env.Tbl::new("function", ns, origin)
+  let t : @typing_env.Tbl[Int32] = @typing_env.Tbl::new("function", ns, origin)
   t.add(diagnostics, "f", loc_at(10, 11), 1)
   t.add(diagnostics, "g", loc_at(12, 13), 2)
   origin.val = FromFunction("main")
@@ -120,11 +120,11 @@ test "references are attributed to their origin" {
 /// definition's reference to itself -- which has nowhere useful to go.
 test "resolved references are recorded for the editor" {
   let sink : Array[@typing_env.Reference] = []
-  let cond = @ref.new(@cond.true_)
+  let cond = Ref(@cond.true_)
   let ns = @typing_env.Namespace::new(cond, links=Some(sink))
-  let origin = @ref.new(@typing_env.Origin::Root)
+  let origin = Ref(@typing_env.Origin::Root)
   let diagnostics = @diagnostic.collector()
-  let t : @typing_env.Tbl[Int] = @typing_env.Tbl::new("function", ns, origin)
+  let t : @typing_env.Tbl[Int32] = @typing_env.Tbl::new("function", ns, origin)
   t.add(diagnostics, "f", loc_at(10, 11), 1)
   let _ = t.resolve("f", loc_at(30, 31))
   inspect(sink.length(), content="1")
@@ -309,16 +309,18 @@ test "frames and initialization do not outlive their block" {
 /// report names what the name is already taken BY, which need not be the same
 /// kind of thing.
 test "a duplicate declaration is reported, and the name still resolves" {
-  let cond = @ref.new(@cond.true_)
+  let cond = Ref(@cond.true_)
   let ns = @typing_env.Namespace::new(cond)
-  let origin = @ref.new(@typing_env.Origin::Root)
+  let origin = Ref(@typing_env.Origin::Root)
   let diagnostics = @diagnostic.collector()
-  let memories : @typing_env.Tbl[Int] = @typing_env.Tbl::new(
+  let memories : @typing_env.Tbl[Int32] = @typing_env.Tbl::new(
     "memory", ns, origin,
   )
   // Memories and tables share one name space, so the clash crosses tables and
   // the report has to say which kind the name is already bound to.
-  let tables : @typing_env.Tbl[Int] = @typing_env.Tbl::new("table", ns, origin)
+  let tables : @typing_env.Tbl[Int32] = @typing_env.Tbl::new(
+    "table", ns, origin,
+  )
   memories.add(diagnostics, "m", loc_at(10, 11), 1)
   tables.add(diagnostics, "m", loc_at(20, 21), 2)
   inspect(diagnostics.collected().length(), content="1")
@@ -337,13 +339,13 @@ test "a duplicate declaration is reported, and the name still resolves" {
 /// Two declarations in mutually exclusive branches are not a duplicate: no
 /// configuration has both, so there is nothing to report.
 test "mutually exclusive branches do not clash" {
-  let cond = @ref.new(@cond.true_)
+  let cond = Ref(@cond.true_)
   let env = @cond.Env::new()
   let diagnostics = @diagnostic.collector()
   let debug = env.of_cond(diagnostics, loc_at(0, 0), var_("debug"))
   let ns = @typing_env.Namespace::new(cond)
-  let origin = @ref.new(@typing_env.Origin::Root)
-  let t : @typing_env.Tbl[Int] = @typing_env.Tbl::new("function", ns, origin)
+  let origin = Ref(@typing_env.Origin::Root)
+  let t : @typing_env.Tbl[Int32] = @typing_env.Tbl::new("function", ns, origin)
   cond.val = debug
   t.add(diagnostics, "f", loc_at(10, 11), 1)
   cond.val = @cond.not_(debug)
@@ -362,11 +364,11 @@ test "mutually exclusive branches do not clash" {
 /// name each other, then settles them -- or takes them back out if the group
 /// fails to resolve.
 test "a declaration can be settled or withdrawn" {
-  let cond = @ref.new(@cond.true_)
+  let cond = Ref(@cond.true_)
   let ns = @typing_env.Namespace::new(cond)
-  let origin = @ref.new(@typing_env.Origin::Root)
+  let origin = Ref(@typing_env.Origin::Root)
   let diagnostics = @diagnostic.collector()
-  let t : @typing_env.Tbl[Int] = @typing_env.Tbl::new("type", ns, origin)
+  let t : @typing_env.Tbl[Int32] = @typing_env.Tbl::new("type", ns, origin)
   t.add(diagnostics, "node", loc_at(10, 11), 1)
   t.override_("node", 99)
   inspect(t.resolve("node", loc_at(30, 31)).unwrap_or(-1), content="99")
@@ -384,11 +386,11 @@ test "a declaration can be settled or withdrawn" {
 /// a declaration alive: a function resolving its own declared type does not
 /// make that type used.
 test "an internal lookup is not a reference" {
-  let cond = @ref.new(@cond.true_)
+  let cond = Ref(@cond.true_)
   let ns = @typing_env.Namespace::new(cond)
-  let origin = @ref.new(@typing_env.Origin::Root)
+  let origin = Ref(@typing_env.Origin::Root)
   let diagnostics = @diagnostic.collector()
-  let t : @typing_env.Tbl[Int] = @typing_env.Tbl::new("type", ns, origin)
+  let t : @typing_env.Tbl[Int32] = @typing_env.Tbl::new("type", ns, origin)
   t.add(diagnostics, "node", loc_at(10, 11), 1)
   inspect(t.find_no_mark("node").unwrap_or(-1), content="1")
   inspect(t.referrers("node").length(), content="0")

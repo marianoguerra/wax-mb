@@ -44,7 +44,7 @@ pub(all) enum Trivia {
 pub(all) struct Entry {
   /// Byte offset of the end of the last real token before this trivia. This is
   /// the join key the printer uses to decide which node owns the comment.
-  anchor : Int
+  anchor : Int32
   trivia : Trivia
   position : TriviaPos
 } derive(Eq, Debug)
@@ -58,7 +58,7 @@ pub(all) struct Entry {
 pub struct Context {
   entries : Array[Entry]
   mut at_start_of_line : Bool
-  mut prev_token_end : Int
+  mut prev_token_end : Int32
   locations : Array[@basic.Location]
 }
 
@@ -108,7 +108,7 @@ pub fn Context::report_newline(self : Context) -> Unit {
 
 ///|
 /// Record that a real token ending at byte offset `pos` was consumed.
-pub fn Context::report_token(self : Context, pos : Int) -> Unit {
+pub fn Context::report_token(self : Context, pos : Int32) -> Unit {
   self.at_start_of_line = false
   self.prev_token_end = pos
 }

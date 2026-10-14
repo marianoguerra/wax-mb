@@ -41,7 +41,7 @@ pub fn Read::diagnostics(self : Self) -> Array[@er.Report] {
 /// renders through error-report.
 pub fn read_module(
   text : String,
-  fname? : String = "input.was",
+  fname~ : String = "input.was",
 ) -> Read raise ReadError {
   let sources = @er.Sources::new()
   let source = sources.add(fname, text)

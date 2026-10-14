@@ -169,7 +169,7 @@ pub fn is_effectless(e : @ast.Instr[@basic.Location]) -> Bool {
 fn lint_condition(
   ctx : @typing_env.ModuleContext,
   cond : @ast.Instr[@basic.Location],
-  is_while? : Bool = false,
+  is_while~ : Bool = false,
 ) -> Unit {
   guard int_operand_value(cond) is Some(n) else { return }
   let value = n != 0
@@ -586,7 +586,7 @@ fn lint_conversion(
     true
   } else {
     let t = f.trunc()
-    let pow2 = (n : Int) => @math.pow(2.0, n.to_double())
+    let pow2 = (n : Int32) => @math.pow(2.0, n.to_double())
     match (typ, signage) {
       (I32, Signed) => t < -pow2(31) || t >= pow2(31)
       (I32, Unsigned) => t < 0.0 || t >= pow2(32)
@@ -665,7 +665,7 @@ fn flush_deferred_lints(ctx : @typing_env.ModuleContext) -> Unit {
 /// Whitespace and comments -- line and NESTING block -- because a comment
 /// between an operand and its bracket would otherwise hide the parenthesis and
 /// make the lint fire on code that reads perfectly well.
-fn skip_trivia(src : String, start : Int) -> Int {
+fn skip_trivia(src : String, start : Int32) -> Int32 {
   let n = src.length()
   let mut i = start
   while i < n {

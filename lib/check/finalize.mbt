@@ -158,10 +158,10 @@ pub fn finalize_inferred(
   ctx : @typing_env.ModuleContext,
   typ : @ast.FuncType,
   inferred : @infer.Cell[@infer.InferredType]?,
-  needed? : Bool = false,
-  exacts? : Array[(@basic.Location?, @infer.Cell[@infer.InferredType])] = [],
-  natural? : Array[@infer.InferredType] = [],
-  location? : @basic.Location? = None,
+  needed~ : Bool = false,
+  exacts~ : Array[(@basic.Location?, @infer.Cell[@infer.InferredType])] = [],
+  natural~ : Array[@infer.InferredType] = [],
+  location~ : @basic.Location? = None,
 ) -> (Array[@infer.Cell[@infer.InferredType]], @ast.FuncType) {
   if typ.results.is_empty() {
     guard inferred.bind(c => {

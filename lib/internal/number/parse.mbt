@@ -24,7 +24,7 @@
 priv struct Significand {
   mut bits : UInt64
   /// How many binary places the accumulated bits sit above the radix point.
-  mut exponent : Int
+  mut exponent : Int32
   /// Whether any non-zero digit was dropped.
   mut sticky : Bool
   mut any_digit : Bool
@@ -36,7 +36,7 @@ fn Significand::new() -> Significand {
 }
 
 ///|
-fn Significand::push_hex(self : Significand, v : Int) -> Unit {
+fn Significand::push_hex(self : Significand, v : Int32) -> Unit {
   self.any_digit = true
   if self.bits == 0UL && v == 0 {
     // Leading zeros carry no information and must not consume headroom.
@@ -53,7 +53,7 @@ fn Significand::push_hex(self : Significand, v : Int) -> Unit {
 }
 
 ///|
-fn hex_digit(c : Char) -> Int? {
+fn hex_digit(c : Char) -> Int32? {
   let n = c.to_int()
   if n >= '0'.to_int() && n <= '9'.to_int() {
     Some(n - '0'.to_int())
@@ -150,7 +150,7 @@ fn parse_hex_float(s : String) -> Double? {
 ///|
 /// Turn an accumulated significand and a binary exponent into a double,
 /// rounding to nearest with ties to even.
-fn scale(sig : Significand, exp : Int) -> Double {
+fn scale(sig : Significand, exp : Int32) -> Double {
   if sig.bits == 0UL {
     return if sig.sticky { 0.0 } else { 0.0 }
   }
@@ -197,7 +197,7 @@ fn scale(sig : Significand, exp : Int) -> Double {
 ///|
 /// A double from an exact `significand * 2^exponent`, with the significand
 /// normalized to 53 bits.
-fn assemble(significand : UInt64, exponent : Int) -> Double {
+fn assemble(significand : UInt64, exponent : Int32) -> Double {
   // value = significand * 2^exponent, and significand is in [2^52, 2^53), so
   // the unbiased exponent is `exponent + 52`.
   let e = exponent + 52 + 1023

@@ -81,8 +81,8 @@ fn short_stack(
   ctx : @diagnostic.Context,
   kind : StackKind,
   location : @basic.Location,
-  actual : Int,
-  expected : Int,
+  actual : Int32,
+  expected : Int32,
 ) -> Unit {
   if ctx.in_recovery() {
     return
@@ -110,7 +110,7 @@ fn short_stack(
 fn type_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  current : Int,
+  current : Int32,
   provided : @infer.Cell[@infer.InferredType],
   expected : @infer.Cell[@infer.InferredType],
 ) -> Unit {
@@ -135,7 +135,7 @@ fn expression_type_mismatch(
   location : @basic.Location,
   provided : @infer.Cell[@infer.InferredType],
   expected : @infer.Cell[@infer.InferredType],
-  expected_at? : @basic.Location? = None,
+  expected_at~ : @basic.Location? = None,
 ) -> Unit {
   let related = match expected_at {
     None => []
@@ -265,7 +265,7 @@ fn unbound_name(
   location : @basic.Location,
   kind : String,
   name : String,
-  suggestions? : Array[String] = [],
+  suggestions~ : Array[String] = [],
 ) -> Unit {
   if ctx.in_recovery() {
     return
@@ -335,8 +335,8 @@ fn binop_type_mismatch(
 fn operand_count_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  expected~ : Int,
-  provided~ : Int,
+  expected~ : Int32,
+  provided~ : Int32,
 ) -> Unit {
   ctx.report(
     location,
@@ -357,8 +357,8 @@ fn operand_count_mismatch(
 fn value_count_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  expected~ : Int,
-  provided~ : Int,
+  expected~ : Int32,
+  provided~ : Int32,
 ) -> Unit {
   ctx.report(
     location,
@@ -576,7 +576,7 @@ fn start_function_signature(
 fn not_an_expression(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  n : Int,
+  n : Int32,
 ) -> Unit {
   if ctx.in_recovery() {
     return
@@ -707,7 +707,7 @@ fn memory_offset_too_large(
 fn memory_align_too_large(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  natural : Int,
+  natural : Int32,
 ) -> Unit {
   ctx.report(
     location,
@@ -736,7 +736,7 @@ fn bad_memory_align(
 fn invalid_lane_index(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  max_lane : Int,
+  max_lane : Int32,
 ) -> Unit {
   ctx.report(
     location,
@@ -944,8 +944,8 @@ fn cannot_infer_struct_type(
 fn field_count_mismatch(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  expected~ : Int,
-  provided~ : Int,
+  expected~ : Int32,
+  provided~ : Int32,
 ) -> Unit {
   ctx.report(
     location,
@@ -1189,7 +1189,7 @@ fn unknown_argument_label(
   ctx : @diagnostic.Context,
   location : @basic.Location,
   name : String,
-  suggestions? : Array[String] = [],
+  suggestions~ : Array[String] = [],
 ) -> Unit {
   ctx.report(
     location,
@@ -1264,7 +1264,7 @@ fn invalid_management_call(
 fn atomic_alignment(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  natural : Int,
+  natural : Int32,
 ) -> Unit {
   ctx.report(
     location,
@@ -1351,7 +1351,7 @@ fn unknown_intrinsic(
 fn lane_value_out_of_range(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  bits : Int,
+  bits : Int32,
 ) -> Unit {
   ctx.report(
     location,
@@ -1814,7 +1814,7 @@ fn dead_code(
 fn shift_overflow(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  width : Int,
+  width : Int32,
   count : Int64,
 ) -> Unit {
   ctx.report(
@@ -1865,7 +1865,7 @@ fn division_by_zero(
 fn confusable_unicode(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  codepoint : Int,
+  codepoint : Int32,
 ) -> Unit {
   let hex = codepoint.to_string(radix=16).to_upper()
   let padded = if hex.length() < 4 {
@@ -1897,7 +1897,7 @@ fn precedence(
   inner : @basic.Location,
   outer_kind : String,
   inner_kind : String,
-  edit? : @diagnostic.Edit? = None,
+  edit~ : @diagnostic.Edit? = None,
 ) -> Unit {
   ctx.report(
     location,
@@ -2286,7 +2286,7 @@ fn before_hole(ctx : @diagnostic.Context, location : @basic.Location) -> Unit {
 fn call_targets_over_100(
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  total : Int,
+  total : Int32,
 ) -> Unit {
   ctx.report(
     location,

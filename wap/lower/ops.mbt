@@ -145,7 +145,7 @@ fn Lowering::ordinal_of(
   self : Lowering,
   e : @wap.Node,
   expected : @wap.Type?,
-) -> Int? {
+) -> Int32? {
   match e.it {
     Var(n) => {
       let owner = match self.set_type(expected) {
@@ -389,7 +389,7 @@ fn signed_cast(name : String) -> (@ast.NumType, @wasm_types.Signage)? {
 
 ///|
 /// An integer literal in any radix.
-fn int_of(text : String) -> Int? {
+fn int_of(text : String) -> Int32? {
   Some(@string.parse_int(text)) catch {
     _ => None
   }

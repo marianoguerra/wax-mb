@@ -31,19 +31,19 @@ struct HoleRun {
   /// own.
   batch : Ref[MissingBatch?]
   /// Every hole in the statement, counted before it was typed.
-  expected : Int
+  expected : Int32
   /// The first hole in emission order, which is where the reference anchors the
   /// report. `None` when the statement has no hole at all.
   first : @basic.Location?
   /// How many of them have taken a value, which is `pop_any`'s `current`.
-  mut taken : Int
+  mut taken : Int32
 }
 
 ///|
 /// A statement with no holes: what every hole-free statement runs under, and
 /// what a hole reached outside any `with_holes` falls back to.
 fn HoleRun::none() -> HoleRun {
-  { batch: @ref.new(None), expected: 0, first: None, taken: 0, }
+  { batch: Ref(None), expected: 0, first: None, taken: 0, }
 }
 
 ///|
@@ -54,7 +54,7 @@ pub struct Checker {
   /// Lowerings whose typed form could not be peeled back to the construct they
   /// came from, and how often. Empty unless recovery from an error inside one
   /// produced a shape the lowering never emits.
-  unpeeled : Map[String, Int]
+  unpeeled : Map[String, Int32]
   /// Set by `with_holes` around each statement; see `HoleRun`.
   mut holes : HoleRun
 }
@@ -81,7 +81,7 @@ fn Checker::with_holes(
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   let saved = self.holes
   let (expected, first) = hole_demand(i)
-  let run = { batch: @ref.new(None), expected, first, taken: 0, }
+  let run = { batch: Ref(None), expected, first, taken: 0, }
   self.holes = run
   let out = f()
   // On the finished statement, which is where the walk's two ingredients are
@@ -105,8 +105,8 @@ fn Checker::note_unpeeled(self : Checker, name : String) -> Unit {
 ///|
 /// The constructs whose lowering could not be peeled back, most frequent
 /// first. Empty on well-formed input.
-pub fn Checker::gaps(self : Checker) -> Array[(String, Int)] {
-  let out : Array[(String, Int)] = []
+pub fn Checker::gaps(self : Checker) -> Array[(String, Int32)] {
+  let out : Array[(String, Int32)] = []
   for name, count in self.unpeeled {
     out.push((name, count))
   }
@@ -227,7 +227,7 @@ pub fn Checker::statement(
       let (batch, current, expected) = if run.taken < run.expected {
         (run.batch, run.taken, run.expected)
       } else {
-        (@ref.new(None), 0, 1)
+        (Ref(None), 0, 1)
       }
       let ty = self.ops.pop_any(batch, current, expected)
       run.taken += 1
@@ -271,7 +271,7 @@ pub fn Checker::statement(
       // in written order. An element that consumes nothing does not care when
       // it is typed; one that does has to be reached before everything to its
       // left, or it takes a value meant for its neighbour.
-      let taken : Map[Int, @ast.Instr[@typing_env.InferredAnnotation]] = Map([])
+      let taken : Map[Int32, @ast.Instr[@typing_env.InferredAnnotation]] = Map([])
       for k = l.length() - 1; k >= 0; k = k - 1 {
         if contains_hole(l[k]) {
           taken[k] = self.expression(l[k])
@@ -2781,7 +2781,7 @@ fn Checker::body(
   results : Array[@infer.Cell[@infer.InferredType]],
   branch_target : Array[@infer.Cell[@infer.InferredType]],
   instrs : Array[@ast.Instr[@basic.Location]],
-  body_results? : Array[@infer.Cell[@infer.InferredType]]? = None,
+  body_results~ : Array[@infer.Cell[@infer.InferredType]]? = None,
 ) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
   let typed_against = body_results.unwrap_or(results)
   let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
@@ -3213,7 +3213,7 @@ fn Checker::struct_fields(
   // that is walked backwards, since that is the order the fields are emitted
   // in. A struct written `{S| y: _, x: _}` over a stack of `1; 2.0` therefore
   // pairs `x` with the `1` and `y` with the `2.0`, not the other way round.
-  let taken : Map[Int, @ast.Instr[@typing_env.InferredAnnotation]?] = Map([])
+  let taken : Map[Int32, @ast.Instr[@typing_env.InferredAnnotation]?] = Map([])
   for k = slots.length() - 1; k >= 0; k = k - 1 {
     let (fname, written, cell) = slots[k]
     if written is Some(w) && contains_hole(w) {
@@ -3241,7 +3241,7 @@ fn Checker::field_value(
   self : Checker,
   name : @ast.Ident,
   written : @ast.Instr[@basic.Location]?,
-  expect? : @infer.Cell[@infer.InferredType]? = None,
+  expect~ : @infer.Cell[@infer.InferredType]? = None,
 ) -> @ast.Instr[@typing_env.InferredAnnotation]? {
   let e = match written {
     Some(e) => e
@@ -3423,7 +3423,7 @@ fn peel_while(
 /// than inside anything.
 fn peel_dispatch(
   typed : Array[@ast.Instr[@typing_env.InferredAnnotation]],
-  arm_count : Int,
+  arm_count : Int32,
 ) -> (
   @ast.Instr[@typing_env.InferredAnnotation],
   Array[Array[@ast.Instr[@typing_env.InferredAnnotation]]],
@@ -3497,7 +3497,7 @@ fn Checker::non_null_of(
 /// with the scrutinee at its bottom.
 fn peel_match(
   typed : Array[@ast.Instr[@typing_env.InferredAnnotation]],
-  arm_count : Int,
+  arm_count : Int32,
 ) -> (
   Array[Array[@ast.Instr[@typing_env.InferredAnnotation]]],
   Array[@ast.Instr[@typing_env.InferredAnnotation]],
@@ -3612,7 +3612,7 @@ fn Checker::call(
   // over one -- has to be reached before the arguments to its LEFT, or they
   // take the values meant for it. Everything else is typed in written order,
   // which is the order it is emitted in.
-  let taken : Map[Int, @ast.Instr[@typing_env.InferredAnnotation]] = Map([])
+  let taken : Map[Int32, @ast.Instr[@typing_env.InferredAnnotation]] = Map([])
   for k = args.length() - 1; k >= 0; k = k - 1 {
     if contains_hole(args[k]) {
       taken[k] = if paired {
@@ -3987,7 +3987,7 @@ fn Checker::mem_mgmt(
   for c in typed {
     checked.push(c)
   }
-  fn want(k : Int, cell : @infer.Cell[@infer.InferredType]) -> Unit {
+  fn want(k : Int32, cell : @infer.Cell[@infer.InferredType]) -> Unit {
     if k < typed.length() {
       check_subtype(
         ctx.type_context.subtyping_info(),
@@ -4101,7 +4101,7 @@ fn Checker::table_mgmt(
   for c in typed {
     checked.push(c)
   }
-  fn want(k : Int, cell : @infer.Cell[@infer.InferredType]) -> Unit {
+  fn want(k : Int32, cell : @infer.Cell[@infer.InferredType]) -> Unit {
     if k < typed.length() {
       check_subtype(
         ctx.type_context.subtyping_info(),
@@ -4113,7 +4113,7 @@ fn Checker::table_mgmt(
     }
   }
 
-  fn want_elt(k : Int) -> Unit {
+  fn want_elt(k : Int32) -> Unit {
     if elt is Some(e) {
       want(k, e)
     }
@@ -4242,7 +4242,7 @@ fn Checker::atomic_access(
   }
   let i32c = () => @infer.valtype_cell(@infer.i32_valtype)
   let i64c = () => @infer.valtype_cell(@infer.i64_valtype)
-  fn want(k : Int, cell : @infer.Cell[@infer.InferredType]) -> Unit {
+  fn want(k : Int32, cell : @infer.Cell[@infer.InferredType]) -> Unit {
     if k < values.length() {
       check_subtype(
         ctx.type_context.subtyping_info(),
@@ -4257,7 +4257,7 @@ fn Checker::atomic_access(
   // A narrow store or read-modify-write picks the i32/i64 family from its VALUE,
   // so either is accepted -- pinned to the integer group, with a still-flexible
   // literal defaulting to i32 as usual.
-  fn integral(k : Int) -> @infer.Cell[@infer.InferredType] {
+  fn integral(k : Int32) -> @infer.Cell[@infer.InferredType] {
     guard k < values.length() else {
       return @infer.Cell::make(@infer.InferredType::Error)
     }
@@ -5219,7 +5219,7 @@ fn Checker::free_intrinsic(
 /// spellings name the same byte.
 fn check_lane_literal(
   ctx : @typing_env.ModuleContext,
-  bits : Int?,
+  bits : Int32?,
   a : @ast.Instr[@basic.Location],
 ) -> Unit {
   // A leading `-` is a separate negation in the AST, so the magnitude and the
@@ -5243,7 +5243,7 @@ fn check_lane_literal(
 ///|
 /// Whether an integer lane literal fits its width.
 fn lane_fits(
-  bits : Int,
+  bits : Int32,
   negated : Bool,
   lit : @ast.InstrDesc[@basic.Location],
 ) -> Bool {

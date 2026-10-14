@@ -3,10 +3,10 @@
 ///|
 /// One span to be drawn under the source.
 priv struct Annotation {
-  start_line : Int
-  end_line : Int
-  start_col : Int
-  end_col : Int
+  start_line : Int32
+  end_line : Int32
+  start_col : Int32
+  end_col : Int32
   color : String
   /// A note printed after the caret, on the span's last line.
   label : @message.Message?
@@ -45,7 +45,7 @@ fn get_annotations(theme : Theme, d : Diagnostic) -> Array[Annotation] {
 
 ///|
 /// How many lines of context surround an annotated line.
-const CONTEXT : Int = 2
+const CONTEXT : Int32 = 2
 
 ///|
 /// The line ranges to print: every annotation's endpoints plus context,
@@ -54,7 +54,7 @@ const CONTEXT : Int = 2
 /// Ranges only ADJACENT (`s2 <= e1 + 1`) are merged too, so two hunks a single
 /// line apart become one rather than being separated by a `...` marker that
 /// hides nothing.
-fn get_hunks(annotations : Array[Annotation]) -> Array[(Int, Int)] {
+fn get_hunks(annotations : Array[Annotation]) -> Array[(Int32, Int32)] {
   let ranges = []
   for a in annotations {
     ranges.push((a.start_line - CONTEXT, a.start_line + CONTEXT))
@@ -64,7 +64,7 @@ fn get_hunks(annotations : Array[Annotation]) -> Array[(Int, Int)] {
   // the merge below is deterministic.
   let sorted = ranges.copy()
   sorted.sort_by((x, y) => x.0.compare(y.0))
-  let merged : Array[(Int, Int)] = []
+  let merged : Array[(Int32, Int32)] = []
   for r in sorted {
     match merged.last() {
       Some(prev) if r.0 <= prev.1 + 1 =>
@@ -80,7 +80,7 @@ fn get_hunks(annotations : Array[Annotation]) -> Array[(Int, Int)] {
 
 ///|
 /// The byte offset at which each line starts.
-fn get_line_starts(source : String) -> Array[Int] {
+fn get_line_starts(source : String) -> Array[Int32] {
   let starts = [0]
   let mut i = 0
   let n = source.length()
@@ -95,7 +95,7 @@ fn get_line_starts(source : String) -> Array[Int] {
 
 ///|
 /// The text of the line starting at `bol`, and the offset of its newline.
-fn line_info(source : String, bol : Int) -> (String, Int) {
+fn line_info(source : String, bol : Int32) -> (String, Int32) {
   if bol >= source.length() {
     return ("", bol)
   }

@@ -10,17 +10,17 @@
 /// instruction it prefixes.
 enum HintSetter {
   Branch(Bool)
-  Freq(Int)
-  Targets(Array[(Ident, Int)])
+  Freq(Int32)
+  Targets(Array[(Ident, Int32)])
 } derive(Debug)
 
 ///|
 /// `metadata.code.instr_freq`: never optimize.
-let never_opt : Int = 0
+let never_opt : Int32 = 0
 
 ///|
 /// `metadata.code.instr_freq`: always optimize.
-let always_opt : Int = 127
+let always_opt : Int32 = 127
 
 ///|
 /// Encode an executions-per-call ratio as the section's offset base-2
@@ -28,7 +28,7 @@ let always_opt : Int = 127
 ///
 /// Clamped to [1, 64]: 0 and 127 are the reserved never/always values, which
 /// have their own attributes.
-fn freq_of_ratio(r : Double) -> Int {
+fn freq_of_ratio(r : Double) -> Int32 {
   if r <= 0.0 {
     1
   } else {
@@ -46,7 +46,7 @@ fn freq_of_ratio(r : Double) -> Int {
 ///|
 /// A call-target frequency is written as a fraction of 1 and stored as a whole
 /// percent, which is what the section holds.
-fn target_percent(p : (Position, Position), n : String) -> Int {
+fn target_percent(p : (Position, Position), n : String) -> Int32 {
   let f = @string.parse_double(n) catch {
     _ =>
       fail_at(
@@ -97,7 +97,7 @@ fn hint_of_attr(p : (Position, Position), a : @ast.Attribute) -> HintSetter {
 fn targets_of_attr(
   p : (Position, Position),
   name : String,
-  l : Array[(Ident, Int)],
+  l : Array[(Ident, Int32)],
 ) -> HintSetter {
   if name != "targets" {
     record_error(

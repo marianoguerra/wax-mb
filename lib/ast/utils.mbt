@@ -268,7 +268,7 @@ pub fn[I] lower_dispatch(
   }
   // Build from the last arm inward: `build(i)` is the block for arm `i`,
   // holding the block for arm `i - 1` followed by arm `i - 1`'s body.
-  fn build(i : Int) -> Instr[I] {
+  fn build(i : Int32) -> Instr[I] {
     if i == 0 {
       mk(
         Block(label=Some(arms[0].0), typ=void_type(), block=@basic.no_loc([br])),

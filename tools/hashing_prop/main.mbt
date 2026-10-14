@@ -1,17 +1,17 @@
 ///|
-fn rotate_left(value : UInt, shift : Int) -> UInt {
+fn rotate_left(value : UInt32, shift : Int32) -> UInt32 {
   (value << shift) | (value >> (32 - shift))
 }
 
 ///|
-fn mix_word(value : UInt) -> UInt {
+fn mix_word(value : UInt32) -> UInt32 {
   let value = value * 0xcc9e2d51
   let value = rotate_left(value, 15)
   value * 0x1b873593
 }
 
 ///|
-fn finish(value : UInt) -> UInt {
+fn finish(value : UInt32) -> UInt32 {
   let value = value ^ (value >> 16)
   let value = value * 0x85ebca6b
   let value = value ^ (value >> 13)
@@ -20,7 +20,7 @@ fn finish(value : UInt) -> UInt {
 }
 
 ///|
-fn murmur3(bytes : Array[Int], seed : Int) -> Int {
+fn murmur3(bytes : Array[Int32], seed : Int32) -> Int32 {
   let mut hash = seed.reinterpret_as_uint()
   let mut offset = 0
   while offset + 4 <= bytes.length() {
@@ -32,7 +32,7 @@ fn murmur3(bytes : Array[Int], seed : Int) -> Int {
     hash = rotate_left(hash, 13) * 5 + 0xe6546b64
     offset += 4
   }
-  let mut tail : UInt = 0
+  let mut tail : UInt32 = 0
   let remaining = bytes.length() - offset
   if remaining >= 1 {
     tail = tail | bytes[offset].reinterpret_as_uint()
@@ -50,7 +50,7 @@ fn murmur3(bytes : Array[Int], seed : Int) -> Int {
 }
 
 ///|
-fn emit_bytes(out : StringBuilder, bytes : Array[Int]) -> Unit {
+fn emit_bytes(out : StringBuilder, bytes : Array[Int32]) -> Unit {
   out.write_string("[wax_hash_bytes|")
   for index, byte in bytes {
     if index != 0 {

@@ -401,7 +401,7 @@ pub fn internalize(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   typ : @wasm_types.ValType[@ast.Ident],
-  inline? : @ast.CompType? = None,
+  inline~ : @ast.CompType? = None,
 ) -> @infer.Cell[@infer.InferredType]? {
   valtype(ctx, diagnostics, typ).map(internal => {
     @infer.valtype_cell({ typ, internal, anon_comptype: inline, })

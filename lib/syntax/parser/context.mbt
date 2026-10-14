@@ -16,7 +16,7 @@
 ///
 /// Reset by `set_context` at the start of every parse, so a previous parse's
 /// leftovers can never leak into the next one.
-let context : Ref[@trivia.Context] = @ref.new(@trivia.Context::new())
+let context : Ref[@trivia.Context] = Ref(@trivia.Context::new())
 
 ///|
 pub fn set_context(ctx : @trivia.Context) -> Unit {
@@ -40,7 +40,7 @@ pub fn set_context(ctx : @trivia.Context) -> Unit {
 /// AST -- which the reference does not have, and which the printer would then
 /// have to ignore -- the parenthesized spans are recorded here, outside the
 /// tree, and consulted only by `reject_chained_comparison`.
-let parenthesized : Set[(Int, Int)] = Set([], capacity=64)
+let parenthesized : Set[(Int32, Int32)] = Set([], capacity=64)
 
 ///|
 /// Record that `i` was written inside parentheses.
@@ -116,7 +116,7 @@ suberror SyntaxError {
 ///
 /// First error wins, which matches the reference: it raises on the first
 /// semantic error, so nothing after that is reported there either.
-let semantic_error : Ref[SyntaxError?] = @ref.new(None)
+let semantic_error : Ref[SyntaxError?] = Ref(None)
 
 ///|
 /// Record a syntax error and return `default` so the action can complete.
@@ -128,8 +128,8 @@ fn[T] fail_at(
   loc : Location,
   message : String,
   default~ : T,
-  hint? : String? = None,
-  fix? : @basic.Edit? = None,
+  hint~ : String? = None,
+  fix~ : @basic.Edit? = None,
 ) -> T {
   if semantic_error.val is None {
     semantic_error.val = Some(SyntaxError(loc~, message~, hint~, fix~))
@@ -142,8 +142,8 @@ fn[T] fail_at(
 fn record_error(
   loc : Location,
   message : String,
-  hint? : String? = None,
-  fix? : @basic.Edit? = None,
+  hint~ : String? = None,
+  fix~ : @basic.Edit? = None,
 ) -> Unit {
   if semantic_error.val is None {
     semantic_error.val = Some(SyntaxError(loc~, message~, hint~, fix~))

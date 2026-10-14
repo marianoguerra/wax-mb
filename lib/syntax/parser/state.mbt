@@ -21,16 +21,16 @@
 /// Where a parse ran aground, in the automaton's terms.
 pub struct ErrorState {
   /// The state whose action on the offending token was `Error`.
-  state : Int
+  state : Int32
   /// The state stack when that happened, bottom first, `state` last.
   ///
   /// Kept because the reference's diagnostics point at enclosing constructs by
   /// stack DEPTH (`<2>This '(' opens the enclosing construct.`), so resolving
   /// those labels means indexing this.
-  stack : Array[Int]
+  stack : Array[Int32]
   /// Index into the token array of the offending token, or the array's length
   /// when the input ended early.
-  token_index : Int
+  token_index : Int32
   /// The source span each stack cell covers, parallel to `stack`.
   ///
   /// A cell holds one grammar symbol: a shifted token's own span, or, for a
@@ -66,7 +66,7 @@ pub fn error_state(tokens : Array[(Token, Position, Position)]) -> ErrorState? {
   // The lookahead SYMBOL, once read. Symbol 0 doubles as "no lookahead needed"
   // when probing a state and as the end-of-input symbol, exactly as in
   // `yy_parse`.
-  let mut lookahead : Int? = None
+  let mut lookahead : Int32? = None
   while true {
     let decision = match yy_state(state, 0) {
       ReduceNoLookahead(_) | Accept as d => d
@@ -212,8 +212,8 @@ pub fn ErrorState::subject_span(self : Self) -> (Position, Position)? {
 /// Probes every terminal lookahead. A goto (a nonterminal column) is a shift
 /// and cannot be confused with a reduction, so the terminal range is only a
 /// bound on the work, not on correctness.
-fn sole_reduction(state : Int) -> (Int, Int)? {
-  let mut found : (Int, Int)? = None
+fn sole_reduction(state : Int32) -> (Int32, Int32)? {
+  let mut found : (Int32, Int32)? = None
   let last = terminal_symbol_count + 1
   for sym in 1..<last {
     match yy_state(state, sym) {
@@ -249,7 +249,7 @@ let terminal_symbol_count = 119
 /// label either.
 pub fn enclosing_opener(
   tokens : Array[(Token, Position, Position)],
-  before : Int,
+  before : Int32,
 ) -> (Position, Position)? {
   let open = []
   let last = @cmp.minimum(before, tokens.length())
@@ -280,7 +280,7 @@ pub fn enclosing_opener(
 /// state, which is what "can the parser accept a `;` here" has to mean --
 /// after a complete statement the `;` is shiftable only once the statement has
 /// been reduced.
-fn acceptable(stack : Array[Int], symbol : Int) -> Bool {
+fn acceptable(stack : Array[Int32], symbol : Int32) -> Bool {
   shift_sim(stack, symbol) is Some(_)
 }
 
@@ -292,7 +292,7 @@ fn acceptable(stack : Array[Int], symbol : Int) -> Bool {
 /// the acceptability test AND as the "what if" recovery needs: whether
 /// inserting a `;` would let the offending token through is a question about
 /// the stack AFTER the `;`.
-fn shift_sim(stack : Array[Int], symbol : Int) -> Array[Int]? {
+fn shift_sim(stack : Array[Int32], symbol : Int32) -> Array[Int32]? {
   let s = stack.copy()
   // Every step either answers or pops at least one cell and pushes one goto,
   // and the automaton has no reduction cycles -- the fuel is a backstop
@@ -344,8 +344,8 @@ fn shift_sim(stack : Array[Int], symbol : Int) -> Array[Int]? {
 /// without an exception to catch. The generated `error()` builds exactly this
 /// set, so it is asked rather than reimplemented: it raises, and the raise is
 /// caught for the payload.
-fn expected_at(stack : Array[Int]) -> Array[TokenKind] {
-  let mut cells : @list.List[Int] = @list.empty()
+fn expected_at(stack : Array[Int32]) -> Array[TokenKind] {
+  let mut cells : @list.List[Int32] = @list.List([])
   for s in stack {
     cells = @list.cons(s, cells)
   }

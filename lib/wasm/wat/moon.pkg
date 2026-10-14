@@ -1,7 +1,6 @@
 import {
   "marianoguerra/wax/wasm/bin" @wasm_bin,
   "marianoguerra/wax/wasm/types" @wasm_types,
-  "moonbitlang/core/ref",
   "moonbitlang/core/debug",
   "marianoguerra/wax/printer",
   "marianoguerra/wax/wasm/atomics",

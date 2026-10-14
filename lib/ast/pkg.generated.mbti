@@ -92,7 +92,7 @@ pub(all) enum CompType {
 pub(all) enum DataElem {
   Str(Bytes)
   Run(@types.StorageType[Ident], Array[@basic.Annotated[String, @basic.Location]])
-  V128Run(Array[@basic.Annotated[@types.V128, @basic.Location]])
+  V128Run(Array[@basic.Annotated[@types.V128Literal, @basic.Location]])
 } derive(Eq, @debug.Debug)
 
 pub(all) enum DataMode[Info] {

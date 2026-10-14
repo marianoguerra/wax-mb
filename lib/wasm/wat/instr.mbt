@@ -32,7 +32,7 @@ fn constructor_of(i : @wasm_bin.Instruction) -> String {
 /// it is going to.
 fn cast_branch(
   name : String,
-  l : Int,
+  l : Int32,
   a : @wasm_bin.RefType,
   b : @wasm_bin.RefType,
   names : @wasm_bin.Names,
@@ -84,7 +84,7 @@ fn const_keyword(i : @wasm_bin.Instruction) -> String raise WatError {
 
 ///|
 /// A struct field's name, under the type that declared it.
-fn field_name(names : @wasm_bin.Names, t : Int, f : Int) -> String {
+fn field_name(names : @wasm_bin.Names, t : Int32, f : Int32) -> String {
   match names.fields.get(t) {
     Some(fs) => name_or(fs, f)
     None => f.to_string()
@@ -94,7 +94,7 @@ fn field_name(names : @wasm_bin.Names, t : Int, f : Int) -> String {
 ///|
 /// The two indices a copy takes, written only when they are not both the
 /// unnamed default -- there is no way to write the second without the first.
-fn index_pair(names : Map[Int, Bytes], a : Int, b : Int) -> String {
+fn index_pair(names : Map[Int32, Bytes], a : Int32, b : Int32) -> String {
   if a == 0 && b == 0 && !names.contains(0) {
     ""
   } else {
@@ -105,7 +105,7 @@ fn index_pair(names : Map[Int, Bytes], a : Int, b : Int) -> String {
 ///|
 /// The label a branch depth names: the enclosing blocks are counted outward
 /// from the innermost, so a depth is a distance from the END of the scope.
-fn label(scope : Array[String?], depth : Int) -> String {
+fn label(scope : Array[String?], depth : Int32) -> String {
   let k = scope.length() - 1 - depth
   if k >= 0 && k < scope.length() && scope[k] is Some(name) {
     name
@@ -119,8 +119,8 @@ fn label(scope : Array[String?], depth : Int) -> String {
 pub fn mnemonic(
   i : @wasm_bin.Instruction,
   names : @wasm_bin.Names,
-  locals : Map[Int, Bytes],
-  scope? : Array[String?] = [],
+  locals : Map[Int32, Bytes],
+  scope~ : Array[String?] = [],
 ) -> Sexp raise WatError {
   // The immediates are separate atoms so that a long one can WRAP: sixteen
   // v128 lanes do not fit a line, and one atom cannot break.
@@ -162,8 +162,8 @@ fn top_level_words(text : String) -> Array[String] {
 fn mnemonic_text(
   i : @wasm_bin.Instruction,
   names : @wasm_bin.Names,
-  locals : Map[Int, Bytes],
-  scope? : Array[String?] = [],
+  locals : Map[Int32, Bytes],
+  scope~ : Array[String?] = [],
 ) -> String raise WatError {
   // Everything with no immediate follows one rule and lives in its own table;
   // what is left here is the instructions whose immediates have to be written.

@@ -23,7 +23,7 @@ fn section_body(
 
 ///|
 /// Write a section: id, byte length, body. Empty bodies are not written at all.
-fn write_section(w : BinaryWriter, id : Int, body : Bytes) -> Unit {
+fn write_section(w : BinaryWriter, id : Int32, body : Bytes) -> Unit {
   if body.length() == 0 {
     return
   }
@@ -341,8 +341,8 @@ fn encode_element_section(mod : Module) -> Bytes raise EncodeError {
 
 ///|
 /// Consecutive locals of the same type share one entry.
-fn compress_locals(locals : Array[ValType]) -> Array[(Int, ValType)] {
-  let out : Array[(Int, ValType)] = []
+fn compress_locals(locals : Array[ValType]) -> Array[(Int32, ValType)] {
+  let out : Array[(Int32, ValType)] = []
   let mut i = 0
   while i < locals.length() {
     let vt = locals[i]
@@ -376,7 +376,7 @@ fn encode_code_section(mod : Module) -> (Bytes, CodeHints) raise EncodeError {
     w.write_u32(mod.codes.length())
     for i, code in mod.codes {
       let funcidx = num_func_imports + i
-      let sink : Array[(Int, InstrHints)] = []
+      let sink : Array[(Int32, InstrHints)] = []
       let fn_body = BinaryWriter::new_with_sink(sink)
       let locals = compress_locals(code.locals)
       fn_body.write_u32(locals.length())

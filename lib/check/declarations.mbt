@@ -263,7 +263,7 @@ fn resolve_table_reftype(
 /// The state one declaration pass carries: the memory index, which counts up
 /// across imported and defined memories alike.
 priv struct DeclareState {
-  mut memory_index : Int
+  mut memory_index : Int32
 }
 
 ///|

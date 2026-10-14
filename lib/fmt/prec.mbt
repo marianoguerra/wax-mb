@@ -73,7 +73,7 @@ enum Prec {
 } derive(Eq, Compare, Debug)
 
 ///|
-fn Prec::rank(self : Prec) -> Int {
+fn Prec::rank(self : Prec) -> Int32 {
   match self {
     Instruction => 0
     Branch => 1

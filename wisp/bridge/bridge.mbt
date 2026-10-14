@@ -38,7 +38,7 @@ pub fn compile_json(request : String) -> String {
       bytes.push(b.to_int())
     }
     let output : Json = {
-      "wasm": bytes.to_json(),
+      "wasm": Json(bytes),
       "manifest": artifact.manifest(),
       "wat": artifact.wat(),
     }

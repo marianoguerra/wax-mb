@@ -19,8 +19,8 @@
 /// branches are lowered side by side for the text form, and each records where
 /// it was written so a reference can be answered from the site that asks.
 struct Space {
-  by_name : Map[String, Array[(Int, @basic.Location)]]
-  mut next : Int
+  by_name : Map[String, Array[(Int32, @basic.Location)]]
+  mut next : Int32
 }
 
 ///|
@@ -30,7 +30,7 @@ pub fn Space::new() -> Space {
 
 ///|
 /// Assign the next index to `name`, and return it.
-fn Space::assign(self : Space, name : String, loc : @basic.Location) -> Int {
+fn Space::assign(self : Space, name : String, loc : @basic.Location) -> Int32 {
   let i = self.next
   self.next = i + 1
   match self.by_name.get(name) {
@@ -44,7 +44,7 @@ fn Space::assign(self : Space, name : String, loc : @basic.Location) -> Int {
 /// The index a name was given, or `None` if it never was.
 ///
 /// The FIRST declaration, for a caller with no site to resolve against.
-pub fn Space::get(self : Space, name : String) -> Int? {
+pub fn Space::get(self : Space, name : String) -> Int32? {
   match self.by_name.get(name) {
     Some(l) => Some(l[0].0)
     None => None
@@ -62,14 +62,14 @@ pub fn Space::get(self : Space, name : String) -> Int? {
 pub fn Space::resolve(
   self : Space,
   name : String,
-  at : Array[(Int, Bool)],
-  guards : (@basic.Location) -> Array[(Int, Bool)],
-) -> Int? {
+  at : Array[(Int32, Bool)],
+  guards : (@basic.Location) -> Array[(Int32, Bool)],
+) -> Int32? {
   guard self.by_name.get(name) is Some(l) else { return None }
   if l.length() == 1 {
     return Some(l[0].0)
   }
-  let mut best : Int? = None
+  let mut best : Int32? = None
   let mut best_len = -1
   for entry in l {
     let g = guards(entry.1)
@@ -94,7 +94,7 @@ pub fn Space::resolve(
 
 ///|
 /// How many entries this space holds.
-pub fn Space::length(self : Space) -> Int {
+pub fn Space::length(self : Space) -> Int32 {
   self.next
 }
 

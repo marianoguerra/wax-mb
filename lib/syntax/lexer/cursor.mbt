@@ -23,16 +23,16 @@ pub struct Cursor {
   src : String
   fname : String
   /// UTF-16 index into `src` -- for slicing only, never reported.
-  mut idx : Int
+  mut idx : Int32
   /// UTF-8 byte offset -- reported as `Position::cnum`.
-  mut cnum : Int
+  mut cnum : Int32
   /// UTF-8 byte offset of the start of the current line.
-  mut bol : Int
-  mut lnum : Int
+  mut bol : Int32
+  mut lnum : Int32
 }
 
 ///|
-pub fn Cursor::new(src : String, fname? : String = "") -> Cursor {
+pub fn Cursor::new(src : String, fname~ : String = "") -> Cursor {
   { src, fname, idx: 0, cnum: 0, bol: 0, lnum: 1, }
 }
 
@@ -57,7 +57,7 @@ pub fn Cursor::at_end(self : Cursor) -> Bool {
 /// `n` is a UTF-16 offset, so `peek(1)` after a surrogate-pair character lands
 /// on its low surrogate. Callers only look ahead past ASCII (operators,
 /// keywords, digits), where the distinction cannot arise.
-pub fn Cursor::peek(self : Cursor, n? : Int = 0) -> Char? {
+pub fn Cursor::peek(self : Cursor, n~ : Int32 = 0) -> Char? {
   let i = self.idx + n
   if i < 0 || i >= self.src.length() {
     None
@@ -126,6 +126,6 @@ pub fn Cursor::eat(self : Cursor, s : String) -> Unit {
 
 ///|
 /// The source text between two UTF-16 indices.
-fn Cursor::slice(self : Cursor, from : Int, to : Int) -> String {
+fn Cursor::slice(self : Cursor, from : Int32, to : Int32) -> String {
   self.src[from:to].to_owned()
 }

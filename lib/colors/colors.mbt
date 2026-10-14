@@ -175,7 +175,7 @@ pub let no_color : Theme = {
 /// testable and this package needs no knowledge of file descriptors. Under
 /// `Auto` colour is suppressed by NO_COLOR, by a `dumb` or absent TERM, and by
 /// the destination not being a terminal -- all three, not any one.
-pub fn should_use_color(color : Flag, is_tty? : Bool = false) -> Bool {
+pub fn should_use_color(color : Flag, is_tty~ : Bool = false) -> Bool {
   match color {
     Never => false
     Always => true

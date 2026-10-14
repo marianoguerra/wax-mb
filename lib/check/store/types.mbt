@@ -28,7 +28,7 @@
 /// makes exactly the same choice, and for exactly the same reason: the
 /// source-versus-canonical index confusion is the bug class this prevents.
 pub struct Id {
-  index : Int
+  index : Int32
 } derive(Eq, Hash, Debug)
 
 ///|
@@ -39,21 +39,21 @@ pub struct Id {
 /// only for a consumer that already works in indices because the binary format
 /// does. Everything else must treat `Id` as opaque, which is what keeps the
 /// interning honest.
-pub fn Id::of_index(index : Int) -> Id {
+pub fn Id::of_index(index : Int32) -> Id {
   { index, }
 }
 
 ///|
 /// The canonical index `n` positions after this one -- e.g. the `n`-th member
 /// of a rec group whose first member is this.
-pub fn Id::add(self : Id, n : Int) -> Id {
+pub fn Id::add(self : Id, n : Int32) -> Id {
   { index: self.index + n, }
 }
 
 ///|
 /// The underlying integer, for tests that render an index. Not for production
 /// code, which must treat `Id` as opaque.
-pub fn Id::to_int_for_tests_only(self : Id) -> Int {
+pub fn Id::to_int_for_tests_only(self : Id) -> Int32 {
   self.index
 }
 
@@ -66,7 +66,7 @@ pub fn Id::to_int_for_tests_only(self : Id) -> Int {
 /// a genuine store index.
 pub(all) enum RefIndex {
   Def(Id)
-  Rec(Int)
+  Rec(Int32)
 } derive(Eq, Hash, Debug)
 
 ///|

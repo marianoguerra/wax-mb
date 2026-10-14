@@ -33,7 +33,7 @@ pub(all) enum ImportKind {
   Memory(
     address_type~ : AddressType,
     limits~ : (UInt64, UInt64?)?,
-    page_size_log2~ : Int?,
+    page_size_log2~ : Int32?,
     shared~ : Bool
   )
   Table(
@@ -66,7 +66,7 @@ pub(all) enum DataElem {
   /// A scalar numeric run, `[f32: 1.5, nan, ...]`.
   Run(StorageType, Array[Annotated[String, Location]])
   /// A v128 run, `[v128: i32x4(1,2,3,4), ...]`.
-  V128Run(Array[Annotated[V128, Location]])
+  V128Run(Array[Annotated[V128Literal, Location]])
 } derive(Eq, Debug)
 
 ///|
@@ -113,7 +113,7 @@ pub(all) enum ModuleField[Info] {
     name~ : Ident,
     address_type~ : AddressType,
     limits~ : (UInt64, UInt64?)?,
-    page_size_log2~ : Int?,
+    page_size_log2~ : Int32?,
     shared~ : Bool,
     data~ : Array[MemData[Info]],
     attributes~ : Attributes

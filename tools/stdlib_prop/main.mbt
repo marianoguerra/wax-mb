@@ -1,5 +1,5 @@
 ///|
-fn emit_bytes(out : StringBuilder, bytes : Array[Int]) -> Unit {
+fn emit_bytes(out : StringBuilder, bytes : Array[Int32]) -> Unit {
   out.write_string("[wax_hash_bytes|")
   for index, byte in bytes {
     if index != 0 {
@@ -11,7 +11,7 @@ fn emit_bytes(out : StringBuilder, bytes : Array[Int]) -> Unit {
 }
 
 ///|
-fn append_utf8(scalar : Int, out : Array[Int]) -> Unit {
+fn append_utf8(scalar : Int32, out : Array[Int32]) -> Unit {
   if scalar <= 0x7f {
     out.push(scalar)
   } else if scalar <= 0x7ff {
@@ -30,12 +30,12 @@ fn append_utf8(scalar : Int, out : Array[Int]) -> Unit {
 }
 
 ///|
-fn valid_utf8_case(case_index : Int, seed : UInt64) -> Array[Int] {
+fn valid_utf8_case(case_index : Int32, seed : UInt64) -> Array[Int32] {
   let count = case_index % 9
   let raw = @quickcheck.int_range(0, 0x110000)
     .array_with_size(count)
     .sample(size=count, seed~)
-  let bytes : Array[Int] = []
+  let bytes : Array[Int32] = []
   for value in raw {
     let scalar = if value >= 0xd800 && value <= 0xdfff {
       value + 0x800
@@ -52,7 +52,7 @@ fn emit_utf8_cases(
   out : StringBuilder,
   cases_out : StringBuilder,
   seed : UInt64,
-) -> Int {
+) -> Int32 {
   let count = 96
   for case_index in 0..<count {
     let bytes = if case_index < 48 {
@@ -82,9 +82,9 @@ fn emit_utf8_cases(
 ///|
 fn emit_map_assert(
   out : StringBuilder,
-  key : Int,
+  key : Int32,
   present : Bool,
-  value : Int,
+  value : Int32,
 ) -> Unit {
   out.write_string(
     "    st_assert_map(map, \{key}, \{if present { 1 } else { 0 }}, \{value});\n",
@@ -92,14 +92,14 @@ fn emit_map_assert(
 }
 
 ///|
-fn emit_set_assert(out : StringBuilder, value : Int, present : Bool) -> Unit {
+fn emit_set_assert(out : StringBuilder, value : Int32, present : Bool) -> Unit {
   out.write_string(
     "    st_assert_set(set, \{value}, \{if present { 1 } else { 0 }});\n",
   )
 }
 
 ///|
-fn emit_expected_i32(out : StringBuilder, values : Array[Int]) -> Unit {
+fn emit_expected_i32(out : StringBuilder, values : Array[Int32]) -> Unit {
   out.write_string("[st_expected_i32|")
   for index, value in values {
     if index != 0 {
@@ -113,16 +113,16 @@ fn emit_expected_i32(out : StringBuilder, values : Array[Int]) -> Unit {
 ///|
 fn emit_order_asserts(
   out : StringBuilder,
-  map_keys : Array[Int],
-  map_values : @hashmap.HashMap[Int, Int],
-  set_values : Array[Int],
-  map_name? : String = "ordered_map",
-  set_name? : String = "ordered_set",
+  map_keys : Array[Int32],
+  map_values : @hashmap.HashMap[Int32, Int32],
+  set_values : Array[Int32],
+  map_name~ : String = "ordered_map",
+  set_name~ : String = "ordered_set",
 ) -> Unit {
   out.write_string("    st_assert_ordered_map(\{map_name}, ")
   emit_expected_i32(out, map_keys)
   out.write_string(", ")
-  let values : Array[Int] = []
+  let values : Array[Int32] = []
   for key in map_keys {
     values.push(map_values[key])
   }
@@ -135,15 +135,15 @@ fn emit_order_asserts(
 ///|
 fn emit_property_case(
   out : StringBuilder,
-  case_index : Int,
-  inputs : Array[Int],
+  case_index : Int32,
+  inputs : Array[Int32],
 ) -> Unit {
-  let vector : Array[Int] = []
-  let map : @hashmap.HashMap[Int, Int] = @hashmap.HashMap::HashMap([])
-  let set : @hashmap.HashMap[Int, Int] = @hashmap.HashMap::HashMap([])
-  let ordered_map_keys : Array[Int] = []
-  let ordered_map_values : @hashmap.HashMap[Int, Int] = @hashmap.HashMap([])
-  let ordered_set_values : Array[Int] = []
+  let vector : Array[Int32] = []
+  let map : @hashmap.HashMap[Int32, Int32] = @hashmap.HashMap::HashMap([])
+  let set : @hashmap.HashMap[Int32, Int32] = @hashmap.HashMap::HashMap([])
+  let ordered_map_keys : Array[Int32] = []
+  let ordered_map_values : @hashmap.HashMap[Int32, Int32] = @hashmap.HashMap([])
+  let ordered_set_values : Array[Int32] = []
   let record_values = [0, 0, 0]
   out.write_string("fn st_property_case_\{case_index}() {\n")
   out.write_string("    st_stage = \{100 + case_index};\n")

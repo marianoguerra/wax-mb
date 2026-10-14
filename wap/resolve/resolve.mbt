@@ -23,7 +23,7 @@ pub struct MapLoader {
 
 ///|
 /// A loader over the given `(path, source)` pairs.
-pub fn MapLoader::new(entries? : Array[(String, String)] = []) -> MapLoader {
+pub fn MapLoader::new(entries~ : Array[(String, String)] = []) -> MapLoader {
   let sources : Map[String, String] = Map([])
   for e in entries {
     let (k, v) = e

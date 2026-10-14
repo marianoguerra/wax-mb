@@ -8,7 +8,7 @@
 /// Print a module's text form.
 pub fn print_module(
   m : @wasm_bin.Module,
-  trivia? : @trivia.Context? = None,
+  trivia~ : @trivia.Context? = None,
 ) -> String raise WatError {
   // Each field with where it was written: the comments written against it are
   // found by that, and so is the conditional branch it stood in.
@@ -35,7 +35,7 @@ pub fn print_module(
   // fields that were written.
   // A type the source did not write but that carries a NAME was materialised
   // for that name -- the entry exists for it alone -- so the text writes it.
-  let placed_types : Map[Int, Bool] = Map([])
+  let placed_types : Map[Int32, Bool] = Map([])
   for f in m.text.field_order {
     if f is FTypes(ks) {
       for k in ks {
@@ -50,7 +50,7 @@ pub fn print_module(
       fields.push(subtype_field(m, k))
     }
   }
-  let placed_elems : Map[Int, Bool] = Map([])
+  let placed_elems : Map[Int32, Bool] = Map([])
   for f in m.text.field_order {
     if f is FElem(k) {
       placed_elems[k] = true
@@ -83,12 +83,12 @@ pub fn print_module(
 fn guards_of(
   conds : Array[@wasm_bin.CondGroup],
   loc : @basic.Location,
-) -> Array[(Int, Bool)] {
+) -> Array[(Int32, Bool)] {
   fn covers(outer : @basic.Location, inner : @basic.Location) -> Bool {
     inner.start.cnum >= outer.start.cnum && inner.end.cnum <= outer.end.cnum
   }
 
-  let out : Array[(Int, Bool)] = []
+  let out : Array[(Int32, Bool)] = []
   for k, c in conds {
     if covers(c.then_, loc) {
       out.push((k, true))
@@ -113,8 +113,8 @@ fn guards_of(
 /// import.
 fn mutually_exclusive(
   conds : Array[@wasm_bin.CondGroup],
-  g1 : Array[(Int, Bool)],
-  g2 : Array[(Int, Bool)],
+  g1 : Array[(Int32, Bool)],
+  g2 : Array[(Int32, Bool)],
 ) -> Bool {
   let n = if g1.length() < g2.length() { g1.length() } else { g2.length() }
   for k in 0..<n {
@@ -145,8 +145,8 @@ fn mutually_exclusive(
 fn regroup(
   conds : Array[@wasm_bin.CondGroup],
   items : Array[(Sexp, @basic.Location)],
-  kinds? : Array[FieldKind] = [],
-  outer? : Array[(Int, Bool)] = [],
+  kinds~ : Array[FieldKind] = [],
+  outer~ : Array[(Int32, Bool)] = [],
 ) -> Array[Sexp] {
   if conds.is_empty() {
     return items.map(i => i.0)
@@ -182,9 +182,9 @@ fn regroup(
 fn needs_reorder(
   conds : Array[@wasm_bin.CondGroup],
   kinds : Array[FieldKind],
-  paths : Array[Array[(Int, Bool)]],
+  paths : Array[Array[(Int32, Bool)]],
 ) -> Bool {
-  let defs : Array[Array[(Int, Bool)]] = []
+  let defs : Array[Array[(Int32, Bool)]] = []
   for k in 0..<paths.length() {
     guard k < kinds.length() else { continue }
     match kinds[k] {
@@ -208,11 +208,11 @@ fn needs_reorder(
 fn build(
   conds : Array[@wasm_bin.CondGroup],
   items : Array[(Sexp, @basic.Location)],
-  paths : Array[Array[(Int, Bool)]],
-  order : Array[Int],
-  depth : Int,
-  from : Int,
-  to : Int,
+  paths : Array[Array[(Int32, Bool)]],
+  order : Array[Int32],
+  depth : Int32,
+  from : Int32,
+  to : Int32,
 ) -> Array[Sexp] {
   let out : Array[Sexp] = []
   let mut i = from
@@ -268,7 +268,7 @@ fn build(
 /// Whether a type is the array a bare string literal already lowers to: a
 /// MUTABLE byte array. Anything else has to be named, because the spelling
 /// alone would not say which it is.
-fn default_string_type(m : @wasm_bin.Module, t : Int) -> Bool {
+fn default_string_type(m : @wasm_bin.Module, t : Int32) -> Bool {
   guard m.types.get(t) is Some(sub) else { return false }
   guard sub.composite is Array(at) else { return false }
   at.element.mut_ && at.element.typ is Packed(I8)
@@ -357,7 +357,7 @@ fn field(m : @wasm_bin.Module, f : @wasm_bin.FieldRef) -> Sexp raise WatError {
 /// the text readable without the type section beside it.
 fn function_field(
   m : @wasm_bin.Module,
-  k : Int,
+  k : Int32,
   code : @wasm_bin.FunctionCode,
 ) -> Sexp raise WatError {
   let index = k + imported_count(m, "func")
@@ -495,7 +495,7 @@ fn named_type(name : String, kind : String, ty : String) -> Array[Sexp] {
 
 ///|
 /// A local's name, or nothing.
-fn local_name(locals : Map[Int, Bytes], k : Int) -> String {
+fn local_name(locals : Map[Int32, Bytes], k : Int32) -> String {
   match locals.get(k) {
     Some(b) => ident(b)
     None => ""
@@ -512,9 +512,9 @@ fn local_name(locals : Map[Int, Bytes], k : Int) -> String {
 /// both are carried.
 priv struct Ctx {
   m : @wasm_bin.Module
-  locals : Map[Int, Bytes]
-  labels : Map[Int, Bytes]
-  mut opened : Int
+  locals : Map[Int32, Bytes]
+  labels : Map[Int32, Bytes]
+  mut opened : Int32
   scope : Array[String?]
   /// The `#[if(..)]` groups written in this body, for the statements at every
   /// level of it -- a conditional can hold a block whose body holds another.
@@ -529,7 +529,7 @@ fn statements(
   nodes : Array[Node],
   ctx : Ctx,
   conds : Array[@wasm_bin.CondGroup],
-  outer? : Array[(Int, Bool)] = [],
+  outer~ : Array[(Int32, Bool)] = [],
 ) -> Array[Sexp] raise WatError {
   let items : Array[(Sexp, @basic.Location)] = []
   for n in nodes {
@@ -800,7 +800,7 @@ fn hint_annotations(
 /// as `(freq n)` when that ratio is a whole number -- the hot-instruction case
 /// -- and as the raw byte when it is not, because a fractional ratio's
 /// shortest decimal need not re-encode to the same byte.
-fn freq_payload(b : Int) -> Sexp {
+fn freq_payload(b : Int32) -> Sexp {
   if b == 0 {
     return List([Atom("never_opt")])
   }
@@ -820,7 +820,7 @@ fn freq_payload(b : Int) -> Sexp {
 ///|
 /// A call-target share, as the fraction the annotation writes: `73` is `0.73`,
 /// and a whole one is written without a point.
-fn percent(pct : Int) -> String {
+fn percent(pct : Int32) -> String {
   if pct % 100 == 0 {
     return (pct / 100).to_string()
   }

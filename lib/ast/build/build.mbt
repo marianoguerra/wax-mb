@@ -12,7 +12,7 @@
 /// A name, with the span it was written at.
 pub fn ident(
   name : String,
-  at? : @basic.Location = @basic.dummy_loc,
+  at~ : @basic.Location = @basic.dummy_loc,
 ) -> @ast.Ident {
   { name, loc: at, }
 }
@@ -24,7 +24,7 @@ pub fn ident(
 /// module and there is no separate constructor for one.
 pub fn field(
   f : @ast.ModuleField[@basic.Location],
-  at? : @basic.Location = @basic.dummy_loc,
+  at~ : @basic.Location = @basic.dummy_loc,
 ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
   { desc: f, info: at, }
 }
@@ -36,9 +36,9 @@ pub fn field(
 /// positional parameter, and only a named one can be referred to by name in the
 /// body.
 pub fn func_type(
-  params? : Array[(String?, @wasm_types.ValType[@ast.Ident])] = [],
-  results? : Array[@wasm_types.ValType[@ast.Ident]] = [],
-  at? : @basic.Location = @basic.dummy_loc,
+  params~ : Array[(String?, @wasm_types.ValType[@ast.Ident])] = [],
+  results~ : Array[@wasm_types.ValType[@ast.Ident]] = [],
+  at~ : @basic.Location = @basic.dummy_loc,
 ) -> @ast.FuncType {
   {
     params: params.map(p => {
@@ -62,12 +62,12 @@ pub fn func_type(
 /// because the two are separate in the syntax.
 pub fn func(
   name : String,
-  params? : Array[(String?, @wasm_types.ValType[@ast.Ident])] = [],
-  results? : Array[@wasm_types.ValType[@ast.Ident]] = [],
-  body? : Array[@ast.Instr[@basic.Location]] = [],
-  label? : String? = None,
-  attributes? : Array[@ast.Attribute] = [],
-  at? : @basic.Location = @basic.dummy_loc,
+  params~ : Array[(String?, @wasm_types.ValType[@ast.Ident])] = [],
+  results~ : Array[@wasm_types.ValType[@ast.Ident]] = [],
+  body~ : Array[@ast.Instr[@basic.Location]] = [],
+  label~ : String? = None,
+  attributes~ : Array[@ast.Attribute] = [],
+  at~ : @basic.Location = @basic.dummy_loc,
 ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
   field(
     Func(
@@ -85,11 +85,11 @@ pub fn func(
 /// A global definition. `def` is its initializer.
 pub fn global(
   name : String,
-  typ? : @wasm_types.ValType[@ast.Ident]? = None,
-  mut_? : Bool = false,
+  typ~ : @wasm_types.ValType[@ast.Ident]? = None,
+  mut_~ : Bool = false,
   def~ : @ast.Instr[@basic.Location],
-  attributes? : Array[@ast.Attribute] = [],
-  at? : @basic.Location = @basic.dummy_loc,
+  attributes~ : Array[@ast.Attribute] = [],
+  at~ : @basic.Location = @basic.dummy_loc,
 ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
   field(Global(name=ident(name, at~), mut_~, typ~, def~, attributes~), at~)
 }
@@ -102,7 +102,7 @@ pub fn global(
 /// other, and two in different groups cannot.
 pub fn rec_group(
   types : Array[(String, @ast.SubType)],
-  at? : @basic.Location = @basic.dummy_loc,
+  at~ : @basic.Location = @basic.dummy_loc,
 ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
   field(
     Type(
@@ -128,12 +128,12 @@ pub fn rec_group(
 pub fn import_func(
   module_ : String,
   name : String,
-  as_? : String? = None,
-  params? : Array[(String?, @wasm_types.ValType[@ast.Ident])] = [],
-  results? : Array[@wasm_types.ValType[@ast.Ident]] = [],
-  exact? : Bool = false,
-  attributes? : Array[@ast.Attribute] = [],
-  at? : @basic.Location = @basic.dummy_loc,
+  as_~ : String? = None,
+  params~ : Array[(String?, @wasm_types.ValType[@ast.Ident])] = [],
+  results~ : Array[@wasm_types.ValType[@ast.Ident]] = [],
+  exact~ : Bool = false,
+  attributes~ : Array[@ast.Attribute] = [],
+  at~ : @basic.Location = @basic.dummy_loc,
 ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
   let attributes = match as_ {
     Some(internal) if internal != name => [import_as(name, at~), ..attributes]
@@ -158,7 +158,7 @@ pub fn import_func(
 /// differs from the identifier the module uses for it.
 pub fn import_as(
   name : String,
-  at? : @basic.Location = @basic.dummy_loc,
+  at~ : @basic.Location = @basic.dummy_loc,
 ) -> @ast.Attribute {
   {
     attr_name: "import",
@@ -176,7 +176,7 @@ pub fn import_as(
 /// `#[export = "name"]`.
 pub fn exported(
   name? : String,
-  at? : @basic.Location = @basic.dummy_loc,
+  at~ : @basic.Location = @basic.dummy_loc,
 ) -> @ast.Attribute {
   {
     attr_name: "export",

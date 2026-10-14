@@ -16,7 +16,7 @@
 /// that validates and computes something else.
 fn binop_instruction(
   op : @ast.BinOp,
-  ty : @wasm_types.ValType[Int],
+  ty : @wasm_types.ValType[Int32],
 ) -> @wasm_bin.Instruction? {
   match ty {
     I32 => i32_binop(op)
@@ -133,7 +133,7 @@ fn f64_binop(op : @ast.BinOp) -> @wasm_bin.Instruction? {
 /// name over `i32.clz` and `i64.clz`, and only the receiver's type says which.
 fn unary_instruction(
   meth : String,
-  recv : @wasm_types.ValType[Int]?,
+  recv : @wasm_types.ValType[Int32]?,
 ) -> @wasm_bin.Instruction? {
   guard recv is Some(ty) else { return None }
   match (meth, ty) {
@@ -176,7 +176,7 @@ fn unary_instruction(
 /// The instruction a two-operand scalar method becomes.
 fn binary_intrinsic(
   meth : String,
-  recv : @wasm_types.ValType[Int]?,
+  recv : @wasm_types.ValType[Int32]?,
 ) -> @wasm_bin.Instruction? {
   guard recv is Some(ty) else { return None }
   match (meth, ty) {

@@ -80,7 +80,7 @@ priv struct HoleOrder {
 /// A block-like construct is a boundary: its body is checked on a stack of its
 /// own and every statement in there gets a demand of its own, so the walk stops
 /// there -- which is exactly where `hole_operands` stops.
-fn hole_demand(i : @ast.Instr[@basic.Location]) -> (Int, @basic.Location?) {
+fn hole_demand(i : @ast.Instr[@basic.Location]) -> (Int32, @basic.Location?) {
   if i.desc is Hole {
     return (1, Some(i.info))
   }
@@ -171,7 +171,7 @@ fn HoleOrder::walk(
 /// A block-like construct is a boundary: its body runs on a stack of its own,
 /// so a hole inside it belongs to a statement in there and is counted by that
 /// statement's own walk, not by this one.
-fn count_holes(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Int {
+fn count_holes(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Int32 {
   if i.desc is Hole {
     return 1
   }

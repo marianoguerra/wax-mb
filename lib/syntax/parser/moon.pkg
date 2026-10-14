@@ -5,7 +5,6 @@ import {
   "marianoguerra/wax/syntax/lexer",
   "marianoguerra/wax/ast",
   "marianoguerra/wax/wasm/types" @wasm_types,
-  "moonbitlang/core/ref",
   "moonbitlang/core/list",
   "moonbitlang/core/string",
   "moonbitlang/core/math",
@@ -21,19 +20,11 @@ import {
 // closure with no identity, and the reference's per-state messages have
 // nothing to key on.
 
-// The `sed` after the generator is not cosmetic. The table engine still writes
-// each semantic-value wrapper in the payload form `priv suberror E T`, which
-// moonc 0.10.12 no longer PARSES -- it reads the declaration as a constant
-// constructor and then rejects all 1667 uses of one. So the 93 declarations are
-// rewritten to `priv suberror E { E(T) }`, which is what the direct-style
-// engine already emits for the same grammar. See test/UPSTREAM-FINDINGS.md
-// finding 10; drop the rewrite when moonyacc's two engines agree.
-//
 // The suppressions this package used to carry for the generated file are gone:
-// -27 (deprecated_syntax) with the rewrite above, and -87 (guard_inexhaustive)
-// because 0.7.19 emits `guard!` where the panic is intended. Both suppressed
-// the warning for the hand-written files too, which is why they are worth not
-// having.
+// -27 (deprecated_syntax) because the generator writes current syntax, and -87
+// (guard_inexhaustive) because it emits `guard!` where the panic is intended.
+// Both suppressed the warning for the hand-written files too, which is why
+// they are worth not having.
 
 warnings = "-6-text_segment_excceed"
 
@@ -41,7 +32,7 @@ formatter(ignore: [ "parser.mbt" ])
 
 rule(
   name: "moonyacc",
-  command: "moonx moonbitlang/yacc@0.7.19 --no-comments --external-tokens --table $input -o $output && sed -i -E 's/^priv suberror ([A-Za-z0-9_]+) (.+)$/priv suberror \\1 { \\1(\\2) }/' $output",
+  command: "moonx moonbitlang/yacc@0.7.25 --no-comments --external-tokens --table $input -o $output",
 )
 
 dev_build(rule: "moonyacc", input: "parser.mbty", output: "parser.mbt")

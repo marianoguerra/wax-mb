@@ -121,7 +121,7 @@ pub struct ModuleContext {
   /// initializer, which sees the globals declared before it.
   import_globals : Tbl[GlobalEntry]
   tags : Tbl[@ast.FuncType]
-  memories : Tbl[(Int, @wasm_types.AddressType)]
+  memories : Tbl[(Int32, @wasm_types.AddressType)]
   datas : Tbl[Unit]
   tables : Tbl[(@wasm_types.AddressType, @wasm_types.RefType[@ast.Ident])]
   elems : Tbl[@wasm_types.RefType[@ast.Ident]]
@@ -136,7 +136,7 @@ pub struct ModuleContext {
   /// OPERAND always traps is not reported as well -- its verdict follows from
   /// the inner one, and the fix belongs there. Nested casts share a start
   /// position, so the two reports would also render as the same line.
-  cast_traps_reported : Map[(Int, Int), Unit]
+  cast_traps_reported : Map[(Int32, Int32), Unit]
   /// Type references made by CANONICAL index rather than by name, for the uses
   /// that name no definition syntactically -- a string literal builds the
   /// canonical `mut i8` array, so every source definition that deduplicated
@@ -153,7 +153,7 @@ pub struct ModuleContext {
   /// reporting side effect and one node is legitimately asked by several
   /// consumers -- a call's callee twice, a labelled block as both value and
   /// statement -- so it fires once per span.
-  not_expression_reported : Map[(Int, Int), Unit]
+  not_expression_reported : Map[(Int32, Int32), Unit]
 
   // --- Per-function state, reset on entry to each ---
   mut locals : Map[String, LocalEntry]
@@ -175,14 +175,14 @@ pub struct ModuleContext {
   /// Source offsets of the local DECLARATIONS read so far. Keyed by the
   /// binding's offset rather than its name, so a shadowing inner local does not
   /// mask the outer one as read.
-  read_locals : Array[Int]
+  read_locals : Array[Int32]
   /// The `let`-bound locals declared here, in order, so an unread one can be
   /// reported.
   local_decls : Array[@ast.Ident]
   /// Source offsets of the block-label DECLARATIONS branched to. Keyed by
   /// offset for the same shadowing reason as `read_locals`; the wasm validator
   /// likewise tracks usage per control frame.
-  used_labels : Array[Int]
+  used_labels : Array[Int32]
   /// Lints that must read a result cell only once checking has pinned it -- the
   /// shift-count lint reads the shifted operand's width, which a later context
   /// can widen. Flushed when every cell is final.
@@ -218,8 +218,8 @@ pub struct ModuleContext {
 pub fn ModuleContext::enter_function(
   self : ModuleContext,
   return_types~ : Array[@infer.Cell[@infer.InferredType]],
-  label_decls? : Array[@ast.Ident] = [],
-  assigned_locals? : Map[String, Unit] = Map([]),
+  label_decls~ : Array[@ast.Ident] = [],
+  assigned_locals~ : Map[String, Unit] = Map([]),
 ) -> Unit {
   self.locals = Map([])
   self.initialized_locals = Map([])
@@ -301,7 +301,7 @@ pub fn[A] ModuleContext::with_initialized_snapshot(
 ///|
 pub fn ControlFrame::new(
   results : Array[@infer.Cell[@infer.InferredType]],
-  label? : @ast.Ident? = None,
+  label~ : @ast.Ident? = None,
 ) -> ControlFrame {
   { label, results, }
 }
@@ -318,16 +318,16 @@ pub fn ModuleContext::new(
   diagnostics : @diagnostic.Context,
   store : @type_store.TypeStore,
   features : @feature.Set,
-  warn_unused? : Bool = false,
-  simplify? : Bool = false,
-  suggest? : Bool = false,
-  faithful? : Bool = false,
-  resolve_links? : ResolveSink = None,
-  pun_spans? : Array[@basic.Location]? = None,
-  member_completions? : Array[(@basic.Location, @members.MemberReceiver)]? = None,
+  warn_unused~ : Bool = false,
+  simplify~ : Bool = false,
+  suggest~ : Bool = false,
+  faithful~ : Bool = false,
+  resolve_links~ : ResolveSink = None,
+  pun_spans~ : Array[@basic.Location]? = None,
+  member_completions~ : Array[(@basic.Location, @members.MemberReceiver)]? = None,
 ) -> ModuleContext {
-  let cond = @ref.new(@cond.true_)
-  let origin = @ref.new(Origin::Root)
+  let cond = Ref(@cond.true_)
+  let origin = Ref(Origin::Root)
   // Functions, globals, memories and tables share ONE name space -- a bare name
   // in an expression could mean any of them, so they must not collide. Types,
   // data segments, element segments and tags each get their own: a type is
@@ -355,7 +355,7 @@ pub fn ModuleContext::new(
   })
   let functions : Tbl[FunctionEntry] = Tbl::new("function", ns, origin)
   let tags : Tbl[@ast.FuncType] = Tbl::new("tag", tag_ns, origin)
-  let memories : Tbl[(Int, @wasm_types.AddressType)] = Tbl::new(
+  let memories : Tbl[(Int32, @wasm_types.AddressType)] = Tbl::new(
     "memory", ns, origin,
   )
   let datas : Tbl[Unit] = Tbl::new("data segment", data_ns, origin)
@@ -390,7 +390,7 @@ pub fn ModuleContext::new(
     locals: Map([]),
     initialized_locals: Map([]),
     deferred_uninit: [],
-    unresolved_label: @ref.new(false),
+    unresolved_label: Ref(false),
     read_locals: [],
     local_decls: [],
     used_labels: [],

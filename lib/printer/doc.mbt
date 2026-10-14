@@ -25,7 +25,7 @@ pub(all) enum BreakStrength {
 } derive(Eq, Debug)
 
 ///|
-pub fn BreakStrength::strength(self : BreakStrength) -> Int {
+pub fn BreakStrength::strength(self : BreakStrength) -> Int32 {
   match self {
     Cut => 0
     Space => 1
@@ -57,10 +57,10 @@ pub(all) enum GKind {
 pub(all) enum Token {
   /// Display width, then the payload. The width is carried rather than
   /// recomputed because it is not the string's length: see unicode/.
-  TText(Int, String)
+  TText(Int32, String)
   TBreak(BreakStrength)
   TBegin(GKind)
-  TNest(Int)
+  TNest(Int32)
   /// Content emitted only when the enclosing group is laid out BROKEN -- the
   /// trailing comma after the last element of a list that wraps. It never
   /// counts toward the fit decision.
@@ -79,7 +79,7 @@ pub(all) enum Mode {
 ///|
 /// A live layout frame: where breaks indent to, and how they behave.
 struct Frame {
-  findent : Int
+  findent : Int32
   fmode : Mode
 } derive(Eq, Debug)
 

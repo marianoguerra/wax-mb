@@ -434,7 +434,7 @@ fn Checker::array_bulk_call(
     }
   }
   let i32c = @infer.valtype_cell(@infer.i32_valtype)
-  fn want_i32(k : Int) -> Unit {
+  fn want_i32(k : Int32) -> Unit {
     if k < args_.length() {
       check_subtype(
         ctx.type_context.subtyping_info(),

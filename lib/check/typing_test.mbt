@@ -7,7 +7,7 @@
 // the first unresolvable type ending the run would hide every error after it.
 
 ///|
-fn loc_at(start : Int, end_ : Int) -> @basic.Location {
+fn loc_at(start : Int32, end_ : Int32) -> @basic.Location {
   {
     start: { fname: "t.wax", lnum: 1, bol: 0, cnum: start, },
     end: { fname: "t.wax", lnum: 1, bol: 0, cnum: end_, },
@@ -15,7 +15,7 @@ fn loc_at(start : Int, end_ : Int) -> @basic.Location {
 }
 
 ///|
-fn id(name : String, at? : Int = 0) -> @ast.Ident {
+fn id(name : String, at~ : Int32 = 0) -> @ast.Ident {
   { name, loc: loc_at(at, at + name.length()), }
 }
 
@@ -23,13 +23,13 @@ fn id(name : String, at? : Int = 0) -> @ast.Ident {
 /// A context with the named types already defined in the store.
 fn ctx_with(
   defined : Array[String],
-  features? : @feature.Set = @feature.default(),
+  features~ : @feature.Set = @feature.default(),
 ) -> @typing_env.TypeContext raise {
   let store = @type_store.TypeStore::new()
   let diagnostics = @diagnostic.collector()
-  let cond = @ref.new(@cond.true_)
+  let cond = Ref(@cond.true_)
   let ns = @typing_env.Namespace::new(cond)
-  let origin = @ref.new(@typing_env.Origin::Root)
+  let origin = Ref(@typing_env.Origin::Root)
   let tbl : @typing_env.Tbl[(@type_store.RefIndex, @ast.SubType)] = @typing_env.Tbl::new(
     "type", ns, origin,
   )
@@ -191,7 +191,7 @@ test "duplicate parameter and field names" {
 
   // The same for struct fields.
   let d2 = @diagnostic.collector()
-  let field = (n : String, at : Int) => {
+  let field = (n : String, at : Int32) => {
     (
       {
         desc: (
@@ -743,7 +743,7 @@ test "an underflow is reported once, where the caller points" {
   let d = @diagnostic.collector()
   inspect(d.collected().length(), content="0")
   // The statement's first hole is where it lands.
-  let held : Ref[@typing.MissingBatch?] = @ref.new(batch)
+  let held : Ref[@typing.MissingBatch?] = Ref(batch)
   @typing.report_hole_underflow(d, loc_at(40, 41), held)
   inspect(d.collected().length(), content="1")
   inspect(d.collected()[0].loc.start.cnum, content="40")
@@ -758,7 +758,7 @@ test "an underflow is reported once, where the caller points" {
   @typing.report_hole_underflow(d, loc_at(50, 51), held)
   inspect(d.collected().length(), content="1")
   // A statement that never underflowed has nothing to report.
-  @typing.report_hole_underflow(d, loc_at(60, 61), @ref.new(None))
+  @typing.report_hole_underflow(d, loc_at(60, 61), Ref(None))
   inspect(d.collected().length(), content="1")
 }
 
@@ -1873,7 +1873,7 @@ test "an unlabelled frame is not a branch target" {
 /// delivery reaching a block's exit -- the fall-through, each `br`, each caught
 /// value -- and this folds them into one type.
 test "joining what reaches a block's exit" {
-  fn exits(values : Array[(Int, @infer.InferredType)]) -> String {
+  fn exits(values : Array[(Int32, @infer.InferredType)]) -> String {
     let ctx = module_ctx()
     let collected = values.map(v => {
       ((Some(loc_at(v.0, v.0 + 1)) : @basic.Location?), @infer.Cell::make(v.1))
@@ -2063,7 +2063,7 @@ test "a rec group's members can name each other in either direction" {
   inspect(base is Some(_), content="true")
   // And both names now resolve to real store indices, one apart -- the
   // placeholders have been replaced.
-  fn index_of(n : String) -> Int {
+  fn index_of(n : String) -> Int32 {
     match @typing.resolve_type_name(tc, ctx.diagnostics, id(n)) {
       Some(i) => i.to_int_for_tests_only()
       None => -1
@@ -2201,7 +2201,7 @@ test "descriptor clauses must be reciprocal, and in order" {
     n : String,
     descriptor : String?,
     describes : String?,
-    at : Int,
+    at : Int32,
   ) -> @basic.Annotated[(@ast.Ident, @ast.SubType), @basic.Location] {
     {
       desc: (
@@ -2326,7 +2326,7 @@ test "the declaration pass counts memories and honours branches" {
   let ctx = module_ctx()
   fn mem(
     n : String,
-    at : Int,
+    at : Int32,
   ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
     {
       desc: Memory(
@@ -2375,7 +2375,7 @@ test "the declaration pass counts memories and honours branches" {
   }
   @typing.declare_fields(ctx, [imported, mem("second", 4), branched])
   inspect(ctx.diagnostics.collected().length(), content="0")
-  fn index_of(n : String) -> Int {
+  fn index_of(n : String) -> Int32 {
     match ctx.memories.resolve(n, loc_at(30, 31)) {
       Some((i, _)) => i
       None => -1
@@ -2698,7 +2698,7 @@ test "a branch to a loop delivers its parameters, not its results" {
       peek()
       // The parameter the block was given is on its OWN stack, not the caller's:
       // consume it, then produce the result.
-      ops.pop_any(@ref.new(None), 0, 1) |> ignore
+      ops.pop_any(Ref(None), 0, 1) |> ignore
       ops.push(None, i32_())
     },
   )
@@ -2713,7 +2713,7 @@ test "a branch to a loop delivers its parameters, not its results" {
     [f64_()],
     () => {
       peek()
-      ops.pop_any(@ref.new(None), 0, 1) |> ignore
+      ops.pop_any(Ref(None), 0, 1) |> ignore
       ops.push(None, i32_())
     },
   )
@@ -2955,7 +2955,7 @@ test "an annotation is dropped only when it can be recovered" {
 test "an aggregate lookup names the kind it wanted" {
   let ctx = module_ctx()
   let tc = ctx.type_context
-  fn declare_type(n : String, t : @ast.CompType, at : Int) -> Unit {
+  fn declare_type(n : String, t : @ast.CompType, at : Int32) -> Unit {
     let _ = @typing.add_type(tc, ctx.diagnostics, [
       {
         desc: (
@@ -3085,7 +3085,7 @@ test "a field set names a struct only when it names one uniquely" {
   fn struct_(
     n : String,
     fields : Array[String],
-    at : Int,
+    at : Int32,
   ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
     {
       desc: Type([
@@ -3194,7 +3194,7 @@ test "a continuation names the function type it continues" {
   let ctx = module_ctx()
   let tc = ctx.type_context
   let info = () => tc.subtyping_info()
-  fn declare_type(n : String, t : @ast.CompType, at : Int) -> Unit {
+  fn declare_type(n : String, t : @ast.CompType, at : Int32) -> Unit {
     let _ = @typing.add_type(tc, ctx.diagnostics, [
       {
         desc: (
@@ -3414,7 +3414,7 @@ test "a lane bound comes from the shape, not the value" {
 /// computed lane, so a non-literal is not a slower lane selection, it is not
 /// one at all.
 test "a lane index must be a literal in range" {
-  fn complain(bound : Int, lane : @ast.InstrDesc[@basic.Location]) -> String {
+  fn complain(bound : Int32, lane : @ast.InstrDesc[@basic.Location]) -> String {
     let d = @diagnostic.collector()
     @typing.check_lane_immediate(d, bound, { desc: lane, info: loc_at(0, 2), })
     if d.collected().is_empty() {
@@ -3461,7 +3461,7 @@ test "the dispatcher has an arm for every construct" {
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -3510,7 +3510,7 @@ test "the dispatcher types what it has arms for" {
   let checker = @typing.Checker::new(ctx, ops)
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -3557,7 +3557,7 @@ test "a misplaced name or label is reported and recovered from" {
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -3607,7 +3607,7 @@ test "a block takes its parameters and leaves its results" {
   let checker = @typing.Checker::new(ctx, ops)
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -3660,7 +3660,7 @@ test "an if consumes its condition and needs an else to produce a value" {
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
     fn instr(
       d : @ast.InstrDesc[@basic.Location],
-      at : Int,
+      at : Int32,
     ) -> @ast.Instr[@basic.Location] {
       {
         desc: d,
@@ -3714,7 +3714,7 @@ test "a block with an unresolvable shape is not looked inside" {
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -3755,7 +3755,7 @@ test "a block with an unresolvable shape is not looked inside" {
 test "a br ends control and a br_if does not" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -3810,7 +3810,7 @@ test "a br_if takes its condition last and passes the rest through" {
   let checker = @typing.Checker::new(ctx, ops)
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -3855,7 +3855,7 @@ test "a br_table reports its arity once, whatever the targets" {
   let checker = @typing.Checker::new(ctx, ops)
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -3902,7 +3902,7 @@ test "a br_table reports its arity once, whatever the targets" {
 test "a select joins its two branches" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -3959,7 +3959,7 @@ test "the raising forms end control" {
   let checker = @typing.Checker::new(ctx, ops)
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4006,7 +4006,7 @@ test "the raising forms end control" {
 test "an operator's default types operands nothing else constrains" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4077,7 +4077,7 @@ test "a binary operator blames itself, not its operands" {
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4116,7 +4116,7 @@ test "a negation shares its operand's cell" {
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4149,7 +4149,7 @@ test "a not takes an integer or a reference" {
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
     fn instr(
       d : @ast.InstrDesc[@basic.Location],
-      at : Int,
+      at : Int32,
     ) -> @ast.Instr[@basic.Location] {
       {
         desc: d,
@@ -4198,7 +4198,7 @@ test "a not takes an integer or a reference" {
 test "an assignment checks its value against the target" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4253,7 +4253,7 @@ test "an assignment checks its value against the target" {
 test "a compound assignment reports an unbound name once" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4298,7 +4298,7 @@ test "a compound assignment reports an unbound name once" {
 test "a tee produces its target's type" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4343,7 +4343,7 @@ test "a tee produces its target's type" {
 test "a let takes its annotation's type, or resolves the value's" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4392,7 +4392,7 @@ test "a tuple let matches names to values in order" {
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4485,7 +4485,7 @@ test "a bare declaration starts initialized only if it can" {
 test "a struct access reads packed and writes plain" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4590,7 +4590,7 @@ test "a struct access reads packed and writes plain" {
 test "an array index reads its element type" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4651,7 +4651,7 @@ test "an array index reads its element type" {
 test "a struct literal finds its type from its fields" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -4887,7 +4887,7 @@ test "a default construction needs every field to have a zero" {
 test "an array construction pins its elements to the element type" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -5153,7 +5153,7 @@ test "a chain of trapping casts is reported once" {
 test "a cast produces its target and a test produces an answer" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -5450,7 +5450,7 @@ test "a segment array picks its segment space by element type" {
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
     fn instr(
       d : @ast.InstrDesc[@basic.Location],
-      at : Int,
+      at : Int32,
     ) -> @ast.Instr[@basic.Location] {
       {
         desc: d,
@@ -5575,7 +5575,7 @@ test "a descriptor lookup follows the clause and keeps exactness" {
 test "a catch delivers its payload to the label it names" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -5662,7 +5662,7 @@ test "a catch delivers its payload to the label it names" {
 test "a try handler is entered on its tag's payload" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -5705,7 +5705,7 @@ test "a try handler is entered on its tag's payload" {
 test "a try-catch arm completes into the next arm's entry" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -5788,7 +5788,7 @@ test "a try-catch arm completes into the next arm's entry" {
 test "a while is checked as the loop it becomes" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -5868,7 +5868,7 @@ test "a while is checked as the loop it becomes" {
 test "a dispatch is checked as the block ladder it becomes" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -5914,7 +5914,7 @@ test "a dispatch is checked as the block ladder it becomes" {
 test "a dispatch may not name one arm twice" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -5954,7 +5954,7 @@ test "a dispatch may not name one arm twice" {
 test "the null branches put the non-null form on opposite paths" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -6203,7 +6203,7 @@ test "a lub is nullable if either side was" {
 test "the cast branches put target and residual on opposite paths" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -6355,7 +6355,7 @@ test "a cast branch may not target a continuation" {
 test "a match is checked as the test ladder it becomes" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -6472,7 +6472,7 @@ test "a match with no arms is just its default" {
 test "a call pins its arguments to the parameter types" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -6562,7 +6562,7 @@ test "a call pins its arguments to the parameter types" {
 test "a tail call must return what its caller promised" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -6640,7 +6640,7 @@ test "a tail call must return what its caller promised" {
 test "a memory access takes operands and labelled immediates" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -6727,7 +6727,7 @@ test "a memory access takes operands and labelled immediates" {
 test "a narrowing store accepts a value wider than it writes" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -6785,7 +6785,7 @@ test "a narrowing store accepts a value wider than it writes" {
 test "management calls take their receiver's shape" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -6886,7 +6886,7 @@ test "management calls take their receiver's shape" {
 test "a cross-memory copy takes its length at the narrower width" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -6948,7 +6948,7 @@ test "a cross-memory copy takes its length at the narrower width" {
 test "an atomic access demands exactly its natural alignment" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -7025,7 +7025,7 @@ test "an atomic access demands exactly its natural alignment" {
 test "a narrow atomic rmw takes its width from its value" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -7081,7 +7081,7 @@ test "a narrow atomic rmw takes its width from its value" {
 test "a simd memory access needs its lane immediate" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -7158,7 +7158,7 @@ test "a simd memory access needs its lane immediate" {
 test "a simd operation takes its receiver as its first operand" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -7242,7 +7242,7 @@ test "a simd operation takes its receiver as its first operand" {
 test "cont.bind must leave the tail and results unchanged" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -7261,7 +7261,7 @@ test "cont.bind must leave the tail and results unchanged" {
     fn functype(
       n : String,
       ps : Array[@wasm_types.ValType[@ast.Ident]],
-      at : Int,
+      at : Int32,
     ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
       {
         desc: Type([
@@ -7296,7 +7296,7 @@ test "cont.bind must leave the tail and results unchanged" {
     fn conttype(
       n : String,
       inner : String,
-      at : Int,
+      at : Int32,
     ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
       {
         desc: Type([
@@ -7402,7 +7402,7 @@ test "a suspend takes back what its tag returns" {
 test "a resume handler receives a continuation of the rest" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -7416,7 +7416,7 @@ test "a resume handler receives a continuation of the rest" {
     n : String,
     ps : Array[@wasm_types.ValType[@ast.Ident]],
     rs : Array[@wasm_types.ValType[@ast.Ident]],
-    at : Int,
+    at : Int32,
   ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
     {
       desc: Type([
@@ -7451,7 +7451,7 @@ test "a resume handler receives a continuation of the rest" {
   fn conttype(
     n : String,
     inner : String,
-    at : Int,
+    at : Int32,
   ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
     {
       desc: Type([
@@ -7553,7 +7553,7 @@ test "a switch passes the current continuation in the last slot" {
     n : String,
     ps : Array[@wasm_types.ValType[@ast.Ident]],
     rs : Array[@wasm_types.ValType[@ast.Ident]],
-    at : Int,
+    at : Int32,
   ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
     {
       desc: Type([
@@ -7588,7 +7588,7 @@ test "a switch passes the current continuation in the last slot" {
   fn conttype(
     n : String,
     inner : String,
-    at : Int,
+    at : Int32,
   ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
     {
       desc: Type([
@@ -7776,7 +7776,7 @@ test "a descriptor construction recovers its type from the descriptor" {
 
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -7848,7 +7848,7 @@ test "a descriptor construction recovers its type from the descriptor" {
 test "an indexed write picks table or array by its receiver" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -7915,7 +7915,7 @@ test "conditional compilation types each branch under its own assumption" {
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -7963,7 +7963,7 @@ test "conditional compilation types each branch under its own assumption" {
 test "a module is declared then checked" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8049,7 +8049,7 @@ test "a module is declared then checked" {
 test "a global initializer sees only what precedes it" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8062,7 +8062,7 @@ test "a global initializer sees only what precedes it" {
   fn global(
     name : String,
     init : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
     {
       desc: Global(
@@ -8105,7 +8105,7 @@ test "a global initializer sees only what precedes it" {
 test "an instruction method pins the receiver it is called on" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8204,7 +8204,7 @@ test "an instruction method pins the receiver it is called on" {
 test "an indexed read picks table or array by its receiver" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8251,7 +8251,7 @@ test "an indexed read picks table or array by its receiver" {
 test "a vector constant bounds each lane by its width" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8338,7 +8338,7 @@ test "a vector constant bounds each lane by its width" {
 test "a block used as a value infers what its exit delivers" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8350,7 +8350,7 @@ test "a block used as a value infers what its exit delivers" {
 
   fn block(
     body : Array[@ast.Instr[@basic.Location]],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     instr(
       Block(label=None, typ={ params: [], results: [], }, block={
@@ -8438,7 +8438,7 @@ test "a construction takes its type from what the context expects" {
   ])
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8492,7 +8492,7 @@ test "a construction takes its type from what the context expects" {
 test "a method call reads as an instruction or a call by its receiver" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8502,7 +8502,7 @@ test "a method call reads as an instruction or a call by its receiver" {
     }
   }
 
-  fn call(meth : String, recv_is_ref : Bool, nargs : Int) -> String {
+  fn call(meth : String, recv_is_ref : Bool, nargs : Int32) -> String {
     let ctx = module_ctx()
     let _ = @typing.add_type(ctx.type_context, ctx.diagnostics, [
       {
@@ -8569,7 +8569,7 @@ test "a method call reads as an instruction or a call by its receiver" {
 test "a tuple produces one value per element" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8678,7 +8678,7 @@ test "a module declares its own features" {
 test "a try takes its result from its annotation, its context, or its exits" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8764,7 +8764,7 @@ test "a try takes its result from its annotation, its context, or its exits" {
 test "a write hands its destination's type to the value" {
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8830,7 +8830,7 @@ test "a struct literal's fields outrank the type expected of it" {
   let tc = ctx.type_context
   fn field(
     f : String,
-    at : Int,
+    at : Int32,
   ) -> @basic.Annotated[
     (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
     @basic.Location,
@@ -8842,7 +8842,7 @@ test "a struct literal's fields outrank the type expected of it" {
     { desc: (id(f), ty), info: loc_at(at, at + 1), }
   }
 
-  fn declare_struct(n : String, t : @ast.CompType, at : Int) -> Unit {
+  fn declare_struct(n : String, t : @ast.CompType, at : Int32) -> Unit {
     let _ = @typing.add_type(tc, ctx.diagnostics, [
       {
         desc: (
@@ -8862,7 +8862,7 @@ test "a struct literal's fields outrank the type expected of it" {
 
   // `base` has one field, `derived` has that one and another. A literal naming
   // both pins `derived`, which `base` could never be.
-  fn value(at : Int) -> @ast.Instr[@basic.Location] {
+  fn value(at : Int32) -> @ast.Instr[@basic.Location] {
     {
       desc: Int("1"),
       info: loc_at(at, at + 1),
@@ -8914,7 +8914,7 @@ test "a struct literal's fields outrank the type expected of it" {
 test "a resume's operands take their types from the continuation" {
   let ctx = module_ctx()
   let tc = ctx.type_context
-  fn declare_type(n : String, t : @ast.CompType, at : Int) -> Unit {
+  fn declare_type(n : String, t : @ast.CompType, at : Int32) -> Unit {
     let _ = @typing.add_type(tc, ctx.diagnostics, [
       {
         desc: (
@@ -8934,7 +8934,7 @@ test "a resume's operands take their types from the continuation" {
 
   fn instr(
     d : @ast.InstrDesc[@basic.Location],
-    at : Int,
+    at : Int32,
   ) -> @ast.Instr[@basic.Location] {
     {
       desc: d,
@@ -8998,7 +8998,7 @@ test "a dead cycle of functions is still dead" {
     fn func(
       n : String,
       calls : String,
-      at : Int,
+      at : Int32,
       export_ : Bool,
     ) -> @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location] {
       let body : @ast.Instr[@basic.Location] = {
@@ -9128,7 +9128,7 @@ test "an expression is effectless only when nothing it does can be observed" {
 /// divided by the page size. So the two immediates that look independent decide
 /// the limit between them.
 test "a memory's size limit follows its address type and page size" {
-  fn max_of(t : @wasm_types.AddressType, p : Int?) -> String {
+  fn max_of(t : @wasm_types.AddressType, p : Int32?) -> String {
     "0x" + @typing.hex_u64(@typing.max_memory_size(t, p))
   }
 

@@ -22,7 +22,7 @@ fn is_bottom_heaptype(h : @wasm_types.HeapType[@ast.Ident]) -> Bool {
 
 ///|
 /// A span reduced to the pair of offsets that identify it.
-fn span_key(l : @basic.Location) -> (Int, Int) {
+fn span_key(l : @basic.Location) -> (Int32, Int32) {
   (l.start.cnum, l.end.cnum)
 }
 
@@ -46,7 +46,7 @@ pub fn lint_ref_cast(
   is_test~ : Bool,
   operand : @infer.InferredType,
   target : @infer.InferredType,
-  operand_location? : @basic.Location? = None,
+  operand_location~ : @basic.Location? = None,
 ) -> Unit {
   let info = ctx.type_context.subtyping_info()
   let operand_traps = match operand_location {

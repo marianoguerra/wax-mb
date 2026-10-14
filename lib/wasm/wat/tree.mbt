@@ -69,9 +69,9 @@ fn enclosed(i : @wasm_bin.Instruction) -> Array[Array[@wasm_bin.Instruction]] {
 pub fn fold(
   body : Array[@wasm_bin.Instruction],
   spans : Array[@wasm_bin.Span],
-  nested? : Array[Array[@wasm_bin.Span]] = [],
+  nested~ : Array[Array[@wasm_bin.Span]] = [],
 ) -> Array[Node] {
-  let cursor = @ref.new(nested.length())
+  let cursor = Ref(nested.length())
   fold_body(body, spans, nested, cursor)
 }
 
@@ -98,10 +98,10 @@ fn fold_body(
   body : Array[@wasm_bin.Instruction],
   all_spans : Array[@wasm_bin.Span],
   nested : Array[Array[@wasm_bin.Span]],
-  cursor : Ref[Int],
+  cursor : Ref[Int32],
 ) -> Array[Node] {
   let spans = folding_spans(all_spans)
-  fn widest(from : Int, limit : Int) -> @wasm_bin.Span? {
+  fn widest(from : Int32, limit : Int32) -> @wasm_bin.Span? {
     let mut best : @wasm_bin.Span? = None
     for s in spans {
       if s.start == from && s.end <= limit {
@@ -228,7 +228,11 @@ fn takes_nothing(i : @wasm_bin.Instruction) -> Bool {
 
 ///|
 /// Where the next recorded node begins after `at`.
-fn next_start(spans : Array[@wasm_bin.Span], at : Int, limit : Int) -> Int {
+fn next_start(
+  spans : Array[@wasm_bin.Span],
+  at : Int32,
+  limit : Int32,
+) -> Int32 {
   let mut best = limit
   for s in spans {
     if s.start > at && s.start < best {
@@ -246,10 +250,10 @@ fn next_start(spans : Array[@wasm_bin.Span], at : Int, limit : Int) -> Int {
 fn fold_body_range(
   body : Array[@wasm_bin.Instruction],
   spans : Array[@wasm_bin.Span],
-  from : Int,
-  limit : Int,
+  from : Int32,
+  limit : Int32,
   nested : Array[Array[@wasm_bin.Span]],
-  cursor : Ref[Int],
+  cursor : Ref[Int32],
 ) -> Array[Node] {
   guard from < limit else { return [] }
   let slice : Array[@wasm_bin.Instruction] = []

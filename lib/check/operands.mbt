@@ -46,8 +46,8 @@ fn check_subtype(
   location : @basic.Location,
   provided : @infer.Cell[@infer.InferredType],
   expected : @infer.Cell[@infer.InferredType],
-  pin? : Bool = true,
-  expected_at? : @basic.Location? = None,
+  pin~ : Bool = true,
+  expected_at~ : @basic.Location? = None,
 ) -> Unit {
   if !subtype(info, provided, expected, location=Some(location), pin~) {
     expression_type_mismatch(
@@ -72,7 +72,7 @@ pub fn check_subtypes(
   location : @basic.Location,
   provided : Array[@infer.Cell[@infer.InferredType]],
   expected : Array[@infer.Cell[@infer.InferredType]],
-  pin? : Bool = true,
+  pin~ : Bool = true,
 ) -> Unit {
   if provided.length() != expected.length() {
     value_count_mismatch(

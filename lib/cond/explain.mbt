@@ -68,7 +68,7 @@ fn Env::render_atom(
 /// carrying its weight. Greedy gives a minimal cube, not necessarily the
 /// globally shortest one -- for a handful of atoms the two coincide, and this
 /// is diagnostic text rather than a decision.
-pub fn Env::explain(self : Env, f : T, style? : Style = Wat) -> String? {
+pub fn Env::explain(self : Env, f : T, style~ : Style = Wat) -> String? {
   if !is_satisfiable(f) {
     return None
   }

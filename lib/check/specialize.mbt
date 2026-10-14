@@ -437,8 +437,8 @@ fn check_configurations(
   store : @type_store.TypeStore,
   features : @feature.Set,
   fields : @ast.Module[@basic.Location],
-  simplify? : Bool = false,
-  warn_unused? : Bool = false,
+  simplify~ : Bool = false,
+  warn_unused~ : Bool = false,
 ) -> Unit {
   ignore(store)
   @cond_explore.check_all(

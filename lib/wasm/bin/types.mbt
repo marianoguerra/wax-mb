@@ -21,27 +21,27 @@
 
 ///|
 /// A value type, at the binary form's index instantiation.
-pub type ValType = @wasm_types.ValType[Int]
+pub type ValType = @wasm_types.ValType[Int32]
 
 ///|
 /// A reference type: nullability plus what it points at.
-pub type RefType = @wasm_types.RefType[Int]
+pub type RefType = @wasm_types.RefType[Int32]
 
 ///|
 /// What a reference can point at.
-pub type HeapType = @wasm_types.HeapType[Int]
+pub type HeapType = @wasm_types.HeapType[Int32]
 
 ///|
 /// What a struct field or array element stores.
-pub type StorageType = @wasm_types.StorageType[Int]
+pub type StorageType = @wasm_types.StorageType[Int32]
 
 ///|
 /// A struct field or array element type: a storage type plus mutability.
-pub type FieldType = @wasm_types.FieldType[Int]
+pub type FieldType = @wasm_types.FieldType[Int32]
 
 ///|
 /// A global's type: a value type plus mutability.
-pub type GlobalType = @wasm_types.GlobalType[Int]
+pub type GlobalType = @wasm_types.GlobalType[Int32]
 
 ///|
 /// The size bounds of a memory or table.
@@ -86,7 +86,7 @@ pub(all) enum CompositeType {
   /// proposal's `(cont $ft)`. Upstream had the switching INSTRUCTIONS nowhere
   /// and the type nowhere either; the instructions arrived first, but a module
   /// that uses them has to be able to define what they act on.
-  Cont(Int)
+  Cont(Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -98,9 +98,9 @@ pub(all) enum CompositeType {
 /// descriptor OF. A type may carry either, both, or neither.
 pub(all) struct SubType {
   final_ : Bool
-  supertypes : Array[Int]
-  descriptor : Int?
-  describes : Int?
+  supertypes : Array[Int32]
+  descriptor : Int32?
+  describes : Int32?
   composite : CompositeType
 } derive(Eq, Debug)
 
@@ -116,8 +116,8 @@ pub(all) struct SubType {
 /// identity is by group -- so the encoder cannot infer the prefix from the
 /// length, and what the source said has to be recorded.
 pub(all) struct RecGroup {
-  start : Int
-  len : Int
+  start : Int32
+  len : Int32
   explicit : Bool
 } derive(Eq, Debug)
 
@@ -154,19 +154,19 @@ pub(all) enum Instruction {
   Block(BlockType, Array[Instruction])
   Loop(BlockType, Array[Instruction])
   If(BlockType, Array[Instruction], Array[Instruction])
-  Br(Int) // label index
-  BrIf(Int)
-  BrTable(Array[Int], Int) // labels, default
+  Br(Int32) // label index
+  BrIf(Int32)
+  BrTable(Array[Int32], Int32) // labels, default
   Return
-  Call(Int) // function index
-  CallIndirect(Int, Int) // type index, table index
-  CallRef(Int) // type index (WasmGC)
-  ReturnCall(Int) // function index (tail call)
-  ReturnCallIndirect(Int, Int) // type index, table index (tail call)
-  ReturnCallRef(Int) // type index (tail call, WasmGC)
+  Call(Int32) // function index
+  CallIndirect(Int32, Int32) // type index, table index
+  CallRef(Int32) // type index (WasmGC)
+  ReturnCall(Int32) // function index (tail call)
+  ReturnCallIndirect(Int32, Int32) // type index, table index (tail call)
+  ReturnCallRef(Int32) // type index (tail call, WasmGC)
 
   // Exception handling instructions
-  Throw(Int) // tag index - throw exception with tag
+  Throw(Int32) // tag index - throw exception with tag
   ThrowRef // throw exception from exnref on stack
   TryTable(BlockType, Array[CatchHandler], Array[Instruction]) // block type, handlers, body
   /// The DEPRECATED legacy handler: block type, body, per-tag catches, and an
@@ -175,7 +175,7 @@ pub(all) enum Instruction {
   LegacyTry(
     BlockType,
     Array[Instruction],
-    Array[(Int, Array[Instruction])],
+    Array[(Int32, Array[Instruction])],
     Array[Instruction]?
   )
 
@@ -185,77 +185,77 @@ pub(all) enum Instruction {
   SelectTyped(Array[ValType]) // select with explicit result type
 
   // Variable instructions
-  LocalGet(Int)
-  LocalSet(Int)
-  LocalTee(Int)
-  GlobalGet(Int)
-  GlobalSet(Int)
+  LocalGet(Int32)
+  LocalSet(Int32)
+  LocalTee(Int32)
+  GlobalGet(Int32)
+  GlobalSet(Int32)
 
   // Table instructions
-  TableGet(Int) // table index
-  TableSet(Int) // table index
-  TableSize(Int) // table index
-  TableGrow(Int) // table index
-  TableFill(Int) // table index
-  TableCopy(Int, Int) // dest table index, src table index
+  TableGet(Int32) // table index
+  TableSet(Int32) // table index
+  TableSize(Int32) // table index
+  TableGrow(Int32) // table index
+  TableFill(Int32) // table index
+  TableCopy(Int32, Int32) // dest table index, src table index
   /// The TABLE index first, then the element segment -- and, as for
   /// `MemoryInit`, the encoding writes them the other way round.
-  TableInit(Int, Int)
+  TableInit(Int32, Int32)
 
   // Memory instructions - (memidx, align, offset)
   // offset is Int64 to support memory64 64-bit offsets
-  I32Load(Int, Int, Int64) // memidx, align, offset
-  I64Load(Int, Int, Int64)
-  F32Load(Int, Int, Int64)
-  F64Load(Int, Int, Int64)
-  I32Load8S(Int, Int, Int64)
-  I32Load8U(Int, Int, Int64)
-  I32Load16S(Int, Int, Int64)
-  I32Load16U(Int, Int, Int64)
-  I64Load8S(Int, Int, Int64)
-  I64Load8U(Int, Int, Int64)
-  I64Load16S(Int, Int, Int64)
-  I64Load16U(Int, Int, Int64)
-  I64Load32S(Int, Int, Int64)
-  I64Load32U(Int, Int, Int64)
-  I32Store(Int, Int, Int64)
-  I64Store(Int, Int, Int64)
-  F32Store(Int, Int, Int64)
-  F64Store(Int, Int, Int64)
-  I32Store8(Int, Int, Int64)
-  I32Store16(Int, Int, Int64)
-  I64Store8(Int, Int, Int64)
-  I64Store16(Int, Int, Int64)
-  I64Store32(Int, Int, Int64)
-  MemorySize(Int) // memidx
-  MemoryGrow(Int) // memidx
+  I32Load(Int32, Int32, Int64) // memidx, align, offset
+  I64Load(Int32, Int32, Int64)
+  F32Load(Int32, Int32, Int64)
+  F64Load(Int32, Int32, Int64)
+  I32Load8S(Int32, Int32, Int64)
+  I32Load8U(Int32, Int32, Int64)
+  I32Load16S(Int32, Int32, Int64)
+  I32Load16U(Int32, Int32, Int64)
+  I64Load8S(Int32, Int32, Int64)
+  I64Load8U(Int32, Int32, Int64)
+  I64Load16S(Int32, Int32, Int64)
+  I64Load16U(Int32, Int32, Int64)
+  I64Load32S(Int32, Int32, Int64)
+  I64Load32U(Int32, Int32, Int64)
+  I32Store(Int32, Int32, Int64)
+  I64Store(Int32, Int32, Int64)
+  F32Store(Int32, Int32, Int64)
+  F64Store(Int32, Int32, Int64)
+  I32Store8(Int32, Int32, Int64)
+  I32Store16(Int32, Int32, Int64)
+  I64Store8(Int32, Int32, Int64)
+  I64Store16(Int32, Int32, Int64)
+  I64Store32(Int32, Int32, Int64)
+  MemorySize(Int32) // memidx
+  MemoryGrow(Int32) // memidx
   /// The MEMORY index first, then the data segment. Note the encoding writes
   /// them the other way round -- segment, then memory -- which is exactly why
   /// the order is stated here rather than left to be inferred from the bytes.
-  MemoryInit(Int, Int)
-  DataDrop(Int) // data segment index
-  MemoryCopy(Int, Int) // dest memidx, src memidx
-  MemoryFill(Int) // memidx
-  ElemDrop(Int) // element segment index
+  MemoryInit(Int32, Int32)
+  DataDrop(Int32) // data segment index
+  MemoryCopy(Int32, Int32) // dest memidx, src memidx
+  MemoryFill(Int32) // memidx
+  ElemDrop(Int32) // element segment index
 
   // Atomic instructions (0xFE prefix)
   /// The 0xFE sub-opcode FIRST, then the memarg: memory index, alignment
   /// exponent, offset. The sub-opcode leads because that is the order the
   /// bytes go out in, and naming it second invited reading the memory index
   /// as the opcode.
-  Atomic(Int, Int, Int, Int64)
+  Atomic(Int32, Int32, Int32, Int64)
   /// `atomic.fence`, which unlike every other atomic has no memory operand.
   AtomicFence
 
   // Stack switching. Absent from upstream entirely -- the model had no way to
   // say any of this -- though the Wax AST has had all seven since Phase 2.
-  ContNew(Int) // type index
-  ContBind(Int, Int) // source type index, target type index
-  Suspend(Int) // tag index
-  Resume(Int, Array[OnClause]) // type index, resume table
-  ResumeThrow(Int, Int, Array[OnClause]) // type index, tag index, resume table
-  ResumeThrowRef(Int, Array[OnClause]) // type index, resume table
-  Switch(Int, Int) // type index, tag index
+  ContNew(Int32) // type index
+  ContBind(Int32, Int32) // source type index, target type index
+  Suspend(Int32) // tag index
+  Resume(Int32, Array[OnClause]) // type index, resume table
+  ResumeThrow(Int32, Int32, Array[OnClause]) // type index, tag index, resume table
+  ResumeThrowRef(Int32, Array[OnClause]) // type index, resume table
+  Switch(Int32, Int32) // type index, tag index
   /// An instruction with compilation hints on it.
   ///
   /// A wrapper rather than a field on every instruction: hints are rare, the
@@ -289,14 +289,14 @@ pub(all) enum Instruction {
   // Reference type instructions
   RefNull(HeapType) // ref.null: push a null reference to this heap type
   RefIsNull // ref.is_null: test if reference is null
-  RefFunc(Int) // ref.func: push reference to function by index
+  RefFunc(Int32) // ref.func: push reference to function by index
   RefAsNonNull // ref.as_non_null: convert nullable ref to non-null ref
   RefEqInstr // ref.eq: compare two references for equality
-  BrOnNull(Int) // br_on_null: branch if reference is null
-  BrOnNonNull(Int) // br_on_non_null: branch if reference is non-null
+  BrOnNull(Int32) // br_on_null: branch if reference is null
+  BrOnNonNull(Int32) // br_on_non_null: branch if reference is non-null
 
   // Numeric instructions - Constants
-  I32Const(Int)
+  I32Const(Int32)
   I64Const(Int64)
   F32Const(Float)
   F64Const(Double)
@@ -459,46 +459,46 @@ pub(all) enum Instruction {
   /// The custom-descriptors forms: like `struct.new` and its default sibling,
   /// but taking the runtime DESCRIPTOR as a further operand, pushed last --
   /// above the field values, because that is the order the instruction reads.
-  StructNewDesc(Int)
-  StructNewDefaultDesc(Int)
+  StructNewDesc(Int32)
+  StructNewDefaultDesc(Int32)
   /// A struct's own descriptor, read back off it.
-  RefGetDesc(Int)
+  RefGetDesc(Int32)
   /// A cast that tests a value against a DESCRIPTOR rather than against a type
   /// immediate: the descriptor is an operand, so the same instruction can test
   /// against a descriptor only known at run time.
   RefCastDescEq(RefType)
   /// The branching forms of the same test. Both reference types are immediates
   /// and their nullability rides in one byte before the label.
-  BrOnCastDescEq(Int, RefType, RefType)
-  BrOnCastDescEqFail(Int, RefType, RefType)
-  StructNew(Int) // type index
-  StructNewDefault(Int) // type index
-  StructGet(Int, Int) // type index, field index
-  StructGetS(Int, Int) // type index, field index (signed packed)
-  StructGetU(Int, Int) // type index, field index (unsigned packed)
-  StructSet(Int, Int) // type index, field index
+  BrOnCastDescEq(Int32, RefType, RefType)
+  BrOnCastDescEqFail(Int32, RefType, RefType)
+  StructNew(Int32) // type index
+  StructNewDefault(Int32) // type index
+  StructGet(Int32, Int32) // type index, field index
+  StructGetS(Int32, Int32) // type index, field index (signed packed)
+  StructGetU(Int32, Int32) // type index, field index (unsigned packed)
+  StructSet(Int32, Int32) // type index, field index
 
   // GC instructions - array operations
-  ArrayNew(Int) // type index
-  ArrayNewDefault(Int) // type index
-  ArrayNewFixed(Int, Int) // type index, length
-  ArrayNewData(Int, Int) // type index, data index
-  ArrayNewElem(Int, Int) // type index, elem index
-  ArrayGet(Int) // type index
-  ArrayGetS(Int) // type index (signed packed)
-  ArrayGetU(Int) // type index (unsigned packed)
-  ArraySet(Int) // type index
+  ArrayNew(Int32) // type index
+  ArrayNewDefault(Int32) // type index
+  ArrayNewFixed(Int32, Int32) // type index, length
+  ArrayNewData(Int32, Int32) // type index, data index
+  ArrayNewElem(Int32, Int32) // type index, elem index
+  ArrayGet(Int32) // type index
+  ArrayGetS(Int32) // type index (signed packed)
+  ArrayGetU(Int32) // type index (unsigned packed)
+  ArraySet(Int32) // type index
   ArrayLen // get array length
-  ArrayFill(Int) // type index
-  ArrayCopy(Int, Int) // dest type index, src type index
-  ArrayInitData(Int, Int) // type index, data index
-  ArrayInitElem(Int, Int) // type index, elem index
+  ArrayFill(Int32) // type index
+  ArrayCopy(Int32, Int32) // dest type index, src type index
+  ArrayInitData(Int32, Int32) // type index, data index
+  ArrayInitElem(Int32, Int32) // type index, elem index
 
   // GC instructions - reference casting
   RefTest(RefType) // ref.test: does the reference match this type?
   RefCast(RefType) // ref.cast: cast, trapping on failure
-  BrOnCast(Int, RefType, RefType) // label, source type, target type
-  BrOnCastFail(Int, RefType, RefType) // label, source type, target type
+  BrOnCast(Int32, RefType, RefType) // label, source type, target type
+  BrOnCastFail(Int32, RefType, RefType) // label, source type, target type
 
   // GC instructions - i31
   RefI31 // create i31ref from i32
@@ -517,33 +517,33 @@ pub(all) enum Instruction {
   V128Const(Bytes) // 16-byte constant
 
   // SIMD load/store - (memidx, align, offset)
-  V128Load(Int, Int, Int64)
-  V128Load8x8S(Int, Int, Int64)
-  V128Load8x8U(Int, Int, Int64)
-  V128Load16x4S(Int, Int, Int64)
-  V128Load16x4U(Int, Int, Int64)
-  V128Load32x2S(Int, Int, Int64)
-  V128Load32x2U(Int, Int, Int64)
-  V128Load8Splat(Int, Int, Int64)
-  V128Load16Splat(Int, Int, Int64)
-  V128Load32Splat(Int, Int, Int64)
-  V128Load64Splat(Int, Int, Int64)
-  V128Load32Zero(Int, Int, Int64)
-  V128Load64Zero(Int, Int, Int64)
-  V128Store(Int, Int, Int64)
+  V128Load(Int32, Int32, Int64)
+  V128Load8x8S(Int32, Int32, Int64)
+  V128Load8x8U(Int32, Int32, Int64)
+  V128Load16x4S(Int32, Int32, Int64)
+  V128Load16x4U(Int32, Int32, Int64)
+  V128Load32x2S(Int32, Int32, Int64)
+  V128Load32x2U(Int32, Int32, Int64)
+  V128Load8Splat(Int32, Int32, Int64)
+  V128Load16Splat(Int32, Int32, Int64)
+  V128Load32Splat(Int32, Int32, Int64)
+  V128Load64Splat(Int32, Int32, Int64)
+  V128Load32Zero(Int32, Int32, Int64)
+  V128Load64Zero(Int32, Int32, Int64)
+  V128Store(Int32, Int32, Int64)
 
   // SIMD load/store lane - (memidx, align, offset, lane)
-  V128Load8Lane(Int, Int, Int64, Int)
-  V128Load16Lane(Int, Int, Int64, Int)
-  V128Load32Lane(Int, Int, Int64, Int)
-  V128Load64Lane(Int, Int, Int64, Int)
-  V128Store8Lane(Int, Int, Int64, Int)
-  V128Store16Lane(Int, Int, Int64, Int)
-  V128Store32Lane(Int, Int, Int64, Int)
-  V128Store64Lane(Int, Int, Int64, Int)
+  V128Load8Lane(Int32, Int32, Int64, Int32)
+  V128Load16Lane(Int32, Int32, Int64, Int32)
+  V128Load32Lane(Int32, Int32, Int64, Int32)
+  V128Load64Lane(Int32, Int32, Int64, Int32)
+  V128Store8Lane(Int32, Int32, Int64, Int32)
+  V128Store16Lane(Int32, Int32, Int64, Int32)
+  V128Store32Lane(Int32, Int32, Int64, Int32)
+  V128Store64Lane(Int32, Int32, Int64, Int32)
 
   // SIMD shuffle/swizzle
-  I8x16Shuffle(FixedArray[Int]) // 16 lane indices
+  I8x16Shuffle(FixedArray[Int32]) // 16 lane indices
   I8x16Swizzle
 
   // SIMD splat (scalar -> vector)
@@ -555,22 +555,22 @@ pub(all) enum Instruction {
   F64x2Splat
 
   // SIMD extract lane (vector -> scalar)
-  I8x16ExtractLaneS(Int)
-  I8x16ExtractLaneU(Int)
-  I16x8ExtractLaneS(Int)
-  I16x8ExtractLaneU(Int)
-  I32x4ExtractLane(Int)
-  I64x2ExtractLane(Int)
-  F32x4ExtractLane(Int)
-  F64x2ExtractLane(Int)
+  I8x16ExtractLaneS(Int32)
+  I8x16ExtractLaneU(Int32)
+  I16x8ExtractLaneS(Int32)
+  I16x8ExtractLaneU(Int32)
+  I32x4ExtractLane(Int32)
+  I64x2ExtractLane(Int32)
+  F32x4ExtractLane(Int32)
+  F64x2ExtractLane(Int32)
 
   // SIMD replace lane (vector, scalar -> vector)
-  I8x16ReplaceLane(Int)
-  I16x8ReplaceLane(Int)
-  I32x4ReplaceLane(Int)
-  I64x2ReplaceLane(Int)
-  F32x4ReplaceLane(Int)
-  F64x2ReplaceLane(Int)
+  I8x16ReplaceLane(Int32)
+  I16x8ReplaceLane(Int32)
+  I32x4ReplaceLane(Int32)
+  I64x2ReplaceLane(Int32)
+  F32x4ReplaceLane(Int32)
+  F64x2ReplaceLane(Int32)
 
   // i8x16 comparisons
   I8x16Eq
@@ -821,7 +821,7 @@ pub(all) enum BlockType {
   Value(ValType)
   MultiValue(Array[ValType])
   InlineType(Array[ValType], Array[ValType])
-  TypeIndex(Int)
+  TypeIndex(Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -837,9 +837,9 @@ pub(all) struct InstrHints {
   branch : Bool?
   /// `#[freq]`: a saturating base-2 logarithm of executions per call, already
   /// reduced to the byte the section stores.
-  freq : Int?
+  freq : Int32?
   /// `#[targets]`: likely call targets, as (function index, percentage).
-  targets : Array[(Int, Int)]?
+  targets : Array[(Int32, Int32)]?
 } derive(Eq, Debug)
 
 ///|
@@ -858,8 +858,8 @@ pub fn InstrHints::is_empty(self : InstrHints) -> Bool {
 /// instruction, which is why it lives on the code entry and is recorded at
 /// offset 0 -- the position that means "the function itself".
 pub(all) struct Priority {
-  compilation : Int
-  optimization : Int?
+  compilation : Int32
+  optimization : Int32?
 } derive(Eq, Debug)
 
 ///|
@@ -867,22 +867,22 @@ pub(all) struct Priority {
 /// a given tag.
 pub(all) enum OnClause {
   /// Branch to this label.
-  OnLabel(Int, Int)
+  OnLabel(Int32, Int32)
   /// Switch to the continuation on the stack.
-  OnSwitch(Int)
+  OnSwitch(Int32)
 } derive(Eq, Debug)
 
 ///|
 /// One arm of a `try_table`.
 pub(all) enum CatchHandler {
   /// Catch this tag, branching to this label.
-  Catch(Int, Int)
+  Catch(Int32, Int32)
   /// As `Catch`, but the exception reference is pushed too.
-  CatchRef(Int, Int)
+  CatchRef(Int32, Int32)
   /// Catch anything, branching to this label.
-  CatchAll(Int)
+  CatchAll(Int32)
   /// As `CatchAll`, but the exception reference is pushed too.
-  CatchAllRef(Int)
+  CatchAllRef(Int32)
 } derive(Eq, Debug)
 
 // ============================================================
@@ -915,7 +915,7 @@ pub(all) struct Table {
 /// An exception tag: an index into the type section, naming a function type
 /// whose parameters are the exception's payload and whose results are empty.
 pub(all) struct TagType {
-  type_idx : Int
+  type_idx : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -924,11 +924,11 @@ pub(all) enum ImportDesc {
   /// A function's type index, and whether the import is EXACT -- a `ref.func`
   /// on it then yields an exact reference rather than a plain one. The flag
   /// rides in the kind byte, not beside the index: 0x20 instead of 0x00.
-  Func(Int, Bool)
+  Func(Int32, Bool)
   Table(TableType)
   Memory(MemoryType)
   Global(GlobalType)
-  Tag(Int)
+  Tag(Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -957,11 +957,11 @@ pub(all) enum ImportGroup {
 ///|
 /// What an export names, as an index into the matching space.
 pub(all) enum ExportDesc {
-  Func(Int)
-  Table(Int)
-  Memory(Int)
-  Global(Int)
-  Tag(Int)
+  Func(Int32)
+  Table(Int32)
+  Memory(Int32)
+  Global(Int32)
+  Tag(Int32)
 } derive(Eq, Debug)
 
 ///|
@@ -976,9 +976,9 @@ pub(all) struct Export {
 /// (everything before that is its operands), where it ends, and where the
 /// source wrote it.
 pub(all) struct Span {
-  start : Int
-  head : Int
-  end : Int
+  start : Int32
+  head : Int32
+  end : Int32
   loc : @basic.Location
 } derive(Eq, Debug)
 
@@ -1022,7 +1022,7 @@ pub(all) struct Global {
 /// How an element segment reaches its table.
 pub(all) enum ElemMode {
   /// Copied into a table at instantiation, at this offset.
-  Active(Int, Array[Instruction])
+  Active(Int32, Array[Instruction])
   /// Left for `table.init`.
   Passive
   /// Present only so the references in it count as declared.
@@ -1049,7 +1049,7 @@ pub(all) struct Element {
 /// silently written as active-at-an-explicit-memory instead.
 pub(all) enum DataMode {
   /// Copied into this memory at instantiation, at this offset.
-  Active(Int, Array[Instruction])
+  Active(Int32, Array[Instruction])
   /// Left for `memory.init`.
   Passive
 } derive(Eq, Debug)
@@ -1092,19 +1092,19 @@ pub(all) enum DataPiece {
 /// job rather than the caller's is one fewer way to differ by a byte.
 pub(all) struct Names {
   mut module_ : Bytes?
-  functions : Map[Int, Bytes]
+  functions : Map[Int32, Bytes]
   /// Locals, labels and fields are indexed twice: by the function or type they
   /// belong to, then within it.
-  locals : Map[Int, Map[Int, Bytes]]
-  labels : Map[Int, Map[Int, Bytes]]
-  types : Map[Int, Bytes]
-  tables : Map[Int, Bytes]
-  memories : Map[Int, Bytes]
-  globals : Map[Int, Bytes]
-  elem : Map[Int, Bytes]
-  data : Map[Int, Bytes]
-  fields : Map[Int, Map[Int, Bytes]]
-  tags : Map[Int, Bytes]
+  locals : Map[Int32, Map[Int32, Bytes]]
+  labels : Map[Int32, Map[Int32, Bytes]]
+  types : Map[Int32, Bytes]
+  tables : Map[Int32, Bytes]
+  memories : Map[Int32, Bytes]
+  globals : Map[Int32, Bytes]
+  elem : Map[Int32, Bytes]
+  data : Map[Int32, Bytes]
+  fields : Map[Int32, Map[Int32, Bytes]]
+  tags : Map[Int32, Bytes]
 } derive(Debug)
 
 ///|
@@ -1137,12 +1137,12 @@ pub(all) struct Module {
   rec_groups : Array[RecGroup]
   imports : Array[Import]
   /// One type index per defined function, parallel to `codes`.
-  funcs : Array[Int]
+  funcs : Array[Int32]
   tables : Array[Table]
   memories : Array[MemoryType]
   globals : Array[Global]
   exports : Array[Export]
-  mut start : Int?
+  mut start : Int32?
   elems : Array[Element]
   codes : Array[FunctionCode]
   datas : Array[Data]
@@ -1159,7 +1159,7 @@ pub(all) struct Module {
   /// The `target_features` custom section: (prefix byte, feature name) pairs,
   /// emitted verbatim and in order, because entries from other producers pass
   /// through untouched.
-  target_features : Array[(Int, Bytes)]
+  target_features : Array[(Int32, Bytes)]
 } derive(Debug)
 
 ///|
@@ -1194,7 +1194,7 @@ pub(all) struct TextView {
   /// reference does not write them -- so these cannot ride in `names.locals`
   /// without changing the bytes. The text format shows them, so they are kept
   /// apart from the section that is encoded.
-  decl_param_names : Map[ParamOwner, Map[Int, Bytes]]
+  decl_param_names : Map[ParamOwner, Map[Int32, Bytes]]
   /// How each declaration wrote its type.
   ///
   /// `tag t: ft;` writes `(type $ft)`, `tag t(i32);` spells the signature out,
@@ -1209,14 +1209,14 @@ pub(all) struct TextView {
   /// compact group is not written as a form of its own at all -- the group
   /// writes one name per item and one descriptor for all of them -- so there
   /// is nothing for a clause to hang off.
-  standalone_exports : Map[Int, Bool]
+  standalone_exports : Map[Int32, Bool]
   /// The types something referred to BY NAME, by type index.
   ///
   /// A type the source did not declare is written as a field only when
   /// something names it: `(ref $<func:f>)` in a global's type makes the entry
   /// a field, and an entry nothing reaches is spelled inline wherever it is
   /// used -- writing it too would say the same signature twice.
-  named_types : Map[Int, Bool]
+  named_types : Map[Int32, Bool]
   /// The conditional groups the source wrote.
   ///
   /// A conditional has no binary form -- that is the whole point of it, and
@@ -1262,36 +1262,36 @@ pub(all) struct TypeUse {
 /// Whose parameters a name list belongs to. Imported functions and tags sit in
 /// different index spaces, so the index alone does not say.
 pub(all) enum ParamOwner {
-  OwnerFunc(Int)
-  OwnerTag(Int)
+  OwnerFunc(Int32)
+  OwnerTag(Int32)
   /// A declared `type t = fn(x: i32)`, by type index. Its parameter names are
   /// no more encodable than an import's.
-  OwnerType(Int)
+  OwnerType(Int32)
 } derive(Eq, Hash, Debug)
 
 ///|
 /// One field of a module, named by where its item landed.
 pub(all) enum FieldRef {
   /// The type-section entries one `type` or `rec` field declared.
-  FTypes(Array[Int])
+  FTypes(Array[Int32])
   /// A `#![feature = "name"]` inner attribute, which the text format keeps as
   /// a leading `(@feature "name")` so the emitted module still says what it
   /// needs. There is no binary section for it; the text is where it survives.
   FFeature(Bytes)
-  FImport(Int)
-  FFunc(Int)
+  FImport(Int32)
+  FFunc(Int32)
   /// `(start $f)`. Written where the `#[start]` attribute was, because that is
   /// what a conditional around it guards.
-  FStart(Int)
+  FStart(Int32)
   /// A standalone `(export "n" (func $f))`, by export index. Only a GUARDED
   /// export takes this form; the rest are clauses on what they export.
-  FExport(Int)
-  FTable(Int)
-  FMemory(Int)
-  FGlobal(Int)
-  FTag(Int)
-  FElem(Int)
-  FData(Int)
+  FExport(Int32)
+  FTable(Int32)
+  FMemory(Int32)
+  FGlobal(Int32)
+  FTag(Int32)
+  FElem(Int32)
+  FData(Int32)
 } derive(Eq, Debug)
 
 ///|

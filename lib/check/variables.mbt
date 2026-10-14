@@ -323,7 +323,7 @@ pub fn assign_target(
   ctx : @typing_env.ModuleContext,
   idx : @ast.Ident,
   resolved : ResolvedVar,
-  compound? : Bool = false,
+  compound~ : Bool = false,
 ) -> Unit {
   match resolved {
     Local(_, _) => mark_initialized(ctx, idx.name)

@@ -26,11 +26,11 @@
 ///
 /// Empty means the identity, which is what the unit tests want: they build a
 /// module without a source to lay out.
-let type_remap : Ref[Map[Int, Int]] = { val: Map([]), }
+let type_remap : Ref[Map[Int32, Int32]] = { val: Map([]), }
 
 ///|
 /// The emitted index a store index became.
-fn emitted_type_index(store_index : Int) -> Int {
+fn emitted_type_index(store_index : Int32) -> Int32 {
   match type_remap.val.get(store_index) {
     Some(i) => i
     None => store_index
@@ -39,11 +39,11 @@ fn emitted_type_index(store_index : Int) -> Int {
 
 ///|
 /// Emitted index back to store index, the inverse of `type_remap`.
-let store_remap : Ref[Array[Int]] = { val: [], }
+let store_remap : Ref[Array[Int32]] = { val: [], }
 
 ///|
 /// The store index behind an emitted one.
-fn store_type_index(emitted : Int) -> Int {
+fn store_type_index(emitted : Int32) -> Int32 {
   let m = store_remap.val
   if emitted >= 0 && emitted < m.length() {
     m[emitted]
@@ -65,7 +65,7 @@ let current_layout : Ref[TypeLayout?] = { val: None, }
 /// it, and then it gets one of its own rather than borrowing the like-shaped
 /// declaration it interned with: the reference materialises it too, and the
 /// index is observable.
-fn emitted_named_index(name : String, store_index : Int) -> Int {
+fn emitted_named_index(name : String, store_index : Int32) -> Int32 {
   guard current_layout.val is Some(layout) else {
     return emitted_type_index(store_index)
   }
@@ -75,7 +75,11 @@ fn emitted_named_index(name : String, store_index : Int) -> Int {
 }
 
 ///|
-fn named_index(layout : TypeLayout, name : String, store_index : Int) -> Int {
+fn named_index(
+  layout : TypeLayout,
+  name : String,
+  store_index : Int32,
+) -> Int32 {
   if layout.by_name.get(name) is Some(i) {
     return i
   }
@@ -138,9 +142,9 @@ fn named_index(layout : TypeLayout, name : String, store_index : Int) -> Int {
 /// that shape: it is not a declaration, and no function has it. The entry it
 /// then needs is a real type in the section, appended like any other.
 fn emitted_shape_index(
-  params : Array[@wasm_types.ValType[Int]],
-  results : Array[@wasm_types.ValType[Int]],
-) -> Int? {
+  params : Array[@wasm_types.ValType[Int32]],
+  results : Array[@wasm_types.ValType[Int32]],
+) -> Int32? {
   guard current_layout.val is Some(layout) else { return None }
   for emitted, sub in layout.types {
     if sub.composite is Func(ft) && ft.params == params && ft.results == results {
@@ -164,13 +168,13 @@ fn emitted_shape_index(
 /// Where each type name lands in the emitted section.
 priv struct TypeLayout {
   /// Emitted index for a declared name.
-  by_name : Map[String, Int]
+  by_name : Map[String, Int32]
   /// Emitted index for a store index: the FIRST declaration of that shape,
   /// which is the one a reference carrying only an interned id must mean.
-  by_store : Map[Int, Int]
+  by_store : Map[Int32, Int32]
   /// The store index behind each emitted one, for the reads that go back to
   /// the store for a definition.
-  store_of : Array[Int]
+  store_of : Array[Int32]
   types : Array[@wasm_bin.SubType]
   groups : Array[@wasm_bin.RecGroup]
   /// Every store entry already lowered, so a synthesized type materialised
@@ -179,23 +183,23 @@ priv struct TypeLayout {
   /// The subtype each name was WRITTEN as, before interning normalised it.
   written : Map[String, @ast.SubType]
   /// The declared subtypes, with the index each landed at, for the reuse test.
-  declared : Array[(@ast.SubType, Int)]
+  declared : Array[(@ast.SubType, Int32)]
   /// The name a store-tier entry was placed FOR, when it was placed for one.
-  slot_names : Map[Int, String]
+  slot_names : Map[Int32, String]
   /// Names that resolve to an entry they do not own: the entry was interned
   /// for its own reasons and this name merely reaches it. Kept apart from
   /// `by_name` because the name section emits the latter and not this.
-  aliases : Map[String, Int]
+  aliases : Map[String, Int32]
   /// Which emitted entries a DECLARATION put there. A synthesized type sharing
   /// one of those is a different type that merely interned with it; sharing an
   /// entry nothing declared is just itself.
-  declared_slots : Map[Int, Bool]
+  declared_slots : Map[Int32, Bool]
   /// The entries something referred to BY NAME while lowering.
   ///
   /// A type materialised for a name is written as a field only when something
   /// names it: `(ref $<func:f>)` in a global's type makes the entry a field,
   /// and an entry nothing reaches is spelled inline wherever it is used.
-  referenced : Map[Int, Bool]
+  referenced : Map[Int32, Bool]
 }
 
 ///|
@@ -205,11 +209,11 @@ fn type_layout(
   source : @ast.Module[@basic.Location],
   store : @type_store.TypeStore,
 ) -> TypeLayout {
-  let by_name : Map[String, Int] = Map([])
-  let by_store : Map[Int, Int] = Map([])
-  let store_of : Array[Int] = []
+  let by_name : Map[String, Int32] = Map([])
+  let by_store : Map[Int32, Int32] = Map([])
+  let store_of : Array[Int32] = []
   let groups : Array[@wasm_bin.RecGroup] = []
-  fn place(name : String, store_index : Int) -> Unit {
+  fn place(name : String, store_index : Int32) -> Unit {
     let emitted = store_of.length()
     by_name[name] = emitted
     if !by_store.contains(store_index) {
@@ -245,7 +249,7 @@ fn type_layout(
   // These are placed by STORE ENTRY, not by name: a signature with no name of
   // its own is interned structurally, so two functions of one shape share an
   // index rather than taking two.
-  fn place_store(store_index : Int) -> Unit {
+  fn place_store(store_index : Int32) -> Unit {
     if by_store.contains(store_index) {
       return
     }
@@ -260,7 +264,7 @@ fn type_layout(
   // wrote, and interning has already merged those names with any like-shaped
   // siblings -- so reading the entry back from the store would resolve them to
   // whichever sibling happened to be declared first.
-  let slot_names : Map[Int, String] = Map([])
+  let slot_names : Map[Int32, String] = Map([])
   fn place_named(name : String) -> Unit {
     guard ctx.type_context.types.find_no_mark(name) is Some((Def(id), _)) else {
       return
@@ -330,10 +334,10 @@ fn type_layout(
   let types : Array[@wasm_bin.SubType] = []
   let pending : Array[@wasm_bin.SubType] = []
   let written : Map[String, @ast.SubType] = Map([])
-  let declared : Array[(@ast.SubType, Int)] = []
-  let aliases : Map[String, Int] = Map([])
-  let declared_slots : Map[Int, Bool] = Map([])
-  let referenced : Map[Int, Bool] = Map([])
+  let declared : Array[(@ast.SubType, Int32)] = []
+  let aliases : Map[String, Int32] = Map([])
+  let declared_slots : Map[Int32, Bool] = Map([])
+  let referenced : Map[Int32, Bool] = Map([])
   for _, i in by_name {
     declared_slots[i] = true
   }
@@ -394,7 +398,7 @@ fn type_layout(
 fn declared_at(
   ctx : @typing_env.ModuleContext,
   layout : TypeLayout,
-  emitted : Int,
+  emitted : Int32,
 ) -> @ast.SubType? {
   for name, i in layout.by_name {
     if i == emitted {
@@ -413,7 +417,7 @@ fn TypeLayout::source_subtype(
   ctx : @typing_env.ModuleContext,
   s : @ast.SubType,
 ) -> @wasm_bin.SubType {
-  fn idx(n : @ast.Ident) -> Int {
+  fn idx(n : @ast.Ident) -> Int32 {
     match self.by_name.get(n.name) {
       Some(i) => i
       None =>
@@ -445,7 +449,7 @@ fn TypeLayout::source_subtype(
               {
                 mut_: f.desc.1.mut_,
                 typ: self.source_storagetype(ctx, f.desc.1.typ),
-              } : @wasm_types.MutType[@wasm_types.StorageType[Int]])
+              } : @wasm_types.MutType[@wasm_types.StorageType[Int32]])
           }),
         })
       Array(f) =>
@@ -462,7 +466,7 @@ fn TypeLayout::source_storagetype(
   self : TypeLayout,
   ctx : @typing_env.ModuleContext,
   s : @wasm_types.StorageType[@ast.Ident],
-) -> @wasm_types.StorageType[Int] {
+) -> @wasm_types.StorageType[Int32] {
   match s {
     Value(v) => Value(self.source_valtype(ctx, v))
     Packed(p) => Packed(p)
@@ -474,7 +478,7 @@ fn TypeLayout::source_valtype(
   self : TypeLayout,
   ctx : @typing_env.ModuleContext,
   v : @wasm_types.ValType[@ast.Ident],
-) -> @wasm_types.ValType[Int] {
+) -> @wasm_types.ValType[Int32] {
   match v {
     I32 => I32
     I64 => I64
@@ -482,7 +486,7 @@ fn TypeLayout::source_valtype(
     F64 => F64
     V128 => V128
     Ref(r) => {
-      fn idx(n : @ast.Ident) -> Int {
+      fn idx(n : @ast.Ident) -> Int32 {
         match self.by_name.get(n.name) {
           Some(i) => i
           None =>
@@ -553,7 +557,7 @@ fn lower_comptype(
         fields: fields.map(f => {
           (
             { mut_: f.mut_, typ: lower_storagetype(f.typ), } :
-            @wasm_types.MutType[@wasm_types.StorageType[Int]])
+            @wasm_types.MutType[@wasm_types.StorageType[Int32]])
         }),
       })
     Array(f) =>
@@ -566,7 +570,7 @@ fn lower_comptype(
 /// A value type with its type references flattened to indices.
 fn lower_valtype(
   v : @wasm_types.ValType[@type_store.Id],
-) -> @wasm_types.ValType[Int] {
+) -> @wasm_types.ValType[Int32] {
   match v {
     I32 => I32
     I64 => I64
@@ -580,14 +584,14 @@ fn lower_valtype(
 ///|
 fn lower_reftype(
   r : @wasm_types.RefType[@type_store.Id],
-) -> @wasm_types.RefType[Int] {
+) -> @wasm_types.RefType[Int32] {
   { nullable: r.nullable, typ: lower_heaptype(r.typ), }
 }
 
 ///|
 fn lower_heaptype(
   h : @wasm_types.HeapType[@type_store.Id],
-) -> @wasm_types.HeapType[Int] {
+) -> @wasm_types.HeapType[Int32] {
   match h {
     Func => Func
     NoFunc => NoFunc
@@ -611,7 +615,7 @@ fn lower_heaptype(
 ///|
 fn lower_storagetype(
   s : @wasm_types.StorageType[@type_store.Id],
-) -> @wasm_types.StorageType[Int] {
+) -> @wasm_types.StorageType[Int32] {
   match s {
     Value(v) => Value(lower_valtype(v))
     Packed(p) => Packed(p)

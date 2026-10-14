@@ -8,11 +8,11 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
-## [0.3.0] — 2026-09-10
+## [0.3.0] — 2026-10-14
 
-Covers `wax` and `wax-cli`. Five fixes in the front end and the checker, and
-the minor slot rather than the patch one because three things left the public
-API on the way.
+Covers `wax` and `wax-cli`. Five fixes in the front end and the checker, a
+toolchain update, and the minor slot rather than the patch one because four
+names left the public API on the way.
 
 ### Fixed
 
@@ -56,16 +56,28 @@ compiling, which is what the minor slot is for.
 - `@check.Operands.missing_holes` — the placeholder registry. The report is
   routed by position now, so nothing read it.
 - `@infer.same_cell` — the identity test that registry existed for.
+- `@wasm_types.V128`, the v128 literal record, is now `@wasm_types.V128Literal`.
+  moonc 0.10.15 reserves `V128` as a type name, so no published wax compiles on
+  it. The `ValType::V128` case keeps its name.
 
-## [wap 0.3.1] — 2026-09-10
+### Changed
+
+- Builds clean under moonc 0.10.15: `Ref(x)` and `Json(value)` replace the
+  deprecated `@ref.new` and `.to_json()`, and `moon fmt` now spells `Int` as
+  `Int32`.
+- The parser is generated with `moonbitlang/yacc@0.7.25`, whose `--table`
+  engine writes `priv suberror E { E(T) }` itself, so the `sed` rewrite 0.2.2
+  added is gone.
+
+## [wap 0.3.1] — 2026-10-14
 
 ### Changed
 
 - Depends on `marianoguerra/wax@0.3.0`. No API or behaviour change of its own;
   released so that a `wap` build resolves the wax whose checker reports a
-  stack underflow correctly.
+  stack underflow correctly, and that compiles on moonc 0.10.15.
 
-## [was 0.1.2] — 2026-09-10
+## [was 0.1.2] — 2026-10-14
 
 ### Changed
 

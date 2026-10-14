@@ -51,7 +51,7 @@ fn nan() -> Double {
 
 ///|
 /// Split a leading sign from the rest, lowercased for the keyword comparisons.
-fn split_sign(s : String) -> (Int, String) {
+fn split_sign(s : String) -> (Int32, String) {
   if s.has_prefix("-") {
     (-1, s[1:].to_owned().to_lower())
   } else if s.has_prefix("+") {
@@ -102,7 +102,7 @@ fn looks_decimal(body : String) -> Bool {
 /// through a double: widening single to double sets the quiet bit, so a
 /// signalling NaN would not survive the trip. Everything else is correctly
 /// rounded to f32 and reinterpreted.
-pub fn float32_bits(s : String) -> Int? {
+pub fn float32_bits(s : String) -> Int32? {
   let (sign, body) = split_sign(s)
   if body.has_prefix("nan:") {
     return match parse_nan_payload(body) {

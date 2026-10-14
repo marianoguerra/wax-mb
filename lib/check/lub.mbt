@@ -174,7 +174,7 @@ fn resolve_index(
 /// A supertype is always interned before its subtypes, so a larger index means
 /// deeper -- which is what lets the walk climb the deeper side and converge
 /// rather than have one run away from the other.
-fn type_depth(ctx : @typing_env.TypeContext, n : @ast.Ident) -> Int? {
+fn type_depth(ctx : @typing_env.TypeContext, n : @ast.Ident) -> Int32? {
   match resolve_index(ctx, n) {
     Some(Def(id)) => Some(id.to_int_for_tests_only())
     Some(Rec(pos)) => Some(pos)

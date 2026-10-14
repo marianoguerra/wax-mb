@@ -89,9 +89,9 @@ pub(all) struct Theme {
 
 ///|
 pub fn get_theme(
-  color? : @colors.Flag = Auto,
-  palette? : @colors.Theme = @colors.wax_theme,
-  is_tty? : Bool = false,
+  color~ : @colors.Flag = Auto,
+  palette~ : @colors.Theme = @colors.wax_theme,
+  is_tty~ : Bool = false,
 ) -> Theme {
   let use_color = @colors.should_use_color(color, is_tty~)
   let body = if use_color { palette } else { @colors.no_color }

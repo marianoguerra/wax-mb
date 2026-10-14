@@ -24,7 +24,7 @@ fn write_custom_section(w : BinaryWriter, name : Bytes, body : Bytes) -> Unit {
 /// Indices in ascending order, which is what the format requires of every
 /// vector in the name section and what the reference gets for free from
 /// `IntMap.bindings`.
-fn[V] sorted_keys(m : Map[Int, V]) -> Array[Int] {
+fn[V] sorted_keys(m : Map[Int32, V]) -> Array[Int32] {
   let keys = m.keys().collect()
   keys.sort()
   keys
@@ -35,7 +35,11 @@ fn[V] sorted_keys(m : Map[Int, V]) -> Array[Int] {
 ///
 /// Absent when the map is empty -- not present-and-empty. The reference makes
 /// the same distinction, and it is a byte.
-fn name_subsection(w : BinaryWriter, id : Int, names : Map[Int, Bytes]) -> Unit {
+fn name_subsection(
+  w : BinaryWriter,
+  id : Int32,
+  names : Map[Int32, Bytes],
+) -> Unit {
   if names.is_empty() {
     return
   }
@@ -57,8 +61,8 @@ fn name_subsection(w : BinaryWriter, id : Int, names : Map[Int, Bytes]) -> Unit 
 /// labels by function then label, fields by type then field.
 fn indirect_name_subsection(
   w : BinaryWriter,
-  id : Int,
-  names : Map[Int, Map[Int, Bytes]],
+  id : Int32,
+  names : Map[Int32, Map[Int32, Bytes]],
 ) -> Unit {
   if names.is_empty() {
     return
@@ -118,7 +122,7 @@ fn encode_name_section(w : BinaryWriter, names : Names) -> Unit {
 /// toolchain does not recognise.
 fn encode_target_features_section(
   w : BinaryWriter,
-  features : Array[(Int, Bytes)],
+  features : Array[(Int32, Bytes)],
 ) -> Unit {
   if features.is_empty() {
     return
@@ -137,8 +141,8 @@ fn encode_target_features_section(
 /// One function's hints, as the `metadata.code.*` sections want them: a
 /// function index, then that function's (offset, payload) pairs.
 priv struct FuncHints {
-  funcidx : Int
-  entries : Array[(Int, Bytes)]
+  funcidx : Int32
+  entries : Array[(Int32, Bytes)]
 }
 
 ///|
@@ -183,7 +187,7 @@ fn branch_payload(likely : Bool) -> Bytes {
 
 ///|
 /// A frequency is one byte, already reduced to the wire's offset logarithm.
-fn freq_payload(f : Int) -> Bytes {
+fn freq_payload(f : Int32) -> Bytes {
   let w = BinaryWriter::new()
   w.write_byte(f)
   w.to_bytes()
@@ -191,7 +195,7 @@ fn freq_payload(f : Int) -> Bytes {
 
 ///|
 /// Call targets are a run of LEB128 pairs: function index, then percentage.
-fn call_targets_payload(targets : Array[(Int, Int)]) -> Bytes {
+fn call_targets_payload(targets : Array[(Int32, Int32)]) -> Bytes {
   let w = BinaryWriter::new()
   for t in targets {
     let (idx, pct) = t
@@ -232,8 +236,8 @@ fn CodeHints::new() -> CodeHints {
 /// this function only if at least one of its hints is of that kind.
 fn CodeHints::take(
   self : CodeHints,
-  funcidx : Int,
-  sink : Array[(Int, InstrHints)],
+  funcidx : Int32,
+  sink : Array[(Int32, InstrHints)],
   priority : Priority?,
 ) -> Unit {
   fn collect(

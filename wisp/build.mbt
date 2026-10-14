@@ -9,7 +9,7 @@ fn v(name : String) -> @w.Node {
 }
 
 ///|
-fn i(value : Int) -> @w.Node {
+fn i(value : Int32) -> @w.Node {
   n(Int(value.to_string()))
 }
 
@@ -75,8 +75,8 @@ priv struct Generator {
   records : Map[String, Record]
   aliases : Map[String, String]
   requirements : Map[String, String]
-  sources : Map[String, Int]
-  mut counter : Int
+  sources : Map[String, Int32]
+  mut counter : Int32
   mut module_ : String
 }
 
@@ -152,7 +152,7 @@ fn path(term : Term) -> String? {
 }
 
 ///|
-fn builtin_id(name : String) -> Int? {
+fn builtin_id(name : String) -> Int32? {
   let names = [
     "list", "set", "count", "get", "assoc", "conj", "not", "map", "filter", "reduce",
     "first", "rest", "contains", "into", "float", "integer", "dissoc", "hash",

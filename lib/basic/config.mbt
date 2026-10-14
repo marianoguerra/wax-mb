@@ -19,4 +19,4 @@ pub(all) enum LocStyle {
 /// The active `Location` JSON style. Scope a change with `show_loc.protect`
 /// rather than assigning to it directly, so a failing test cannot leak the
 /// setting into the next one.
-pub let show_loc : Ref[LocStyle] = @ref.new(Hidden)
+pub let show_loc : Ref[LocStyle] = Ref(Hidden)

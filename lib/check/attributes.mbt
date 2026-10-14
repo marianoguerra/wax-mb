@@ -68,7 +68,7 @@ fn check_attribute_list(
   start_ok~ : Bool,
   module_ok~ : Bool,
   import_ok~ : Bool,
-  priority_ok? : Bool = false,
+  priority_ok~ : Bool = false,
 ) -> Unit {
   let d = ctx.diagnostics
   fn is_string(v : @ast.Instr[@basic.Location]?) -> Bool {

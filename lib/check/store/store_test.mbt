@@ -25,8 +25,8 @@ fn func_group(
 ///|
 fn struct_of(
   fields : Array[@wasm_types.ValType[@type_store.RefIndex]],
-  supertype? : @type_store.RefIndex? = None,
-  final_? : Bool = true,
+  supertype~ : @type_store.RefIndex? = None,
+  final_~ : Bool = true,
 ) -> @type_store.SubType[@type_store.RefIndex] {
   {
     final_,
@@ -143,7 +143,7 @@ test "resolution makes intra-group references absolute" {
   let info = s.subtyping_info()
   // The group landed at index 1, so its members are 1 and 2. Member 0 refers to
   // Rec(1) -- the group's second member -- which resolves to 2, and vice versa.
-  fn first_ref(id : @type_store.Id) -> Int {
+  fn first_ref(id : @type_store.Id) -> Int32 {
     match info.get_subtype(id).typ {
       Struct(fields) =>
         match fields[0].typ {

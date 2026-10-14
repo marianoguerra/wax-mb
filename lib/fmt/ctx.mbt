@@ -12,11 +12,11 @@
 /// The printer's own default is 78, which is the WebAssembly-text width. Every
 /// Wax render must go through `run_string` below, or it silently reflows to the
 /// wrong width.
-pub let width : Int = 100
+pub let width : Int32 = 100
 
 ///|
 /// The indentation step.
-let indent_level : Int = 4
+let indent_level : Int32 = 4
 
 ///|
 /// The printing context.
@@ -44,9 +44,9 @@ pub struct Ctx[Info] {
 pub fn Ctx::new(
   p : @printer.Printer,
   trivia~ : @trivia.Table,
-  collect? : @trivia.Locations? = None,
-  locate? : (@basic.Location) -> @basic.Location? = l => Some(l),
-  theme? : @colors.Theme = @colors.no_color,
+  collect~ : @trivia.Locations? = None,
+  locate~ : (@basic.Location) -> @basic.Location? = l => Some(l),
+  theme~ : @colors.Theme = @colors.no_color,
 ) -> Ctx[@basic.Location] {
   { p, theme, style_override: None, trivia, collect, locate, }
 }
@@ -70,7 +70,7 @@ pub fn[Info] Ctx::styled(self : Ctx[Info], style : Style, s : String) -> Unit {
 fn[Info] Ctx::styled_as(
   self : Ctx[Info],
   style : Style,
-  len : Int,
+  len : Int32,
   s : String,
 ) -> Unit {
   let style = match self.style_override {

@@ -79,11 +79,11 @@ pub(all) enum TypeDef {
   /// `{ x :: i32, y :: mut f64 }`, optionally extending another record.
   Record(parent~ : String?, fields~ : Array[Field])
   /// `enum { red, green = 4, blue }`
-  Enum(Array[(String, Int?)])
+  Enum(Array[(String, Int32?)])
   /// `set[color]` -- a bitmask over an enumeration.
   SetOf(String)
   /// `1 .. 31` -- an integer with known bounds.
-  Subrange(low~ : Int, high~ : Int)
+  Subrange(low~ : Int32, high~ : Int32)
   /// `[u8]`, `fn(i32) -> i32`, or any other type expression.
   Alias(Type)
 } derive(Eq, @debug.Debug)

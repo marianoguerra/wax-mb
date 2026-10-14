@@ -29,14 +29,14 @@
 /// ```
 pub struct Spans {
   fname : String
-  mut next : Int
+  mut next : Int32
 }
 
 ///|
 /// `fname` is what a diagnostic will name as the file. It should not be the
 /// name of a file that exists: no source text will be found for it, and the
 /// renderer's job is easier when it does not go looking.
-pub fn Spans::new(fname? : String = "<generated>") -> Spans {
+pub fn Spans::new(fname~ : String = "<generated>") -> Spans {
   { fname, next: 0, }
 }
 

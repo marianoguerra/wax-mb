@@ -12,7 +12,7 @@
 /// `as` and `is` bind tightest because their right operand is a type, not an
 /// expression, and `||` loosest. Assignment is handled separately: it is
 /// right-associative and its left side is a pattern, not a value.
-fn infix_bp(name : String) -> (Int, Int)? {
+fn infix_bp(name : String) -> (Int32, Int32)? {
   match name {
     "||" => Some((1, 2))
     "&&" => Some((3, 4))
@@ -657,7 +657,7 @@ fn parse_expr_all(c : Cursor, src : @er.SourceId) -> @wap.Node raise ParseError 
 
 ///|
 /// Precedence climbing over the term list.
-fn parse_expr(c : Cursor, min_bp : Int) -> @wap.Node raise ParseError {
+fn parse_expr(c : Cursor, min_bp : Int32) -> @wap.Node raise ParseError {
   let mut lhs = parse_unary(c)
   while c.peek() is Some(t) {
     let name = match infix_name(t) {

@@ -5,7 +5,7 @@
 // These pin the decisions individually.
 
 ///|
-fn lay(width : Int, f : (@printer.Printer) -> Unit) -> String {
+fn lay(width : Int32, f : (@printer.Printer) -> Unit) -> String {
   @printer.run_string(f, width~)
 }
 

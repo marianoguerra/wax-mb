@@ -62,7 +62,7 @@ pub struct Namespace {
 ///|
 pub fn Namespace::new(
   cond : Ref[@cond.T],
-  links? : ResolveSink = None,
+  links~ : ResolveSink = None,
 ) -> Namespace {
   { cond, entries: Map([]), links, }
 }
@@ -162,7 +162,7 @@ pub fn[A] Tbl::new(
   kind : String,
   names : Namespace,
   current : Ref[Origin],
-  hover? : (A) -> HoverTarget? = _ => None,
+  hover~ : (A) -> HoverTarget? = _ => None,
 ) -> Tbl[A] {
   { kind, names, entries: Map([]), used: Map([]), current, hover, }
 }

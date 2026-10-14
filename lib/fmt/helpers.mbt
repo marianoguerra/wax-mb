@@ -82,7 +82,7 @@ fn[Info, T] Ctx::list(
   _self : Ctx[Info],
   l : Array[T],
   f : (T) -> Unit,
-  sep? : () -> Unit = () => (),
+  sep~ : () -> Unit = () => (),
 ) -> Unit {
   let mut first = true
   for x in l {

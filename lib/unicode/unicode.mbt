@@ -7,7 +7,7 @@
 
 ///|
 /// How many columns a tab advances from `pos`: to the next multiple of 8.
-pub fn tab_width(pos : Int) -> Int {
+pub fn tab_width(pos : Int32) -> Int32 {
   8 - (pos & 7)
 }
 
@@ -15,7 +15,7 @@ pub fn tab_width(pos : Int) -> Int {
 /// The display width of one character at column `pos`.
 ///
 /// `pos` matters only for a tab, whose width depends on where it starts.
-pub fn char_width(pos : Int, c : Char) -> Int {
+pub fn char_width(pos : Int32, c : Char) -> Int32 {
   if c == '\t' {
     tab_width(pos)
   } else {
@@ -28,7 +28,7 @@ pub fn char_width(pos : Int, c : Char) -> Int {
 ///
 /// Not the byte length and not the character count: a combining mark is 0
 /// columns wide and a CJK ideograph is 2.
-pub fn terminal_width(s : String, offset? : Int = 0) -> Int {
+pub fn terminal_width(s : String, offset~ : Int32 = 0) -> Int32 {
   let mut acc = 0
   for c in s {
     acc += char_width(acc + offset, c)
@@ -38,7 +38,7 @@ pub fn terminal_width(s : String, offset? : Int = 0) -> Int {
 
 ///|
 /// Replace tabs with the spaces they display as, starting at column `offset`.
-pub fn expand_tabs(s : String, offset? : Int = 0) -> String {
+pub fn expand_tabs(s : String, offset~ : Int32 = 0) -> String {
   if !s.contains("\t") {
     return s
   }
@@ -61,7 +61,7 @@ pub fn expand_tabs(s : String, offset? : Int = 0) -> String {
 
 ///|
 /// The UTF-8 bytes of `s`.
-pub fn utf8_bytes(s : String) -> Array[Int] {
+pub fn utf8_bytes(s : String) -> Array[Int32] {
   let out = []
   for c in s {
     let n = c.to_int()
@@ -100,7 +100,7 @@ fn has_hex_escape(s : String) -> Bool {
 }
 
 ///|
-fn hex2(n : Int) -> String {
+fn hex2(n : Int32) -> String {
   let digits = "0123456789abcdef"
   let hi = digits.unsafe_get((n >> 4) & 0xF).to_int().unsafe_to_char()
   let lo = digits.unsafe_get(n & 0xF).to_int().unsafe_to_char()
@@ -135,7 +135,7 @@ pub fn utf8_text(b : Bytes) -> String? {
 ///
 /// The width is returned alongside because the escaped form is what occupies
 /// columns, and it is not the width of the original.
-pub fn escape_string(s : Bytes, hex_prefix? : String = "") -> (Int, String) {
+pub fn escape_string(s : Bytes, hex_prefix~ : String = "") -> (Int32, String) {
   let buf = StringBuilder()
   match utf8_text(s) {
     Some(t) if !has_hex_escape(t) =>
@@ -170,7 +170,7 @@ pub fn escape_string(s : Bytes, hex_prefix? : String = "") -> (Int, String) {
 /// DISPLAYS without changing a byte of it -- so what a reader sees and what runs
 /// are two different things. This is the same set `wasm-tools` rejects in string
 /// literals.
-pub fn is_confusable(c : Int) -> Bool {
+pub fn is_confusable(c : Int32) -> Bool {
   match c {
     0x202a
     | 0x202b
@@ -190,7 +190,7 @@ pub fn is_confusable(c : Int) -> Bool {
 ///
 /// Decoded as UTF-8; a malformed byte cannot be one of these, so the scan simply
 /// steps over it.
-pub fn first_confusable(b : Bytes) -> Int? {
+pub fn first_confusable(b : Bytes) -> Int32? {
   let n = b.length()
   let mut i = 0
   while i < n {

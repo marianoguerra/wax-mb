@@ -5,12 +5,12 @@
 // the reference's own comments call out as load-bearing.
 
 ///|
-fn pos(c : Int) -> @basic.Position {
+fn pos(c : Int32) -> @basic.Position {
   { fname: "t.wax", lnum: 1, bol: 0, cnum: c, }
 }
 
 ///|
-fn span(a : Int, b : Int) -> @basic.Location {
+fn span(a : Int32, b : Int32) -> @basic.Location {
   { start: pos(a), end: pos(b), }
 }
 
@@ -20,8 +20,8 @@ fn span(a : Int, b : Int) -> @basic.Location {
 /// `nodes` are recorded in the order a parser would record them; `comments` are
 /// (anchor, kind, position, text).
 fn build(
-  nodes : Array[(Int, Int)],
-  comments : Array[(Int, @trivia.TriviaKind, @trivia.TriviaPos, String)],
+  nodes : Array[(Int32, Int32)],
+  comments : Array[(Int32, @trivia.TriviaKind, @trivia.TriviaPos, String)],
 ) -> @trivia.Context {
   let ctx = @trivia.Context::new()
   for c in comments {

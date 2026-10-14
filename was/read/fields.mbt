@@ -781,7 +781,7 @@ fn Reader::cond(
 
 ///|
 /// An integer literal in any radix.
-fn int_of(text : String) -> Int? {
+fn int_of(text : String) -> Int32? {
   Some(@string.parse_int(text)) catch {
     _ => None
   }
@@ -789,7 +789,7 @@ fn int_of(text : String) -> Int? {
 
 ///|
 /// The base-2 logarithm of a page size, which is how Wax stores it.
-fn log2_of(n : Int) -> Int {
+fn log2_of(n : Int32) -> Int32 {
   let mut v = n
   let mut k = 0
   while v > 1 {

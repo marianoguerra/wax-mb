@@ -18,7 +18,6 @@ import {
   "marianoguerra/wax/fmt" @output,
   "moonbitlang/core/double",
   "moonbitlang/core/math",
-  "moonbitlang/core/ref",
   "moonbitlang/core/string",
 }
 

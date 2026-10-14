@@ -6,13 +6,13 @@
 // statement of that difference. Everything else agrees exactly.
 
 ///|
-fn lay(width : Int, f : (@printer.Printer) -> Unit) -> String {
+fn lay(width : Int32, f : (@printer.Printer) -> Unit) -> String {
   @printer_pp.run_string(f, width~)
 }
 
 ///|
 /// The reference engine's answer, for the cases where the two disagree.
-fn ref_lay(width : Int, f : (@printer.Printer) -> Unit) -> String {
+fn ref_lay(width : Int32, f : (@printer.Printer) -> Unit) -> String {
   @printer.run_string(f, width~)
 }
 

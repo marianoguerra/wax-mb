@@ -213,7 +213,7 @@ fn Lowering::conditional(
 fn Lowering::conditional_from(
   self : Lowering,
   arms : Array[(@wap.Node?, Array[@wap.Node])],
-  i : Int,
+  i : Int32,
   ftyp : @ast.FuncType,
   sp : @wap.Span,
   at : @basic.Location,

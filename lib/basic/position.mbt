@@ -18,9 +18,9 @@
 /// depending on the convention the caller needs — see their documentation.
 pub(all) struct Position {
   fname : String
-  lnum : Int
-  bol : Int
-  cnum : Int
+  lnum : Int32
+  bol : Int32
+  cnum : Int32
 } derive(Debug, Hash, ToJson)
 
 ///|
@@ -28,7 +28,7 @@ pub(all) struct Position {
 ///
 /// This is the convention the reference's **JSON** diagnostic renderer uses for
 /// `startColumn`/`endColumn`.
-pub fn Position::column0(self : Position) -> Int {
+pub fn Position::column0(self : Position) -> Int32 {
   self.cnum - self.bol
 }
 
@@ -37,7 +37,7 @@ pub fn Position::column0(self : Position) -> Int {
 ///
 /// This is the convention the reference's **human** and **short** diagnostic
 /// renderers use.
-pub fn Position::column1(self : Position) -> Int {
+pub fn Position::column1(self : Position) -> Int32 {
   self.cnum - self.bol + 1
 }
 

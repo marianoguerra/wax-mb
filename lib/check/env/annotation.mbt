@@ -173,7 +173,7 @@ pub fn record_reference(
   sink : ResolveSink,
   use_ : @basic.Location,
   definitions : Array[@basic.Location],
-  hover? : HoverTarget? = None,
+  hover~ : HoverTarget? = None,
 ) -> Unit {
   guard sink is Some(r) && is_source(use_) else { return }
   let kept = definitions.filter(d => is_source(d) && !same_span(d, use_))

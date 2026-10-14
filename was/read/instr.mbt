@@ -8,7 +8,7 @@
 
 ///|
 /// Binding powers, loosest first. Wax's `%left` declarations, in order.
-fn infix_bp(name : String) -> (Int, Int)? {
+fn infix_bp(name : String) -> (Int32, Int32)? {
   match name {
     "=="
     | "!="

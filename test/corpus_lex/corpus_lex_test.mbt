@@ -104,7 +104,7 @@ test "every corpus file terminates the token stream with EOF" {
 /// passes every corpus test. That case is covered by a unit test in
 /// lexer/lexer_test.mbt instead.
 test "corpus token histogram" (t : @test.Test) {
-  let counts : Map[String, Int] = Map([])
+  let counts : Map[String, Int32] = Map([])
   let mut total = 0
   for c in load_index() {
     let src = @fs.read_file_to_string("test/corpus/" + c.file)

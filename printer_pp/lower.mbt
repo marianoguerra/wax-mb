@@ -44,11 +44,11 @@ priv enum AtomKind {
   /// Display width, then the text. The width is the one the BUILDER measured,
   /// which is why it has to be carried: `@pp` would otherwise count UTF-16
   /// units, and a colour escape occupies none of the columns it is encoded in.
-  ATxt(Int, String)
+  ATxt(Int32, String)
   /// Strength, and the indent breaking here returns to -- relative to the
   /// enclosing group's base column.
-  ABrk(@printer.BreakStrength, Int)
-  AGrp(@printer.GKind, Int, Array[Node])
+  ABrk(@printer.BreakStrength, Int32)
+  AGrp(@printer.GKind, Int32, Array[Node])
 }
 
 ///|
@@ -57,10 +57,10 @@ priv enum AtomKind {
 /// Stands for the engine's `Nofit`: a scan that reaches a hard break while
 /// inside an h-box decides against flat outright rather than by arithmetic.
 /// Kept finite so reserves can be added without overflowing.
-const UNFIT : Int = 1 << 20
+const UNFIT : Int32 = 1 << 20
 
 ///|
-fn cap(n : Int) -> Int {
+fn cap(n : Int32) -> Int32 {
   if n > UNFIT {
     UNFIT
   } else {
@@ -76,10 +76,10 @@ fn cap(n : Int) -> Int {
 /// So a fill box drops its trailing comma, and so does an h-box.
 fn atoms(
   items : Array[Node],
-  ind : Int,
+  ind : Int32,
   mode : @printer.Mode,
   out : Array[Atom],
-  hidden? : Bool = false,
+  hidden~ : Bool = false,
 ) -> Unit {
   for n in items {
     match n {
@@ -105,12 +105,12 @@ fn atoms(
 /// mode it is being laid out in, and the reserve it was given, which together
 /// determine the document completely.
 priv struct Memo {
-  flat : Map[Int, @pp.Doc?]
-  docs : Map[(Int, Int, Int), @pp.Doc]
+  flat : Map[Int32, @pp.Doc?]
+  docs : Map[(Int32, Int32, Int32), @pp.Doc]
 }
 
 ///|
-fn mode_code(mode : @printer.Mode) -> Int {
+fn mode_code(mode : @printer.Mode) -> Int32 {
   match mode {
     Flat => 0
     Brkm => 1
@@ -119,7 +119,7 @@ fn mode_code(mode : @printer.Mode) -> Int {
 }
 
 ///|
-fn spaces(n : Int) -> String {
+fn spaces(n : Int32) -> String {
   " ".repeat(n)
 }
 
@@ -129,7 +129,7 @@ fn spaces(n : Int) -> String {
 /// Text with a newline in it -- a block comment's content -- goes through
 /// verbatim, which is what the engine does with it. `txt_lines` would stack the
 /// lines with `vert` and re-indent the continuations.
-fn txt_of(w : Int, s : String) -> @pp.Doc {
+fn txt_of(w : Int32, s : String) -> @pp.Doc {
   if s.contains("\n") {
     @pp.txt_raw(s)
   } else {
@@ -145,7 +145,7 @@ fn txt_of(w : Int, s : String) -> @pp.Doc {
 /// spaces instead would land in the same column, but the two are not
 /// interchangeable: `max_indent` clamps the indent a break asks for, and spaces
 /// written after the break are past the point where anything can clamp them.
-fn line_break(ind : Int, blank : Bool) -> @pp.Doc {
+fn line_break(ind : Int32, blank : Bool) -> @pp.Doc {
   let brk = if blank {
     @pp.vert([@pp.empty, @pp.empty, @pp.empty])
   } else {
@@ -160,7 +160,7 @@ fn line_break(ind : Int, blank : Bool) -> @pp.Doc {
 fn lay(
   items : Array[Node],
   mode : @printer.Mode,
-  reserve : Int,
+  reserve : Int32,
   memo : Memo,
 ) -> @pp.Doc {
   let ats : Array[Atom] = []
@@ -168,7 +168,7 @@ fn lay(
   // Split at the body's own breaks: the segments between them are what a fill
   // box measures one at a time, and what every other mode simply joins.
   let segs : Array[Array[Atom]] = [[]]
-  let brks : Array[(@printer.BreakStrength, Int)] = []
+  let brks : Array[(@printer.BreakStrength, Int32)] = []
   for a in ats {
     match a.kind {
       ABrk(s, ind) => {
@@ -219,7 +219,7 @@ fn lay(
   // rebases to the column it opens at; text is joined with `concat2`, which
   // leaves the ambient indent -- the indent this body's own breaks return to --
   // alone.
-  fn seg_doc(si : Int) -> @pp.Doc {
+  fn seg_doc(si : Int32) -> @pp.Doc {
     let seg = segs[si]
     // A `Cut` kept flat writes nothing, but the engine still counts it as a
     // column when it bases the next group on `eff_col`: that adds one for ANY
@@ -294,7 +294,7 @@ fn lay(
 
 ///|
 /// How wide one atom is flat, or None if it cannot be flattened at all.
-fn atom_width(a : Atom, memo : Memo) -> Int? {
+fn atom_width(a : Atom, memo : Memo) -> Int32? {
   // Skipped by the scan, so it contributes nothing -- not even the
   // unflattenability of whatever is inside it.
   guard !a.hidden else { return Some(0) }
@@ -346,7 +346,7 @@ fn flat_doc(ats : Array[Atom], memo : Memo) -> @pp.Doc? {
 /// applies to a group it keeps on one line. Nested groups flatten too, whatever
 /// their kind, which is what the engine's scan does: `TBegin` pushes `Flat`
 /// unconditionally.
-fn group_flat(id : Int, body : Array[Node], memo : Memo) -> @pp.Doc? {
+fn group_flat(id : Int32, body : Array[Node], memo : Memo) -> @pp.Doc? {
   match memo.flat.get(id) {
     Some(d) => d
     None => {
@@ -364,10 +364,10 @@ fn group_flat(id : Int, body : Array[Node], memo : Memo) -> @pp.Doc? {
 /// follows it on the line.
 fn group_doc(
   kind : @printer.GKind,
-  id : Int,
+  id : Int32,
   body : Array[Node],
-  reserve : Int,
-  bump : Int,
+  reserve : Int32,
+  bump : Int32,
   memo : Memo,
 ) -> @pp.Doc {
   let key = (id, mode_code_of(kind) * 2 + bump, reserve)
@@ -409,7 +409,7 @@ fn group_doc(
 /// The mode a group of this kind lays its body out in, as a memo key. `GHv` is
 /// laid out both ways, but its two are always reached together, so one key
 /// covers them.
-fn mode_code_of(kind : @printer.GKind) -> Int {
+fn mode_code_of(kind : @printer.GKind) -> Int32 {
   match kind {
     GH => mode_code(Flat)
     GV => mode_code(Brkm)
@@ -438,7 +438,7 @@ pub fn to_doc(tokens : Array[@printer.Token]) -> @pp.Doc {
 /// zero for widths under ten.
 pub fn render_tokens(
   tokens : Array[@printer.Token],
-  width? : Int = 78,
+  width~ : Int32 = 78,
 ) -> String {
   let max_indent = if width - 10 > 0 { width - 10 } else { 0 }
   to_doc(tokens).display_string(width~, max_indent~)
@@ -449,6 +449,9 @@ pub fn render_tokens(
 ///
 /// A drop-in for `@printer.run_string`: same callback, same width, different
 /// engine.
-pub fn run_string(f : (@printer.Printer) -> Unit, width? : Int = 78) -> String {
+pub fn run_string(
+  f : (@printer.Printer) -> Unit,
+  width~ : Int32 = 78,
+) -> String {
   render_tokens(@printer.run_tokens(f, width~), width~)
 }

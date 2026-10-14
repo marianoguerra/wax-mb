@@ -9,7 +9,7 @@ let src : String =
   #|
 
 ///|
-fn pos(lnum : Int, bol : Int, cnum : Int) -> @basic.Position {
+fn pos(lnum : Int32, bol : Int32, cnum : Int32) -> @basic.Position {
   { fname: "e1.wax", lnum, bol, cnum, }
 }
 
@@ -105,7 +105,7 @@ let multi_src : String =
   #|
 
 ///|
-fn mpos(lnum : Int, bol : Int, cnum : Int) -> @basic.Position {
+fn mpos(lnum : Int32, bol : Int32, cnum : Int32) -> @basic.Position {
   { fname: "m.wax", lnum, bol, cnum, }
 }
 

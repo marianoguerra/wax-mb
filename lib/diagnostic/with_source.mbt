@@ -1,7 +1,7 @@
 // Rendering a diagnostic against its source text.
 
 ///|
-fn repeat_str(s : String, n : Int) -> String {
+fn repeat_str(s : String, n : Int32) -> String {
   if n <= 0 {
     return ""
   }
@@ -14,7 +14,7 @@ fn repeat_str(s : String, n : Int) -> String {
 
 ///|
 /// Left-pad `s` to `width`.
-fn pad_left(s : String, width : Int) -> String {
+fn pad_left(s : String, width : Int32) -> String {
   repeat_str(" ", width - s.length()) + s
 }
 
@@ -95,7 +95,7 @@ fn output_with_source(
       let num_annots = on_this_line.length()
       // A column measured in DISPLAY columns, not bytes: a wide glyph or a tab
       // ahead of the span shifts the caret.
-      fn vis_col(col : Int) -> Int {
+      fn vis_col(col : Int32) -> Int32 {
         let col = @cmp.minimum(raw_content.length(), col)
         @unicode.terminal_width(raw_content.view(end_offset=col).to_owned())
       }
@@ -119,7 +119,7 @@ fn output_with_source(
           // One box-drawing glyph is one display column, so a reach of
           // `caret - 1` dashes lands the caret at column `caret`. A construct
           // flush to column 0 has the corner itself sit on it, so no reach.
-          fn reach(caret : Int) -> String {
+          fn reach(caret : Int32) -> String {
             if caret <= 0 {
               ""
             } else {

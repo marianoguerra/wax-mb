@@ -27,7 +27,7 @@ pub struct ParseResult {
 ///   * a SEMANTIC error raised from a grammar action -- recorded rather than
 ///     raised, since MoonYacc's actions cannot propagate one;
 ///   * a SYNTAX error from the automaton itself, `ParseError`.
-pub fn parse_string(src : String, fname? : String = "") -> ParseResult {
+pub fn parse_string(src : String, fname~ : String = "") -> ParseResult {
   let ctx = @trivia.Context::new()
   set_context(ctx)
   let lexed = @lexer.tokens_from_string(src, fname~, trivia_ctx=ctx)
@@ -300,7 +300,7 @@ fn expecting_message(expected : Array[TokenKind]) -> String {
   // A class collapses only when >=2 of its members are legal here, so count
   // before rendering. Counting distinct SPELLINGS, since the collapse is about
   // how many entries the list would otherwise carry.
-  let counts : Map[String, Int] = Map([])
+  let counts : Map[String, Int32] = Map([])
   let seen_spellings = []
   for k in expected {
     let spelling = k.to_expect_string()

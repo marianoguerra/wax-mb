@@ -13,7 +13,7 @@
 pub fn render(
   m : @ast.LocModule,
   trivia_ctx : @trivia.Context,
-  theme? : @colors.Theme = @colors.no_color,
+  theme~ : @colors.Theme = @colors.no_color,
 ) -> String {
   render_with(m, trivia_ctx, theme~, lay=run_string)
 }
@@ -29,7 +29,7 @@ pub fn render(
 pub fn render_with(
   m : @ast.LocModule,
   trivia_ctx : @trivia.Context,
-  theme? : @colors.Theme = @colors.no_color,
+  theme~ : @colors.Theme = @colors.no_color,
   lay~ : ((@printer.Printer) -> Unit) -> String,
 ) -> String {
   let (table, tail) = @trivia.associate(trivia_ctx, only => {

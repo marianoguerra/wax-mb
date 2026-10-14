@@ -80,8 +80,8 @@ struct Lowering {
   /// Local name to index, rebuilt per function: parameters first, in order,
   /// then each `let` as it is declared. Wasm numbers them in exactly that
   /// order, so the map is built by walking the same way.
-  mut locals : Map[String, Int]
-  mut local_types : Array[@wasm_types.ValType[Int]]
+  mut locals : Map[String, Int32]
+  mut local_types : Array[@wasm_types.ValType[Int32]]
   /// The slot each `let` binding took, keyed by where its NAME was written.
   ///
   /// Slots are assigned in one pass up front, but a name comes into scope only
@@ -98,7 +98,7 @@ struct Lowering {
   /// lowering has already answered.
   /// Where a field-order entry stands, when that is not where its field does.
   /// A guarded export stands at its attribute; everything else at its field.
-  entry_locs : Map[Int, @basic.Location]
+  entry_locs : Map[Int32, @basic.Location]
   /// The conditional groups the source wrote, for resolving a name from the
   /// branch that asks.
   conditionals : Array[@wasm_bin.CondGroup]
@@ -110,7 +110,7 @@ struct Lowering {
   /// written -- which is not a module anyone could run, and is never encoded.
   keep_conditionals : Bool
   /// A `#[start]` an import named, waiting for the import's own field entry.
-  mut pending_start : (Int, @ast.Attribute)?
+  mut pending_start : (Int32, @ast.Attribute)?
   /// The `#[if(..)]` groups written inside the body being lowered.
   mut body_conditionals : Array[@wasm_bin.CondGroup]
   mut spans : Array[@wasm_bin.Span]
@@ -121,20 +121,20 @@ struct Lowering {
   /// completion order is what pairs them up again, because folding walks the
   /// same tree the lowering built.
   mut nested_spans : Array[Array[@wasm_bin.Span]]
-  mut binding_slots : Map[Int, Int]
+  mut binding_slots : Map[Int32, Int32]
   /// The wasm-level names already claimed in this function, each with the
   /// number its next duplicate takes. Wasm has one flat namespace per
   /// function, so a shadowing `let` needs a name of its own.
-  mut claimed : Map[String, Int]
+  mut claimed : Map[String, Int32]
   /// Local slot to the name the source gave it, for the name section.
-  mut local_names : Map[Int, Bytes]
+  mut local_names : Map[Int32, Bytes]
   /// Block label names, keyed by the order the blocks OPEN in.
   ///
   /// The name section numbers labels per function in that order, which is not
   /// the order a `br` counts them in -- depth is relative to where the branch
   /// stands, while a name belongs to the block itself.
-  mut label_names : Map[Int, Bytes]
-  mut label_counter : Int
+  mut label_names : Map[Int32, Bytes]
+  mut label_counter : Int32
   /// The handlers an enclosing `on` clause wrote, waiting for the resume they
   /// belong to. Empty everywhere else.
   mut pending_handlers : Array[@ast.OnClause]
@@ -158,15 +158,15 @@ struct Lowering {
   /// The store erases field names, because wasm has none -- so a `s.x` needs
   /// the declaration the author wrote to know which slot `x` is. This is the
   /// only place the two views of a type are joined, and it is built once.
-  source_types : Map[Int, @ast.SubType]
+  source_types : Map[Int32, @ast.SubType]
   /// Function signature back to the type index that interned it.
   ///
   /// A block with parameters or several results is spelled as a reference into
   /// the type section, so its signature has to be findable BY SHAPE -- the
   /// block wrote no name, and the store interned it structurally.
   functypes : Map[
-    (Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]),
-    Int,
+    (Array[@wasm_types.ValType[Int32]], Array[@wasm_types.ValType[Int32]]),
+    Int32,
   ]
 }
 
@@ -176,12 +176,12 @@ fn functype_index(
   store : @type_store.TypeStore,
   layout : TypeLayout,
 ) -> Map[
-  (Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]),
-  Int,
+  (Array[@wasm_types.ValType[Int32]], Array[@wasm_types.ValType[Int32]]),
+  Int32,
 ] {
   let out : Map[
-    (Array[@wasm_types.ValType[Int]], Array[@wasm_types.ValType[Int]]),
-    Int,
+    (Array[@wasm_types.ValType[Int32]], Array[@wasm_types.ValType[Int32]]),
+    Int32,
   ] = Map([])
   // Read off the EMITTED section, not the store. Two declarations that
   // interned together can still be different types once their own inner
@@ -205,8 +205,8 @@ fn functype_index(
 fn source_type_index(
   ctx : @typing_env.ModuleContext,
   layout : TypeLayout,
-) -> Map[Int, @ast.SubType] {
-  let out : Map[Int, @ast.SubType] = Map([])
+) -> Map[Int32, @ast.SubType] {
+  let out : Map[Int32, @ast.SubType] = Map([])
   for entry in ctx.type_context.types.iter_entries() {
     let (name, (idx, sub)) = entry
     // By NAME where the layout gave the name an entry of its own: two
@@ -228,7 +228,7 @@ fn source_type_index(
 
 ///|
 /// The branch depth of a label, counting outward from the innermost.
-fn Lowering::depth_of(self : Lowering, name : String) -> Int? {
+fn Lowering::depth_of(self : Lowering, name : String) -> Int32? {
   let n = self.labels.length()
   for k = n - 1; k >= 0; k = k - 1 {
     if self.labels[k] is Some(l) && l == name {
@@ -253,7 +253,7 @@ fn Lowering::depth_of(self : Lowering, name : String) -> Int? {
 /// caller falls back to the target, which is always valid against itself.
 fn node_last_reftype(
   i : @ast.Instr[@typing_env.InferredAnnotation],
-) -> @wasm_types.RefType[Int]? {
+) -> @wasm_types.RefType[Int32]? {
   let tys = i.info.0
   guard tys.length() > 0 else { return None }
   guard @typing_env.standalone_valtype(tys[tys.length() - 1]) is Some(v) else {
@@ -288,7 +288,7 @@ fn node_last_nullable(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
 /// the caller then raises, because an opcode cannot be chosen without it.
 fn node_valtype(
   i : @ast.Instr[@typing_env.InferredAnnotation],
-) -> @wasm_types.ValType[Int]? {
+) -> @wasm_types.ValType[Int32]? {
   guard i.info.0.length() == 1 else { return None }
   guard @typing_env.standalone_valtype(i.info.0[0]) is Some(v) else {
     return None
@@ -302,7 +302,7 @@ fn node_valtype(
 /// The annotation carries the type twice: the NAME the source form kept and
 /// the interned id. The name is the better answer where there is one, because
 /// interning collapses distinct declarations and the emitted section does not.
-fn inferred_valtype(v : @infer.InferredValType) -> @wasm_types.ValType[Int] {
+fn inferred_valtype(v : @infer.InferredValType) -> @wasm_types.ValType[Int32] {
   match (v.typ, v.internal) {
     (Ref({ typ: Type(n), .. }), Ref(r)) =>
       Ref({
@@ -320,7 +320,7 @@ fn inferred_valtype(v : @infer.InferredValType) -> @wasm_types.ValType[Int] {
 
 ///|
 /// The store index a heap type carries, or -1 when it carries none.
-fn store_id_of(h : @wasm_types.HeapType[@type_store.Id]) -> Int {
+fn store_id_of(h : @wasm_types.HeapType[@type_store.Id]) -> Int32 {
   match h {
     Type(i) | Exact(i) => i.to_int_for_tests_only()
     _ => -1
@@ -368,7 +368,7 @@ fn labels_within(
 /// collision gets a suffix.
 /// `first` is the number whose name is the BARE base -- 1 for the loop series,
 /// where the reference counts from one, and 0 for the arm and catch series.
-fn fresh_name(taken : Array[String], base : String, first : Int) -> String {
+fn fresh_name(taken : Array[String], base : String, first : Int32) -> String {
   let mut k = first
   while true {
     let name = if k == first { base } else { base + k.to_string() }

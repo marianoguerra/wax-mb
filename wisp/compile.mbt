@@ -24,8 +24,8 @@ pub fn Artifact::manifest(self : Artifact) -> Json {
 /// Compile in-memory source modules. No import performs I/O or initialization.
 pub fn compile(
   source : String,
-  modules? : Map[String, String] = Map([]),
-  protocols? : Map[String, Array[String]] = Map([]),
+  modules~ : Map[String, String] = Map([]),
+  protocols~ : Map[String, Array[String]] = Map([]),
 ) -> Artifact raise ScriptError {
   if source.length() > 1_000_000 || modules.length() > 128 {
     raise ScriptError("compilation input limit exceeded")
@@ -51,7 +51,11 @@ pub fn compile(
   })
   let visited : Map[String, Bool] = Map([])
   let active : Map[String, Bool] = Map([])
-  fn visit(src : String, path : String, depth : Int) -> Unit raise ScriptError {
+  fn visit(
+    src : String,
+    path : String,
+    depth : Int32,
+  ) -> Unit raise ScriptError {
     if depth > 64 || src.length() > 1_000_000 {
       raise ScriptError("module limit exceeded")
     }
@@ -186,8 +190,8 @@ pub fn compile(
         ),
       )
       record_manifest[full_name] = {
-        "constructor": ctor.to_json(),
-        "fields": r.fields.map(f => f.0).to_json(),
+        "constructor": Json(ctor),
+        "fields": Json(r.fields.map(f => f.0)),
       }
       record_arms.push(
         (
@@ -268,7 +272,7 @@ pub fn compile(
           export_name="run_" + f.name,
         ),
       )
-      entries[f.name] = f.params.to_json()
+      entries[f.name] = Json(f.params)
     }
   }
   let required : Map[String, Json] = Map([])
@@ -295,7 +299,7 @@ pub fn compile(
   }
   for pair in entry.requirements {
     let (name, protocol) = pair
-    required[name] = protocol.to_json()
+    required[name] = Json(protocol)
   }
   let vector = @wp.parse_module(vector_source) catch {
     @wp.ParseError(r) => raise ScriptError(r.message)
@@ -358,15 +362,15 @@ pub fn compile(
     wat,
     manifest: {
       "abi": 1,
-      "entries": entries.to_json(),
-      "records": record_manifest.to_json(),
-      "requirements": required.to_json(),
-      "protocols": schemas.to_json(),
-      "sources": units
-      .map(u => {
-        ({ "module": u.name.to_json(), "text": u.source.to_json() } : Json)
-      })
-      .to_json(),
+      "entries": Json(entries),
+      "records": Json(record_manifest),
+      "requirements": Json(required),
+      "protocols": Json(schemas),
+      "sources": Json(
+        units.map(u => {
+          ({ "module": Json(u.name), "text": Json(u.source) } : Json)
+        }),
+      ),
       "features": ["gc", "tail-call", "jspi"],
     },
   }

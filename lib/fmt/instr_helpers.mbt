@@ -54,7 +54,7 @@ fn Ctx::branch_ref_instr(
 fn Ctx::descriptor_operand(
   self : Ctx[@basic.Location],
   d : @ast.Instr[@basic.Location],
-  nullable? : Bool = false,
+  nullable~ : Bool = false,
 ) -> Unit {
   if nullable {
     self.punct("?")
@@ -94,7 +94,7 @@ fn Ctx::call_instr(
   self : Ctx[@basic.Location],
   callee : @ast.Instr[@basic.Location],
   args : Array[@ast.Instr[@basic.Location]],
-  prefix? : String? = None,
+  prefix~ : String? = None,
 ) -> Unit {
   self.p.hvbox(() => {
     // The prefix and the callee stay glued to the opening `(`: only the
@@ -121,7 +121,7 @@ fn Ctx::container(
   closing : String,
   opt_type : @ast.Ident?,
   f : () -> Unit,
-  indent? : Int = 0,
+  indent~ : Int32 = 0,
 ) -> Unit {
   self.p.hvbox(indent~, () => {
     self.p.box(() => {
@@ -298,7 +298,7 @@ fn Ctx::bracketed_labels(
   before : () -> Unit,
   cases : Array[@ast.Ident],
   default : @ast.Ident,
-  after? : () -> Unit = () => (),
+  after~ : () -> Unit = () => (),
 ) -> Unit {
   self.p.hvbox(() => {
     self.p.hbox(() => {

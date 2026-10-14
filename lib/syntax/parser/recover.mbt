@@ -85,7 +85,7 @@ fn sync_class(t : Token) -> Sync {
 ///
 /// The module is best-effort: whatever the actions built from the parts that
 /// did parse, or `None` if recovery never got the automaton back to an accept.
-pub fn parse_recover(src : String, fname? : String = "") -> ParseResult {
+pub fn parse_recover(src : String, fname~ : String = "") -> ParseResult {
   let ctx = @trivia.Context::new()
   set_context(ctx)
   let lexed = @lexer.tokens_from_string(src, fname~, trivia_ctx=ctx)
@@ -129,7 +129,7 @@ fn drive_recovering(
   let mut state = 0
   let mut cursor = 0
   let mut last_pos = tokens[0].1
-  let mut lookahead : (Int, (YYObj, Position, Position), Token?)? = None
+  let mut lookahead : (Int32, (YYObj, Position, Position), Token?)? = None
   // Tokens recovery has decided to splice in, taken before the real ones.
   let pending : Array[(Token, Position, Position)] = []
   // Where a token was last inserted. Inserting twice at one spot would loop
@@ -313,7 +313,7 @@ fn drive_recovering(
 /// The validation the reference calls for: acceptability of the candidate is
 /// not enough, since a `;` is acceptable in plenty of places where the real
 /// problem is the token after it.
-fn unblocks(stack : Array[Int], candidate : Int, held : Int) -> Bool {
+fn unblocks(stack : Array[Int32], candidate : Int32, held : Int32) -> Bool {
   match shift_sim(stack, candidate) {
     None => false
     Some(after) => acceptable(after, held)
@@ -327,7 +327,7 @@ fn unblocks(stack : Array[Int], candidate : Int, held : Int) -> Bool {
 /// that must be terminated before its block can close (`add(1, 2 }` needs `)`,
 /// then `;`, then `}`). Every inserted closer shifts a closing bracket, which
 /// strictly reduces the open nesting, so the loop is finite.
-fn auto_close(stack : Array[Int], held : Int) -> Array[(Token, String)]? {
+fn auto_close(stack : Array[Int32], held : Int32) -> Array[(Token, String)]? {
   let candidates : Array[(Token, String)] = [
     (RBRACE, "}"),
     (RPAREN, ")"),
@@ -382,7 +382,7 @@ fn missing_semi_report(at : Position) -> @basic.Report {
 /// skipped span does not resync the construct the error is in. A `Leader`
 /// resyncs at any depth, because an unbalanced opener must not swallow the
 /// next item.
-fn resync(tokens : Array[(Token, Position, Position)], from : Int) -> Int? {
+fn resync(tokens : Array[(Token, Position, Position)], from : Int32) -> Int32? {
   let mut depth = 0
   for i in from..<tokens.length() {
     match sync_class(tokens[i].0) {

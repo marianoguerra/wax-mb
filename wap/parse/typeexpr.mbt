@@ -8,7 +8,7 @@
 /// A cursor over the terms of one group.
 priv struct Cursor {
   ts : Array[@sh.Node]
-  mut i : Int
+  mut i : Int32
   src : @er.SourceId
 }
 

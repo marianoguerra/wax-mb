@@ -101,8 +101,8 @@ pub fn subtype(
   info : @type_store.SubtypingInfo,
   ty : @infer.Cell[@infer.InferredType],
   ty_ : @infer.Cell[@infer.InferredType],
-  location? : @basic.Location? = None,
-  pin? : Bool = true,
+  location~ : @basic.Location? = None,
+  pin~ : Bool = true,
 ) -> Bool {
   let ity = ty.get()
   let ity_ = ty_.get()

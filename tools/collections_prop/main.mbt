@@ -1,10 +1,10 @@
 ///|
 priv struct MapModel {
-  entries : @hashmap.HashMap[Int, Int?]
+  entries : @hashmap.HashMap[Int32, Int32?]
 }
 
 ///|
-fn normalized(value : Int) -> Int {
+fn normalized(value : Int32) -> Int32 {
   if value < 0 {
     -value
   } else {
@@ -13,7 +13,7 @@ fn normalized(value : Int) -> Int {
 }
 
 ///|
-fn key_hash(key : Int) -> Int {
+fn key_hash(key : Int32) -> Int32 {
   if key % 5 == 0 {
     7
   } else {
@@ -22,12 +22,12 @@ fn key_hash(key : Int) -> Int {
 }
 
 ///|
-fn key_expr(key : Int) -> String {
+fn key_expr(key : Int32) -> String {
   "ct_key_new(\{key}, \{key_hash(key)})"
 }
 
 ///|
-fn value_expr(value : Int?) -> String {
+fn value_expr(value : Int32?) -> String {
   match value {
     None => "null"
     Some(n) => "ct_box(\{n})"
@@ -40,7 +40,7 @@ fn emit_map_assert(
   map : String,
   key : String,
   present : Bool,
-  value : Int?,
+  value : Int32?,
 ) -> Unit {
   let found = if present { 1 } else { 0 }
   let is_null = if value is None { 1 } else { 0 }
@@ -54,9 +54,9 @@ fn emit_map_assert(
 fn emit_vector_assert(
   out : StringBuilder,
   vector : String,
-  index : Int,
+  index : Int32,
   present : Bool,
-  value : Int?,
+  value : Int32?,
 ) -> Unit {
   let found = if present { 1 } else { 0 }
   let is_null = if value is None { 1 } else { 0 }
@@ -69,11 +69,11 @@ fn emit_vector_assert(
 ///|
 fn emit_case(
   out : StringBuilder,
-  case_index : Int,
-  inputs : Array[Int],
+  case_index : Int32,
+  inputs : Array[Int32],
 ) -> Unit {
   let model = { entries: @hashmap.HashMap::HashMap([]), }
-  let vector : Array[Int?] = []
+  let vector : Array[Int32?] = []
   out.write_string("fn ct_property_case_\{case_index}() {\n")
   out.write_string("    ct_stage = \{100 + case_index};\n")
   out.write_string("    let map = phm_empty(ct_hash, ct_equal);\n")
@@ -82,7 +82,7 @@ fn emit_case(
     let n = normalized(raw)
     let operation = n % 10
     let key = n / 17 % 64
-    let value : Int? = if n / 13 % 7 == 0 {
+    let value : Int32? = if n / 13 % 7 == 0 {
       None
     } else {
       Some(n % 10000 - 5000)
@@ -212,7 +212,7 @@ fn emit_case(
 
   out.write_string("    let transient_map = phm_as_transient(map);\n")
   for key = 0; key < 20; key = key + 1 {
-    let value : Int? = if key % 6 == 0 { None } else { Some(20000 + key) }
+    let value : Int32? = if key % 6 == 0 { None } else { Some(20000 + key) }
     out.write_string(
       "    phmt_assoc(transient_map, \{key_expr(key)}, \{value_expr(value)});\n",
     )
@@ -229,14 +229,14 @@ fn emit_case(
 
   out.write_string("    let transient_vector = pv_as_transient(vector);\n")
   for index = 0; index < 40; index = index + 1 {
-    let value : Int? = if index % 9 == 0 { None } else { Some(30000 + index) }
+    let value : Int32? = if index % 9 == 0 { None } else { Some(30000 + index) }
     out.write_string("    pvt_push(transient_vector, \{value_expr(value)});\n")
     vector.push(value)
   }
   if !vector.is_empty() {
     let updates = if vector.length() < 12 { vector.length() } else { 12 }
     for index = 0; index < updates; index = index + 1 {
-      let value : Int? = Some(40000 + index)
+      let value : Int32? = Some(40000 + index)
       out.write_string(
         "    pvt_assoc(transient_vector, \{index}, \{value_expr(value)});\n",
       )

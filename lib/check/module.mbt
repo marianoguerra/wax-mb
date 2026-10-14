@@ -39,8 +39,9 @@ fn check_fields(
   // in the same order, so a counter in each lines them up -- and the typed
   // module comes out in SOURCE order, which the printer and the lowering both
   // depend on.
-  let typed : Map[Int, @ast.ModuleField[@typing_env.InferredAnnotation]] = Map([])
-  let spans : Map[Int, @basic.Location] = Map([])
+  let typed : Map[Int32, @ast.ModuleField[@typing_env.InferredAnnotation]] = Map([],
+  )
+  let spans : Map[Int32, @basic.Location] = Map([])
   let mut at = 0
   // Globals first, in order, each visible to the next.
   walk_fields(ctx, fields, field => {
@@ -304,8 +305,8 @@ pub fn check_module(
   store : @type_store.TypeStore,
   features : @feature.Set,
   fields : @ast.Module[@basic.Location],
-  simplify? : Bool = false,
-  warn_unused? : Bool = false,
+  simplify~ : Bool = false,
+  warn_unused~ : Bool = false,
 ) -> (
   @typing_env.ModuleContext,
   Array[

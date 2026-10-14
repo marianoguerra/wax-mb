@@ -260,7 +260,7 @@ fn read_parts(
 ///|
 priv struct Cursor {
   ts : Array[@sh.Node]
-  mut pos : Int
+  mut pos : Int32
 }
 
 ///|
@@ -274,7 +274,7 @@ fn read_expression(ts : Array[@sh.Node]) -> Term raise ScriptError {
 }
 
 ///|
-fn precedence(s : String) -> Int {
+fn precedence(s : String) -> Int32 {
   match s {
     "or" => 1
     "and" => 2
@@ -286,7 +286,7 @@ fn precedence(s : String) -> Int {
 }
 
 ///|
-fn Cursor::expression(self : Cursor, min : Int) -> Term raise ScriptError {
+fn Cursor::expression(self : Cursor, min : Int32) -> Term raise ScriptError {
   if self.pos >= self.ts.length() {
     raise ScriptError("expected expression")
   }

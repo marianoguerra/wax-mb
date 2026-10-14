@@ -28,7 +28,7 @@ pub(all) struct Input {
 /// The line offsets of one file, for turning a span into a line and column.
 priv struct LineMap {
   fname : String
-  starts : Array[Int]
+  starts : Array[Int32]
   src : @er.SourceId
   /// True when the module has no source text, so every node in it needs a
   /// synthetic location instead of a mapped one.
@@ -70,7 +70,7 @@ priv struct Lowering {
   /// Declared types, by their wap name.
   types : Map[String, @wap.TypeDef]
   /// For an enumeration, the ordinal of each of its members.
-  enum_members : Map[String, Map[String, Int]]
+  enum_members : Map[String, Map[String, Int32]]
   /// Which enumeration a bare member name belongs to. A name in two
   /// enumerations is ambiguous and has to be qualified.
   member_owner : Map[String, String]
@@ -96,7 +96,7 @@ priv struct Lowering {
   /// The loops enclosing the expression being lowered, innermost last.
   loops : Array[LoopFrame]
   diagnostics : Array[@er.Report]
-  mut counter : Int
+  mut counter : Int32
 }
 
 ///|
@@ -199,7 +199,7 @@ fn Lowering::loc(self : Lowering, span : @wap.Span) -> @basic.Location {
 }
 
 ///|
-fn Lowering::position(self : Lowering, offset : Int) -> @basic.Position {
+fn Lowering::position(self : Lowering, offset : Int32) -> @basic.Position {
   // The last line start at or before `offset`.
   let mut lo = 0
   let starts = self.here.starts

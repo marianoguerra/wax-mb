@@ -219,7 +219,7 @@ fn[T] Ctx::print_run(
 ///|
 fn Ctx::v128_group(
   self : Ctx[@basic.Location],
-  v : @basic.Annotated[@wasm_types.V128, @basic.Location],
+  v : @basic.Annotated[@wasm_types.V128Literal, @basic.Location],
 ) -> Unit {
   self.atomic_node(Some(v.info), () => {
     self.typ(vec_shape_name(v.desc.shape))
@@ -280,7 +280,7 @@ fn Ctx::data_name(self : Ctx[@basic.Location], n : @ast.Ident?) -> Unit {
 fn Ctx::square_instr(
   self : Ctx[@basic.Location],
   i : @ast.Instr[@basic.Location],
-  leading_space? : Bool = false,
+  leading_space~ : Bool = false,
 ) -> Unit {
   if simple_inline_instr(i) {
     if leading_space {

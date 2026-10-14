@@ -12,7 +12,7 @@
 /// The largest size a memory of this address type and page size can have.
 pub fn max_memory_size(
   address_type : @wasm_types.AddressType,
-  page_size_log2 : Int?,
+  page_size_log2 : Int32?,
 ) -> UInt64 {
   let p = page_size_log2.unwrap_or(16)
   let (bits, index_max) = match address_type {
@@ -57,8 +57,8 @@ fn check_limits(
   kind : String,
   address_type : @wasm_types.AddressType,
   limits : (UInt64, UInt64?)?,
-  page_size_log2? : Int? = None,
-  shared? : Bool = false,
+  page_size_log2~ : Int32? = None,
+  shared~ : Bool = false,
 ) -> Unit {
   match page_size_log2 {
     None | Some(0) | Some(16) => ()

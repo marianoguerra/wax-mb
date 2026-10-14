@@ -10,17 +10,17 @@
 /// One `Env` per module, so nothing leaks between modules processed in the same
 /// run.
 pub struct Env {
-  bool_vars : Map[String, Int]
-  version_vars : Map[String, Int]
-  string_vars : Map[String, Int]
+  bool_vars : Map[String, Int32]
+  version_vars : Map[String, Int32]
+  string_vars : Map[String, Int32]
   /// The reverse mapping, for `explain`.
-  names : Map[Int, String]
-  mut next_var : Int
+  names : Map[Int32, String]
+  mut next_var : Int32
   /// The kind a name has been used at, so an inconsistent use is reported.
   var_kind : Map[String, String]
   /// Spans already reported, keyed by offsets: one ill-formed condition should
   /// not produce a report per enclosing pass.
-  reported : Map[(Int, Int), Unit]
+  reported : Map[(Int32, Int32), Unit]
 }
 
 ///|
@@ -37,7 +37,7 @@ pub fn Env::new() -> Env {
 }
 
 ///|
-fn Env::intern(self : Env, tbl : Map[String, Int], name : String) -> Int {
+fn Env::intern(self : Env, tbl : Map[String, Int32], name : String) -> Int32 {
   match tbl.get(name) {
     Some(v) => v
     None => {
@@ -116,7 +116,7 @@ fn bool_const(b : Bool) -> T {
 
 ///|
 /// Does this comparison hold, given `compare`'s verdict?
-fn apply_order(op : @wasm_types.CmpOp, c : Int) -> Bool {
+fn apply_order(op : @wasm_types.CmpOp, c : Int32) -> Bool {
   match op {
     Eq => c == 0
     Ne => c != 0
@@ -129,7 +129,7 @@ fn apply_order(op : @wasm_types.CmpOp, c : Int) -> Bool {
 
 ///|
 /// `vid OP version`, in terms of upper-bound atoms.
-fn version_atom(vid : Int, op : @wasm_types.CmpOp, v : Version) -> T {
+fn version_atom(vid : Int32, op : @wasm_types.CmpOp, v : Version) -> T {
   let le = { node: Lit(Bound(vid, v, true), true), } // vid <= v
   let lt = { node: Lit(Bound(vid, v, false), true), } // vid <  v
   match op {
@@ -147,7 +147,7 @@ fn Env::string_atom(
   self : Env,
   ctx : @diagnostic.Context,
   location : @basic.Location,
-  vid : Int,
+  vid : Int32,
   op : @wasm_types.CmpOp,
   s : Bytes,
 ) -> T {
@@ -208,12 +208,12 @@ fn Env::cmp(
   a : @wasm_types.Cond,
   b : @wasm_types.Cond,
 ) -> T {
-  fn version_var(loc : @basic.Location, name : String) -> Int {
+  fn version_var(loc : @basic.Location, name : String) -> Int32 {
     self.check_kind(ctx, loc, name, "version")
     self.intern(self.version_vars, name)
   }
 
-  fn string_var(loc : @basic.Location, name : String) -> Int {
+  fn string_var(loc : @basic.Location, name : String) -> Int32 {
     self.check_kind(ctx, loc, name, "string")
     self.intern(self.string_vars, name)
   }

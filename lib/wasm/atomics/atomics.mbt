@@ -118,11 +118,11 @@ let rmw_ops : Array[RmwOp] = [Add, Sub, And, Or, Xor, Xchg, Cmpxchg]
 
 ///|
 /// Every `(sub-opcode, operation)` pair.
-let table : Array[(Int, Op)] = build_table()
+let table : Array[(Int32, Op)] = build_table()
 
 ///|
-fn build_table() -> Array[(Int, Op)] {
-  let out : Array[(Int, Op)] = [
+fn build_table() -> Array[(Int32, Op)] {
+  let out : Array[(Int32, Op)] = [
     (0x00, Notify),
     (0x01, Wait(I32)),
     (0x02, Wait(I64)),
@@ -146,7 +146,7 @@ fn build_table() -> Array[(Int, Op)] {
 }
 
 ///|
-let by_opcode : Map[Int, Op] = {
+let by_opcode : Map[Int32, Op] = {
   let m = Map([])
   for entry in table {
     let (code, op) = entry
@@ -156,7 +156,7 @@ let by_opcode : Map[Int, Op] = {
 }
 
 ///|
-let by_op : Map[Op, Int] = {
+let by_op : Map[Op, Int32] = {
   let m = Map([])
   for entry in table {
     let (code, op) = entry
@@ -173,12 +173,12 @@ pub fn all() -> Array[Op] {
 
 ///|
 /// The `0xFE`-prefix sub-opcode.
-pub fn opcode(op : Op) -> Int {
+pub fn opcode(op : Op) -> Int32 {
   by_op[op]
 }
 
 ///|
-pub fn of_opcode(code : Int) -> Op? {
+pub fn of_opcode(code : Int32) -> Op? {
   by_opcode.get(code)
 }
 
@@ -227,7 +227,7 @@ fn Width::to_str(self : Width) -> String {
 ///|
 /// How many bytes the width accesses. Its base-2 logarithm is the required --
 /// and, for an atomic, exact -- alignment.
-pub fn Width::bytes(self : Width) -> Int {
+pub fn Width::bytes(self : Width) -> Int32 {
   match self {
     W8 => 1
     W16 => 2
@@ -315,7 +315,7 @@ pub fn family(op : Op) -> Family {
 
 ///|
 /// How many bytes a family accesses.
-pub fn family_bytes(f : Family) -> Int {
+pub fn family_bytes(f : Family) -> Int32 {
   match f {
     Load(w) | Store(w) | Rmw(_, w) => w.bytes()
     Wait(I32) => 4
@@ -326,7 +326,7 @@ pub fn family_bytes(f : Family) -> Int {
 
 ///|
 /// How many bytes an operation accesses.
-pub fn access_bytes(op : Op) -> Int {
+pub fn access_bytes(op : Op) -> Int32 {
   match op {
     Notify | Wait(I32) => 4
     Wait(I64) => 8
@@ -339,7 +339,7 @@ pub fn access_bytes(op : Op) -> Int {
 ///
 /// Unlike a plain load or store, where the alignment is a hint and any smaller
 /// value is legal, an atomic's alignment must be exactly the natural one.
-pub fn natural_align_log2(op : Op) -> Int {
+pub fn natural_align_log2(op : Op) -> Int32 {
   match access_bytes(op) {
     1 => 0
     2 => 1

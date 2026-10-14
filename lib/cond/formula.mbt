@@ -22,13 +22,13 @@
 ///|
 /// A version triple, ordered lexicographically.
 pub(all) struct Version {
-  major : Int
-  minor : Int
-  patch : Int
+  major : Int32
+  minor : Int32
+  patch : Int32
 } derive(Eq, Hash, Debug)
 
 ///|
-pub fn Version::compare_to(self : Version, other : Version) -> Int {
+pub fn Version::compare_to(self : Version, other : Version) -> Int32 {
   if self.major != other.major {
     return self.major - other.major
   }
@@ -53,11 +53,11 @@ pub impl Show for Version with fn output(self, logger) {
 /// small enough for the search to be trivial.
 enum Atom {
   /// A boolean variable, which is its own atom.
-  Bool(Int)
+  Bool(Int32)
   /// `vid <= limit`, or `vid < limit` when not inclusive.
-  Bound(Int, Version, Bool)
+  Bound(Int32, Version, Bool)
   /// `vid == constant`.
-  Const(Int, Bytes)
+  Const(Int32, Bytes)
 } derive(Eq, Hash, Debug)
 
 ///|

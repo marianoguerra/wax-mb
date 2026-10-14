@@ -88,7 +88,7 @@ pub(all) enum StorageType[Idx] {
   Packed(PackedType)
 } derive(Eq, Hash, @debug.Debug)
 
-pub(all) struct V128 {
+pub(all) struct V128Literal {
   shape : V128Shape
   components : Array[String]
 } derive(Eq, @debug.Debug)

@@ -29,9 +29,9 @@ test "and at an integer Idx, as the binary form will" {
   // This is the case that does not exist yet. If it stopped compiling, the
   // parameter would have quietly become decoration and the eventual code
   // generator would need an AST change rather than an addition.
-  let t : @wasm_types.ValType[Int] = Ref({ nullable: false, typ: Exact(7), })
+  let t : @wasm_types.ValType[Int32] = Ref({ nullable: false, typ: Exact(7), })
   assert_eq(t, Ref({ nullable: false, typ: Exact(7), }))
-  let s : @wasm_types.StorageType[Int] = Packed(I8)
+  let s : @wasm_types.StorageType[Int32] = Packed(I8)
   assert_eq(s, Packed(I8))
 }
 
@@ -76,7 +76,7 @@ test "limits keep the page size as a logarithm" {
 
 ///|
 test "v128 components stay unparsed" {
-  let v : @wasm_types.V128 = {
+  let v : @wasm_types.V128Literal = {
     shape: I32x4,
     components: ["1", "0x2", "-3", "4"],
   }

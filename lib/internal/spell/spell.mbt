@@ -21,8 +21,8 @@
 pub fn edit_distance(
   a : String,
   b : String,
-  limit? : Int = @int.MAX_VALUE,
-) -> Int {
+  limit~ : Int32 = @int.MAX_VALUE,
+) -> Int32 {
   distance_from(a, code_points(a), b, limit~)
 }
 
@@ -45,8 +45,8 @@ fn distance_from(
   a : String,
   a_points : Array[Char],
   b : String,
-  limit? : Int = @int.MAX_VALUE,
-) -> Int {
+  limit~ : Int32 = @int.MAX_VALUE,
+) -> Int32 {
   // A limit of 1 admits only equality, and equality is cheaper to test than to
   // measure.
   if limit <= 1 {
@@ -128,7 +128,7 @@ fn distance_from(
 ///
 /// Nothing for one or two characters (every short name is close to every
 /// other), one edit up to four, two beyond. OCaml's numbers.
-pub fn default_max_distance(s : String) -> Int {
+pub fn default_max_distance(s : String) -> Int32 {
   match code_points(s).length() {
     0 | 1 | 2 => 0
     3 | 4 => 1
@@ -145,7 +145,7 @@ pub fn default_max_distance(s : String) -> Int {
 pub fn suggest(
   dictionary : Iter[String],
   word : String,
-  max_distance? : (String) -> Int = default_max_distance,
+  max_distance~ : (String) -> Int32 = default_max_distance,
 ) -> Array[String] {
   let mut best = max_distance(word)
   let out = []
