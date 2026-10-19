@@ -31,7 +31,7 @@ pub fn rec_group(Array[(String, @ast.SubType)], at? : @basic.Location) -> @basic
 // Types and methods
 pub struct Spans {
   fname : String
-  mut next : Int
+  mut next : Int32
 }
 pub fn Spans::fresh(Self) -> @basic.Location
 pub fn Spans::ident(Self, String) -> @ast.Ident

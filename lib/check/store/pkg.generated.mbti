@@ -31,15 +31,15 @@ pub(all) struct FuncType[Idx] {
 } derive(Eq, Hash, @debug.Debug)
 
 pub struct Id {
-  index : Int
+  index : Int32
 } derive(Eq, Hash, @debug.Debug)
-pub fn Id::add(Self, Int) -> Self
-pub fn Id::of_index(Int) -> Self
-pub fn Id::to_int_for_tests_only(Self) -> Int
+pub fn Id::add(Self, Int32) -> Self
+pub fn Id::of_index(Int32) -> Self
+pub fn Id::to_int_for_tests_only(Self) -> Int32
 
 pub(all) enum RefIndex {
   Def(Id)
-  Rec(Int)
+  Rec(Int32)
 } derive(Eq, Hash, @debug.Debug)
 
 pub(all) struct SubType[Idx] {
@@ -57,13 +57,13 @@ pub struct SubtypingInfo {
 pub fn SubtypingInfo::get_subtype(Self, Id) -> SubType[Id]
 
 pub struct TypeStore {
-  interned : Map[Array[SubType[RefIndex]], Int]
-  mut last_index : Int
-  groups : Array[(Int, Array[SubType[RefIndex]])]
+  interned : Map[Array[SubType[RefIndex]], Int32]
+  mut last_index : Int32
+  groups : Array[(Int32, Array[SubType[RefIndex]])]
 }
 pub fn TypeStore::add_rectype(Self, Array[SubType[RefIndex]]) -> Id raise MalformedRecGroup
 pub fn TypeStore::get_all_rectypes(Self) -> Array[Array[SubType[Id]]]
-pub fn TypeStore::last_index(Self) -> Int
+pub fn TypeStore::last_index(Self) -> Int32
 pub fn TypeStore::new() -> Self
 pub fn TypeStore::subtyping_info(Self) -> SubtypingInfo
 

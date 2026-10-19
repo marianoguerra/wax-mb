@@ -13,21 +13,21 @@ pub fn block(Array[Sexp]) -> Sexp
 
 pub fn fold(Array[@bin.Instruction], Array[@bin.Span], nested? : Array[Array[@bin.Span]]) -> Array[Node]
 
-pub fn heaptype(@types.HeapType[Int], Map[Int, Bytes]) -> String
+pub fn heaptype(@types.HeapType[Int32], Map[Int32, Bytes]) -> String
 
 pub fn ident(Bytes) -> String
 
-pub fn mnemonic(@bin.Instruction, @bin.Names, Map[Int, Bytes], scope? : Array[String?]) -> Sexp raise WatError
+pub fn mnemonic(@bin.Instruction, @bin.Names, Map[Int32, Bytes], scope? : Array[String?]) -> Sexp raise WatError
 
 pub fn nullary(@bin.Instruction) -> String?
 
 pub fn print_module(@bin.Module, trivia? : @trivia.Context?) -> String raise WatError
 
-pub fn reftype(@types.RefType[Int], Map[Int, Bytes]) -> String
+pub fn reftype(@types.RefType[Int32], Map[Int32, Bytes]) -> String
 
-pub fn render(Sexp, top_depth? : Int, trivia? : @trivia.Context?) -> String
+pub fn render(Sexp, top_depth? : Int32, trivia? : @trivia.Context?) -> String
 
-pub fn valtype(@types.ValType[Int], Map[Int, Bytes]) -> String
+pub fn valtype(@types.ValType[Int32], Map[Int32, Bytes]) -> String
 
 // Errors
 pub suberror WatError {

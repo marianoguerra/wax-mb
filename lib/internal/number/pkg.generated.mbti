@@ -2,7 +2,7 @@
 package "marianoguerra/wax/internal/number"
 
 // Values
-pub fn float32_bits(String) -> Int?
+pub fn float32_bits(String) -> Int32?
 
 pub fn float64_bits(String) -> Int64?
 

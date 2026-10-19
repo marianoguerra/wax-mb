@@ -118,8 +118,8 @@ pub(all) struct Hint[T] {
 
 pub(all) struct Hints {
   branch : Hint[Bool]?
-  freq : Hint[Int]?
-  targets : Hint[Array[(Ident, Int)]]?
+  freq : Hint[Int32]?
+  targets : Hint[Array[(Ident, Int32)]]?
 } derive(Eq, @debug.Debug)
 pub fn Hints::is_empty(Self) -> Bool
 
@@ -140,7 +140,7 @@ pub(all) enum ImportKind {
   Func(typ~ : Ident?, sign~ : FuncType?, exact~ : Bool)
   Global(mut_~ : Bool, typ~ : @types.ValType[Ident])
   Tag(typ~ : Ident?, sign~ : FuncType?)
-  Memory(address_type~ : @types.AddressType, limits~ : (UInt64, UInt64?)?, page_size_log2~ : Int?, shared~ : Bool)
+  Memory(address_type~ : @types.AddressType, limits~ : (UInt64, UInt64?)?, page_size_log2~ : Int32?, shared~ : Bool)
   Table(address_type~ : @types.AddressType, reftype~ : @types.RefType[Ident], limits~ : (UInt64, UInt64?)?)
 } derive(Eq, @debug.Debug)
 
@@ -243,7 +243,7 @@ pub(all) enum ModuleField[Info] {
   Func(name~ : Ident, typ~ : Ident?, sign~ : FuncType?, body~ : (Ident?, Array[Instr[Info]]), attributes~ : Array[Attribute])
   Global(name~ : Ident, mut_~ : Bool, typ~ : @types.ValType[Ident]?, def~ : Instr[Info], attributes~ : Array[Attribute])
   Tag(name~ : Ident, typ~ : Ident?, sign~ : FuncType?, attributes~ : Array[Attribute])
-  Memory(name~ : Ident, address_type~ : @types.AddressType, limits~ : (UInt64, UInt64?)?, page_size_log2~ : Int?, shared~ : Bool, data~ : Array[MemData[Info]], attributes~ : Array[Attribute])
+  Memory(name~ : Ident, address_type~ : @types.AddressType, limits~ : (UInt64, UInt64?)?, page_size_log2~ : Int32?, shared~ : Bool, data~ : Array[MemData[Info]], attributes~ : Array[Attribute])
   Data(name~ : Ident?, mode~ : DataMode[Info], init~ : Array[DataElem], attributes~ : Array[Attribute])
   Table(name~ : Ident, address_type~ : @types.AddressType, reftype~ : @types.RefType[Ident], limits~ : (UInt64, UInt64?)?, init~ : Instr[Info]?, attributes~ : Array[Attribute])
   Elem(name~ : Ident, reftype~ : @types.RefType[Ident], mode~ : ElemMode[Info], init~ : Array[Instr[Info]], attributes~ : Array[Attribute])

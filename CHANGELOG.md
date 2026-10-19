@@ -8,6 +8,34 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## [0.3.1] — 2026-10-19
+
+Covers `wax` and `wax-cli`. A toolchain update and nothing else: no language,
+API or behaviour change.
+
+### Changed
+
+- Builds clean under moonc v0.10.16 (moon 0.1.20261016). The regenerated
+  `.mbti` files record that toolchain's spelling of the same API; warning 79
+  stays off for the reason `lib/moon.mod` gives.
+- `wax-cli` depends on `moonbitlang/x@0.5.5`.
+
+## [wap 0.3.2] — 2026-10-19
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.3.1`, `marianoguerra/shrubbery@0.1.2` and
+  `marianoguerra/error-report@0.1.1`, so a `wap` build compiles on moonc
+  v0.10.16. No API or behaviour change of its own.
+
+## [was 0.1.3] — 2026-10-19
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.3.1`, `marianoguerra/shrubbery@0.1.2` and
+  `marianoguerra/error-report@0.1.1`, for the same reason and with the same
+  scope as `wap 0.3.2`.
+
 ## [0.3.0] — 2026-10-14
 
 Covers `wax` and `wax-cli`. Five fixes in the front end and the checker, a

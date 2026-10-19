@@ -52,12 +52,12 @@ pub impl ToJson for Location
 
 pub(all) struct Position {
   fname : String
-  lnum : Int
-  bol : Int
-  cnum : Int
+  lnum : Int32
+  bol : Int32
+  cnum : Int32
 } derive(Hash, ToJson, @debug.Debug)
-pub fn Position::column0(Self) -> Int
-pub fn Position::column1(Self) -> Int
+pub fn Position::column0(Self) -> Int32
+pub fn Position::column1(Self) -> Int32
 pub fn Position::is_dummy(Self) -> Bool
 pub impl Compare for Position
 pub impl Eq for Position

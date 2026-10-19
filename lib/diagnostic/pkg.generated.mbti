@@ -20,13 +20,13 @@ pub fn of_report(@basic.Report) -> Diagnostic
 
 pub fn output_error(Sink, Theme, OutputFormat, String?, Diagnostic) -> Unit
 
-pub fn[T] run(Sink, @colors.Flag, @colors.Theme, String?, (Context) -> T, format? : OutputFormat, related? : Array[Label], exit_on_error? : Bool, policy? : @warning.Policy, is_tty? : Bool, max? : Int) -> (T, Context)
+pub fn[T] run(Sink, @colors.Flag, @colors.Theme, String?, (Context) -> T, format? : OutputFormat, related? : Array[Label], exit_on_error? : Bool, policy? : @warning.Policy, is_tty? : Bool, max? : Int32) -> (T, Context)
 
 // Errors
 
 // Types and methods
 pub struct Context {
-  max : Int
+  max : Int32
   queue : Array[Diagnostic]
   source : String?
   related : Array[Label]

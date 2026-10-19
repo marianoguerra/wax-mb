@@ -28,7 +28,7 @@ pub(all) enum CmpOp {
 pub(all) enum Cond {
   Var(@basic.Annotated[String, @basic.Location])
   Str(@basic.Annotated[Bytes, @basic.Location])
-  Version(Int, Int, Int)
+  Version(Int32, Int32, Int32)
   And(Array[Cond])
   Or(Array[Cond])
   Not(Cond)
@@ -59,7 +59,7 @@ pub(all) struct Limits {
   mi : UInt64
   ma : UInt64?
   address_type : AddressType
-  page_size_log2 : Int?
+  page_size_log2 : Int32?
   shared : Bool
 } derive(Eq, @debug.Debug)
 

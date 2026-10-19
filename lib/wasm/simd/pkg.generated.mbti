@@ -13,7 +13,7 @@ pub let bitselect_name : String
 
 pub fn classify(String) -> Intrinsic?
 
-pub fn const_arity(Shape) -> Int
+pub fn const_arity(Shape) -> Int32
 
 pub fn const_name(Shape) -> String
 
@@ -47,7 +47,7 @@ pub let mem_method_names : Array[String]
 
 pub fn method_names(Ty) -> Array[String]
 
-pub fn size() -> Int
+pub fn size() -> Int32
 
 pub fn store_lane_name(LaneWidth) -> String
 
@@ -69,7 +69,7 @@ pub struct Intrinsic {
   result : Ty?
   imm : Imm
   free : Bool
-  build : (Array[Int]) -> @bin.Instruction
+  build : (Array[Int32]) -> @bin.Instruction
 }
 
 pub(all) enum LaneWidth {
@@ -78,15 +78,15 @@ pub(all) enum LaneWidth {
   L32
   L64
 } derive(Eq, Hash, @debug.Debug)
-pub fn LaneWidth::nat_align(Self) -> Int
+pub fn LaneWidth::nat_align(Self) -> Int32
 pub fn LaneWidth::to_str(Self) -> String
 
 pub struct MemIntrinsic {
   operands : Array[Ty]
   result : Ty?
   lane : Bool
-  nat_align : Int
-  build : (Int, Int, Int64, Int) -> @bin.Instruction
+  nat_align : Int32
+  build : (Int32, Int32, Int64, Int32) -> @bin.Instruction
 }
 
 pub(all) enum Shape {
@@ -98,7 +98,7 @@ pub(all) enum Shape {
   F64x2
 } derive(Eq, Hash, @debug.Debug)
 pub fn Shape::is_float(Self) -> Bool
-pub fn Shape::lane_count(Self) -> Int
+pub fn Shape::lane_count(Self) -> Int32
 pub fn Shape::lane_scalar(Self) -> Ty
 pub fn Shape::of_str(String) -> Self?
 pub fn Shape::to_str(Self) -> String
@@ -122,7 +122,7 @@ pub(all) enum VecLoad {
   Load32Zero
   Load64Zero
 } derive(Eq, Hash, @debug.Debug)
-pub fn VecLoad::nat_align(Self) -> Int
+pub fn VecLoad::nat_align(Self) -> Int32
 pub fn VecLoad::to_str(Self) -> String
 
 // Type aliases

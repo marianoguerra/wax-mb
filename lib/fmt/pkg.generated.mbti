@@ -22,7 +22,7 @@ pub fn render_with(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @ba
 
 pub fn run_string((@printer.Printer) -> Unit) -> String
 
-pub let width : Int
+pub let width : Int32
 
 // Errors
 

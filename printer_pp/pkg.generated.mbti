@@ -7,9 +7,9 @@ import {
 }
 
 // Values
-pub fn render_tokens(Array[@printer.Token], width? : Int) -> String
+pub fn render_tokens(Array[@printer.Token], width? : Int32) -> String
 
-pub fn run_string((@printer.Printer) -> Unit, width? : Int) -> String
+pub fn run_string((@printer.Printer) -> Unit, width? : Int32) -> String
 
 pub fn to_doc(Array[@printer.Token]) -> @pretty-fast-pretty-printer.Doc
 

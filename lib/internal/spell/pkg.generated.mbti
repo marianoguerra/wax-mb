@@ -2,11 +2,11 @@
 package "marianoguerra/wax/internal/spell"
 
 // Values
-pub fn default_max_distance(String) -> Int
+pub fn default_max_distance(String) -> Int32
 
-pub fn edit_distance(String, String, limit? : Int) -> Int
+pub fn edit_distance(String, String, limit? : Int32) -> Int32
 
-pub fn suggest(Iter[String], String, max_distance? : (String) -> Int) -> Array[String]
+pub fn suggest(Iter[String], String, max_distance? : (String) -> Int32) -> Array[String]
 
 // Errors
 

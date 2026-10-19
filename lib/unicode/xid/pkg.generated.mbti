@@ -2,9 +2,9 @@
 package "marianoguerra/wax/unicode/xid"
 
 // Values
-pub fn is_xid_continue(Int) -> Bool
+pub fn is_xid_continue(Int32) -> Bool
 
-pub fn is_xid_start(Int) -> Bool
+pub fn is_xid_start(Int32) -> Bool
 
 // Errors
 

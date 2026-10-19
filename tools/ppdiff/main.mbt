@@ -180,7 +180,7 @@ fn report_first_diff(a : String, b : String) -> Unit {
 ///|
 /// Every `.wax` file under `dir`, depth first.
 fn collect(dir : String, out : Array[String]) -> Unit {
-  let entries = @fs.read_dir(dir) catch { _ => return }
+  let entries = (@fs.read_dir(dir) catch { _ => return }).to_owned()
   entries.sort()
   for name in entries {
     let path = dir + "/" + name

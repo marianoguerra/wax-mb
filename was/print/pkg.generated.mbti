@@ -10,7 +10,7 @@ import {
 // Values
 pub fn block_type(@ast.FuncType) -> String
 
-pub fn expr(@ast.Instr[@basic.Location], min_prec? : Int) -> String
+pub fn expr(@ast.Instr[@basic.Location], min_prec? : Int32) -> String
 
 pub fn heaptype(@types.HeapType[@ast.Ident]) -> String
 

@@ -18,29 +18,29 @@ pub impl Show for EncodeError
 
 // Types and methods
 pub(all) struct ArrayType {
-  element : @types.MutType[@types.StorageType[Int]]
+  element : @types.MutType[@types.StorageType[Int32]]
 } derive(Eq, @debug.Debug)
 
 pub(all) enum BlockType {
   Empty
-  Value(@types.ValType[Int])
-  MultiValue(Array[@types.ValType[Int]])
-  InlineType(Array[@types.ValType[Int]], Array[@types.ValType[Int]])
-  TypeIndex(Int)
+  Value(@types.ValType[Int32])
+  MultiValue(Array[@types.ValType[Int32]])
+  InlineType(Array[@types.ValType[Int32]], Array[@types.ValType[Int32]])
+  TypeIndex(Int32)
 } derive(Eq, @debug.Debug)
 
 pub(all) enum CatchHandler {
-  Catch(Int, Int)
-  CatchRef(Int, Int)
-  CatchAll(Int)
-  CatchAllRef(Int)
+  Catch(Int32, Int32)
+  CatchRef(Int32, Int32)
+  CatchAll(Int32)
+  CatchAllRef(Int32)
 } derive(Eq, @debug.Debug)
 
 pub(all) enum CompositeType {
   Func(FuncType)
   Struct(StructType)
   Array(ArrayType)
-  Cont(Int)
+  Cont(Int32)
 } derive(Eq, @debug.Debug)
 
 pub(all) struct CondGroup {
@@ -58,7 +58,7 @@ pub(all) struct Data {
 } derive(Eq, @debug.Debug)
 
 pub(all) enum DataMode {
-  Active(Int, Array[Instruction])
+  Active(Int32, Array[Instruction])
   Passive
 } derive(Eq, @debug.Debug)
 
@@ -68,14 +68,14 @@ pub(all) enum DataPiece {
 } derive(Eq, @debug.Debug)
 
 pub(all) enum ElemMode {
-  Active(Int, Array[Instruction])
+  Active(Int32, Array[Instruction])
   Passive
   Declarative
 } derive(Eq, @debug.Debug)
 
 pub(all) struct Element {
   mode : ElemMode
-  type_ : @types.RefType[Int]
+  type_ : @types.RefType[Int32]
   init : Array[Array[Instruction]]
   init_spans : Array[Array[Span]]
   offset_spans : Array[Span]
@@ -87,35 +87,35 @@ pub(all) struct Export {
 } derive(Eq, @debug.Debug)
 
 pub(all) enum ExportDesc {
-  Func(Int)
-  Table(Int)
-  Memory(Int)
-  Global(Int)
-  Tag(Int)
+  Func(Int32)
+  Table(Int32)
+  Memory(Int32)
+  Global(Int32)
+  Tag(Int32)
 } derive(Eq, @debug.Debug)
 
 pub(all) enum FieldRef {
-  FTypes(Array[Int])
+  FTypes(Array[Int32])
   FFeature(Bytes)
-  FImport(Int)
-  FFunc(Int)
-  FStart(Int)
-  FExport(Int)
-  FTable(Int)
-  FMemory(Int)
-  FGlobal(Int)
-  FTag(Int)
-  FElem(Int)
-  FData(Int)
+  FImport(Int32)
+  FFunc(Int32)
+  FStart(Int32)
+  FExport(Int32)
+  FTable(Int32)
+  FMemory(Int32)
+  FGlobal(Int32)
+  FTag(Int32)
+  FElem(Int32)
+  FData(Int32)
 } derive(Eq, @debug.Debug)
 
 pub(all) struct FuncType {
-  params : Array[@types.ValType[Int]]
-  results : Array[@types.ValType[Int]]
+  params : Array[@types.ValType[Int32]]
+  results : Array[@types.ValType[Int32]]
 } derive(Eq, @debug.Debug)
 
 pub(all) struct FunctionCode {
-  locals : Array[@types.ValType[Int]]
+  locals : Array[@types.ValType[Int32]]
   body : Array[Instruction]
   spans : Array[Span]
   nested_spans : Array[Array[Span]]
@@ -124,7 +124,7 @@ pub(all) struct FunctionCode {
 } derive(Eq, @debug.Debug)
 
 pub(all) struct Global {
-  type_ : @types.MutType[@types.ValType[Int]]
+  type_ : @types.MutType[@types.ValType[Int32]]
   init : Array[Instruction]
   init_spans : Array[Span]
 } derive(Eq, @debug.Debug)
@@ -137,11 +137,11 @@ pub(all) struct Import {
 } derive(Eq, @debug.Debug)
 
 pub(all) enum ImportDesc {
-  Func(Int, Bool)
+  Func(Int32, Bool)
   Table(TableType)
   Memory(MemoryType)
-  Global(@types.MutType[@types.ValType[Int]])
-  Tag(Int)
+  Global(@types.MutType[@types.ValType[Int32]])
+  Tag(Int32)
 } derive(Eq, @debug.Debug)
 
 pub(all) enum ImportGroup {
@@ -151,8 +151,8 @@ pub(all) enum ImportGroup {
 
 pub(all) struct InstrHints {
   branch : Bool?
-  freq : Int?
-  targets : Array[(Int, Int)]?
+  freq : Int32?
+  targets : Array[(Int32, Int32)]?
 } derive(Eq, @debug.Debug)
 pub fn InstrHints::is_empty(Self) -> Bool
 pub fn InstrHints::none() -> Self
@@ -163,86 +163,86 @@ pub(all) enum Instruction {
   Block(BlockType, Array[Instruction])
   Loop(BlockType, Array[Instruction])
   If(BlockType, Array[Instruction], Array[Instruction])
-  Br(Int)
-  BrIf(Int)
-  BrTable(Array[Int], Int)
+  Br(Int32)
+  BrIf(Int32)
+  BrTable(Array[Int32], Int32)
   Return
-  Call(Int)
-  CallIndirect(Int, Int)
-  CallRef(Int)
-  ReturnCall(Int)
-  ReturnCallIndirect(Int, Int)
-  ReturnCallRef(Int)
-  Throw(Int)
+  Call(Int32)
+  CallIndirect(Int32, Int32)
+  CallRef(Int32)
+  ReturnCall(Int32)
+  ReturnCallIndirect(Int32, Int32)
+  ReturnCallRef(Int32)
+  Throw(Int32)
   ThrowRef
   TryTable(BlockType, Array[CatchHandler], Array[Instruction])
-  LegacyTry(BlockType, Array[Instruction], Array[(Int, Array[Instruction])], Array[Instruction]?)
+  LegacyTry(BlockType, Array[Instruction], Array[(Int32, Array[Instruction])], Array[Instruction]?)
   Drop
   Select
-  SelectTyped(Array[@types.ValType[Int]])
-  LocalGet(Int)
-  LocalSet(Int)
-  LocalTee(Int)
-  GlobalGet(Int)
-  GlobalSet(Int)
-  TableGet(Int)
-  TableSet(Int)
-  TableSize(Int)
-  TableGrow(Int)
-  TableFill(Int)
-  TableCopy(Int, Int)
-  TableInit(Int, Int)
-  I32Load(Int, Int, Int64)
-  I64Load(Int, Int, Int64)
-  F32Load(Int, Int, Int64)
-  F64Load(Int, Int, Int64)
-  I32Load8S(Int, Int, Int64)
-  I32Load8U(Int, Int, Int64)
-  I32Load16S(Int, Int, Int64)
-  I32Load16U(Int, Int, Int64)
-  I64Load8S(Int, Int, Int64)
-  I64Load8U(Int, Int, Int64)
-  I64Load16S(Int, Int, Int64)
-  I64Load16U(Int, Int, Int64)
-  I64Load32S(Int, Int, Int64)
-  I64Load32U(Int, Int, Int64)
-  I32Store(Int, Int, Int64)
-  I64Store(Int, Int, Int64)
-  F32Store(Int, Int, Int64)
-  F64Store(Int, Int, Int64)
-  I32Store8(Int, Int, Int64)
-  I32Store16(Int, Int, Int64)
-  I64Store8(Int, Int, Int64)
-  I64Store16(Int, Int, Int64)
-  I64Store32(Int, Int, Int64)
-  MemorySize(Int)
-  MemoryGrow(Int)
-  MemoryInit(Int, Int)
-  DataDrop(Int)
-  MemoryCopy(Int, Int)
-  MemoryFill(Int)
-  ElemDrop(Int)
-  Atomic(Int, Int, Int, Int64)
+  SelectTyped(Array[@types.ValType[Int32]])
+  LocalGet(Int32)
+  LocalSet(Int32)
+  LocalTee(Int32)
+  GlobalGet(Int32)
+  GlobalSet(Int32)
+  TableGet(Int32)
+  TableSet(Int32)
+  TableSize(Int32)
+  TableGrow(Int32)
+  TableFill(Int32)
+  TableCopy(Int32, Int32)
+  TableInit(Int32, Int32)
+  I32Load(Int32, Int32, Int64)
+  I64Load(Int32, Int32, Int64)
+  F32Load(Int32, Int32, Int64)
+  F64Load(Int32, Int32, Int64)
+  I32Load8S(Int32, Int32, Int64)
+  I32Load8U(Int32, Int32, Int64)
+  I32Load16S(Int32, Int32, Int64)
+  I32Load16U(Int32, Int32, Int64)
+  I64Load8S(Int32, Int32, Int64)
+  I64Load8U(Int32, Int32, Int64)
+  I64Load16S(Int32, Int32, Int64)
+  I64Load16U(Int32, Int32, Int64)
+  I64Load32S(Int32, Int32, Int64)
+  I64Load32U(Int32, Int32, Int64)
+  I32Store(Int32, Int32, Int64)
+  I64Store(Int32, Int32, Int64)
+  F32Store(Int32, Int32, Int64)
+  F64Store(Int32, Int32, Int64)
+  I32Store8(Int32, Int32, Int64)
+  I32Store16(Int32, Int32, Int64)
+  I64Store8(Int32, Int32, Int64)
+  I64Store16(Int32, Int32, Int64)
+  I64Store32(Int32, Int32, Int64)
+  MemorySize(Int32)
+  MemoryGrow(Int32)
+  MemoryInit(Int32, Int32)
+  DataDrop(Int32)
+  MemoryCopy(Int32, Int32)
+  MemoryFill(Int32)
+  ElemDrop(Int32)
+  Atomic(Int32, Int32, Int32, Int64)
   AtomicFence
-  ContNew(Int)
-  ContBind(Int, Int)
-  Suspend(Int)
-  Resume(Int, Array[OnClause])
-  ResumeThrow(Int, Int, Array[OnClause])
-  ResumeThrowRef(Int, Array[OnClause])
-  Switch(Int, Int)
+  ContNew(Int32)
+  ContBind(Int32, Int32)
+  Suspend(Int32)
+  Resume(Int32, Array[OnClause])
+  ResumeThrow(Int32, Int32, Array[OnClause])
+  ResumeThrowRef(Int32, Array[OnClause])
+  Switch(Int32, Int32)
   Hinted(InstrHints, Instruction)
   Spelled(String, Instruction)
   FromString(Bytes, Instruction)
   FromChar(Bytes, Instruction)
-  RefNull(@types.HeapType[Int])
+  RefNull(@types.HeapType[Int32])
   RefIsNull
-  RefFunc(Int)
+  RefFunc(Int32)
   RefAsNonNull
   RefEqInstr
-  BrOnNull(Int)
-  BrOnNonNull(Int)
-  I32Const(Int)
+  BrOnNull(Int32)
+  BrOnNonNull(Int32)
+  I32Const(Int32)
   I64Const(Int64)
   F32Const(Float)
   F64Const(Double)
@@ -386,65 +386,65 @@ pub(all) enum Instruction {
   I64TruncSatF32U
   I64TruncSatF64S
   I64TruncSatF64U
-  StructNewDesc(Int)
-  StructNewDefaultDesc(Int)
-  RefGetDesc(Int)
-  RefCastDescEq(@types.RefType[Int])
-  BrOnCastDescEq(Int, @types.RefType[Int], @types.RefType[Int])
-  BrOnCastDescEqFail(Int, @types.RefType[Int], @types.RefType[Int])
-  StructNew(Int)
-  StructNewDefault(Int)
-  StructGet(Int, Int)
-  StructGetS(Int, Int)
-  StructGetU(Int, Int)
-  StructSet(Int, Int)
-  ArrayNew(Int)
-  ArrayNewDefault(Int)
-  ArrayNewFixed(Int, Int)
-  ArrayNewData(Int, Int)
-  ArrayNewElem(Int, Int)
-  ArrayGet(Int)
-  ArrayGetS(Int)
-  ArrayGetU(Int)
-  ArraySet(Int)
+  StructNewDesc(Int32)
+  StructNewDefaultDesc(Int32)
+  RefGetDesc(Int32)
+  RefCastDescEq(@types.RefType[Int32])
+  BrOnCastDescEq(Int32, @types.RefType[Int32], @types.RefType[Int32])
+  BrOnCastDescEqFail(Int32, @types.RefType[Int32], @types.RefType[Int32])
+  StructNew(Int32)
+  StructNewDefault(Int32)
+  StructGet(Int32, Int32)
+  StructGetS(Int32, Int32)
+  StructGetU(Int32, Int32)
+  StructSet(Int32, Int32)
+  ArrayNew(Int32)
+  ArrayNewDefault(Int32)
+  ArrayNewFixed(Int32, Int32)
+  ArrayNewData(Int32, Int32)
+  ArrayNewElem(Int32, Int32)
+  ArrayGet(Int32)
+  ArrayGetS(Int32)
+  ArrayGetU(Int32)
+  ArraySet(Int32)
   ArrayLen
-  ArrayFill(Int)
-  ArrayCopy(Int, Int)
-  ArrayInitData(Int, Int)
-  ArrayInitElem(Int, Int)
-  RefTest(@types.RefType[Int])
-  RefCast(@types.RefType[Int])
-  BrOnCast(Int, @types.RefType[Int], @types.RefType[Int])
-  BrOnCastFail(Int, @types.RefType[Int], @types.RefType[Int])
+  ArrayFill(Int32)
+  ArrayCopy(Int32, Int32)
+  ArrayInitData(Int32, Int32)
+  ArrayInitElem(Int32, Int32)
+  RefTest(@types.RefType[Int32])
+  RefCast(@types.RefType[Int32])
+  BrOnCast(Int32, @types.RefType[Int32], @types.RefType[Int32])
+  BrOnCastFail(Int32, @types.RefType[Int32], @types.RefType[Int32])
   RefI31
   I31GetS
   I31GetU
   AnyConvertExtern
   ExternConvertAny
   V128Const(Bytes)
-  V128Load(Int, Int, Int64)
-  V128Load8x8S(Int, Int, Int64)
-  V128Load8x8U(Int, Int, Int64)
-  V128Load16x4S(Int, Int, Int64)
-  V128Load16x4U(Int, Int, Int64)
-  V128Load32x2S(Int, Int, Int64)
-  V128Load32x2U(Int, Int, Int64)
-  V128Load8Splat(Int, Int, Int64)
-  V128Load16Splat(Int, Int, Int64)
-  V128Load32Splat(Int, Int, Int64)
-  V128Load64Splat(Int, Int, Int64)
-  V128Load32Zero(Int, Int, Int64)
-  V128Load64Zero(Int, Int, Int64)
-  V128Store(Int, Int, Int64)
-  V128Load8Lane(Int, Int, Int64, Int)
-  V128Load16Lane(Int, Int, Int64, Int)
-  V128Load32Lane(Int, Int, Int64, Int)
-  V128Load64Lane(Int, Int, Int64, Int)
-  V128Store8Lane(Int, Int, Int64, Int)
-  V128Store16Lane(Int, Int, Int64, Int)
-  V128Store32Lane(Int, Int, Int64, Int)
-  V128Store64Lane(Int, Int, Int64, Int)
-  I8x16Shuffle(FixedArray[Int])
+  V128Load(Int32, Int32, Int64)
+  V128Load8x8S(Int32, Int32, Int64)
+  V128Load8x8U(Int32, Int32, Int64)
+  V128Load16x4S(Int32, Int32, Int64)
+  V128Load16x4U(Int32, Int32, Int64)
+  V128Load32x2S(Int32, Int32, Int64)
+  V128Load32x2U(Int32, Int32, Int64)
+  V128Load8Splat(Int32, Int32, Int64)
+  V128Load16Splat(Int32, Int32, Int64)
+  V128Load32Splat(Int32, Int32, Int64)
+  V128Load64Splat(Int32, Int32, Int64)
+  V128Load32Zero(Int32, Int32, Int64)
+  V128Load64Zero(Int32, Int32, Int64)
+  V128Store(Int32, Int32, Int64)
+  V128Load8Lane(Int32, Int32, Int64, Int32)
+  V128Load16Lane(Int32, Int32, Int64, Int32)
+  V128Load32Lane(Int32, Int32, Int64, Int32)
+  V128Load64Lane(Int32, Int32, Int64, Int32)
+  V128Store8Lane(Int32, Int32, Int64, Int32)
+  V128Store16Lane(Int32, Int32, Int64, Int32)
+  V128Store32Lane(Int32, Int32, Int64, Int32)
+  V128Store64Lane(Int32, Int32, Int64, Int32)
+  I8x16Shuffle(FixedArray[Int32])
   I8x16Swizzle
   I8x16Splat
   I16x8Splat
@@ -452,20 +452,20 @@ pub(all) enum Instruction {
   I64x2Splat
   F32x4Splat
   F64x2Splat
-  I8x16ExtractLaneS(Int)
-  I8x16ExtractLaneU(Int)
-  I16x8ExtractLaneS(Int)
-  I16x8ExtractLaneU(Int)
-  I32x4ExtractLane(Int)
-  I64x2ExtractLane(Int)
-  F32x4ExtractLane(Int)
-  F64x2ExtractLane(Int)
-  I8x16ReplaceLane(Int)
-  I16x8ReplaceLane(Int)
-  I32x4ReplaceLane(Int)
-  I64x2ReplaceLane(Int)
-  F32x4ReplaceLane(Int)
-  F64x2ReplaceLane(Int)
+  I8x16ExtractLaneS(Int32)
+  I8x16ExtractLaneU(Int32)
+  I16x8ExtractLaneS(Int32)
+  I16x8ExtractLaneU(Int32)
+  I32x4ExtractLane(Int32)
+  I64x2ExtractLane(Int32)
+  F32x4ExtractLane(Int32)
+  F64x2ExtractLane(Int32)
+  I8x16ReplaceLane(Int32)
+  I16x8ReplaceLane(Int32)
+  I32x4ReplaceLane(Int32)
+  I64x2ReplaceLane(Int32)
+  F32x4ReplaceLane(Int32)
+  F64x2ReplaceLane(Int32)
   I8x16Eq
   I8x16Ne
   I8x16LtS
@@ -687,79 +687,79 @@ pub(all) struct Module {
   types : Array[SubType]
   rec_groups : Array[RecGroup]
   imports : Array[Import]
-  funcs : Array[Int]
+  funcs : Array[Int32]
   tables : Array[Table]
   memories : Array[MemoryType]
   globals : Array[Global]
   exports : Array[Export]
-  mut start : Int?
+  mut start : Int32?
   elems : Array[Element]
   codes : Array[FunctionCode]
   datas : Array[Data]
   tags : Array[TagType]
   text : TextView
   names : Names
-  target_features : Array[(Int, Bytes)]
+  target_features : Array[(Int32, Bytes)]
 } derive(@debug.Debug)
 pub fn Module::empty() -> Self
 
 pub(all) struct Names {
   mut module_ : Bytes?
-  functions : Map[Int, Bytes]
-  locals : Map[Int, Map[Int, Bytes]]
-  labels : Map[Int, Map[Int, Bytes]]
-  types : Map[Int, Bytes]
-  tables : Map[Int, Bytes]
-  memories : Map[Int, Bytes]
-  globals : Map[Int, Bytes]
-  elem : Map[Int, Bytes]
-  data : Map[Int, Bytes]
-  fields : Map[Int, Map[Int, Bytes]]
-  tags : Map[Int, Bytes]
+  functions : Map[Int32, Bytes]
+  locals : Map[Int32, Map[Int32, Bytes]]
+  labels : Map[Int32, Map[Int32, Bytes]]
+  types : Map[Int32, Bytes]
+  tables : Map[Int32, Bytes]
+  memories : Map[Int32, Bytes]
+  globals : Map[Int32, Bytes]
+  elem : Map[Int32, Bytes]
+  data : Map[Int32, Bytes]
+  fields : Map[Int32, Map[Int32, Bytes]]
+  tags : Map[Int32, Bytes]
 } derive(@debug.Debug)
 pub fn Names::empty() -> Self
 
 pub(all) enum OnClause {
-  OnLabel(Int, Int)
-  OnSwitch(Int)
+  OnLabel(Int32, Int32)
+  OnSwitch(Int32)
 } derive(Eq, @debug.Debug)
 
 pub(all) enum ParamOwner {
-  OwnerFunc(Int)
-  OwnerTag(Int)
-  OwnerType(Int)
+  OwnerFunc(Int32)
+  OwnerTag(Int32)
+  OwnerType(Int32)
 } derive(Eq, Hash, @debug.Debug)
 
 pub(all) struct Priority {
-  compilation : Int
-  optimization : Int?
+  compilation : Int32
+  optimization : Int32?
 } derive(Eq, @debug.Debug)
 
 pub(all) struct RecGroup {
-  start : Int
-  len : Int
+  start : Int32
+  len : Int32
   explicit : Bool
 } derive(Eq, @debug.Debug)
 
 pub(all) struct Span {
-  start : Int
-  head : Int
-  end : Int
+  start : Int32
+  head : Int32
+  end : Int32
   loc : @basic.Location
 } derive(Eq, @debug.Debug)
 
 pub(all) struct StructType {
-  fields : Array[@types.MutType[@types.StorageType[Int]]]
+  fields : Array[@types.MutType[@types.StorageType[Int32]]]
 } derive(Eq, @debug.Debug)
 
 pub(all) struct SubType {
   final_ : Bool
-  supertypes : Array[Int]
-  descriptor : Int?
-  describes : Int?
+  supertypes : Array[Int32]
+  descriptor : Int32?
+  describes : Int32?
   composite : CompositeType
 } derive(Eq, @debug.Debug)
-pub fn SubType::func(Array[@types.ValType[Int]], Array[@types.ValType[Int]]) -> Self
+pub fn SubType::func(Array[@types.ValType[Int32]], Array[@types.ValType[Int32]]) -> Self
 pub fn SubType::simple(CompositeType) -> Self
 
 pub(all) struct Table {
@@ -769,21 +769,21 @@ pub(all) struct Table {
 } derive(Eq, @debug.Debug)
 
 pub(all) struct TableType {
-  elem_type : @types.RefType[Int]
+  elem_type : @types.RefType[Int32]
   limits : @types.Limits
 } derive(Eq, @debug.Debug)
 
 pub(all) struct TagType {
-  type_idx : Int
+  type_idx : Int32
 } derive(Eq, @debug.Debug)
 
 pub(all) struct TextView {
   field_order : Array[FieldRef]
   field_locs : Array[@basic.Location]
-  decl_param_names : Map[ParamOwner, Map[Int, Bytes]]
+  decl_param_names : Map[ParamOwner, Map[Int32, Bytes]]
   decl_typeuse : Map[ParamOwner, TypeUse]
-  standalone_exports : Map[Int, Bool]
-  named_types : Map[Int, Bool]
+  standalone_exports : Map[Int32, Bool]
+  named_types : Map[Int32, Bool]
   conditionals : Array[CondGroup]
 } derive(@debug.Debug)
 pub fn TextView::empty() -> Self
@@ -794,18 +794,18 @@ pub(all) struct TypeUse {
 } derive(Eq, @debug.Debug)
 
 // Type aliases
-pub type FieldType = @types.MutType[@types.StorageType[Int]]
+pub type FieldType = @types.MutType[@types.StorageType[Int32]]
 
-pub type GlobalType = @types.MutType[@types.ValType[Int]]
+pub type GlobalType = @types.MutType[@types.ValType[Int32]]
 
-pub type HeapType = @types.HeapType[Int]
+pub type HeapType = @types.HeapType[Int32]
 
 pub using @types {type Limits}
 
-pub type RefType = @types.RefType[Int]
+pub type RefType = @types.RefType[Int32]
 
-pub type StorageType = @types.StorageType[Int]
+pub type StorageType = @types.StorageType[Int32]
 
-pub type ValType = @types.ValType[Int]
+pub type ValType = @types.ValType[Int32]
 
 // Traits

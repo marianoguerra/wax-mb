@@ -6,7 +6,7 @@ import {
 }
 
 // Values
-pub fn access_bytes(Op) -> Int
+pub fn access_bytes(Op) -> Int32
 
 pub fn all() -> Array[Op]
 
@@ -14,19 +14,19 @@ pub fn families() -> Array[Family]
 
 pub fn family(Op) -> Family
 
-pub fn family_bytes(Family) -> Int
+pub fn family_bytes(Family) -> Int32
 
 pub fn method_name(Family) -> String
 
 pub fn name(Op) -> String
 
-pub fn natural_align_log2(Op) -> Int
+pub fn natural_align_log2(Op) -> Int32
 
 pub fn of_method_name(String) -> Family?
 
-pub fn of_opcode(Int) -> Op?
+pub fn of_opcode(Int32) -> Op?
 
-pub fn opcode(Op) -> Int
+pub fn opcode(Op) -> Int32
 
 pub fn signature(Op) -> (Array[NumTy], Array[NumTy])
 
@@ -76,7 +76,7 @@ pub(all) enum Width {
   W32
   W64
 } derive(Eq, Hash, @debug.Debug)
-pub fn Width::bytes(Self) -> Int
+pub fn Width::bytes(Self) -> Int32
 
 // Type aliases
 

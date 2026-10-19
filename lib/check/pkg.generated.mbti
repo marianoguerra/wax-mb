@@ -33,9 +33,9 @@ pub fn check_float_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@inf
 
 pub fn check_int_bin_op(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> @infer.Cell[@infer.InferredType]
 
-pub fn check_lane_immediate(@diagnostic.Context, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]) -> Unit
+pub fn check_lane_immediate(@diagnostic.Context, Int32, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]) -> Unit
 
-pub fn check_memarg(@diagnostic.Context, @types.AddressType, Int, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?) -> Unit
+pub fn check_memarg(@diagnostic.Context, @types.AddressType, Int32, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?) -> Unit
 
 pub fn check_module(@diagnostic.Context, @store.TypeStore, @feature.Set, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], simplify? : Bool, warn_unused? : Bool) -> (@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]])
 
@@ -113,7 +113,7 @@ pub fn join_value_types(@infer.Cell[@infer.InferredType], @infer.Cell[@infer.Inf
 
 pub fn label_in_scope(@env.ModuleContext, @ast.Ident) -> Bool
 
-pub fn lane_bound(@simd.Imm) -> Int?
+pub fn lane_bound(@simd.Imm) -> Int32?
 
 pub fn leave_function_scope(@env.ModuleContext) -> Unit
 
@@ -131,13 +131,13 @@ pub fn lookup_struct_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, loc
 
 pub fn mark_initialized(@env.ModuleContext, String) -> Unit
 
-pub fn max_memory_size(@types.AddressType, Int?) -> UInt64
+pub fn max_memory_size(@types.AddressType, Int32?) -> UInt64
 
 pub fn max_table_size(@types.AddressType) -> UInt64
 
-pub fn mem_lane_bound(Int) -> Int
+pub fn mem_lane_bound(Int32) -> Int32
 
-pub fn mem_natural_align(String) -> Int
+pub fn mem_natural_align(String) -> Int32
 
 pub fn memory_receiver(@env.ModuleContext, @ast.Ident) -> Bool
 
@@ -193,12 +193,12 @@ pub fn[Info] walk_fields(@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleF
 pub struct Checker {
   ctx : @env.ModuleContext
   ops : Operands
-  unpeeled : Map[String, Int]
+  unpeeled : Map[String, Int32]
   mut holes : HoleRun
 }
 pub fn Checker::check(Self, @infer.Cell[@infer.InferredType], @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::expression(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
-pub fn Checker::gaps(Self) -> Array[(String, Int)]
+pub fn Checker::gaps(Self) -> Array[(String, Int32)]
 pub fn Checker::new(@env.ModuleContext, Operands) -> Self
 pub fn Checker::statement(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 
@@ -220,10 +220,10 @@ pub struct Operands {
   mut stack : Stack
 }
 pub fn Operands::new() -> Self
-pub fn Operands::pop(Self, @store.SubtypingInfo, @diagnostic.Context, StackKind, @basic.Location, Int, Int, @infer.Cell[@infer.InferredType]) -> Unit
-pub fn Operands::pop_any(Self, @ref.Ref[MissingBatch?], Int, Int) -> @infer.Cell[@infer.InferredType]
+pub fn Operands::pop(Self, @store.SubtypingInfo, @diagnostic.Context, StackKind, @basic.Location, Int32, Int32, @infer.Cell[@infer.InferredType]) -> Unit
+pub fn Operands::pop_any(Self, @ref.Ref[MissingBatch?], Int32, Int32) -> @infer.Cell[@infer.InferredType]
 pub fn Operands::pop_args(Self, @store.SubtypingInfo, @diagnostic.Context, StackKind, @basic.Location, Array[@infer.Cell[@infer.InferredType]]) -> Unit
-pub fn Operands::pop_many(Self, Int) -> (Array[@infer.Cell[@infer.InferredType]], MissingBatch?)
+pub fn Operands::pop_many(Self, Int32) -> (Array[@infer.Cell[@infer.InferredType]], MissingBatch?)
 pub fn Operands::push(Self, @basic.Location?, @infer.Cell[@infer.InferredType]) -> Unit
 pub fn Operands::push_results(Self, @basic.Location, Array[@infer.Cell[@infer.InferredType]]) -> Unit
 pub fn Operands::set_unreachable(Self) -> Unit

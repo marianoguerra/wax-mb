@@ -2,21 +2,21 @@
 package "marianoguerra/wax/unicode"
 
 // Values
-pub fn char_width(Int, Char) -> Int
+pub fn char_width(Int32, Char) -> Int32
 
-pub fn escape_string(Bytes, hex_prefix? : String) -> (Int, String)
+pub fn escape_string(Bytes, hex_prefix? : String) -> (Int32, String)
 
-pub fn expand_tabs(String, offset? : Int) -> String
+pub fn expand_tabs(String, offset? : Int32) -> String
 
-pub fn first_confusable(Bytes) -> Int?
+pub fn first_confusable(Bytes) -> Int32?
 
-pub fn is_confusable(Int) -> Bool
+pub fn is_confusable(Int32) -> Bool
 
-pub fn tab_width(Int) -> Int
+pub fn tab_width(Int32) -> Int32
 
-pub fn terminal_width(String, offset? : Int) -> Int
+pub fn terminal_width(String, offset? : Int32) -> Int32
 
-pub fn utf8_bytes(String) -> Array[Int]
+pub fn utf8_bytes(String) -> Array[Int32]
 
 pub fn utf8_text(Bytes) -> String?
 

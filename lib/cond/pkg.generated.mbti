@@ -17,7 +17,7 @@ pub fn equal(T, T) -> Bool
 
 pub let false_ : T
 
-pub fn hash(T) -> Int
+pub fn hash(T) -> Int32
 
 pub fn is_satisfiable(T) -> Bool
 
@@ -35,13 +35,13 @@ pub let true_ : T
 type Atom derive(Eq, Hash, @debug.Debug)
 
 pub struct Env {
-  bool_vars : Map[String, Int]
-  version_vars : Map[String, Int]
-  string_vars : Map[String, Int]
-  names : Map[Int, String]
-  mut next_var : Int
+  bool_vars : Map[String, Int32]
+  version_vars : Map[String, Int32]
+  string_vars : Map[String, Int32]
+  names : Map[Int32, String]
+  mut next_var : Int32
   var_kind : Map[String, String]
-  reported : Map[(Int, Int), Unit]
+  reported : Map[(Int32, Int32), Unit]
 }
 pub fn Env::explain(Self, T, style? : Style) -> String?
 pub fn Env::new() -> Self
@@ -59,11 +59,11 @@ pub struct T {
 }
 
 pub(all) struct Version {
-  major : Int
-  minor : Int
-  patch : Int
+  major : Int32
+  minor : Int32
+  patch : Int32
 } derive(Eq, Hash, @debug.Debug)
-pub fn Version::compare_to(Self, Self) -> Int
+pub fn Version::compare_to(Self, Self) -> Int32
 pub impl Show for Version
 
 // Type aliases

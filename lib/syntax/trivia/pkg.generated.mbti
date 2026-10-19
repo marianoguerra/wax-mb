@@ -26,7 +26,7 @@ pub(all) struct Associated {
 pub struct Context {
   entries : Array[Entry]
   mut at_start_of_line : Bool
-  mut prev_token_end : Int
+  mut prev_token_end : Int32
   locations : Array[@basic.Location]
 }
 pub fn Context::entries(Self) -> ArrayView[Entry]
@@ -35,10 +35,10 @@ pub fn Context::new() -> Self
 pub fn Context::record_pos(Self, @basic.Location) -> Unit
 pub fn Context::report_item(Self, TriviaKind, @basic.Location, String) -> Unit
 pub fn Context::report_newline(Self) -> Unit
-pub fn Context::report_token(Self, Int) -> Unit
+pub fn Context::report_token(Self, Int32) -> Unit
 
 pub(all) struct Entry {
-  anchor : Int
+  anchor : Int32
   trivia : Trivia
   position : TriviaPos
 } derive(Eq, @debug.Debug)

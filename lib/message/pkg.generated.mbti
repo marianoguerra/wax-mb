@@ -19,7 +19,7 @@ pub fn group(Message) -> Message
 
 pub fn ident(String) -> Message
 
-pub fn int(Int) -> Message
+pub fn int(Int32) -> Message
 
 pub fn int64(Int64) -> Message
 

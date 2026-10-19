@@ -30,10 +30,10 @@ type Lowering
 pub fn Lowering::instr(Self, Array[@bin.Instruction], @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]) -> Unit raise LowerError
 
 type Space
-pub fn Space::get(Self, String) -> Int?
-pub fn Space::length(Self) -> Int
+pub fn Space::get(Self, String) -> Int32?
+pub fn Space::length(Self) -> Int32
 pub fn Space::new() -> Self
-pub fn Space::resolve(Self, String, Array[(Int, Bool)], (@basic.Location) -> Array[(Int, Bool)]) -> Int?
+pub fn Space::resolve(Self, String, Array[(Int32, Bool)], (@basic.Location) -> Array[(Int32, Bool)]) -> Int32?
 
 // Type aliases
 

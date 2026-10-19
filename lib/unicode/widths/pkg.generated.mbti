@@ -2,7 +2,7 @@
 package "marianoguerra/wax/unicode/widths"
 
 // Values
-pub fn get_width(Int) -> Int
+pub fn get_width(Int32) -> Int32
 
 // Errors
 

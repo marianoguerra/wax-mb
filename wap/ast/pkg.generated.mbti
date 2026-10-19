@@ -185,9 +185,9 @@ pub(all) enum Type {
 
 pub(all) enum TypeDef {
   Record(parent~ : String?, fields~ : Array[Field])
-  Enum(Array[(String, Int?)])
+  Enum(Array[(String, Int32?)])
   SetOf(String)
-  Subrange(low~ : Int, high~ : Int)
+  Subrange(low~ : Int32, high~ : Int32)
   Alias(Type)
 } derive(Eq, @debug.Debug)
 
