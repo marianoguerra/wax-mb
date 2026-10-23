@@ -8,9 +8,11 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
-## [Unreleased]
+## [0.4.0] — 2026-10-23
 
-Tracks the reference implementation from `209f43a` to `004d19e`.
+Covers `wax` and `wax-cli`. Tracks the reference implementation from `209f43a`
+to `004d19e`. A minor release because the API grew in ways an exhaustive
+`match` or a record literal notices (see Changed).
 
 ### Added
 
@@ -182,6 +184,25 @@ Tracks the reference implementation from `209f43a` to `004d19e`.
 
 - Recording a reference is constant time: a module where many functions use
   the same type or helper no longer pays a scan per reference.
+
+## [wap 0.4.0] — 2026-10-23
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.4.0`. No behaviour change of its own; a minor
+  release because its API names `wax` types, whose definitions grew.
+
+## [was 0.2.0] — 2026-10-23
+
+### Added
+
+- Prints the `wax` 0.4.0 forms a `was` tree can now hold: value-type aliases,
+  `type n = v;` and their uses, and the parenthesized ascription `(e : t)`.
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.4.0`, whose API grew; a minor release for the
+  same reason.
 
 ## [0.3.1] — 2026-10-19
 

@@ -24,9 +24,9 @@ version = "0.0.0"
 
 import {
   "marianoguerra/error-report@0.1.1",
-  "marianoguerra/wap@0.3.2",
-  "marianoguerra/was@0.1.3",
-  "marianoguerra/wax@0.3.1",
+  "marianoguerra/wap@0.4.0",
+  "marianoguerra/was@0.2.0",
+  "marianoguerra/wax@0.4.0",
   "moonbitlang/x@0.5.5",
   "marianoguerra/pretty-fast-pretty-printer@0.2.3",
 }
