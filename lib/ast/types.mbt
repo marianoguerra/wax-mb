@@ -129,6 +129,11 @@ pub(all) enum CastType {
   /// A numeric conversion that states signedness, e.g. `i32_s`. `strict` marks
   /// the trapping form, which rejects out-of-range values instead of saturating.
   Signed(typ~ : NumType, signage~ : Signage, strict~ : Bool)
+  /// The parenthesized type ascription `(e : t)`: a static assertion that
+  /// `e`'s type is a subtype of `t`, with result type `t`. Never lowers to an
+  /// instruction, and -- unlike a cast -- an ascribed bare hole claims no
+  /// pending value: it GROUNDS a value of type `t` off the polymorphic floor.
+  Ascribed(ValType)
 } derive(Eq, Debug)
 
 ///|

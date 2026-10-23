@@ -88,7 +88,15 @@ fn indirect_name_subsection(
 
 ///|
 /// The `name` section: twelve subsections, in ascending id order.
-fn encode_name_section(w : BinaryWriter, names : Names) -> Unit {
+///
+/// `label_names` false leaves the label names (subsection 3) out. It is part
+/// of the extended name section, which Binaryen's `wasm-opt` does not know and
+/// warns about.
+fn encode_name_section(
+  w : BinaryWriter,
+  names : Names,
+  label_names~ : Bool,
+) -> Unit {
   let b = BinaryWriter::new()
   if names.module_ is Some(name) {
     b.write_byte(0x00)
@@ -100,7 +108,9 @@ fn encode_name_section(w : BinaryWriter, names : Names) -> Unit {
   }
   name_subsection(b, 0x01, names.functions)
   indirect_name_subsection(b, 0x02, names.locals)
-  indirect_name_subsection(b, 0x03, names.labels)
+  if label_names {
+    indirect_name_subsection(b, 0x03, names.labels)
+  }
   name_subsection(b, 0x04, names.types)
   name_subsection(b, 0x05, names.tables)
   name_subsection(b, 0x06, names.memories)

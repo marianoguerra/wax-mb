@@ -1,2 +1,0 @@
-fn log_value(x: i32) {}
-// side effects only

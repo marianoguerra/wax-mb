@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__inferred.wax","startLine":9,"startColumn":6,"endLine":9,"endColumn":7,"startOffset":293,"endOffset":294,"message":"The global 'z' is never used.","warning":"unused-field","hint":null,"related":[]}

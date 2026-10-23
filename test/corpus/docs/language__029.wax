@@ -1,1 +1,2 @@
-cond ? val_true : val_false
+let x = (1 : i64);        // pin the literal's width
+(make_point() : &?any);   // widen the reference, no instruction

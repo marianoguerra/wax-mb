@@ -94,6 +94,7 @@ fn ref_none_valtype(nullable~ : Bool) -> @infer.InferredValType {
     typ: Ref({ nullable, typ: None_, }),
     internal: Ref({ nullable, typ: None_, }),
     anon_comptype: None,
+    type_alias: None,
   }
 }
 
@@ -105,6 +106,7 @@ pub fn ref_exn_valtype(nullable~ : Bool) -> @infer.InferredValType {
     typ: Ref({ nullable, typ: Exn, }),
     internal: Ref({ nullable, typ: Exn, }),
     anon_comptype: None,
+    type_alias: None,
   }
 }
 

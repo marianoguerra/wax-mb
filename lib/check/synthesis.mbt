@@ -27,6 +27,7 @@ pub fn Checker::expression(
   self : Checker,
   i : @ast.Instr[@basic.Location],
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  self.note_start(i)
   match i.desc {
     // A statement that yields nothing, standing where a value is wanted.
     // Reported, then recovered with a poison value so nothing below cascades.
@@ -87,6 +88,24 @@ pub fn Checker::expression(
     // `Collecting` cell IS the recording. Passing the cell in is the whole of
     // it -- which is why these arms hand the same node builders the statement
     // path uses, with one cell in place of the declared results.
+    // An expression-position try draws nothing from a stack either, so a
+    // parameter is reported as for a block. The raw table then supplies its
+    // declared parameters to the body, as a block does; the legacy try types
+    // its body without them, so it reports what the body is missing.
+    TryTable(label~, typ~, catches~, block~) if !typ.params.is_empty() => {
+      parameterized_block_expression(self.ctx.diagnostics, i.info)
+      guard self.signature_of(typ) is Some((params, results)) else {
+        return self.poisoned(i)
+      }
+      self.trytable_node(i, label, typ, catches, block, params, results)
+    }
+    Try(label~, typ~, block~, catches~, catch_all~) if !typ.params.is_empty() => {
+      parameterized_block_expression(self.ctx.diagnostics, i.info)
+      guard self.signature_of(typ) is Some((_, results)) else {
+        return self.poisoned(i)
+      }
+      self.try_node(i, label, typ, block, catches, catch_all, [], results)
+    }
     TryTable(label~, typ~, catches~, block~) =>
       match
         self.infer_synthesized(i, typ, (cs, r) => {
@@ -508,6 +527,29 @@ fn Checker::block_contents(
   results : Array[@infer.Cell[@infer.InferredType]],
   instrs : Array[@ast.Instr[@basic.Location]],
 ) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
+  // In a run, the selected side of each `#[if]` is typed in line, on this
+  // stack, as if written here -- its last instruction is this list's last
+  // when the `#[if]` is.
+  match self.select {
+    Some(sel) if instrs
+      .iter()
+      .any(i => i.desc is IfAnnotation(..) && sel.contains(if_key(i.info))) => {
+      let flat = []
+      let shapes = inline_selected(sel, instrs, flat)
+      let typed = self.block_contents_flat(results, flat)
+      self.regroup_selected(shapes, typed, Ref(0))
+    }
+    _ => self.block_contents_flat(results, instrs)
+  }
+}
+
+///|
+/// `block_contents`, for a list with no `#[if]` to lay out in line.
+fn Checker::block_contents_flat(
+  self : Checker,
+  results : Array[@infer.Cell[@infer.InferredType]],
+  instrs : Array[@ast.Instr[@basic.Location]],
+) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
   let out : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
   let n = instrs.length()
   for k in 0..<n {
@@ -551,6 +593,18 @@ fn Checker::block_contents(
     if self.ctx.warn_unused && reachable_before && lost_control && k + 1 < n {
       dead_code(self.ctx.diagnostics, instrs[k + 1].info, s.info)
     }
+    // What the list re-infers to (see `Reinfer`): a trailing statement CHECKED
+    // against the result reports its own; otherwise the value it left, read
+    // before the caller pops it against the result.
+    if k == n - 1 && !routed {
+      self.reinfer = match self.ops.stack {
+        Cons(_, tv, _) => reinfer_of_cell(tv)
+        _ => Diverges
+      }
+    }
+  }
+  if n == 0 {
+    self.reinfer = Diverges
   }
   out
 }

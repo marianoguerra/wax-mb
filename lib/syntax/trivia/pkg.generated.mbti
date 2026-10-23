@@ -29,6 +29,7 @@ pub struct Context {
   mut prev_token_end : Int32
   locations : Array[@basic.Location]
 }
+pub fn Context::drop_in_ranges(Self, Array[(Int32, Int32)]) -> Unit
 pub fn Context::entries(Self) -> ArrayView[Entry]
 pub fn Context::locations(Self) -> ArrayView[@basic.Location]
 pub fn Context::new() -> Self

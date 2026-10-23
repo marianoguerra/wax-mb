@@ -32,6 +32,11 @@ pub(all) struct InferredValType {
   /// but a diagnostic renders this inline (`[mut i8]`) rather than printing a
   /// name that means nothing to the reader.
   anon_comptype : @ast.CompType?
+  /// The value-type alias this value was declared with, `type n = v;`, when
+  /// it was: `typ` is what the alias stands for in the configuration being
+  /// typed, and the alias is what holds in every configuration -- so a
+  /// declaration inferred from the value is written with it.
+  type_alias : @ast.Ident?
 } derive(Eq)
 
 ///|
@@ -142,6 +147,7 @@ pub let i32_valtype : InferredValType = {
   typ: I32,
   internal: I32,
   anon_comptype: None,
+  type_alias: None,
 }
 
 ///|
@@ -149,6 +155,7 @@ pub let i64_valtype : InferredValType = {
   typ: I64,
   internal: I64,
   anon_comptype: None,
+  type_alias: None,
 }
 
 ///|
@@ -156,6 +163,7 @@ pub let f32_valtype : InferredValType = {
   typ: F32,
   internal: F32,
   anon_comptype: None,
+  type_alias: None,
 }
 
 ///|
@@ -163,6 +171,7 @@ pub let f64_valtype : InferredValType = {
   typ: F64,
   internal: F64,
   anon_comptype: None,
+  type_alias: None,
 }
 
 ///|

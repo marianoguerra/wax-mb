@@ -45,7 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent
 EXPECTED = ROOT / "wax/src/lib-wax/parser_messages.expected"
 GRAMMAR = ROOT / "lib/syntax/parser/parser.mbty"
 OUT = ROOT / "lib/syntax/parser/parser_messages.mbt"
-ERRSTATE = ROOT / "_build/native/debug/build/tools/errstate/errstate.exe"
+ERRSTATE = ROOT / "_build/native/debug/build/marianoguerra/wax-dev/tools/errstate/errstate.exe"
 
 # The terminals with no alias in the grammar: what a user actually types.
 # EOF is written as nothing at all -- our lexer appends it.
@@ -305,7 +305,7 @@ priv enum Entry {{
 /// Walks from the top frame down, deepening only where the table says the
 /// shallower key stands for more than one message.
 fn reference_message(stack : ArrayView[Int], signature : String) -> Message? {{
-  let key = StringBuilder::new()
+  let key = StringBuilder()
   for depth = 1; depth <= stack.length() && depth <= {max_depth}; depth = depth + 1 {{
     // The key reads bottom-up within the suffix, as the generator writes it.
     key.reset()

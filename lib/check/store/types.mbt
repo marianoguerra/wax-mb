@@ -167,6 +167,7 @@ fn[A, B] map_valtype(
     F64 => F64
     V128 => V128
     Ref({ nullable, typ, }) => Ref({ nullable, typ: map_heaptype(typ, f), })
+    Alias(a) => Alias(f(a))
   }
 }
 

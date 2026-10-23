@@ -319,6 +319,8 @@ pub fn[Info] declare_fields(
   ctx : @typing_env.ModuleContext,
   fields : Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]],
 ) -> Unit {
+  // Aliases before types: a type definition may use one.
+  declare_aliases(ctx, fields)
   walk_fields(ctx, fields, field => {
     if field.desc is Type(group) {
       let _ = add_type(ctx.type_context, ctx.diagnostics, group)
@@ -385,7 +387,11 @@ pub fn[Info] declare_fields(
         ctx.elems.add(ctx.diagnostics, name.name, name.loc, reftype)
       // Globals are registered as they are checked, in order, so an initializer
       // sees the globals declared before it and not those after.
-      Conditional(..) | Type(_) | Global(..) | ModuleAnnotation(_) => ()
+      Conditional(..)
+      | Type(_)
+      | TypeAlias(..)
+      | Global(..)
+      | ModuleAnnotation(_) => ()
     }
   })
 }

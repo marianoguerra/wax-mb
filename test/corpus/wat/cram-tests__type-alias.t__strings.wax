@@ -1,0 +1,36 @@
+type bytes = [mut i8];
+#[if(use_js_string)]
+{
+    type str = &?extern;
+}
+#[else]
+{
+    type str = &bytes;
+}
+type custom_operations = { id: str, len: i32 };
+#[if(use_js_string)]
+{
+    import "js"
+    #[import = "length"]
+    fn str_length(&?extern) -> i32;
+}
+#[else]
+{
+    fn str_length(s: &bytes) -> i32 {
+        s.length();
+    }
+}
+#[export]
+fn ops_length(o: &custom_operations) -> i32 {
+    str_length(o.id);
+}
+fn nat(x: str) -> i32 {
+    #[if(use_js_string)]
+    {
+        return !x;
+    }
+    #[else]
+    {
+        return x.length();
+    }
+}

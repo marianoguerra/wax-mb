@@ -282,7 +282,7 @@ fn message_fits(message : String, signature : String) -> Bool {
 /// acceptable *symbols*, nonterminals included, so it says "an expression"
 /// where we can only enumerate what an expression may start with -- but the
 /// rendering of the list itself is reproduced here: the class collapse, then
-/// sort-and-dedupe on the rendered text, then the Oxford-comma join.
+/// sort-and-dedupe on the rendered text, then the English join.
 ///
 /// Two pieces of the reference's rendering are deliberately absent:
 ///
@@ -335,14 +335,15 @@ fn expecting_message(expected : Array[TokenKind]) -> String {
 }
 
 ///|
-/// Join as English, with the Oxford comma: `a`, `a, or b`, `a, b, or c`.
+/// Join as English, with the Oxford comma: `a`, `a or b`, `a, b, or c`.
 ///
-/// Mirrors `format_human_list` in the reference's generator, including the
-/// comma before `or` in the two-item case.
+/// Mirrors `format_human_list` in the reference's generator: two items take no
+/// comma before `or`.
 fn human_list(items : Array[String]) -> String {
   match items {
     [] => ""
     [x] => x
+    [x, y] => x + " or " + y
     [.. rest, last] => rest.join(", ") + ", or " + last
   }
 }

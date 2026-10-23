@@ -1,0 +1,2 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__operands.wax","startLine":16,"startColumn":9,"endLine":16,"endColumn":10,"startOffset":180,"endOffset":181,"message":"The local variable 'x' is never used.","warning":"unused-local","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/cram/type-alias__operands.wax","startLine":16,"startColumn":12,"endLine":16,"endColumn":13,"startOffset":183,"endOffset":184,"message":"The local variable 'y' is never used.","warning":"unused-local","hint":null,"related":[]}

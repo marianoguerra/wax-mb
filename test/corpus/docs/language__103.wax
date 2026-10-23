@@ -1,1 +1,7 @@
-data table = "hdr" ++ [f32: 0.2, 0.3, 0.4] ++ [i16: -1, -2] ++ [i8: 1, 2, 3, 4];
+memory mem1: i64 {
+    data _ @ [0x1000] = "hello world";   // active, anonymous
+    data greeting @ [0x2000] = "hi";     // active, named
+}
+
+data seg = "raw\x00bytes";               // top-level passive segment
+data init @ mem0 [0] = "hello";          // top-level active segment

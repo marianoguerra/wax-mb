@@ -22,7 +22,60 @@ pub fn lower_module(
   /// Whether an unresolved `#[if(..)]` may be lowered rather than refused.
   /// Only the TEXT form may: the binary has nowhere to put one.
   keep_conditionals~ : Bool = false,
+  /// Rewrite the legacy `try`/`catch` into `try_table`.
+  try_table~ : Bool = false,
 ) -> @wasm_bin.Module raise LowerError {
+  // Lowered twice when the module has synthesized types of its own. Which
+  // ones it has, and the order the reference writes them in, is known only
+  // once everything has been lowered -- something has to refer to one for it
+  // to exist -- and their place in the type section comes before most of what
+  // the lowering assigns along the way. So a first lowering finds them, and a
+  // second one lays them out where the reference does.
+  let (first, seen) = lower_module_with(
+    ctx,
+    store,
+    source,
+    typed,
+    keep_conditionals~,
+    try_table~,
+    extras=[],
+  )
+  guard !seen.is_empty() else { return first }
+  // The reference folds over a hash table of them, consing each onto a list:
+  // the reverse of the order the fold visits them.
+  let order = ocaml_hashtbl_fold_order(seen)
+  order.rev_in_place()
+  lower_module_with(
+    ctx,
+    store,
+    source,
+    typed,
+    keep_conditionals~,
+    try_table~,
+    extras=order,
+  ).0
+}
+
+///|
+/// One lowering, with the synthesized types `extras` laid out after the
+/// declared ones; also returns the synthesized types it found owning an entry.
+fn lower_module_with(
+  ctx : @typing_env.ModuleContext,
+  store : @type_store.TypeStore,
+  source : @ast.Module[@basic.Location],
+  typed : Array[
+    @basic.Annotated[
+      @ast.ModuleField[@typing_env.InferredAnnotation],
+      @basic.Location,
+    ],
+  ],
+  /// Whether an unresolved `#[if(..)]` may be lowered rather than refused.
+  /// Only the TEXT form may: the binary has nowhere to put one.
+  keep_conditionals~ : Bool = false,
+  /// Rewrite the legacy `try`/`catch` into `try_table`.
+  try_table~ : Bool = false,
+  extras~ : Array[String],
+) -> (@wasm_bin.Module, Array[String]) raise LowerError {
   // A module with an UNRESOLVED conditional cannot be emitted at all, and the
   // check belongs here rather than at the first one reached: the reference
   // rejects the module, not the field, and stumbling further in produces a
@@ -55,12 +108,18 @@ pub fn lower_module(
   // The layout FIRST: it installs the store-to-emitted translation that every
   // type reference below is read through, including the ones inside the
   // annotations the checker left.
-  let layout = type_layout(ctx, source, store)
   let m = @wasm_bin.Module::empty()
   // The conditional groups before anything resolves a name: which declaration
   // of a name a reference means depends on which branch the reference stands
   // in, and that is read off these.
   note_conditionals(m, source)
+  let layout = type_layout(
+    ctx,
+    source,
+    store,
+    extras~,
+    conds=m.text.conditionals,
+  )
 
   let low : Lowering = {
     ctx,
@@ -69,10 +128,16 @@ pub fn lower_module(
     layout,
     locals: Map([]),
     local_types: [],
+    local_locs: [],
+    local_aliases: Map([]),
+    block_aliases: Map([]),
     entry_locs: Map([]),
     conditionals: m.text.conditionals,
     keep_conditionals,
+    try_table,
+    deferred_tags: [],
     body_conditionals: [],
+    clause_locs: Map([]),
     pending_start: None,
     spans: [],
     nested_spans: [],
@@ -111,6 +176,15 @@ pub fn lower_module(
     }
   }
   let mut failure : LowerError? = None
+  // An import may itself add an entry -- a GUARDED export of it is a field of
+  // its own -- and every entry needs its location, or the two fall out of step
+  // and nothing can be reordered or regrouped by where it stood.
+  fn catch_up(at : @basic.Location) -> Unit {
+    for k in order_at.length()..<m.text.field_order.length() {
+      order_at.push(low.entry_locs.get(k).unwrap_or(at))
+    }
+  }
+
   @typing.walk_fields(ctx, source, field => {
     if failure is Some(_) {
       return
@@ -119,6 +193,7 @@ pub fn lower_module(
       match field.desc {
         Import(module_~, decl~) => {
           low.import_(m, module_.desc, decl.desc, field.info)
+          catch_up(field.info)
           m.text.field_order.push(FImport(m.imports.length() - 1))
           order_at.push(field.info)
           low.flush_start(m, order_at, field.info)
@@ -132,6 +207,7 @@ pub fn lower_module(
           for d in decls {
             low.import_(m, module_.desc, d.desc, field.info)
           }
+          catch_up(field.info)
           low.compact_group(m, decls.length(), field.info)
           for k in before..<m.imports.length() {
             m.text.field_order.push(FImport(k))
@@ -160,6 +236,8 @@ pub fn lower_module(
   }
   for field in typed {
     let before = m.text.field_order.length()
+    // The site the field's references are read from.
+    layout.site = Some(field.info)
     low.field(m, field)
     for k in before..<m.text.field_order.length() {
       // Most entries stand where their field does. A guarded export stands
@@ -169,6 +247,13 @@ pub fn lower_module(
   }
   reorder_fields(m, order_at)
   low.declare_func_refs(m, source)
+  // The tags' inline signatures, now that every body has interned its block
+  // types: a shape the code already uses is reused, and one only a tag uses is
+  // appended after them.
+  for d in low.deferred_tags {
+    let (at, name, sign, loc) = d
+    m.tags[at] = { type_idx: low.tag_type_index(name, sign, loc), }
+  }
   // The type section LAST: a synthesized type is materialised when something
   // refers to it, so the section is not complete until everything has been
   // lowered. Its declared prefix was fixed before any of that, which is what
@@ -188,10 +273,20 @@ pub fn lower_module(
   for at, _ in layout.referenced {
     m.text.named_types[at] = true
   }
+  // A synthesized type written as a field is written as its definition was:
+  // a function's own signature keeps its parameter names and its aliases.
+  for name, at in layout.by_name {
+    if is_synthetic(name) &&
+      layout.referenced.contains(at) &&
+      ctx.type_context.types.find_no_mark(name) is Some((_, sub)) &&
+      ctx.type_context.written_form(name, sub).typ is Func(ft) {
+      note_param_names(m, OwnerType(at), Some(ft))
+    }
+  }
   low.type_names(m)
   low.module_name(m, source)
   low.target_features(m, source)
-  m
+  (m, layout.extras_seen)
 }
 
 ///|
@@ -211,6 +306,7 @@ fn Lowering::flush_start(
   if a.attr_guard is Some(g) {
     m.text.conditionals.push({
       cond: wat_cond(g.desc),
+      tree: g.desc,
       loc: a.attr_span,
       then_: a.attr_span,
       else_: None,
@@ -317,6 +413,7 @@ fn note_conditionals(
     }
     m.text.conditionals.push({
       cond: wat_cond(cond),
+      tree: cond,
       loc: field.info,
       then_: then_fields.info,
       else_: else_fields.map(e => e.info),
@@ -460,8 +557,24 @@ fn Lowering::field(
       let fi = imports_so_far(m, 0) + m.funcs.length() - 1
       note_name(m.names.functions, fi, name.name)
       note_typeuse(m, OwnerFunc(fi), typ, sign)
+      if sign is Some(s) {
+        note_signature_aliases(m, OwnerFunc(fi), s)
+      }
       let code = self.function_body(entry.0, sign, body.0, body.1, loc)
-      m.codes.push({ ..code, priority: function_priority(attributes), })
+      let param_locs : Map[Int32, (@basic.Location, @basic.Location)] = Map([])
+      if sign is Some(s) {
+        for k, p in s.params {
+          if p.desc.0 is Some(pn) {
+            param_locs[k] = (p.info, pn.loc)
+          }
+        }
+      }
+      m.codes.push({
+        ..code,
+        name_loc: name.loc,
+        param_locs,
+        priority: function_priority(attributes),
+      })
       m.text.field_order.push(FFunc(m.codes.length() - 1))
       // The local names belong to the function that just closed over them.
       if !self.local_names.is_empty() {
@@ -469,6 +582,12 @@ fn Lowering::field(
       }
       if !self.label_names.is_empty() {
         m.names.labels[fi] = self.label_names
+      }
+      for slot, a in self.local_aliases {
+        m.text.alias_uses[SiteLocal(fi, slot)] = utf8_of(a)
+      }
+      for n, a in self.block_aliases {
+        m.text.alias_uses[SiteBlock(fi, n)] = utf8_of(a)
       }
       self.export_of(m, attributes, Func(fi), name)
       // `#[start]` names the function that runs at instantiation. A module has
@@ -483,6 +602,7 @@ fn Lowering::field(
             self.entry_locs[m.text.field_order.length()] = a.attr_span
             m.text.conditionals.push({
               cond: wat_cond(g.desc),
+              tree: g.desc,
               loc: a.attr_span,
               then_: a.attr_span,
               else_: None,
@@ -508,6 +628,16 @@ fn Lowering::field(
       let (init, init_spans) = self.const_expr(def)
       let gi = imports_so_far(m, 3) + m.globals.length()
       note_name(m.names.globals, gi, name.name)
+      // As for a `let`, a value of an alias's type declares the global with
+      // the alias.
+      let written = match typ {
+        Some(Alias(a)) => Some(a)
+        Some(_) => None
+        None => node_alias(def)
+      }
+      if written is Some(a) {
+        m.text.alias_uses[SiteGlobal(gi)] = utf8_of(a.name)
+      }
       m.globals.push({ type_: { mut_, typ: ty, }, init, init_spans, })
       m.text.field_order.push(FGlobal(m.globals.length() - 1))
       self.export_of(m, attributes, Global(gi), name)
@@ -586,12 +716,16 @@ fn Lowering::field(
       // A tag that NAMES its type means that declaration, not whichever
       // like-shaped one the signature search happens to reach first.
       m.text.field_order.push(FTag(m.tags.length()))
-      m.tags.push({
-        type_idx: match typ {
-          Some(n) => self.type_index_of(n, loc)
-          None => self.tag_type_index(name, loc)
-        },
-      })
+      // A signature written inline is resolved once the code is lowered (see
+      // `deferred_tags`); a named one is the declaration it names.
+      let type_idx = match typ {
+        Some(n) => self.type_index_of(n, loc)
+        None => {
+          self.deferred_tags.push((m.tags.length(), name, sign, loc))
+          -1
+        }
+      }
+      m.tags.push({ type_idx, })
       self.export_of(m, attributes, Tag(self.tag_index(name, loc)), name)
     }
     Elem(name~, reftype~, mode~, init~, ..) => {
@@ -658,11 +792,23 @@ fn Lowering::field(
       for d in decls {
         let ti = self.type_index_of(d.desc.0, d.info)
         placed.push(ti)
+        m.text.type_name_locs[ti] = d.desc.0.loc
         // A declared function type may NAME its parameters, and the type
         // section has nowhere to put a name.
         if d.desc.1.typ is Func(ft) {
           note_param_names(m, OwnerType(ti), Some(ft))
         }
+        // As written, a `..` splice expanded: the inherited fields are written
+        // as the parent writes them.
+        note_field_aliases(
+          m,
+          ti,
+          match self.ctx.type_context.types.find_no_mark(d.desc.0.name) {
+            Some((_, sub)) =>
+              self.ctx.type_context.written_form(d.desc.0.name, sub)
+            None => d.desc.1
+          },
+        )
       }
       m.text.field_order.push(FTypes(placed))
     }
@@ -671,6 +817,19 @@ fn Lowering::field(
     // format keeps. They are collected before the walk, not here, because the
     // reference writes them ALL first rather than where they stood.
     ModuleAnnotation(_) => ()
+    // An alias is notation: every use is expanded to the type it stands for, and
+    // the binary format has nowhere to put the alias itself. The text format
+    // keeps it, as a field where the source wrote it.
+    TypeAlias(name~, typ~) => {
+      let k = m.text.type_aliases.length()
+      m.text.type_aliases.push(
+        (utf8_of(name.name), self.valtype_index(typ, loc)),
+      )
+      if typ is Alias(a) {
+        m.text.alias_uses[SiteAlias(k)] = utf8_of(a.name)
+      }
+      m.text.field_order.push(FTypeAlias(k))
+    }
     _ => raise NotLowered(field_name(field.desc), loc)
   }
 }
@@ -691,6 +850,9 @@ fn Lowering::function_body(
 ) -> @wasm_bin.FunctionCode raise LowerError {
   self.locals = Map([])
   self.local_types = []
+  self.local_locs = []
+  self.local_aliases = Map([])
+  self.block_aliases = Map([])
   self.spans = []
   // A FRESH array, not a cleared one: the code built for the previous function
   // holds the array itself, so emptying it in place empties that function's
@@ -703,6 +865,7 @@ fn Lowering::function_body(
   self.label_counter = 0
   self.labels = []
   self.body_conditionals = []
+  self.clause_locs = Map([])
   self.in_body = true
   // A function that WROTE its parameters has them right there, and that is the
   // only answer that is certainly this function's. The checker's table is
@@ -724,6 +887,10 @@ fn Lowering::function_body(
       spans: self.spans,
       nested_spans: self.nested_spans,
       conditionals: self.body_conditionals,
+      local_locs: [],
+      clause_locs: self.clause_locs,
+      name_loc: @basic.dummy_loc,
+      param_locs: Map([]),
       priority: None,
     }
   }
@@ -745,6 +912,10 @@ fn Lowering::function_body(
     spans: self.spans,
     nested_spans: self.nested_spans,
     conditionals: self.body_conditionals,
+    local_locs: self.local_locs,
+    clause_locs: self.clause_locs,
+    name_loc: @basic.dummy_loc,
+    param_locs: Map([]),
     priority: None,
   }
 }
@@ -783,6 +954,13 @@ fn Lowering::collect_locals(
     i : @ast.Instr[@typing_env.InferredAnnotation],
   ) -> Unit raise LowerError {
     if i.desc is Let(bindings, init) {
+      // SEVERAL names are numbered after their initializer's own locals: the
+      // reference lowers the initializer first and then allocates the stores'.
+      // One name is numbered before, as its slot is reserved before it.
+      let several = bindings.length() > 1
+      if several && init is Some(e) {
+        visit(e)
+      }
       // Numbered in the order the `local.set`s HAPPEN, which is right to left:
       // the values are on the stack with the last on top, so the last binding
       // is written first and takes the lower slot. Numbering them as written
@@ -803,7 +981,9 @@ fn Lowering::collect_locals(
               Some(e) =>
                 if e.info.0.length() > k &&
                   @typing_env.standalone_valtype(e.info.0[k]) is Some(v) {
-                  Some(lower_valtype(v.internal))
+                  // By NAME where the type has one, as a written type is:
+                  // `let x = f` declares a `(ref $<func:f>)`.
+                  Some(inferred_valtype(v))
                 } else {
                   None
                 }
@@ -811,13 +991,35 @@ fn Lowering::collect_locals(
             }
         }
         guard ty is Some(ty) else { raise Unresolved("local type", i.info.1) }
+        // A value of an alias's type declares the local with the alias, so the
+        // local has the right type in every configuration.
+        let written = match b.1 {
+          Some(Alias(a)) => Some(a)
+          Some(_) => None
+          None =>
+            match init {
+              Some(e) if e.info.0.length() > k =>
+                match e.info.0[k].get() {
+                  Valtype({ type_alias, .. }) => type_alias
+                  _ => None
+                }
+              _ => None
+            }
+        }
+        if written is Some(a) {
+          self.local_aliases[next] = a.name
+        }
         // The slot is recorded against the BINDING, not the name: a shadowing
         // `let` must not be in scope for its own initializer, and only the
         // lowering knows when that moment has passed.
         self.claim_slot(name, next, i.info.1)
         note_name(self.local_names, next, self.claim_name(name.name))
         self.local_types.push(ty)
+        self.local_locs.push(name.loc)
         next = next + 1
+      }
+      if several {
+        return
       }
     }
     // A `match` arm BINDS the value it matched, and the binding is written in
@@ -835,6 +1037,7 @@ fn Lowering::collect_locals(
           self.claim_slot(bind, next, i.info.1)
           note_name(self.local_names, next, self.claim_name(bind.name))
           self.local_types.push(ty)
+          self.local_locs.push(bind.loc)
           next = next + 1
         }
       }
@@ -923,6 +1126,9 @@ fn Lowering::export_of(
     }
     let at = m.exports.length()
     m.exports.push({ name, desc, })
+    if a.attr_value is Some(v) {
+      m.text.export_locs[at] = v.info
+    }
     // A GUARDED export is a field of its own under its condition. A clause on
     // the thing exported has nowhere to put one.
     if a.attr_guard is Some(g) {
@@ -931,6 +1137,7 @@ fn Lowering::export_of(
       m.text.field_order.push(FExport(at))
       m.text.conditionals.push({
         cond: wat_cond(g.desc),
+        tree: g.desc,
         loc: a.attr_span,
         then_: a.attr_span,
         else_: None,
@@ -1049,11 +1256,11 @@ fn Lowering::import_(
     }
     // An imported tag that NAMES its type means that declaration, exactly as a
     // defined one does.
-    Tag(typ~, ..) =>
+    Tag(typ~, sign~) =>
       Tag(
         match typ {
           Some(n) => self.type_index_of(n, loc)
-          None => self.tag_type_index(decl.id, loc)
+          None => self.tag_type_index(decl.id, sign, loc)
         },
       )
   }
@@ -1068,7 +1275,12 @@ fn Lowering::import_(
       note_param_names(m, OwnerFunc(at), sign)
       note_typeuse(m, OwnerFunc(at), typ, sign)
     }
-    Global(..) => note_name(m.names.globals, at, decl.id.name)
+    Global(typ~, ..) => {
+      note_name(m.names.globals, at, decl.id.name)
+      if typ is Alias(a) {
+        m.text.alias_uses[SiteGlobal(at)] = utf8_of(a.name)
+      }
+    }
     Memory(..) => note_name(m.names.memories, at, decl.id.name)
     Table(..) => note_name(m.names.tables, at, decl.id.name)
     Tag(typ~, sign~) => {
@@ -1117,6 +1329,12 @@ fn Lowering::valtype_index(
     F64 => F64
     V128 => V128
     Ref(r) => Ref(self.reftype_index(r, loc))
+    // Expanded here: the binary format has no aliases.
+    Alias(a) =>
+      match self.ctx.type_context.unalias(v) {
+        Alias(_) => raise Unresolved("type alias " + a.name, loc)
+        t => self.valtype_index(t, loc)
+      }
   }
 }
 
@@ -1130,10 +1348,18 @@ fn Lowering::valtype_index(
 fn Lowering::tag_type_index(
   self : Lowering,
   name : @ast.Ident,
+  sign : @ast.FuncType?,
   loc : @basic.Location,
 ) -> Int32 raise LowerError {
-  guard self.ctx.tags.find_no_mark(name.name) is Some(ft) else {
-    raise Unresolved("tag signature", loc)
+  // The signature the declaration wrote: the table's answer for the name is
+  // one branch's when two branches declare it.
+  let ft = match sign {
+    Some(s) => s
+    None =>
+      match self.ctx.tags.find_no_mark(name.name) {
+        Some(ft) => ft
+        None => raise Unresolved("tag signature", loc)
+      }
   }
   let params : Array[@wasm_types.ValType[Int32]] = []
   for p in ft.params {
@@ -1143,10 +1369,14 @@ fn Lowering::tag_type_index(
   for r in ft.results {
     results.push(self.valtype_index(r, loc))
   }
-  guard self.functypes.get((params, results)) is Some(i) else {
-    raise Unresolved("tag type", loc)
+  match self.functypes.get((params, results)) {
+    Some(i) => i
+    None =>
+      match emitted_shape_index(params, results) {
+        Some(i) => i
+        None => raise Unresolved("tag type", loc)
+      }
   }
-  i
 }
 
 ///|
@@ -1155,7 +1385,8 @@ fn Lowering::tag_index(
   name : @ast.Ident,
   loc : @basic.Location,
 ) -> Int32 raise LowerError {
-  match self.indices.tags.get(name.name) {
+  // From where the name was written: two branches may each declare it.
+  match self.resolve(self.indices.tags, name.name, name.loc) {
     Some(i) => i
     None => raise Unresolved("tag index", loc)
   }
@@ -1354,6 +1585,7 @@ fn note_param_names(
   sign : @ast.FuncType?,
 ) -> Unit {
   guard sign is Some(ft) else { return }
+  note_signature_aliases(m, owner, ft)
   let names : Map[Int32, Bytes] = Map([])
   for k, p in ft.params {
     if p.desc.0 is Some(id) {
@@ -1366,12 +1598,57 @@ fn note_param_names(
 }
 
 ///|
+/// Record which parameters and results a signature wrote with an alias, for
+/// the text form (see `TextView::alias_uses`).
+fn note_signature_aliases(
+  m : @wasm_bin.Module,
+  owner : @wasm_bin.ParamOwner,
+  ft : @ast.FuncType,
+) -> Unit {
+  for k, p in ft.params {
+    if p.desc.1 is Alias(a) {
+      m.text.alias_uses[SiteParam(owner, k)] = utf8_of(a.name)
+    }
+  }
+  for k, r in ft.results {
+    if r is Alias(a) {
+      m.text.alias_uses[SiteResult(owner, k)] = utf8_of(a.name)
+    }
+  }
+}
+
+///|
+/// Record which fields of a declared struct or array type were written with an
+/// alias, for the text form.
+fn note_field_aliases(
+  m : @wasm_bin.Module,
+  ti : Int32,
+  sub : @ast.SubType,
+) -> Unit {
+  match sub.typ {
+    Struct(fields) =>
+      for k, f in fields {
+        m.text.field_spans[(ti, k)] = (f.info, f.desc.0.loc)
+        if f.desc.1.typ is Value(Alias(a)) {
+          m.text.alias_uses[SiteField(ti, k)] = utf8_of(a.name)
+        }
+      }
+    Array(f) =>
+      if f.typ is Value(Alias(a)) {
+        m.text.alias_uses[SiteElement(ti)] = utf8_of(a.name)
+      }
+    Func(_) | Cont(_) => ()
+  }
+}
+
+///|
 /// A readable name for a module field, for the "not lowered" report.
 fn field_name(f : @ast.ModuleField[@typing_env.InferredAnnotation]) -> String {
   match f {
     Func(..) => "function"
     Global(..) => "global"
     Type(_) => "type"
+    TypeAlias(..) => "type alias"
     Tag(..) => "tag"
     Memory(..) => "memory"
     Table(..) => "table"
@@ -1406,18 +1683,13 @@ fn Lowering::declare_func_refs(
       return
     }
   }
-  // LAST reference first, which matches the reference on more modules than
-  // first-seen does but not on all of them: its own order is a hash table's
-  // iteration order, which is neither. Reproducing that exactly would mean
-  // reimplementing OCaml's string hashing and bucket layout, and the segment's
-  // order is observable, so a handful of modules stay different for this
-  // reason alone.
-  //
-  // Re-measured after the text printer landed, since it reads this order too:
-  // first-seen costs 3 files their bytes and 3 more their text.
+  // In the reference's order, which is a hash table's: it folds over the table
+  // of the functions bodies reference, consing each onto a list -- so the
+  // segment lists them in the REVERSE of the order the fold visits them.
   let init : Array[Array[@wasm_bin.Instruction]] = []
-  for k = self.func_refs_in_body.length() - 1; k >= 0; k = k - 1 {
-    let name = self.func_refs_in_body[k]
+  let visited = ocaml_hashtbl_fold_order(self.func_refs_in_body)
+  for k = visited.length() - 1; k >= 0; k = k - 1 {
+    let name = visited[k]
     if self.func_refs_outside.contains(name) {
       continue
     }

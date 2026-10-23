@@ -48,8 +48,10 @@ fn enclosed(i : @wasm_bin.Instruction) -> Array[Array[@wasm_bin.Instruction]] {
     }
     // The wrappers are transparent: a hinted `if` is still an `if`, and the
     // bodies it guards are its own. Without this the hint swallowed them.
-    Hinted(_, inner) | Spelled(_, inner) | FromString(_, inner) =>
-      enclosed(inner)
+    Hinted(_, inner)
+    | Spelled(_, inner)
+    | FromString(_, inner)
+    | Unfolded(inner) => enclosed(inner)
     _ => []
   }
 }
@@ -220,8 +222,12 @@ fn takes_nothing(i : @wasm_bin.Instruction) -> Bool {
     | Nop
     | Unreachable => true
     // The wrappers are transparent: what they wrap is what runs.
-    Spelled(_, inner) | Hinted(_, inner) | FromChar(_, inner) =>
-      takes_nothing(inner)
+    Spelled(_, inner)
+    | Hinted(_, inner)
+    | FromChar(_, inner)
+    | InlineSignature(_, inner)
+    | AliasedResult(_, inner)
+    | Unfolded(inner) => takes_nothing(inner)
     _ => false
   }
 }

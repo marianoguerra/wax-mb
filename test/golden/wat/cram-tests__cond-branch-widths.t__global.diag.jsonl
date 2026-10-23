@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/wat/cram-tests__cond-branch-widths.t__global.wax","startLine":11,"startColumn":8,"endLine":11,"endColumn":9,"startOffset":87,"endOffset":88,"message":"The result of this expression is discarded, and computing it has no effect.","warning":"unused-result","hint":null,"related":[]}

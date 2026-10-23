@@ -167,6 +167,9 @@ fn[Info] Ctx::casttype(self : Ctx[Info], ty : @ast.CastType) -> Unit {
     }
     Signed(typ~, signage~, strict~) =>
       self.typ(@ast.format_signed_type(typ, signage, strict))
+    // Printed by the `Cast` case itself: the ascription is the parenthesized
+    // `(e : t)` form, not an `as`.
+    Ascribed(_) => abort("an ascription is printed by its Cast")
   }
 }
 

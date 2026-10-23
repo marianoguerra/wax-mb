@@ -1,12 +1,8 @@
 #[export = "factorial"]
 fn factorial(n: i32) -> i32 {
-    become factorial_helper(n, 1);
-}
-
-fn factorial_helper(n: i32, acc: i32) -> i32 {
     if n <=s 1 => i32 {
-        acc;
+        1;
     } else {
-        become factorial_helper(n - 1, n * acc);
+        n * factorial(n - 1);
     }
 }

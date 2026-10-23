@@ -1,0 +1,26 @@
+type f = fn();
+type c = open { func: &?f };
+#[if(mode = "a")]
+{
+    type d: c = open { .., g: i32 };
+    #[export]
+    fn get(x: &d) -> i32 {
+        x.g;
+    }
+    #[export]
+    fn make() -> &d {
+        { func: null, g: 1 };
+    }
+}
+#[else]
+{
+    type d = open { g: i64 };
+    #[export]
+    fn get(x: &d) -> i32 {
+        x.g as i32;
+    }
+    #[export]
+    fn make() -> &d {
+        { g: 2 };
+    }
+}

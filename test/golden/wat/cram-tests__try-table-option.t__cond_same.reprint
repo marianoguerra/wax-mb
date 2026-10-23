@@ -1,0 +1,17 @@
+#[if(wide)]
+{
+    tag e(i32);
+}
+#[else]
+{
+    tag e(i32);
+}
+fn f() {
+    try_legacy {
+    } catch {
+        e => {
+            _ = _;
+        }
+        _ => {}
+    }
+}

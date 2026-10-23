@@ -1,2 +1,3 @@
-p.x                         // read a field
-p.x = 42;                   // write a field (only if it is `mut`)
+fn make(x: i32, y: i32) -> &point {
+    {x, y: y + 1};              // same as {x: x, y: y + 1}
+}

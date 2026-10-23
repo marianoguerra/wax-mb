@@ -1,4 +1,5 @@
-while i <s n {
-    total = total + i;
-    i = i + 1;
+'outer: loop {
+    'inner: loop {
+        br 'outer;   // jump back to the start of the outer loop
+    }
 }

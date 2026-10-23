@@ -11,7 +11,7 @@ import {
 }
 
 // Values
-pub fn lower_module(@env.ModuleContext, @store.TypeStore, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]], keep_conditionals? : Bool) -> @bin.Module raise LowerError
+pub fn lower_module(@env.ModuleContext, @store.TypeStore, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]], keep_conditionals? : Bool, try_table? : Bool) -> @bin.Module raise LowerError
 
 // Errors
 pub suberror LowerError {

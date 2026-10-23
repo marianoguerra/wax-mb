@@ -316,6 +316,17 @@ fn Ctx::instr_desc(
     Labelled(l, v) => self.key_value(l.name, v, x => self.instr(Instruction, x))
 
     // -- casts and tests -----------------------------------------------------
+    // The ascription's own parentheses ARE its syntax, so it never needs the
+    // precedence-driven pair the `Cast` level would add.
+    Cast(v, Ascribed(t)) =>
+      self.p.box(indent=indent_level, () => {
+        self.punct("(")
+        self.instr(Instruction, v)
+        self.punct(" :")
+        self.space()
+        self.p.box(() => self.valtype(t))
+        self.punct(")")
+      })
     Cast(v, t) =>
       self.p.box(indent=indent_level, () => {
         self.instr(Cast, v)

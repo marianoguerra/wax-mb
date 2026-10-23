@@ -1,0 +1,5 @@
+#[if(debug)]
+{
+    fn f() {}
+}
+import "m" fn g();

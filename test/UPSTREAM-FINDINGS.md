@@ -226,11 +226,12 @@ reprints as
 ```
 
 so the comment now sits beside the function rather than inside it, and a second
-pass leaves it there. The reference is not idempotent on these two fixtures
-(`docs/language__127_checked.wax`, `docs/reference__129_checked.wax`).
+pass leaves it there. The reference is not idempotent on this fixture
+(`docs/language__130_checked.wax`; the reference page that held a second copy
+is gone from upstream's docs).
 
 Since Oracle 1 gates on byte-exact reprint parity, matching the reference means
-inheriting the instability. Both files are listed in `NON_IDEMPOTENT_UPSTREAM`
+inheriting the instability. It is listed in `NON_IDEMPOTENT_UPSTREAM`
 in `tools/waxdiff.py`, which fails if one of them ever becomes stable — so the
 day upstream fixes this, the harness says so rather than quietly diverging.
 

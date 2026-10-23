@@ -44,6 +44,25 @@ fn Lowering::type_names(self : Lowering, m : @wasm_bin.Module) -> Unit {
       m.names.types[i] = utf8_of(name)
     }
   }
+  // Every declaration of a name two branches declare is named, and its fields
+  // as its own branch wrote them.
+  for name, l in self.layout.decls {
+    for e in l {
+      if !m.names.types.contains(e.0) {
+        m.names.types[e.0] = utf8_of(name)
+      }
+      if self.layout.decl_written.get(e.0) is Some({ typ: Struct(fields), .. }) &&
+        !m.names.fields.contains(e.0) {
+        let per_field : Map[Int32, Bytes] = Map([])
+        for k, f in fields {
+          note_name(per_field, k, f.desc.0.name)
+        }
+        if !per_field.is_empty() {
+          m.names.fields[e.0] = per_field
+        }
+      }
+    }
+  }
   for entry in self.ctx.type_context.types.iter_entries() {
     let (name, (idx, sub)) = entry
     guard idx is Def(id) else { continue }

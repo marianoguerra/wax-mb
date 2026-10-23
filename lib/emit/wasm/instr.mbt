@@ -269,8 +269,11 @@ fn Lowering::hinted(
             // generator folds it -- `-40` is one instruction, not a subtraction
             // from zero. Only a bare literal folds; `--x` is a real
             // subtraction, and the checker has already told them apart.
+            // Only when the negation is REPRESENTABLE: a magnitude that is a
+            // valid unsigned constant but past the signed minimum -- u32 max
+            // as i32 -- is the general `0 - x`, of its unsigned bit pattern.
             Some(I32) =>
-              if a.desc is Int(s) {
+              if a.desc is Int(s) && parse_i64(s, loc) <= 0x80000000L {
                 // The MINUS is part of the spelling: `-0` and `0` are the same
                 // i32 and two different things to read.
                 out.push(
@@ -282,7 +285,11 @@ fn Lowering::hinted(
                 out.push(I32Sub)
               }
             Some(I64) =>
-              if a.desc is Int(s) {
+              if a.desc is Int(s) &&
+                (
+                  parse_i64(s, loc) >= 0L ||
+                  parse_i64(s, loc) == -9223372036854775808L
+                ) {
                 out.push(Spelled("-" + s, I64Const(-parse_i64(s, loc))))
               } else {
                 out.push(I64Const(0))
@@ -359,7 +366,24 @@ fn Lowering::hinted(
     Let(bindings, Some(init)) => {
       // The initializer is lowered BEFORE the names come into scope, so `let x
       // = x + 1` reads the outer `x` -- which is what the checker scoped it to.
+      let init_at = out.length()
+      let init_spans = self.spans.length()
       self.instr(out, init)
+      // SEVERAL bindings: the statement's location -- and the comments written
+      // before it -- go on the initializer, the first thing it emits, rather
+      // than on the stores that follow.
+      if bindings.length() > 1 {
+        let mut outer = -1
+        for j in init_spans..<self.spans.length() {
+          if self.spans[j].start == init_at &&
+            (outer < 0 || self.spans[j].end >= self.spans[outer].end) {
+            outer = j
+          }
+        }
+        if outer >= 0 {
+          self.spans[outer] = { ..self.spans[outer], loc, }
+        }
+      }
       for b in bindings {
         if b.0 is Some(name) {
           self.bind_local(name, loc)
@@ -390,19 +414,33 @@ fn Lowering::hinted(
           }
         }
         if many {
-          self.spans.push({ start: at, head: at, end: at + 1, loc, })
+          // Each store where its name was written; a drop, the statement.
+          let at_loc = match bindings[k].0 {
+            Some(name) if name.loc.start.cnum >= 0 => name.loc
+            _ => loc
+          }
+          self.spans.push({ start: at, head: at, end: at + 1, loc: at_loc, })
         }
       }
     }
-    Block(label~, typ~, block~) =>
+    Block(label~, typ~, block~) => {
+      self.note_block_alias(typ)
       out.push(Block(self.block_type(typ, loc), self.body(label, block.desc)))
-    Loop(label~, typ~, block~) =>
+    }
+    Loop(label~, typ~, block~) => {
+      self.note_block_alias(typ)
       out.push(Loop(self.block_type(typ, loc), self.body(label, block.desc)))
+    }
     If(label~, typ~, cond~, if_block~, else_block~) => {
       self.instr(out, cond)
       // An `if`/`else` is ONE block in the label space -- a `br` inside either
       // branch counts it once, and it carries one name -- so the label frame
       // is opened once around both bodies rather than once per body.
+      self.note_block_alias(typ)
+      self.clause_locs[self.label_counter] = (
+        if_block.info,
+        else_block.map(b => b.info).unwrap_or(@basic.dummy_loc),
+      )
       self.open_label(label)
       let then_ = self.instrs(if_block.desc)
       // Lowered even when there is none, so that an `if` always records TWO
@@ -434,6 +472,8 @@ fn Lowering::hinted(
       let tail : @wasm_bin.Instruction? = match last {
         Call(f) => Some(ReturnCall(f))
         CallIndirect(t, tab) => Some(ReturnCallIndirect(t, tab))
+        InlineSignature(ft, CallIndirect(t, tab)) =>
+          Some(InlineSignature(ft, ReturnCallIndirect(t, tab)))
         CallRef(t) => Some(ReturnCallRef(t))
         // An INTRINSIC is not a call and has no tail form: it is evaluated and
         // its result returned, which is what the source asked for anyway.
@@ -552,7 +592,7 @@ fn Lowering::hinted(
       // `v.add_i32x4(w)`, `v.extract_lane_s_i8x16(lane)`. The lane shape is in
       // the NAME, so the registry knows the whole instruction; what varies is
       // how many leading arguments are lane immediates rather than operands.
-      if callee.desc is StructGet(recv, meth) {
+      if callee.desc is StructGet(recv, meth) && receiver_is_value(recv) {
         if @simd.classify(meth.name) is Some(op) {
           let nimm = match op.imm {
             NoImm => 0
@@ -586,7 +626,7 @@ fn Lowering::hinted(
         // `array.len` takes NO immediate, so unlike its bulk-method siblings
         // it does not need a concrete element type: the abstract `array` heap
         // type and the bottom reference are receivers too.
-        if meth.name == "length" && receiver_is_array(recv) {
+        if meth.name == "length" && self.receiver_is_array(recv) {
           self.instr(out, recv)
           out.push(ArrayLen)
           return
@@ -606,7 +646,8 @@ fn Lowering::hinted(
       // The type comes from the RECEIVER, because that is where the
       // continuation is.
       if callee.desc is StructGet(recv, meth) {
-        if cont_method_instruction(meth.name) is Some(_) {
+        if cont_method_instruction(meth.name) is Some(_) &&
+          self.receiver_definition_is(recv, sub => sub is Cont(_)) {
           if node_type_index(recv) is Some(ct) {
             // Emission order is the payload arguments, then the continuation
             // receiver on top -- which is the operand order the instruction
@@ -628,7 +669,8 @@ fn Lowering::hinted(
       // table ones. What tells them apart is that the receiver is a VALUE of
       // array type rather than the name of a space, so the type index it
       // carries is the immediate.
-      if callee.desc is StructGet(recv, meth) {
+      if callee.desc is StructGet(recv, meth) &&
+        self.receiver_definition_is(recv, sub => sub is Array(_)) {
         if node_type_index(recv) is Some(at) {
           match meth.name {
             "fill" if args.length() == 3 => {
@@ -772,26 +814,35 @@ fn Lowering::hinted(
         handlers.push(self.catch_handler(c, loc))
       }
       let bt = self.block_type(typ, loc)
+      self.note_block_alias(typ)
       out.push(TryTable(bt, handlers, self.body(label, block.desc)))
     }
     // The DEPRECATED legacy handler. Unlike `try_table`, whose handlers are
     // immediates naming labels to branch to, these handlers are inline bodies
     // that run in place -- so each is lowered inside the try's own label frame,
     // which is the one frame the whole construct occupies.
+    Try(label~, typ~, block~, catches~, catch_all~) if self.try_table =>
+      self.legacy_try_table(out, loc, label, typ, block, catches, catch_all)
     Try(label~, typ~, block~, catches~, catch_all~) => {
       let bt = self.block_type(typ, loc)
-      let body = self.body(label, block.desc)
+      // A `try` and its handlers are ONE block in the label space -- a branch
+      // inside any of them counts it once, and it carries one name -- so the
+      // label frame is opened once around all of them, as an `if`'s is.
+      self.note_block_alias(typ)
+      self.open_label(label)
+      let body = self.instrs(block.desc)
       let handlers : Array[(Int32, Array[@wasm_bin.Instruction])] = []
       for c in catches {
         guard self.indices.tags.get(c.0.name) is Some(t) else {
           raise Unresolved("tag", loc)
         }
-        handlers.push((t, self.body(label, c.1.desc)))
+        handlers.push((t, self.instrs(c.1.desc)))
       }
       let all = match catch_all {
-        Some(b) => Some(self.body(label, b.desc))
+        Some(b) => Some(self.instrs(b.desc))
         None => None
       }
+      let _ = self.labels.pop()
       out.push(LegacyTry(bt, body, handlers, all))
     }
     // The structured form, which the checker validated against a lowering to
@@ -1000,6 +1051,27 @@ fn Lowering::hinted(
         self.instr(out, x)
       }
     }
+    // A type ascription `(e : t)` is a static assertion: no instruction.
+    // A `?:` ascribed an alias is a `select` of that type, whichever type the
+    // alias stands for.
+    Cast({ desc: Select(cond, a, b), .. }, Ascribed(Alias(al) as t)) => {
+      self.instr(out, a)
+      self.instr(out, b)
+      self.instr(out, cond)
+      out.push(
+        AliasedResult(
+          utf8_of(al.name),
+          SelectTyped([self.valtype_index(t, loc)]),
+        ),
+      )
+    }
+    Cast(operand, Ascribed(_)) => self.instr(out, operand)
+    // A cast to an alias is a cast to the type the checker resolved it to
+    // HERE: under a conditional, the alias stands for something else in each
+    // branch, and the table the lowering reads holds only one of them.
+    Cast(operand, Value(Alias(_))) if i.info.0 is [cell] &&
+      @typing_env.standalone_valtype(cell) is Some(iv) =>
+      self.instr(out, { ..i, desc: Cast(operand, Value(iv.typ)), })
     Cast(operand, target) => {
       // A cast to a CONTINUATION type is a compile-time ascription, not a
       // `ref.cast`: continuations carry no RTT, so there is nothing to test at
@@ -1058,7 +1130,9 @@ fn Lowering::hinted(
       // instruction: there is nothing on the stack to convert. Validation
       // accepts whatever follows, which is exactly why nothing has to be
       // invented here.
-      guard node_valtype(operand) is Some(operand_type) else { return }
+      // The operand's type only CHOOSES the instruction -- it is not written --
+      // so it is read without naming anything (see `node_valtype_quiet`).
+      guard node_valtype_quiet(operand) is Some(operand_type) else { return }
       let from = cast_prologue(out, operand_type, target)
       self.cast_instruction(out, from, target, i, loc)
     }
@@ -1084,11 +1158,22 @@ fn Lowering::hinted(
         Some(_) | None => out.push(Select)
       }
     }
-    Str(_, bytes) => {
+    Str(written, bytes) => {
       // A string literal is an ARRAY of its bytes, built one constant at a
       // time. There is no shortcut through a data segment: `array.new_data`
       // takes a segment the source named, and a literal names none.
-      let (t, f) = self.array_element_of(i, loc)
+      // One that names no type of its own is an `@string` in the reference's
+      // text, whose array type is found by shape rather than by name.
+      let (t, f) = match (written, node_valtype_internal(i)) {
+        (None, Some(Ref({ typ: Type(si), .. }))) => {
+          let sub = self.store.subtyping_info().get_subtype(si)
+          guard sub.typ is Array(f) else {
+            raise Unresolved("array definition", loc)
+          }
+          (emitted_store_index(si.to_int_for_tests_only()), f)
+        }
+        _ => self.array_element_of(i, loc)
+      }
       // An `i16` array holds code UNITS, so the bytes are decoded first; an
       // `i8` array holds the bytes as they stand.
       let units = if f.typ is Packed(I16) {
@@ -1287,6 +1372,7 @@ fn Lowering::hinted(
       }
       self.body_conditionals.push({
         cond: wat_cond(cond),
+        tree: cond,
         loc,
         then_: then_body.info,
         else_: else_body.map(b => b.info),
@@ -1350,6 +1436,15 @@ fn Lowering::instrs(
 }
 
 ///|
+/// Record that the block about to open writes its result with an alias, for
+/// the text form (see `AliasSite::SiteBlock`).
+fn Lowering::note_block_alias(self : Lowering, typ : @ast.FuncType) -> Unit {
+  if typ.params.is_empty() && typ.results is [Alias(a)] {
+    self.block_aliases[self.label_counter] = a.name
+  }
+}
+
+///|
 /// Enter a block, recording its label's name.
 ///
 /// Labels are numbered for the name section in the order the blocks OPEN, which
@@ -1383,6 +1478,7 @@ fn Lowering::block_type(
           // A block type IS a value type, and a reference is one -- its type
           // names just have to become indices first.
           Ref(rt) => Value(Ref(self.reftype_index(rt, loc)))
+          Alias(_) => Value(self.valtype_index(r, loc))
         }
       // Anything else needs a type INDEX: the inline forms only reach one
       // result and no parameters.
@@ -1565,9 +1661,19 @@ fn Lowering::indirect_call(
   args : Array[@ast.Instr[@typing_env.InferredAnnotation]],
   loc : @basic.Location,
 ) -> Bool raise LowerError {
+  let mut inline : @wasm_bin.FuncType? = None
   let (read, signature) = match callee.desc {
     Cast(inner, Value(Ref({ typ: Type(ft), .. }))) =>
       (inner, Some(self.type_index_of(ft, loc)))
+    // An inline signature is an inline typeuse, resolved by shape: it names
+    // no type, the synthesized one the cast minted included.
+    Cast(inner, Func(sign~, ..)) if inner.desc is ArrayGet(_, _) => {
+      let t = self.functype_of(sign, loc)
+      if self.layout.types.get(t) is Some({ composite: Func(ft), .. }) {
+        inline = Some(ft)
+      }
+      (inner, Some(t))
+    }
     // A bare read: the table's element type names the signature, so there is
     // nothing for a cast to add.
     ArrayGet(_, _) => (callee, None)
@@ -1587,7 +1693,12 @@ fn Lowering::indirect_call(
     self.instr(out, a)
   }
   self.instr(out, index)
-  out.push(CallIndirect(type_idx, tab))
+  out.push(
+    match inline {
+      Some(ft) => InlineSignature(ft, CallIndirect(type_idx, tab))
+      None => CallIndirect(type_idx, tab)
+    },
+  )
   true
 }
 
@@ -1852,11 +1963,38 @@ fn labelled_lane(
 /// Whether a receiver is something `array.len` accepts: a concrete array type,
 /// the abstract `array` heap type, or the bottom reference that is below it.
 /// The bulk methods need a real element type and are checked separately.
-fn receiver_is_array(recv : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
-  if node_type_index(recv) is Some(_) {
-    return true
-  }
+fn Lowering::receiver_is_array(
+  self : Lowering,
+  recv : @ast.Instr[@typing_env.InferredAnnotation],
+) -> Bool {
+  self.receiver_definition_is(recv, sub => sub is Array(_)) ||
   node_valtype(recv) is Some(Ref({ typ: Array | None_, .. }))
+}
+
+///|
+/// Whether the defined type a receiver refers to has the shape `pred` asks for.
+///
+/// What tells an array or continuation method from a call through a struct's
+/// function-pointer field of the same name -- `h.copy(1, 2, 3, 4)` on a struct
+/// with a `copy` field -- is the receiver's type, never the name or the
+/// argument count. That is the choice the checker made, so it is the one made
+/// here too.
+fn Lowering::receiver_definition_is(
+  self : Lowering,
+  recv : @ast.Instr[@typing_env.InferredAnnotation],
+  pred : (@type_store.CompType[@type_store.Id]) -> Bool,
+) -> Bool {
+  guard node_type_index(recv) is Some(t) else { return false }
+  let id = index_id(self.store, t, @basic.dummy_loc) catch { _ => return false }
+  pred(self.store.subtyping_info().get_subtype(id).typ)
+}
+
+///|
+/// Whether a method receiver is a VALUE rather than a reference: a scalar or
+/// SIMD intrinsic's receiver, as opposed to a struct whose same-named field is
+/// called indirectly.
+fn receiver_is_value(recv : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
+  !(node_valtype(recv) is Some(Ref(_)))
 }
 
 ///|
@@ -2016,6 +2154,161 @@ fn Lowering::depth(
 }
 
 ///|
+/// A legacy `try`, rewritten into a `try_table` wrapped in a ladder of blocks,
+/// one per handler (`--try-table`):
+///
+/// ```text
+/// block $t (type bt)              ;; the join, carrying the try's label
+///   block (param p) (result t_n)  ;; one block per handler, the last outermost
+///     ...
+///       block (param p) (result t_1)
+///         try_table (type bt) (catch tag_1 0) ... (catch_all n-1)
+///           body
+///         end
+///         br $t
+///       end
+///       handler_1
+///       br $t
+///     ...
+///   end
+///   handler_n                     ;; the last handler falls into the join
+/// end
+/// ```
+///
+/// Each handler receives its tag's payload exactly as the legacy `catch` does,
+/// and a branch to the try's label, from the body or a handler, now targets the
+/// join. The inserted blocks are unnamed.
+///
+/// Built in the order the reference converts the rewritten text, which is the
+/// order its block types are interned and its labels numbered: the join, the
+/// ladder blocks outermost first, the `try_table`, its body, then each handler.
+fn Lowering::legacy_try_table(
+  self : Lowering,
+  out : Array[@wasm_bin.Instruction],
+  loc : @basic.Location,
+  label : @ast.Ident?,
+  typ : @ast.FuncType,
+  block : @basic.Annotated[
+    Array[@ast.Instr[@typing_env.InferredAnnotation]],
+    @basic.Location,
+  ],
+  catches : Array[
+    (
+      @ast.Ident,
+      @basic.Annotated[
+        Array[@ast.Instr[@typing_env.InferredAnnotation]],
+        @basic.Location,
+      ],
+    ),
+  ],
+  catch_all : @basic.Annotated[
+    Array[@ast.Instr[@typing_env.InferredAnnotation]],
+    @basic.Location,
+  ]?,
+) -> Unit raise LowerError {
+  let handlers : Array[
+    (@ast.Ident?, Array[@ast.Instr[@typing_env.InferredAnnotation]]),
+  ] = catches.map(c => (Some(c.0), c.1.desc))
+  if catch_all is Some(b) {
+    handlers.push((None, b.desc))
+  }
+  let n = handlers.length()
+  if n == 0 {
+    let bt = self.block_type(typ, loc)
+    out.push(TryTable(bt, [], self.body(label, block.desc)))
+    return
+  }
+  // The try's parameters pass through every ladder block to the `try_table`;
+  // each ladder block yields its handler's payload.
+  let params = typ.params.map(p => { ..p, desc: (None, p.desc.1), })
+  let ladder_types : Array[@wasm_bin.BlockType] = Array::make(n, Empty)
+  let join_type = self.block_type(typ, loc)
+  self.open_label(label)
+  for k = n - 1; k >= 0; k = k - 1 {
+    let results = match handlers[k].0 {
+      Some(tag) =>
+        match self.ctx.tags.find_no_mark(tag.name) {
+          Some(sign) => sign.params.map(p => p.desc.1)
+          None => raise Unresolved("tag", tag.loc)
+        }
+      None => []
+    }
+    ladder_types[k] = self.block_type({ params, results, }, loc)
+    self.open_label(None)
+  }
+  let try_type = self.block_type(typ, loc)
+  let clauses : Array[@wasm_bin.CatchHandler] = []
+  for k, h in handlers {
+    match h.0 {
+      Some(tag) =>
+        match self.indices.tags.get(tag.name) {
+          Some(t) => clauses.push(Catch(t, k))
+          None => raise Unresolved("tag", loc)
+        }
+      None => clauses.push(CatchAll(k))
+    }
+  }
+  let body = self.body(None, block.desc)
+  // One synthesized instruction's span, in the body under construction. It
+  // was written nowhere, so it carries no location.
+  fn note(arr : Array[@wasm_bin.Instruction]) -> Unit {
+    let at = arr.length() - 1
+    self.spans.push({ start: at, head: at, end: at + 1, loc: @basic.dummy_loc, })
+  }
+
+  // The body of ladder block `k`, under construction: its spans are recorded
+  // as a list of their own, as every nested body's are.
+  let outer = self.spans
+  self.spans = []
+  let mut inner : Array[@wasm_bin.Instruction] = [
+    Unfolded(TryTable(try_type, clauses, body)),
+  ]
+  note(inner)
+  inner.push(Unfolded(Br(n)))
+  note(inner)
+  for k in 0..<n {
+    // Close ladder block `k` and continue in the one enclosing it: the next
+    // ladder block, or the join for the last handler.
+    self.nested_spans.push(self.spans)
+    let _ = self.labels.pop()
+    self.spans = []
+    let next : Array[@wasm_bin.Instruction] = [
+      Unfolded(Block(ladder_types[k], inner)),
+    ]
+    note(next)
+    for s in handlers[k].1 {
+      self.instr(next, s)
+    }
+    // The handler leaves through the join -- `n - k - 1` blocks out -- unless
+    // it is the last, which falls into it, or certainly diverges already.
+    let diverges = match next.last() {
+      Some(
+        Unreachable
+        | Br(_)
+        | BrTable(_, _)
+        | Return
+        | Throw(_)
+        | ThrowRef
+        | ReturnCall(_)
+        | ReturnCallRef(_)
+        | ReturnCallIndirect(_, _)
+        | InlineSignature(_, ReturnCallIndirect(_, _))
+      ) => true
+      _ => false
+    }
+    if k < n - 1 && !diverges {
+      next.push(Unfolded(Br(n - k - 1)))
+      note(next)
+    }
+    inner = next
+  }
+  self.nested_spans.push(self.spans)
+  let _ = self.labels.pop()
+  self.spans = outer
+  out.push(Block(join_type, inner))
+}
+
+///|
 /// One `try_table` catch clause.
 ///
 /// The handler branches OUT of the try, so its label is resolved in the
@@ -2126,7 +2419,14 @@ fn Lowering::type_index_of(
 ) -> Int32 raise LowerError {
   // By NAME first. Two declarations of one shape share a store entry but not an
   // emitted index, and a reference that names one of them means that one.
-  if self.layout.by_name.get(name.name) is Some(emitted) {
+  // From where the name was written: a name two branches declare means the
+  // declaration its own branch can see.
+  let site = if name.loc.start.cnum >= 0 {
+    Some(name.loc)
+  } else {
+    loc_opt(loc)
+  }
+  if self.layout.resolve_name(name.name, site) is Some(emitted) {
     return emitted
   }
   guard self.ctx.type_context.types.find_no_mark(name.name) is Some((idx, _)) else {
@@ -2135,6 +2435,16 @@ fn Lowering::type_index_of(
   match idx {
     Def(id) => emitted_type_index(id.to_int_for_tests_only())
     Rec(_) => raise Unresolved("rec-group type reference", loc)
+  }
+}
+
+///|
+/// A real location, or none for one that stands for nowhere.
+fn loc_opt(loc : @basic.Location) -> @basic.Location? {
+  if loc.start.cnum >= 0 {
+    Some(loc)
+  } else {
+    None
   }
 }
 

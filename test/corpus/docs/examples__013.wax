@@ -1,15 +1,19 @@
-type list = { value: i32, next: &?list };
+tag divide_by_zero();
+tag overflow();
 
-#[export = "make_node"]
-fn make_node(value: i32, next: &?list) -> &list {
-    {list| value, next};
+#[export = "safe_divide"]
+fn safe_divide(a: i32, b: i32) -> i32 {
+    if b == 0 {
+        throw divide_by_zero();
+    }
+    a /s b;
 }
 
-#[export = "sum_list"]
-fn sum_list(head: &?list) -> i32 {
-    if !head {
-        return 0;
+#[export = "try_divide"]
+fn try_divide(a: i32, b: i32) -> i32 {
+    try i32 {
+        safe_divide(a, b);
+    } catch {
+        divide_by_zero => { 0; }   // return 0 on division by zero
     }
-    let n = head!;
-    n.value + sum_list(n.next);
 }

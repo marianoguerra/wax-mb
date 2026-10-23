@@ -8,6 +8,181 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## [Unreleased]
+
+Tracks the reference implementation from `209f43a` to `004d19e`.
+
+### Added
+
+- **Value-type aliases**: `type word = i64;` names a value type, which is then
+  usable wherever a value type is expected. Defined differently in the
+  branches of an `#[if]`, an alias stands for a different type in each
+  configuration. A definition that is cyclic or names no type is reported once,
+  at the definition; an alias used where a heap type is expected (`&word`, a
+  supertype) is reported at the use; an alias nothing reachable uses is
+  reported as `unused-field`. Compiling to the binary format expands each alias
+  into the type it stands for.
+- **Type ascription** `(e : t)`: a static assertion that `e`'s type is a subtype
+  of `t`, with result type `t`. It compiles to nothing; an ascription that does
+  not hold is a compile-time error, and an ascribed bare hole takes its type
+  from the ascription rather than consuming a pending value.
+- **`--try-table`** rewrites the legacy exception-handling instructions (`try`
+  with `catch`/`catch_all`) into the standard `try_table` and a ladder of
+  blocks, for engines and tools that only accept the current proposal. On a
+  Wax-to-Wax conversion each `try_legacy` becomes a structured `try`. Library:
+  `Checked::to_bytes`/`to_wat`/`to_module` take `try_table`, and
+  `Checked::rewrite_legacy_try` is the Wax-level rewrite.
+- **`label_names`** on `compile_string`, `Checked::to_bytes` and
+  `@wasm_bin.encode`: `false` leaves the label names out of the `name` section,
+  which Binaryen's `wasm-opt` does not know and warns about.
+- **`dead-code`** also reports a `#[if]` branch no configuration can select.
+- A condition variable may be a keyword: `#[if(loop)]`.
+- **`wax-cli`**: `-v`/`--validate` checks a conversion with the lints on (unused
+  locals among them) and checks a same-format conversion that otherwise only
+  re-prints; with no input file the input is read from stdin, reported as `-`;
+  and with no `-f`, the output format is taken from the `-o` file's extension.
+- `Diagnostic` `Context::replay`, `TypeContext::unalias` and the alias table on
+  the checker's `TypeContext`.
+- `Session::check(suggest=true)` makes the suggestions; `@message.lazy_type`
+  renders a type when the message is shown; `check_subtypes` takes
+  `expected_at`.
+
+### Changed
+
+- A type may no longer be named after a packed storage type or a conversion
+  target (`i8`, `i16`, `i32_s`, …), as it already could not be named after a
+  value type.
+- A syntax error that expects one of two things no longer puts a comma before
+  "or": "expecting ';' or '}'". The parser messages are regenerated from the
+  pinned reference's.
+- custom-descriptors: a type and its descriptor must agree on finality.
+- `Checked::to_bytes`/`to_wat`/`to_module`, `lower_module`, `encode` and
+  `compile_string` gained optional arguments; existing calls are unaffected.
+  `ValType` gained `Alias`, `CastType` gained `Ascribed` and `ModuleField`
+  gained `TypeAlias`, so an exhaustive `match` on any of them needs an arm.
+- The lowered module carries more of the source for the text form, so code
+  that builds these records needs the new fields: `@wasm_bin.FunctionCode`
+  gained `local_locs`, `clause_locs`, `name_loc` and `param_locs`; `TextView`
+  gained `field_spans`, `export_locs` and `type_name_locs`; `CondGroup` gained
+  the condition as a `tree`. `AliasSite` gained `SiteLocal` and `SiteBlock`,
+  and `Instruction` the text-only wrappers `AliasedResult` and `Unfolded`,
+  which the encoder unwraps. In the checker, `InferredValType` gained
+  `type_alias`, and `TypeContext::written` keeps every declaration of a name
+  (`TypeContext::written_form` reads the right one).
+
+### Fixed
+
+- **A struct field took second place to a built-in method of the same name.**
+  `h.copy(1, 2, 3, 4)` on a struct with a `copy` field is a call through the
+  field, at any argument count; the checker and the lowering now both decide by
+  the receiver's type, which a field access receiver is resolved through too.
+- **A packed aggregate read bound without a signedness was accepted.**
+  `let x = arr[i]` on an `i8`/`i16` array, or `_ = r.f` on such a field, has no
+  lowering, and is now reported.
+- **The holes of a binary operator took their values in reverse.** `x; y;
+  _ + _ as i32` paired the first hole with `y`. A statement's pending values
+  are now popped together and each hole takes the slot its position in
+  emission order gives it, as the reference does, whatever order the operands
+  are typed in.
+- A legacy `try` taking block parameters in expression position is reported,
+  as a block, loop or `if` there is.
+- "Expected function type" is reported at the call's callee, not at the type
+  reference its declared type points at.
+- A source-shape lint (a discarded effect-free value) in a branch of a
+  conditional is reported, as it is in every configuration; and code after a
+  conditional that diverges in some configurations only is no longer reported
+  dead in all of them.
+- An element segment of non-null `(ref func)` uses the compact function-index
+  encoding, and a nullable `funcref` one no longer does.
+- The binary and text output now match the reference's on every module of the
+  differential corpus (oracle 2: 18 failures to 0). The orders that were left
+  different because they come from the reference's hash tables -- the
+  functions its synthesized `elem declare` lists, and the synthesized types
+  (`<func:f>`, `<fn:...>`, `<string>`) it adds to the type section -- are
+  reproduced by simulating OCaml's `Hashtbl` over its string hash. The other
+  differences fixed along the way: a type only a tag's signature uses comes
+  after the block types the code interns; an inline signature reuses only a
+  standalone final function type, not one in a rec group; a local inferred
+  from a value of a synthesized type declares it by name; an inline function
+  type cast is named by its signature, `<fn:i;->i;>`, so identical casts share
+  one; `(t[i] as &?fn(..))()` is a `call_indirect` with an inline signature; a
+  legacy `try` and its handlers are one label; and a synthesized function type
+  keeps its parameter names in the text output.
+- The text output keeps value-type aliases: `(@type $n v)` where one is
+  defined, and `(@type $n)` where a signature, a struct or array field or a
+  global was written with one.
+- A conversion to wasm or WAT stops at the first error, as the reference does;
+  `check` still reports them all.
+- Converting a module with an unresolved conditional to wasm reports it as a
+  located diagnostic with a hint, and a field access whose position differs
+  between configurations, a cast to a conditional alias, or a literal that takes
+  a conditional alias's type is rejected when converting, as it has no single
+  WebAssembly form.
+- **A module with unresolved conditionals is written as WAT as the reference
+  writes it** -- 160 of 160 such corpus modules, up from 129. A function body
+  holding `#[if]` groups is typed once per configuration it needs and each
+  branch is taken from the typing that selected it, so a parameter declared
+  with a conditional alias, or a trailing literal, has its branch's type; a name
+  two branches declare -- a type, a tag, an imported function's signature --
+  means the declaration its own branch can see; a type of one shape declared
+  in several branches is reused only where it is visible; and a value inferred
+  from one of a conditional alias's type (a `let`, a block result, a `?:`, a
+  global) is declared with the alias.
+- **Comments in the text output** stay where the reference puts them: after a
+  local's name, a struct field, a function's name, a parameter, an explicit
+  export name or a type's name; in an `if`'s `then`/`else`; inside an empty
+  body in a conditional; and before the initializer of a `let` with several
+  names, whose stores are numbered after the initializer's own locals.
+- The text output names the labels of an `if` whose condition holds a block in
+  the order the binary numbers them, breaks a long `(@if ...)` condition across
+  lines, and writes the blocks and branches `--try-table` inserts unfolded
+  (`block ... end`, `br 1`), as the reference does for what it adds.
+- A diagnostic about a statement's holes is reported where the reference makes
+  it, among the diagnostics of the operands around the hole; an unbound label
+  on `br_if`/`br_on_null` is reported; an attribute guard (`#[export, if(c)]`)
+  explores the configurations like an `#[if]`, and an attribute it guards is
+  checked in every configuration; and the values reaching a checked block's
+  exit are joined, so ones with no common supertype are reported.
+- In `{ descriptor(d) | ... }` the field values run before the descriptor, so a
+  local the descriptor reads may be initialized by a field and not the other
+  way round -- as for a call's callee and its arguments.
+- `-x` of a literal is folded into one constant only when the negation is
+  representable; `-18446744073709551615` as an `i64` is `0 - x`.
+- **The `suggestion` group is implemented**: `wax check` offers a redundant type
+  annotation (a `let`, each binding of a tuple `let`, a global, a block's or an
+  `if`'s result type, a construction's type name), a `x = x op e` that has the
+  compound form, and a field written `x: x`, each with a machine-applicable
+  edit, shown where `-W` enables them. A `let` annotation is redundant when what
+  the initializer would re-infer to on its own already equals it -- or, for a
+  binding nothing assigns, is a subtype of it.
+- **`redundant-operation` on arithmetic**: `x + 0`, `x * 1`, `x & x`, `x * 0`,
+  `x ^ x`, `x - x` and their kin are reported for integers (never for floats),
+  as is `-e` of a non-literal zero.
+- A type in a diagnostic is rendered when the diagnostic is shown, so a literal
+  still being inferred when it was reported reads as the type it settled to
+  ('i32' rather than 'number').
+- A hole in a global initializer that recovery dropped is still reported, at
+  the initializer; an unbound array type name is reported once; a `br_table`
+  listing one label several times checks and reports it once, pointing at the
+  label; and a caret under a wide character is as wide as the character.
+- **`wax-cli`**: an option given a value it does not accept is reported as the
+  reference reports it, the usage line then `wax: option '...': ...`.
+- **`-D NAME[=VALUE]`** resolves conditional compilation before checking: an
+  `#[if]` the defines decide is replaced by its surviving branch (whose
+  comments go with it), one they partly decide is kept with its condition
+  simplified, and attribute guards are resolved the same way. A bare name or
+  `true`/`false` sets a boolean, `A.B.C` a version, anything else a string.
+  Library: `parse_define`, `specialize_defines` and `type Define` on the root
+  and `compile` packages, and `@trivia.Context::drop_in_ranges`.
+- `become` on a stack-switching method (`become c.resume()`) is rejected, as it
+  already was on `k::new`.
+- All 103 in-scope cram tests pass, none excused.
+
+### Performance
+
+- Recording a reference is constant time: a module where many functions use
+  the same type or helper no longer pays a scan per reference.
+
 ## [0.3.1] — 2026-10-19
 
 Covers `wax` and `wax-cli`. A toolchain update and nothing else: no language,

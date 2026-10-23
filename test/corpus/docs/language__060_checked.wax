@@ -1,4 +1,3 @@
-fn divmod(a: i32, b: i32) -> (i32, i32) {
-    a /s b;
-    a %s b;
+fn log_value(x: i32) {
+    // side effects only
 }

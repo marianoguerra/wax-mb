@@ -53,7 +53,9 @@ fn declared_functype(
     is Some((_, def)) else {
     return None
   }
-  match def.typ {
+  // As written: a result or parameter declared with an alias is resolved where
+  // the body is checked, under its assumption, and gives its values the alias.
+  match as_written(ctx.type_context, tname, def).typ {
     Func(ft) => Some(ft)
     _ => {
       expected_func_type(ctx.diagnostics, name.loc)

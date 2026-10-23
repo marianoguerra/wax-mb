@@ -95,9 +95,30 @@ fn output_with_source(
       let num_annots = on_this_line.length()
       // A column measured in DISPLAY columns, not bytes: a wide glyph or a tab
       // ahead of the span shifts the caret.
+      // `col` counts BYTES of the UTF-8 source, as the position does; the line
+      // here is a string of characters, so the prefix is measured by walking
+      // its characters and counting what each takes in UTF-8.
       fn vis_col(col : Int32) -> Int32 {
-        let col = @cmp.minimum(raw_content.length(), col)
-        @unicode.terminal_width(raw_content.view(end_offset=col).to_owned())
+        let prefix = StringBuilder()
+        let mut bytes = 0
+        for c in raw_content {
+          let code = c.to_int()
+          let n = if code < 0x80 {
+            1
+          } else if code < 0x800 {
+            2
+          } else if code < 0x10000 {
+            3
+          } else {
+            4
+          }
+          if bytes + n > col {
+            break
+          }
+          prefix.write_char(c)
+          bytes = bytes + n
+        }
+        @unicode.terminal_width(prefix.to_string())
       }
 
       for j, a in on_this_line {

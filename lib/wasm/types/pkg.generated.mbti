@@ -110,6 +110,7 @@ pub(all) enum ValType[Idx] {
   F64
   V128
   Ref(RefType[Idx])
+  Alias(Idx)
 } derive(Eq, Hash, @debug.Debug)
 
 // Type aliases

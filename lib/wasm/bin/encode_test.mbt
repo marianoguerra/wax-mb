@@ -41,6 +41,10 @@ fn one_func(instrs : Array[@wasm_bin.Instruction]) -> @wasm_bin.Module {
     spans: [],
     nested_spans: [],
     conditionals: [],
+    local_locs: [],
+    clause_locs: Map([]),
+    name_loc: @basic.dummy_loc,
+    param_locs: Map([]),
     priority: None,
   })
   m
@@ -69,6 +73,10 @@ test "one exported function" {
     spans: [],
     nested_spans: [],
     conditionals: [],
+    local_locs: [],
+    clause_locs: Map([]),
+    name_loc: @basic.dummy_loc,
+    param_locs: Map([]),
     priority: None,
   })
   inspect(
@@ -403,6 +411,10 @@ test "the name section carries every name space, in ascending id order" {
     spans: [],
     nested_spans: [],
     conditionals: [],
+    local_locs: [],
+    clause_locs: Map([]),
+    name_loc: @basic.dummy_loc,
+    param_locs: Map([]),
     priority: None,
   })
   m.names.module_ = Some(b"m")
@@ -501,6 +513,10 @@ test "name entries are sorted by index, however they were inserted" {
       spans: [],
       nested_spans: [],
       conditionals: [],
+      local_locs: [],
+      clause_locs: Map([]),
+      name_loc: @basic.dummy_loc,
+      param_locs: Map([]),
       priority: None,
     })
     m.names.functions[i] = [b"a", b"b", b"c"][i]

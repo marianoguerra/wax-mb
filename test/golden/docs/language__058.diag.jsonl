@@ -1,1 +1,1 @@
-{"severity":"error","file":"test/corpus/docs/language__058.wax","startLine":1,"startColumn":16,"endLine":1,"endColumn":21,"startOffset":16,"endOffset":21,"message":"Identifier 'type1' is not a value type.","warning":null,"hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/docs/language__058.wax","startLine":1,"startColumn":0,"endLine":1,"endColumn":2,"startOffset":0,"endOffset":2,"message":"Assuming that the attributes are complete, expecting a definition.","warning":null,"hint":null,"related":[]}

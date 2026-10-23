@@ -59,11 +59,18 @@ fn[A] Configuring::choose(
 }
 
 ///|
-/// Resolve every attribute guard.
+/// Decide every attribute guard.
 ///
 /// A guard gates the presence of just this attribute, so it partitions the
-/// space exactly as an `#[if]` block does. The guard itself is dropped: in each
-/// explored configuration the export is present or absent outright.
+/// space exactly as an `#[if]` block does -- the configurations are explored
+/// on it. The attribute itself is KEPT in every one: the reference checks an
+/// attribute whatever its guard selects, so what is wrong with one (a guard
+/// where none is allowed, a value of the wrong shape) is wrong in every
+/// configuration rather than only where it is present.
+///
+/// An `export` or `start`, where a guard means something, says in each
+/// configuration whether it is there: present, it loses its guard; absent, it
+/// keeps one that never holds, so that it clashes with nothing.
 fn Configuring::attrs(
   self : Configuring,
   under : @cond.T,
@@ -79,12 +86,16 @@ fn Configuring::attrs(
           under,
           g.desc,
           g.info,
-          _ => [{ ..a, attr_guard: None, }],
-          _ => [],
+          _ => { ..a, attr_guard: None, },
+          _ => { ..a, attr_guard: Some({ ..g, desc: Or([]), }), },
         )
-        for k in kept {
-          out.push(k)
-        }
+        out.push(
+          if a.attr_name == "export" || a.attr_name == "start" {
+            kept
+          } else {
+            a
+          },
+        )
         under = next
       }
     }
@@ -101,13 +112,27 @@ fn Configuring::instr(
   i : @ast.Instr[@basic.Location],
 ) -> (Array[@ast.Instr[@basic.Location]], @cond.T) {
   match i.desc {
-    IfAnnotation(cond~, then_body~, else_body~) =>
-      self.choose(under, cond, i.info, u => self.instrs(u, then_body.desc), u => {
-        match else_body {
-          Some(e) => self.instrs(u, e.desc)
-          None => []
-        }
-      })
+    // The conditional is still a STATEMENT of the configuration, whichever
+    // branch it selects -- an absent one included -- so it is kept as a
+    // no-op at its own span ahead of the branch spliced in. That is where
+    // code after a divergence is found dead: at the conditional, not at
+    // whatever follows it.
+    IfAnnotation(cond~, then_body~, else_body~) => {
+      let marker = { ..i, desc: Nop, }
+      let (branch, next) = self.choose(
+        under,
+        cond,
+        i.info,
+        u => self.instrs(u, then_body.desc),
+        u => {
+          match else_body {
+            Some(e) => self.instrs(u, e.desc)
+            None => []
+          }
+        },
+      )
+      ([marker, ..branch], next)
+    }
     desc =>
       (
         [
@@ -290,7 +315,7 @@ fn Configuring::field(
       let (a, under) = self.attrs(under, a)
       ([{ ..f, desc: ModuleAnnotation(a), }], under)
     }
-    Type(_) | Data(..) | Elem(..) => ([f], under)
+    Type(_) | TypeAlias(..) | Data(..) | Elem(..) => ([f], under)
   }
 }
 
@@ -335,11 +360,9 @@ fn specialize_fields(
 /// is one program, and exploring it would be a whole-module walk to discover
 /// there is nothing to explore.
 ///
-/// An attribute GUARD does not count, though the specializer resolves one. A
-/// guard gates a single export, not a program: the module compiles to the same
-/// code either way, and treating it as a configuration would only hide the
-/// checks on the guard itself -- the specializer strips a guard once it has
-/// chosen, so a guard written where it is not allowed would go unreported.
+/// An attribute GUARD counts, as it does for the reference: it partitions the
+/// configurations like an `#[if]`, so an export clash or an unused definition
+/// is qualified by the guard like by any conditional.
 fn module_has_conditional(fields : @ast.Module[@basic.Location]) -> Bool {
   fn in_instr(i : @ast.Instr[@basic.Location]) -> Bool {
     if i.desc is IfAnnotation(..) {
@@ -348,14 +371,28 @@ fn module_has_conditional(fields : @ast.Module[@basic.Location]) -> Bool {
     i.sub_instrs().iter().any(in_instr)
   }
 
+  fn guarded(attrs : @ast.Attributes) -> Bool {
+    attrs.iter().any(a => a.attr_guard is Some(_))
+  }
+
   fn in_field(
     f : @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location],
   ) -> Bool {
     match f.desc {
       Conditional(..) => true
-      Func(body~, ..) => body.1.iter().any(in_instr)
-      Global(def~, ..) => in_instr(def)
-      _ => false
+      Func(body~, attributes~, ..) =>
+        guarded(attributes) || body.1.iter().any(in_instr)
+      Global(def~, attributes~, ..) => guarded(attributes) || in_instr(def)
+      Tag(attributes~, ..)
+      | Memory(attributes~, ..)
+      | Table(attributes~, ..)
+      | Data(attributes~, ..)
+      | Elem(attributes~, ..)
+      | ModuleAnnotation(attributes) => guarded(attributes)
+      Import(decl~, ..) => guarded(decl.desc.attributes)
+      ImportGroup(decls~, ..) =>
+        decls.iter().any(d => guarded(d.desc.attributes))
+      Type(_) | TypeAlias(..) => false
     }
   }
 
@@ -421,6 +458,172 @@ fn check_let_bindings(
 }
 
 ///|
+/// Report every conditional branch no configuration selects: one whose
+/// condition cannot hold together with the conditions of the branches
+/// enclosing it, or cannot hold at all.
+///
+/// A property of the module, not of any one configuration, so it is reported
+/// directly rather than through the explorer. Only the outermost branch of a
+/// dead nest is reported: a conditional inside a dead branch is never decided.
+/// A per-attribute guard is a conditional with two empty sides -- present and
+/// absent -- and is decided like any other.
+fn report_dead_branches(
+  diagnostics : @diagnostic.Context,
+  fields : @ast.Module[@basic.Location],
+) -> Unit {
+  let env = @cond.Env::new()
+  // Ill-formed conditions are reported where the configurations are explored.
+  let quiet = @diagnostic.collector(parent=Some(diagnostics))
+  fn decide(
+    under : @cond.T,
+    location : @basic.Location,
+    cond : @wasm_types.Cond,
+    has_else : Bool,
+    then_ : (@cond.T) -> Unit,
+    else_ : (@cond.T) -> Unit,
+  ) -> Unit {
+    let c = env.of_cond(quiet, location, cond)
+    let then_under = @cond.and_(under, c)
+    let else_under = @cond.and_(under, @cond.not_(c))
+    if @cond.is_satisfiable(then_under) {
+      then_(then_under)
+    } else {
+      dead_branch(diagnostics, location, side=true)
+    }
+    if has_else {
+      if @cond.is_satisfiable(else_under) {
+        else_(else_under)
+      } else {
+        dead_branch(diagnostics, location, side=false)
+      }
+    }
+  }
+
+  fn guards(under : @cond.T, attrs : @ast.Attributes) -> Unit {
+    for a in attrs {
+      if a.attr_guard is Some(g) {
+        decide(under, g.info, g.desc, true, _ => (), _ => ())
+      }
+    }
+  }
+
+  fn instr(under : @cond.T, i : @ast.Instr[@basic.Location]) -> Unit {
+    match i.desc {
+      IfAnnotation(cond~, then_body~, else_body~) =>
+        decide(
+          under,
+          i.info,
+          cond,
+          else_body is Some(_),
+          u => {
+            for x in then_body.desc {
+              instr(u, x)
+            }
+          },
+          u => {
+            if else_body is Some(e) {
+              for x in e.desc {
+                instr(u, x)
+              }
+            }
+          },
+        )
+      _ =>
+        for x in i.sub_instrs() {
+          instr(under, x)
+        }
+    }
+  }
+
+  fn instrs(under : @cond.T, l : Array[@ast.Instr[@basic.Location]]) -> Unit {
+    for i in l {
+      instr(under, i)
+    }
+  }
+
+  fn go(under : @cond.T, l : @ast.Module[@basic.Location]) -> Unit {
+    for f in l {
+      match f.desc {
+        Conditional(cond~, then_fields~, else_fields~) =>
+          decide(
+            under,
+            f.info,
+            cond,
+            else_fields is Some(_),
+            u => go(u, then_fields.desc),
+            u => if else_fields is Some(e) { go(u, e.desc) },
+          )
+        Func(body~, attributes~, ..) => {
+          guards(under, attributes)
+          instrs(under, body.1)
+        }
+        Global(def~, attributes~, ..) => {
+          guards(under, attributes)
+          instr(under, def)
+        }
+        Tag(attributes~, ..)
+        | Memory(attributes~, ..)
+        | Table(attributes~, ..)
+        | Data(attributes~, ..)
+        | Elem(attributes~, ..)
+        | ModuleAnnotation(attributes) => guards(under, attributes)
+        Import(decl~, ..) => guards(under, decl.desc.attributes)
+        ImportGroup(decls~, ..) =>
+          for d in decls {
+            guards(under, d.desc.attributes)
+          }
+        Type(_) | TypeAlias(..) => ()
+      }
+    }
+  }
+
+  go(@cond.true_, fields)
+}
+
+///|
+/// Record the aliases defined under a conditional annotation, by name.
+fn record_conditional_aliases(
+  out : Set[String],
+  fields : @ast.Module[@basic.Location],
+  under : Bool,
+) -> Unit {
+  for f in fields {
+    match f.desc {
+      TypeAlias(name~, ..) => if under { out.add(name.name) }
+      Conditional(then_fields~, else_fields~, ..) => {
+        record_conditional_aliases(out, then_fields.desc, true)
+        if else_fields is Some(e) {
+          record_conditional_aliases(out, e.desc, true)
+        }
+      }
+      _ => ()
+    }
+  }
+}
+
+///|
+/// Record every function body as written, for the source-shape lints of a
+/// configuration (see `ModuleContext::preserved_bodies`).
+fn record_preserved_bodies(
+  ctx : @typing_env.ModuleContext,
+  fields : @ast.Module[@basic.Location],
+) -> Unit {
+  for f in fields {
+    match f.desc {
+      Func(body~, ..) =>
+        ctx.preserved_bodies[(f.info.start.cnum, f.info.end.cnum)] = body.1
+      Conditional(then_fields~, else_fields~, ..) => {
+        record_preserved_bodies(ctx, then_fields.desc)
+        if else_fields is Some(e) {
+          record_preserved_bodies(ctx, e.desc)
+        }
+      }
+      _ => ()
+    }
+  }
+}
+
+///|
 /// Check every reachable configuration of a conditional module.
 ///
 /// Each is specialized to be conditional-free and checked independently, in its
@@ -439,8 +642,22 @@ fn check_configurations(
   fields : @ast.Module[@basic.Location],
   simplify~ : Bool = false,
   warn_unused~ : Bool = false,
+  lowering~ : Bool = false,
+  suggest~ : Bool = false,
 ) -> Unit {
   ignore(store)
+  if warn_unused {
+    report_dead_branches(diagnostics, fields)
+  }
+  // Each configuration is checked on its own; what holds in each but not as
+  // one module -- the form a construct takes differing between them -- is the
+  // lowering's to report, once.
+  let forms : Map[(Int32, Int32), (@basic.Location, ConfigurationForm)]? = if lowering &&
+    !simplify {
+    Some(Map([]))
+  } else {
+    None
+  }
   @cond_explore.check_all(
     diagnostics,
     specialize=(env, assumption, enqueue, record) => {
@@ -453,10 +670,17 @@ fn check_configurations(
         features,
         simplify~,
         warn_unused~,
+        suggest~,
       )
+      record_preserved_bodies(ctx, fields)
+      record_conditional_aliases(ctx.conditional_alias_names, fields, false)
       declare_fields(ctx, cfg)
       check_attributes(ctx, cfg)
-      ignore(check_fields(ctx, Operands::new(), cfg))
+      let typed = check_fields(ctx, Operands::new(), cfg)
+      if forms is Some(tbl) {
+        record_configuration_forms(ctx, tbl, typed)
+      }
+      check_unused_aliases(ctx.type_context, ctx.diagnostics)
       warn_unused_fields(ctx, cfg)
     },
     truncation_location=match fields {
@@ -465,4 +689,226 @@ fn check_configurations(
     },
     explain=Some((env, c) => env.explain(c, style=Wax)),
   )
+  if forms is Some(tbl) {
+    report_configuration_forms(diagnostics, tbl)
+  }
+}
+
+///|
+/// What a construct lowers to in one configuration, for one whose form may
+/// depend on the configuration: a cast to a conditional alias (its target
+/// type), and a struct field access (the receiver's struct type and the
+/// field's position).
+priv enum ConfigurationForm {
+  LiteralForm(@ast.Ident, Array[String])
+  CastForm(@ast.Ident, Array[String])
+  FieldForm(@ast.Ident, Array[(String, Int32)])
+}
+
+///|
+/// Record, by span, the form each such construct of `typed` takes in this
+/// configuration.
+///
+/// A module lowered as one for every configuration takes each form from one
+/// run, so `report_configuration_forms` rejects a construct the configurations
+/// disagree on. Recorded by the checking runs, one per configuration, rather
+/// than by the build, which only covers each branch once.
+fn record_configuration_forms(
+  ctx : @typing_env.ModuleContext,
+  tbl : Map[(Int32, Int32), (@basic.Location, ConfigurationForm)],
+  typed : Array[
+    @basic.Annotated[
+      @ast.ModuleField[@typing_env.InferredAnnotation],
+      @basic.Location,
+    ],
+  ],
+) -> Unit {
+  // Keyed by `l`, reported at `at`: a negative literal is reported whole.
+  fn add_at(
+    l : @basic.Location,
+    at : @basic.Location,
+    form : (ConfigurationForm?) -> ConfigurationForm,
+  ) -> Unit {
+    let key = (l.start.cnum, l.end.cnum)
+    match tbl.get(key) {
+      Some((at_, prev)) =>
+        tbl[key] = (
+          if at_.start.cnum <= at.start.cnum {
+            at_
+          } else {
+            at
+          },
+          form(Some(prev)),
+        )
+      None => tbl[key] = (at, form(None))
+    }
+  }
+
+  fn add(
+    l : @basic.Location,
+    form : (ConfigurationForm?) -> ConfigurationForm,
+  ) -> Unit {
+    add_at(l, l, form)
+  }
+
+  fn conditional_alias(a : @ast.Ident) -> Bool {
+    match ctx.type_context.aliases.find_no_mark(a.name) {
+      Some(al) => al.conditional
+      None => false
+    }
+  }
+
+  // A literal or null typed by a conditional alias: its type, printed.
+  fn typed_by(
+    l : @basic.Location,
+    at : @basic.Location,
+    cell : @infer.Cell[@infer.InferredType],
+  ) -> Unit {
+    match cell.get() {
+      Valtype({ type_alias: Some(a), .. }) if conditional_alias(a) => {
+        let t = @infer.to_string(cell)
+        add_at(l, at, prev => {
+          match prev {
+            Some(LiteralForm(_, seen)) =>
+              LiteralForm(a, if seen.contains(t) { seen } else { [..seen, t] })
+            _ => LiteralForm(a, [t])
+          }
+        })
+      }
+      _ => ()
+    }
+  }
+
+  fn go(i : @ast.Instr[@typing_env.InferredAnnotation]) -> Unit {
+    let l = i.info.1
+    match i.desc {
+      Int(_) | Float(_) | Null if i.info.0 is [cell] => typed_by(l, l, cell)
+      UnOpI({ desc: Neg, .. }, { desc: Int(_) | Float(_), info: (lit, ll), .. }) if lit
+        is [cell] => typed_by(ll, l, cell)
+      Cast(_, Value(Alias(a))) if conditional_alias(a) =>
+        match i.info.0 {
+          [cell] =>
+            if cell.get() is Valtype(_) {
+              let t = @infer.to_string(cell)
+              add(l, prev => {
+                match prev {
+                  Some(CastForm(_, seen)) =>
+                    CastForm(
+                      a,
+                      if seen.contains(t) {
+                        seen
+                      } else {
+                        [..seen, t]
+                      },
+                    )
+                  _ => CastForm(a, [t])
+                }
+              })
+            }
+          _ => ()
+        }
+      StructGet(recv, f) | StructSet(recv, f, _) =>
+        match recv.info.0 {
+          [cell] =>
+            match cell.get() {
+              Valtype({ typ: Ref({ typ: Type(ty) | Exact(ty), .. }), .. }) =>
+                match ctx.type_context.types.find_no_mark(ty.name) {
+                  Some((_, { typ: Struct(fields), .. })) => {
+                    let mut index = -1
+                    for k, fd in fields {
+                      if index < 0 && fd.desc.0.name == f.name {
+                        index = k
+                      }
+                    }
+                    if index >= 0 {
+                      let v = (ty.name, index)
+                      add(l, prev => {
+                        match prev {
+                          Some(FieldForm(_, seen)) =>
+                            FieldForm(
+                              f,
+                              if seen.contains(v) {
+                                seen
+                              } else {
+                                [..seen, v]
+                              },
+                            )
+                          _ => FieldForm(f, [v])
+                        }
+                      })
+                    }
+                  }
+                  _ => ()
+                }
+              _ => ()
+            }
+          _ => ()
+        }
+      _ => ()
+    }
+    for x in i.sub_instrs() {
+      go(x)
+    }
+  }
+
+  fn fields(
+    l : Array[
+      @basic.Annotated[
+        @ast.ModuleField[@typing_env.InferredAnnotation],
+        @basic.Location,
+      ],
+    ],
+  ) -> Unit {
+    for f in l {
+      match f.desc {
+        Func(body~, ..) =>
+          for x in body.1 {
+            go(x)
+          }
+        Global(def~, ..) => go(def)
+        Conditional(then_fields~, else_fields~, ..) => {
+          fields(then_fields.desc)
+          if else_fields is Some(e) {
+            fields(e.desc)
+          }
+        }
+        _ => ()
+      }
+    }
+  }
+
+  fields(typed)
+}
+
+///|
+/// Report, once, each construct with no form that holds in every
+/// configuration.
+///
+/// A field access is fine when the field is at the same position in every
+/// type the receiver has: the lowering's `struct.get` of one is then valid on
+/// the others, and a type redefined per configuration is named, so its field
+/// resolves in each.
+fn report_configuration_forms(
+  diagnostics : @diagnostic.Context,
+  tbl : Map[(Int32, Int32), (@basic.Location, ConfigurationForm)],
+) -> Unit {
+  let entries : Array[(@basic.Location, ConfigurationForm)] = []
+  for _, e in tbl {
+    entries.push(e)
+  }
+  entries.sort_by((a, b) => a.0.start.cnum - b.0.start.cnum)
+  for e in entries {
+    let (location, form) = e
+    match form {
+      LiteralForm(a, seen) if seen.length() >= 2 =>
+        conditional_alias_literal(diagnostics, location, a.name)
+      CastForm(a, seen) if seen.length() >= 2 =>
+        conditional_alias_cast(diagnostics, location, a.name)
+      FieldForm(f, seen) if seen
+        .iter()
+        .any(v => seen.iter().any(w => v.0 != w.0 && v.1 != w.1)) =>
+        configuration_dependent_field(diagnostics, location, f.name)
+      _ => ()
+    }
+  }
 }

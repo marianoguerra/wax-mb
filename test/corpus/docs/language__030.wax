@@ -1,5 +1,1 @@
-do {
-    let x: i32;
-    x = compute();
-    use(x);
-}
+cond ? val_true : val_false

@@ -240,7 +240,7 @@ sep_trailing[T](SEP, X : T) -> Array[T]
 // ===========================================================================
 
 ident -> Ident
-  : IDENT { { name: $1, loc: loc_of($loc($1)) } }
+  : IDENT { ident_at($loc($1), $1) }
   ;
 
 // A label may be spelled with a keyword -- `'loop`, `'if` -- because a label
@@ -392,7 +392,7 @@ type_name -> Ident
   ;
 
 type_definition -> Annotated[(Ident, SubType), Location]
-  : TYPE type_name option(supertype_clause) "=" boption(OPEN)
+  : TYPE type_name ioption(supertype_clause) "=" boption(OPEN)
     ioption(describes_clause) ioption(descriptor_clause) composite_type ";" {
       annot($sloc, ($2, {
         typ: $8,
@@ -416,6 +416,14 @@ describes_clause -> Ident
 
 descriptor_clause -> Ident
   : DESCRIPTOR type_name { $2 }
+  ;
+
+// A value-type alias, `type t = v;`: the name `t` then stands for the value
+// type `v` wherever a value type is expected.
+type_alias -> Annotated[ModuleField[Location], Location]
+  : TYPE type_name "=" value_type ";" {
+      annot($sloc, ModuleField::TypeAlias(name=$2, typ=$4))
+    }
   ;
 
 rectype -> Annotated[Array[Annotated[(Ident, SubType), Location]], Location]
@@ -902,6 +910,9 @@ else_branch -> Body[Location]
 
 parenthesized_expression -> Instr[Location]
   : expression { $1 }
+  // The type ascription `(e : t)`: assertion only -- `Ascribed` never lowers
+  // to an instruction and an ascribed bare hole claims nothing.
+  | expression ":" value_type { with_loc($sloc, Cast($1, Ascribed($3))) }
   ;
 
 // The `descriptor(d)` clause shared by the custom-descriptors instructions.
@@ -1510,6 +1521,7 @@ elem -> (Attributes) -> Annotated[ModuleField[Location], Location]
 // appears only as a conditional branch body.
 module_field -> RawField
   : rectype { FPlain({ desc: ModuleField::Type($1.desc), info: $1.info }) }
+  | type_alias { FPlain($1) }
   | inner_attribute { FPlain(annot($sloc, ModuleField::ModuleAnnotation([$1]))) }
   | list_of(attribute) definition { FPlain(attributed($sloc, $1, $2)) }
   | IMPORT STRING import_item {
@@ -1573,9 +1585,9 @@ import_kind_decl -> (Ident, @ast.ImportKind)
 // These are preserved, never evaluated here: the preprocessor consumes them.
 
 condition -> Cond
-  : ident { Var({ desc: $1.name, info: $1.loc }) }
-  | ident condition_relop condition_literal {
-      Cmp($2, Var({ desc: $1.name, info: $1.loc }), $3)
+  : condition_variable { Var($1) }
+  | condition_variable condition_relop condition_literal {
+      Cmp($2, Var($1), $3)
     }
   | ident "(" sep_trailing(",", condition) ")" {
       match ($1.name, $3) {
@@ -1590,6 +1602,12 @@ condition -> Cond
           )
       }
     }
+  ;
+
+// A condition variable: any identifier, a keyword included (as for a label),
+// since the WAT `$name` it is shared with may be one.
+condition_variable -> @basic.Annotated[String, @basic.Location]
+  : ident_or_keyword { @basic.Annotated::{ desc: $1, info: loc_of($sloc) } }
   ;
 
 condition_literal -> Cond

@@ -30,6 +30,9 @@ pub using @compile {
   type CompileError,
   apply_policy,
   rejected,
+  type Define,
+  parse_define,
+  specialize_defines,
 }
 
 ///|
@@ -43,15 +46,19 @@ pub using @compile {
 /// Warnings never reach the caller here, because a compile reports what stops
 /// it producing a module and a style warning does not. Use `Session` directly,
 /// or the `check` command's `warn_unused`, to see those.
+///
+/// `label_names` false leaves the label names out of the `name` section:
+/// Binaryen's `wasm-opt` does not know that subsection and warns about it.
 pub fn compile_string(
   src : String,
   fname? : String,
   features? : @feature.Set,
   policy? : @warning.Policy,
+  label_names? : Bool,
 ) -> Result[Bytes, Array[@diagnostic.Diagnostic]] raise @compile.CompileError {
   match checked(src, fname?, features?, policy?) {
     Err(diagnostics) => Err(diagnostics)
-    Ok(c) => Ok(c.to_bytes())
+    Ok(c) => Ok(c.to_bytes(label_names?))
   }
 }
 
@@ -139,7 +146,8 @@ fn checked_of(
   guard errors.is_empty() else { return Err(errors) }
   guard r.module_ is Some(m) else { return Err(errors) }
   let session = Session::new(features?, source=src)
-  let c = session.check(m)
+  // Both callers convert the module, so it is checked as one to be lowered.
+  let c = session.check(m, lowering=true)
   let reports = session.reports(policy?)
   if rejected(reports) {
     Err(reports)

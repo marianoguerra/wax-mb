@@ -114,9 +114,15 @@ pub fn Checker::check(
   expected : @infer.Cell[@infer.InferredType],
   i : @ast.Instr[@basic.Location],
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  self.note_start(i)
   // Nothing is pinned: there is nothing to hand down, and nothing to check
   // against either.
-  guard has_expectation(expected) else { return self.expression(i) }
+  guard has_expectation(expected) else {
+    let c = self.expression(i)
+    self.reinfer = self.leaf_reinfer(c)
+    return c
+  }
+  self.reinfer = Uninferrable
   match i.desc {
     // A block-like form need not annotate its own result when the context
     // already says what it is. Threading the expectation in as the result type
@@ -153,11 +159,20 @@ pub fn Checker::check(
       match pinned {
         Some(d) => {
           let c = self.expression({ ..i, desc: d, })
+          // A construction whose name came from the context: written without
+          // it, it re-infers only if its fields alone name the type.
+          self.reinfer = self.leaf_reinfer(c, name_written=false)
           self.want(expected, i.info, c)
           { ..c, desc: unpin_construction_name(c.desc), }
         }
         None => {
+          if i.desc is Struct(_, _) {
+            self.pinned_name = exact_named_type(expected)
+          }
           let c = self.expression(i)
+          self.pinned_name = None
+          // Read BEFORE the expectation settles the value's cell.
+          self.reinfer = self.leaf_reinfer(c)
           self.want(expected, i.info, c)
           c
         }
@@ -197,7 +212,7 @@ fn fill_omitted_result(
 ) -> @ast.FuncType {
   guard typ.results.is_empty() else { return typ }
   match @typing_env.standalone_valtype(result_cell) {
-    Some(iv) => { ..typ, results: [iv.typ], }
+    Some(iv) => { ..typ, results: [declared_form(iv)], }
     None => typ
   }
 }
@@ -228,11 +243,16 @@ fn Checker::check_block(
   // Everything else still goes through the concrete result, because a
   // construction there has no type of its own to resolve and the block's result
   // is what gives it one.
-  let (_, collecting) = fresh_collecting(Some(result_cell))
-  let self_resolving = match block.desc.last() {
-    Some(last) => classify_trailing(self.ctx, last.desc).1
-    None => false
+  let (construction, self_resolving) = match block.desc.last() {
+    Some(last) => classify_trailing(self.ctx, last.desc)
+    None => (false, false)
   }
+  // A trailing construction is checked against the concrete result, which hides
+  // its natural type: what reaches the exit cannot be joined.
+  let (cs, collecting) = fresh_collecting(
+    Some(result_cell),
+    needed=construction,
+  )
   // A `br` to a LOOP re-enters at its top with the loop's parameters -- none
   // here -- so it carries no result and the loop's value is its fall-through.
   let branch_target : Array[@infer.Cell[@infer.InferredType]] = if loop_ {
@@ -248,7 +268,46 @@ fn Checker::check_block(
     branch_target,
     block.desc,
     body_results=if self_resolving { Some([collecting]) } else { None },
+    fall_through=cs,
   )
+  // Every value reaching the exit was validated against the result already;
+  // the join is for the values that have no common supertype among themselves,
+  // which the reference reports whether or not the result is written.
+  let joined = if !cs.needed {
+    infer_result(
+      self.ctx,
+      i.info,
+      cs,
+      inferred_lub(self.ctx.type_context, self.ctx.diagnostics),
+    )
+  } else {
+    None
+  }
+  // A written result the context already pins is redundant; and the block
+  // re-infers to it when it is kept, or else to what reaches its exit.
+  if self.ctx.suggest &&
+    block_result_redundant(typ, expected, result_cell, self.ctx) {
+    suggest_block_result(
+      self.ctx,
+      if loop_ {
+        "loop"
+      } else {
+        "do"
+      },
+      i.info.start,
+      block.info.start,
+    )
+  }
+  self.reinfer = if typ.results.length() > 0 && !self.ctx.simplify {
+    named_reinfer_of_cell(result_cell)
+  } else if cs.needed {
+    Uninferrable
+  } else {
+    match joined {
+      Some(j) => reinfer_of_cell(j)
+      None => Diverges
+    }
+  }
   check_subtype(
     self.ctx.type_context.subtyping_info(),
     self.ctx.diagnostics,
@@ -314,9 +373,12 @@ fn Checker::check_if(
     results,
     if_block.desc,
   )
+  let then_reinfer = self.reinfer
+  let mut else_reinfer = Diverges
   let else_ = match else_block {
     Some(b) => {
       let checked = self.body(b.info, label, [], results, results, b.desc)
+      else_reinfer = self.reinfer
       Some(
         (
           { desc: checked, info: b.info, } :
@@ -341,6 +403,12 @@ fn Checker::check_if(
     result_cell,
     expected,
   )
+  // A written `=> t` the context already pins.
+  if self.ctx.suggest &&
+    block_result_redundant(typ, expected, result_cell, self.ctx) {
+    suggest_if_result(self.ctx, cond.info.end, if_block.info.start)
+  }
+  self.reinfer = join_reinfer(self.ctx, then_reinfer, else_reinfer)
   {
     desc: If(
       label~,
@@ -373,7 +441,9 @@ fn Checker::check_select(
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   // Emission order: the two branch values, then the condition.
   let a_ = self.check(expected, a)
+  let a_reinfer = self.reinfer
   let b_ = self.check(expected, b)
+  let b_reinfer = self.reinfer
   let cond_ = self.expression(cond)
   check_subtype(
     self.ctx.type_context.subtyping_info(),
@@ -394,12 +464,13 @@ fn Checker::check_select(
     // mismatch the context has already ruled out.
     None => expected
   }
-  {
+  self.reinfer = join_reinfer(self.ctx, a_reinfer, b_reinfer)
+  ascribe_conditional_select(self.ctx, {
     desc: Select(cond_, a_, b_),
     info: annotate([ty], i.info),
     hints: i.hints,
     expected: i.expected,
-  }
+  })
 }
 
 ///|
@@ -471,7 +542,7 @@ fn pin_block_result(
   guard @typing_env.standalone_valtype(expected) is Some(iv) else {
     return None
   }
-  let filled : @ast.FuncType = { ..typ, results: [iv.typ], }
+  let filled : @ast.FuncType = { ..typ, results: [declared_form(iv)], }
   match desc {
     TryTable(label~, catches~, block~, ..) =>
       Some(TryTable(label~, typ=filled, catches~, block~))

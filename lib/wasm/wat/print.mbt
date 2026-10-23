@@ -102,6 +102,8 @@ pub fn valtype(
     F64 => "f64"
     V128 => "v128"
     Ref(r) => reftype(r, names)
+    // The lowering expands every alias to the type it stands for.
+    Alias(_) => abort("a value-type alias reached the text printer")
   }
 }
 

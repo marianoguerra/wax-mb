@@ -49,6 +49,7 @@ pub fn valtype_json(t : ValType) -> Json {
         "ref": heaptype_json(r.typ),
         "nullable": Json::boolean(r.nullable),
       }
+    Alias(a) => return { "alias": a.to_json() }
   }
 }
 
@@ -258,6 +259,8 @@ pub fn[Info] ModuleField::to_json(self : ModuleField[Info]) -> Json {
         "value": def.to_json(),
       })
     Type(_) => tagged("type", {})
+    TypeAlias(name~, typ~) =>
+      tagged("type_alias", { "name": name.to_json(), "type": valtype_json(typ) })
     Tag(name~, ..) => tagged("tag", { "name": name.to_json() })
     Memory(name~, ..) => tagged("memory", { "name": name.to_json() })
     Data(name~, ..) => tagged("data", { "name": opt(name, i => i.to_json()) })

@@ -1,28 +1,21 @@
-type shape_fn = fn(i32) -> i32;
+#![feature = "custom-descriptors"]
 
-fn draw_rect(x: i32) -> i32 {
-    x;
+rec {
+    type obj = descriptor obj_desc { x: i32 };
+    type obj_desc = describes obj { kind: i32 };
 }
 
-fn draw_circle(x: i32) -> i32 {
-    0 - x;
+#[export = "make"]
+fn make(kind: i32, x: i32) -> &!obj {
+    { descriptor({obj_desc| kind })| x };
 }
 
-#[export = "render"]
-fn render(shape: &?shape_fn, n: i32) -> i32 {
-    let total = 0;
-    #[freq = 64]
-    'l: loop {
-        total = total + (#[targets(draw_rect: 0.73, draw_circle: 0.21)] shape(n));
-        n = n - 1;
-        #[likely]
-        br_if 'l n;
-    }
-    total;
+#[export = "kind_of"]
+fn kind_of(o: &obj) -> i32 {
+    o.descriptor.kind;
 }
 
-#[export = "cold"]
-fn cold(x: i32) -> i32 {
-    #[never_opt]
-    draw_rect(x);
+#[export = "narrow"]
+fn narrow(v: &?any, d: &!obj_desc) -> &?obj {
+    v as ?descriptor(d);
 }

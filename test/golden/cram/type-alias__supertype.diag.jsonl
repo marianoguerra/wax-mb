@@ -1,0 +1,1 @@
+{"severity":"error","file":"test/corpus/cram/type-alias__supertype.wax","startLine":2,"startColumn":12,"endLine":2,"endColumn":15,"startOffset":38,"endOffset":41,"message":"Expecting 'describes', 'descriptor', 'open', or a composite type (a type with a supertype is a struct, array or function type; a type alias has none).","warning":null,"hint":null,"related":[]}

@@ -90,8 +90,8 @@ fn value_type_of(
 ) -> @wasm_types.ValType[Ident] {
   match valtype_tbl.get(t) {
     Some(v) => v
-    None =>
-      fail_at(loc_of(p), "Identifier '\{t}' is not a value type.", default=I32)
+    // A name other than a built-in value type is a use of a value-type alias.
+    None => Alias({ name: t, loc: loc_of(p), })
   }
 }
 
@@ -102,12 +102,7 @@ fn cast_type_of(p : (Position, Position), t : String) -> @ast.CastType {
     None =>
       match casttype_tbl.get(t) {
         Some(c) => c
-        None =>
-          fail_at(
-            loc_of(p),
-            "Identifier '\{t}' is not a cast type.",
-            default=Value(I32),
-          )
+        None => Value(Alias({ name: t, loc: loc_of(p), }))
       }
   }
 }
@@ -119,12 +114,7 @@ fn storage_type_of(
 ) -> @wasm_types.StorageType[Ident] {
   match storagetype_tbl.get(t) {
     Some(s) => s
-    None =>
-      fail_at(
-        loc_of(p),
-        "Identifier '\{t}' is not a storage type.",
-        default=Value(I32),
-      )
+    None => Value(Alias({ name: t, loc: loc_of(p), }))
   }
 }
 

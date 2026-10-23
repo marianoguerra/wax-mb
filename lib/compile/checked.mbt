@@ -37,6 +37,34 @@ pub impl Show for CompileError with fn output(self, logger) {
 }
 
 ///|
+/// The error as a located diagnostic, when it is the module's rather than this
+/// port's: a construct the binary format has no way to hold, which the
+/// reference refuses with the same diagnostic. `None` for a gap in the port,
+/// which is reported as one instead.
+pub fn CompileError::diagnostic(self : CompileError) -> @diagnostic.Diagnostic? {
+  match self {
+    Lower(Unemittable("conditional annotations", loc)) =>
+      Some({
+        loc,
+        severity: Error,
+        warning: None,
+        message: @message.text(
+          "Conditional annotations cannot be emitted to the WebAssembly binary format.",
+        ),
+        hint: Some(
+          @message.text(
+            "Resolve the conditionals with -D/--define, or convert to a text format (wat or wax).",
+          ),
+        ),
+        edit: None,
+        related: [],
+        universal: false,
+      })
+    _ => None
+  }
+}
+
+///|
 /// A module that has been through the type checker.
 ///
 /// It holds the four things the lowering needs and that a caller would
@@ -73,9 +101,14 @@ pub struct Checked {
 /// them, which only the text form wants: a module with an unresolved
 /// conditional has no single binary form, and that is what a conditional is
 /// for.
+///
+/// `try_table` rewrites the legacy `try`/`catch` into the standard
+/// `try_table`, for engines and tools that only accept the current
+/// exception-handling proposal.
 pub fn Checked::to_module(
   self : Checked,
   keep_conditionals? : Bool,
+  try_table? : Bool,
 ) -> @wasm_bin.Module raise @to_wasm.LowerError {
   @to_wasm.lower_module(
     self.context,
@@ -83,14 +116,39 @@ pub fn Checked::to_module(
     self.source_module,
     self.typed,
     keep_conditionals?,
+    try_table?,
+  )
+}
+
+///|
+/// The module with each legacy `try_legacy` rewritten into the structured
+/// `try`, which lowers to the standard `try_table` (`--try-table` on a
+/// Wax-to-Wax conversion).
+///
+/// The rewrite needs the types the checker inferred -- an unannotated try
+/// takes its result type from its context -- which is why it is a step of a
+/// CHECKED module. A legacy try that takes parameters has no structured
+/// equivalent and is reported to the session.
+pub fn Checked::rewrite_legacy_try(self : Checked) -> @ast.LocModule {
+  @typing.rewrite_legacy_try(
+    self.session.diagnostics,
+    self.typed,
+    self.source_module,
   )
 }
 
 ///|
 /// Encode to a `.wasm` binary.
-pub fn Checked::to_bytes(self : Checked) -> Bytes raise CompileError {
-  let m = self.to_module() catch { e => raise Lower(e) }
-  @wasm_bin.encode(m) catch {
+///
+/// `label_names` false leaves the label names out of the `name` section:
+/// Binaryen's `wasm-opt` does not know that subsection and warns about it.
+pub fn Checked::to_bytes(
+  self : Checked,
+  label_names~ : Bool = true,
+  try_table? : Bool,
+) -> Bytes raise CompileError {
+  let m = self.to_module(try_table?) catch { e => raise Lower(e) }
+  @wasm_bin.encode(m, label_names~) catch {
     e => raise Encode(e)
   }
 }
@@ -105,8 +163,11 @@ pub fn Checked::to_bytes(self : Checked) -> Bytes raise CompileError {
 pub fn Checked::to_wat(
   self : Checked,
   trivia? : @trivia.Context,
+  try_table? : Bool,
 ) -> String raise CompileError {
-  let m = self.to_module(keep_conditionals=true) catch { e => raise Lower(e) }
+  let m = self.to_module(keep_conditionals=true, try_table?) catch {
+    e => raise Lower(e)
+  }
   @to_wat.print_module(m, trivia~) catch {
     e => raise Wat(e)
   }

@@ -1,8 +1,5 @@
-import "env" {
-    fn log(x: i32);
-    #[import = "base_value"]
-    const base: i32;
-}
+#[export]
+fn add(x: i32, y: i32) -> i32 { x + y; }
 
-#[export = "run"]
-fn run() { log(base); }
+#[export = "PI"]
+const PI: f64 = 3.14159;

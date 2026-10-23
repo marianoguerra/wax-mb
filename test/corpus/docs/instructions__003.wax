@@ -1,4 +1,5 @@
-m.load32(p);                        // i32.load
-m.load32(p, offset: 16);            // i32.load offset=16
-m.load32(p, offset: 16, align: 1);  // i32.load offset=16 align=1
-m.load32(p, align: 1);              // i32.load align=1
+type copier = fn(i32, i32, i32, i32) -> i32;
+type holder = { copy: &copier };
+fn invoke(h: &holder) -> i32 {
+    h.copy(1, 2, 3, 4);   // call_ref through the field, not array.copy
+}

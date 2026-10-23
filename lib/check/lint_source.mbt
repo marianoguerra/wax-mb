@@ -49,7 +49,12 @@ fn int_literal_value(s : String) -> Int64? {
 /// A STRICT float-to-integer conversion lowers to `trunc`, which traps out of
 /// range; its saturating form and every numeric widen, narrow and convert are
 /// total. A reference cast may trap and is conservatively treated as partial.
-fn cast_is_total(c : @ast.CastType) -> Bool {
+fn cast_is_total(
+  c : @ast.CastType,
+  unalias~ : (@wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[
+    @ast.Ident,
+  ],
+) -> Bool {
   match c {
     Signed(typ~, strict~, ..) =>
       match typ {
@@ -58,6 +63,15 @@ fn cast_is_total(c : @ast.CastType) -> Bool {
       }
     Value(I32 | I64 | F32 | F64) => true
     Value(V128 | Ref(_)) | Func(..) => false
+    // An alias, as the type it stands for; one that stands for none (an error,
+    // already reported) is taken to be a reference type, which may trap.
+    Value(Alias(_) as t) =>
+      match unalias(t) {
+        Alias(_) => false
+        t => cast_is_total(Value(t), unalias~)
+      }
+    // An ascription is a static assertion; nothing to trap.
+    Ascribed(_) => true
   }
 }
 
@@ -97,68 +111,77 @@ fn is_pure_binary_method(m : String) -> Bool {
 /// Conservative in the one direction that matters: anything not listed is
 /// assumed to have an effect, so the lint never claims a computation is
 /// pointless when it might trap, write, or call.
-pub fn is_effectless(e : @ast.Instr[@basic.Location]) -> Bool {
-  fn field(f : (@ast.Ident, @ast.Instr[@basic.Location]?)) -> Bool {
-    match f.1 {
-      Some(v) => is_effectless(v)
-      // A punned field `{x}` reads a local or a global, which is effectless.
-      None => true
+pub fn is_effectless(
+  e : @ast.Instr[@basic.Location],
+  unalias~ : (@wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[
+    @ast.Ident,
+  ] = t => t,
+) -> Bool {
+  fn go(e : @ast.Instr[@basic.Location]) -> Bool {
+    fn field(f : (@ast.Ident, @ast.Instr[@basic.Location]?)) -> Bool {
+      match f.1 {
+        Some(v) => go(v)
+        // A punned field `{x}` reads a local or a global, which is effectless.
+        None => true
+      }
+    }
+
+    match e.desc {
+      Get(_)
+      | Int(_)
+      | Float(_)
+      | Char(_)
+      | Str(_, _)
+      | Null
+      | StructDefault(_) => true
+      UnOpI(_, a) => go(a)
+      Call(callee, args) =>
+        match callee.desc {
+          StructGet(recv, m) =>
+            if args.is_empty() && is_pure_unary_method(m.name) {
+              go(recv)
+            } else if args.length() == 1 && is_pure_binary_method(m.name) {
+              go(recv) && go(args[0])
+            } else if @simd.classify(m.name) is Some(_) {
+              // Every vector op is pure and non-trapping; the trapping SIMD
+              // accesses go through the `mem.` path and are classified there.
+              go(recv) && args.iter().all(go)
+            } else if m.name == "size" && recv.desc is Get(_) && args.is_empty() {
+              // `m.size()` / `tab.size()` reads the current size, unlike the
+              // effectful grow/fill/copy/init on the same path.
+              true
+            } else {
+              false
+            }
+          // A `v128::..` constructor or vector op is effect-free when its
+          // operands are.
+          Path(ns, _) => ns.name == "v128" && args.iter().all(go)
+          _ => false
+        }
+      // A typed null `null as &?t` is `ref.null`, a constant, not a trapping
+      // reference cast.
+      Cast(inner, Value(Ref({ nullable: true, .. }))) => inner.desc is Null
+      Cast(a, ct) => cast_is_total(ct, unalias~) && go(a)
+      // Division and remainder trap on a zero divisor.
+      BinOpI(op, a, b) =>
+        if op.desc is (Div(_) | Rem(_)) {
+          false
+        } else {
+          go(a) && go(b)
+        }
+      Select(a, b, c) => go(a) && go(b) && go(c)
+      Test(a, _) => go(a)
+      Struct(_, fields) => fields.iter().all(field)
+      StructDesc(d, fields) => go(d) && fields.iter().all(field)
+      StructDefaultDesc(d) => go(d)
+      Array(_, elt, len) => go(elt) && go(len)
+      ArrayDefault(_, len) => go(len)
+      ArrayFixed(_, elts) => elts.iter().all(go)
+      _ => false
     }
   }
 
-  match e.desc {
-    Get(_)
-    | Int(_)
-    | Float(_)
-    | Char(_)
-    | Str(_, _)
-    | Null
-    | StructDefault(_) => true
-    UnOpI(_, a) => is_effectless(a)
-    Call(callee, args) =>
-      match callee.desc {
-        StructGet(recv, m) =>
-          if args.is_empty() && is_pure_unary_method(m.name) {
-            is_effectless(recv)
-          } else if args.length() == 1 && is_pure_binary_method(m.name) {
-            is_effectless(recv) && is_effectless(args[0])
-          } else if @simd.classify(m.name) is Some(_) {
-            // Every vector op is pure and non-trapping; the trapping SIMD
-            // accesses go through the `mem.` path and are classified there.
-            is_effectless(recv) && args.iter().all(is_effectless)
-          } else if m.name == "size" && recv.desc is Get(_) && args.is_empty() {
-            // `m.size()` / `tab.size()` reads the current size, unlike the
-            // effectful grow/fill/copy/init on the same path.
-            true
-          } else {
-            false
-          }
-        // A `v128::..` constructor or vector op is effect-free when its
-        // operands are.
-        Path(ns, _) => ns.name == "v128" && args.iter().all(is_effectless)
-        _ => false
-      }
-    // A typed null `null as &?t` is `ref.null`, a constant, not a trapping
-    // reference cast.
-    Cast(inner, Value(Ref({ nullable: true, .. }))) => inner.desc is Null
-    Cast(a, ct) => cast_is_total(ct) && is_effectless(a)
-    // Division and remainder trap on a zero divisor.
-    BinOpI(op, a, b) =>
-      if op.desc is (Div(_) | Rem(_)) {
-        false
-      } else {
-        is_effectless(a) && is_effectless(b)
-      }
-    Select(a, b, c) => is_effectless(a) && is_effectless(b) && is_effectless(c)
-    Test(a, _) => is_effectless(a)
-    Struct(_, fields) => fields.iter().all(field)
-    StructDesc(d, fields) => is_effectless(d) && fields.iter().all(field)
-    StructDefaultDesc(d) => is_effectless(d)
-    Array(_, elt, len) => is_effectless(elt) && is_effectless(len)
-    ArrayDefault(_, len) => is_effectless(len)
-    ArrayFixed(_, elts) => elts.iter().all(is_effectless)
-    _ => false
-  }
+  go(e)
 }
 
 ///|
@@ -231,7 +254,7 @@ fn lint_source(
       if bindings.length() == 1 &&
         bindings[0].0 is None &&
         body is Some(e) &&
-        is_effectless(e) {
+        is_effectless(e, unalias=t => ctx.type_context.unalias(t)) {
         unused_result(ctx.diagnostics, e.info)
       }
       if body is Some(e) {
@@ -647,6 +670,98 @@ fn lint_comparison(
   }
   if tautology is Some(value) {
     tautological_comparison(ctx.diagnostics, op.info, value)
+  }
+}
+
+///|
+/// Whether a typed operand is a float: a concrete `f32`/`f64` or a flexible
+/// float literal.
+fn is_float_operand(e : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
+  match @typing_env.expression_type_opt(e.info) {
+    Some(c) => c.get() is (Valtype({ internal: F32 | F64, .. }) | Float)
+    None => false
+  }
+}
+
+///|
+/// An integer operation whose result does not depend on what it computes: an
+/// identity (`x + 0`, `x * 1`, `x & x`) or an absorption (`x * 0`, `x ^ x`).
+///
+/// Integers only: a float `0.0 * x` is NaN when `x` is NaN or an infinity, and
+/// `-0.0 + 0.0` is `+0.0`, so neither is constant or effect-free. A signed
+/// identity literal, `x + -0`, counts, as the Wasm validator sees it folded.
+fn lint_redundant(
+  ctx : @typing_env.ModuleContext,
+  op : @basic.Annotated[@ast.BinOp, @basic.Location],
+  l : @ast.Instr[@typing_env.InferredAnnotation],
+  r : @ast.Instr[@typing_env.InferredAnnotation],
+  l_src : @ast.Instr[@basic.Location],
+  r_src : @ast.Instr[@basic.Location],
+) -> Unit {
+  fn is0(e : @ast.Instr[@basic.Location]) -> Bool {
+    int_operand_value(e) is Some(0)
+  }
+
+  fn is1(e : @ast.Instr[@basic.Location]) -> Bool {
+    int_operand_value(e) is Some(1)
+  }
+
+  let is_int = match @typing_env.expression_type_opt(l.info) {
+    Some(c) => c.get() is Valtype({ internal: I32 | I64, .. })
+    None => false
+  }
+  let same = match (l_src.desc, r_src.desc) {
+    (Get(a), Get(b)) => a.name == b.name
+    _ => false
+  }
+  guard !is_float_operand(l) && !is_float_operand(r) else { return }
+  let no_effect = "This operation has no effect on its result."
+  let message = match op.desc {
+    Add if is0(l_src) || is0(r_src) => Some(@message.text(no_effect))
+    Sub | Shl | Shr(_) if is0(r_src) => Some(@message.text(no_effect))
+    Mul if is1(l_src) || is1(r_src) => Some(@message.text(no_effect))
+    Div(Some(_)) if is1(r_src) => Some(@message.text(no_effect))
+    Or | Xor if is0(l_src) || is0(r_src) => Some(@message.text(no_effect))
+    And | Or if same => Some(@message.text(no_effect))
+    Mul | And if is0(l_src) || is0(r_src) => Some(always_yields(0))
+    Rem(_) if is1(r_src) => Some(always_yields(0))
+    Xor if same => Some(always_yields(0))
+    // `x - x` is 0 only for integers: a float one is NaN on NaN or infinity.
+    Sub if same && is_int => Some(always_yields(0))
+    _ => None
+  }
+  if message is Some(m) {
+    redundant_operation(ctx.diagnostics, op.info, m)
+  }
+}
+
+///|
+fn always_yields(v : Int64) -> @message.Message {
+  @message.text("This operation always yields")
+  .sep(@message.text(v.to_string()))
+  .seq(@message.text("."))
+}
+
+///|
+/// `-e` lowers to `0 - e`, so a zero `e` is the `x - 0` identity the Wasm
+/// validator reports -- except a bare literal, which folds into one constant
+/// and emits no subtraction at all. Integers only: a float `-0.0` is negative
+/// zero.
+fn lint_redundant_unop(
+  ctx : @typing_env.ModuleContext,
+  op : @basic.Annotated[@ast.UnOp, @basic.Location],
+  e : @ast.Instr[@typing_env.InferredAnnotation],
+  e_src : @ast.Instr[@basic.Location],
+) -> Unit {
+  if op.desc is Neg &&
+    !is_float_operand(e) &&
+    int_operand_value(e_src) is Some(0) &&
+    !(e_src.desc is Int(_)) {
+    redundant_operation(
+      ctx.diagnostics,
+      op.info,
+      @message.text("This operation has no effect on its result."),
+    )
   }
 }
 

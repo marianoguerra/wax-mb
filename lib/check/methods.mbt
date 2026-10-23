@@ -128,8 +128,11 @@ fn Checker::cont_method(
   self : Checker,
   callee : @ast.Instr[@basic.Location],
 ) -> String? {
-  ignore(self)
-  guard callee.desc is StructGet(_, meth) else { return None }
+  guard callee.desc is StructGet(recv, meth) else { return None }
+  // These were keywords before, so no hand-written struct field can claim the
+  // names -- but a decompiled one can, its fields named by the name section,
+  // so the receiver is checked like every other method's.
+  guard !method_is_struct_field(self.ctx, recv, meth) else { return None }
   match meth.name {
     "resume" | "resume_throw" | "resume_throw_ref" | "switch" => Some(meth.name)
     _ => None
@@ -162,7 +165,10 @@ fn Checker::cont_method_call(
   // signature is what says what the value operands should be, and an operand
   // that needs that -- a block whose result was omitted, a construction with no
   // name -- cannot be typed usefully before it is known.
-  let recv_ = self.expression(recv)
+  // Emitted LAST, above the payload, so its holes take the slots after theirs.
+  let (recv_, resume_holes) = self.type_out_of_order(holes_in(rest), () => {
+    self.expression(recv)
+  })
   let ct = cont_receiver_type(ctx, recv_)
   let src = match ct {
     Some(c) => self.resume_operand_source_types(c, meth.name, tag)
@@ -183,6 +189,7 @@ fn Checker::cont_method_call(
       _ => self.expression(a)
     }
   })
+  resume_holes()
   // The operands as the instruction takes them: payload first, continuation on
   // top.
   let operands = args_.copy()
@@ -377,7 +384,13 @@ fn Checker::array_bulk_method(
   guard meth.name is ("fill" | "copy" | "init") else { return None }
   let arity = if meth.name == "fill" { 3 } else { 4 }
   if args.length() == arity {
-    return Some(meth.name)
+    // Even at the exact arity, a struct with a field of that name is an
+    // indirect call through a function pointer instead.
+    return if method_is_struct_field(self.ctx, recv, meth) {
+      None
+    } else {
+      Some(meth.name)
+    }
   }
   guard receiver_is_array_ref(self.ctx, recv) else { return None }
   Some(meth.name)
@@ -965,7 +978,13 @@ fn Checker::resume_operand_source_types(
       is Some(inner) else {
       return None
     }
-    guard lookup_func_type(ctx.type_context, ctx.diagnostics, inner) is Some(sg) else {
+    guard lookup_func_type(
+        ctx.type_context,
+        ctx.diagnostics,
+        inner,
+        written=true,
+      )
+      is Some(sg) else {
       return None
     }
     Some(sg.params.map(p => p.desc.1))

@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/wat/cram-tests__type-alias.t__strings.wax","startLine":27,"startColumn":3,"endLine":27,"endColumn":6,"startOffset":417,"endOffset":420,"message":"The function 'nat' is never used.","warning":"unused-field","hint":null,"related":[]}

@@ -230,6 +230,7 @@ pub fn checked_block(
   results : Array[@infer.Cell[@infer.InferredType]],
   branch_target : Array[@infer.Cell[@infer.InferredType]],
   check_body : () -> Unit,
+  fall_through? : @infer.Collecting,
 ) -> Unit {
   with_empty_stack(ops, ctx.diagnostics, location, () => {
     // The parameters were popped off the ENCLOSING stack by the caller; they go
@@ -240,6 +241,11 @@ pub fn checked_block(
       @typing_env.ControlFrame::new(branch_target, label~),
       check_body,
     )
+    // The fall-through's natural type, snapshotted before `pop_args` resolves
+    // it to the result, so that it joins with the branched values at its own.
+    if fall_through is Some(cs) && ops.stack is Cons(loc, tv, _) {
+      cs.collected.push((loc, @infer.Cell::make(tv.get())))
+    }
     ops.pop_args(
       ctx.type_context.subtyping_info(),
       ctx.diagnostics,

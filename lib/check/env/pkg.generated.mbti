@@ -13,6 +13,7 @@ import {
   "marianoguerra/wax/wasm/types",
   "moonbitlang/core/debug",
   "moonbitlang/core/ref",
+  "moonbitlang/core/set",
 }
 
 // Values
@@ -35,6 +36,15 @@ pub fn standalone_valtype(@infer.Cell[@infer.InferredType]) -> @infer.InferredVa
 // Errors
 
 // Types and methods
+pub(all) struct AliasDef {
+  name : @ast.Ident
+  typ : @types.ValType[@ast.Ident]
+  mut conditional : Bool
+  mut poisoned : Bool
+  mut used : Bool
+}
+pub fn AliasDef::new(@ast.Ident, @types.ValType[@ast.Ident], conditional~ : Bool) -> Self
+
 pub struct ControlFrame {
   label : @ast.Ident?
   results : Array[@infer.Cell[@infer.InferredType]]
@@ -77,6 +87,8 @@ pub struct ModuleContext {
   read_locals : Array[Int32]
   local_decls : Array[@ast.Ident]
   used_labels : Array[Int32]
+  conditional_alias_names : @set.Set[String]
+  preserved_bodies : Map[(Int32, Int32), Array[@ast.Instr[@basic.Location]]]
   deferred_lints : Array[() -> Unit]
   mut label_decls : Array[@ast.Ident]
   mut assigned_locals : Map[String, Unit]
@@ -113,7 +125,7 @@ pub(all) enum Origin {
   FromFunction(String)
   FromType(String)
   Ignored
-} derive(Eq, @debug.Debug)
+} derive(Eq, Hash, @debug.Debug)
 
 pub(all) struct Reference {
   use_ : @basic.Location
@@ -126,6 +138,7 @@ pub struct Tbl[A] {
   names : Namespace
   entries : Map[String, Array[(@cond.T, A)]]
   mut used : Map[String, Array[Origin]]
+  mut used_pairs : @set.Set[(String, Origin)]
   current : @ref.Ref[Origin]
   hover : (A) -> HoverTarget?
 }
@@ -147,12 +160,16 @@ pub fn[A] Tbl::visible(Self[A], String) -> Array[A]
 pub struct TypeContext {
   store : @store.TypeStore
   types : Tbl[(@store.RefIndex, @ast.SubType)]
+  aliases : Tbl[AliasDef]
+  written : Map[String, Array[(@ast.SubType, @ast.SubType)]]
   features : @feature.Set
   mut subtyping_cache : @store.SubtypingInfo?
 }
 pub fn TypeContext::invalidate(Self) -> Unit
-pub fn TypeContext::new(@store.TypeStore, Tbl[(@store.RefIndex, @ast.SubType)], @feature.Set) -> Self
+pub fn TypeContext::new(@store.TypeStore, Tbl[(@store.RefIndex, @ast.SubType)], @feature.Set, aliases? : Tbl[AliasDef]) -> Self
 pub fn TypeContext::subtyping_info(Self) -> @store.SubtypingInfo
+pub fn TypeContext::unalias(Self, @types.ValType[@ast.Ident]) -> @types.ValType[@ast.Ident]
+pub fn TypeContext::written_form(Self, String, @ast.SubType) -> @ast.SubType
 
 // Type aliases
 pub type InferredAnnotation = (Array[@infer.Cell[@infer.InferredType]], @basic.Location)

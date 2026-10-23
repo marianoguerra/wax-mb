@@ -252,6 +252,8 @@ fn encode_valtype(w : BinaryWriter, vt : ValType) -> Unit {
     F64 => w.write_byte(0x7C)
     V128 => w.write_byte(0x7B)
     Ref(rt) => encode_reftype(w, rt)
+    // The lowering expands every alias to the type it stands for.
+    Alias(_) => abort("a value-type alias reached the binary encoder")
   }
 }
 

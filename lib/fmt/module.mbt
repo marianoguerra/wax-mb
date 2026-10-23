@@ -15,6 +15,17 @@ fn Ctx::modulefield_desc(
 ) -> Unit {
   match f {
     Type(t) => self.rectype(t)
+    TypeAlias(name~, typ~) =>
+      self.p.box(indent=indent_level, () => {
+        self.kw("type")
+        self.space()
+        self.ident(name.name)
+        self.space()
+        self.punct("=")
+        self.space()
+        self.valtype(typ)
+        self.punct(";")
+      })
     ModuleAnnotation(attrs) =>
       self.p.hvbox(() => {
         let mut first = true

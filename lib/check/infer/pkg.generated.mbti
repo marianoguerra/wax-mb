@@ -69,6 +69,7 @@ pub(all) struct InferredValType {
   typ : @types.ValType[@ast.Ident]
   internal : @types.ValType[@store.Id]
   anon_comptype : @ast.CompType?
+  type_alias : @ast.Ident?
 } derive(Eq)
 
 type State[A]

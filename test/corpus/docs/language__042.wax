@@ -1,4 +1,7 @@
-'l: while i <s n : (i += 1) {
-    if skip(i) { br 'l; }   // continue: runs `i += 1`, then re-tests
-    total += i;
+'next: loop {
+    if i <s n {
+        total = total + i;
+        i = i + 1;
+        br 'next;
+    }
 }

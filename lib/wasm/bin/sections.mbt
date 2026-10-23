@@ -240,14 +240,20 @@ fn encode_start_section(mod : Module) -> Bytes raise EncodeError {
 /// This decides whether the compact element encodings -- the ones that list
 /// function indices instead of expressions -- are available.
 ///
-/// The reference asks the same question of its own binary AST, where an
-/// initialiser is always a FOLDED node and so never matches the bare pattern.
-/// The answer there is therefore "only when the list is empty", vacuously --
-/// so the compact form is reachable for an empty segment and nothing else. We
-/// reproduce that: the bytes are what is being compared, and a shorter
-/// encoding of the same segment is still a different module.
-fn all_ref_func(init : Array[Array[Instruction]]) -> Bool {
-  if !init.is_empty() {
+/// The reference asks the same question of its own binary AST, where a
+/// written initialiser is always a FOLDED node and so never matches the bare
+/// pattern. The answer there is therefore "only when the list is empty",
+/// vacuously -- so for a written segment the compact form is reachable when it
+/// is empty and not otherwise. We reproduce that: the bytes are what is being
+/// compared, and a shorter encoding of the same segment is still a different
+/// module.
+///
+/// The exception is the declarative segment the lowering synthesizes for
+/// `ref.func` targets, whose initialisers the reference builds bare. Wax has no
+/// syntax for a declarative segment, so `Declarative` here always means that
+/// synthesized one, and its initialisers are taken as they are.
+fn all_ref_func(mode : ElemMode, init : Array[Array[Instruction]]) -> Bool {
+  if !(mode is Declarative) && !init.is_empty() {
     return false
   }
   for e in init {
@@ -257,10 +263,19 @@ fn all_ref_func(init : Array[Array[Instruction]]) -> Bool {
 }
 
 ///|
-/// Is this the plain nullable `funcref`, the only element type the compact
-/// encodings can spell?
+/// Is this the plain nullable `funcref`, the element type flags 0x04 leaves
+/// implicit?
 fn is_funcref(rt : RefType) -> Bool {
   rt.nullable && rt.typ is Func
+}
+
+///|
+/// Is this the non-null `(ref func)` that the funcidx encodings' `elemkind`
+/// denotes? The elements of an index list are `ref.func`s, so none is null --
+/// which is why the compact forms and flags 0x04 key off opposite
+/// nullabilities.
+fn is_ref_func(rt : RefType) -> Bool {
+  !rt.nullable && rt.typ is Func
 }
 
 ///|
@@ -283,7 +298,8 @@ fn encode_element_section(mod : Module) -> Bytes raise EncodeError {
       // 0, and an implied `funcref`. The spec spells out exactly which
       // combinations have a byte, so this is a table rather than a computation.
       let funcref = is_funcref(elem.type_)
-      let compact = funcref && all_ref_func(elem.init)
+      let compact = is_ref_func(elem.type_) &&
+        all_ref_func(elem.mode, elem.init)
       match elem.mode {
         Active(table_idx, offset) =>
           if compact && table_idx == 0 {
@@ -299,7 +315,7 @@ fn encode_element_section(mod : Module) -> Bytes raise EncodeError {
             w.write_byte(0x02)
             w.write_u32(table_idx)
             encode_expr(w, offset)
-            w.write_byte(0x00) // elemkind: funcref
+            w.write_byte(0x00) // elemkind: (ref func)
           } else {
             w.write_byte(0x06)
             w.write_u32(table_idx)
@@ -309,7 +325,7 @@ fn encode_element_section(mod : Module) -> Bytes raise EncodeError {
         Passive =>
           if compact {
             w.write_byte(0x01)
-            w.write_byte(0x00) // elemkind: funcref
+            w.write_byte(0x00) // elemkind: (ref func)
           } else {
             w.write_byte(0x05)
             encode_reftype(w, elem.type_)
@@ -317,7 +333,7 @@ fn encode_element_section(mod : Module) -> Bytes raise EncodeError {
         Declarative =>
           if compact {
             w.write_byte(0x03)
-            w.write_byte(0x00) // elemkind: funcref
+            w.write_byte(0x00) // elemkind: (ref func)
           } else {
             w.write_byte(0x07)
             encode_reftype(w, elem.type_)
@@ -439,7 +455,12 @@ fn encode_datacount_section(mod : Module) -> Bytes raise EncodeError {
 /// count (12) before the code (10), and the custom sections last -- except the
 /// `metadata.code.*` ones, which the branch-hinting proposal requires between
 /// the function and code sections, and which are not emitted yet.
-pub fn encode(mod : Module) -> Bytes raise EncodeError {
+///
+/// `label_names` false leaves the label names out of the `name` section.
+pub fn encode(
+  mod : Module,
+  label_names~ : Bool = true,
+) -> Bytes raise EncodeError {
   let (code, code_hints) = encode_code_section(mod)
   let w = BinaryWriter::new()
   w.write_bytes(b"\x00\x61\x73\x6D") // "\0asm"
@@ -469,6 +490,6 @@ pub fn encode(mod : Module) -> Bytes raise EncodeError {
   write_section(w, 10, code)
   write_section(w, 11, encode_data_section(mod))
   encode_target_features_section(w, mod.target_features)
-  encode_name_section(w, mod.names)
+  encode_name_section(w, mod.names, label_names~)
   w.to_bytes()
 }

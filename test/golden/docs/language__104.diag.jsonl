@@ -1,1 +1,1 @@
-{"severity":"warning","file":"test/corpus/docs/language__104.wax","startLine":1,"startColumn":5,"endLine":1,"endColumn":12,"startOffset":5,"endOffset":12,"message":"The data segment 'vectors' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"error","file":"test/corpus/docs/language__104.wax","startLine":1,"startColumn":5,"endLine":1,"endColumn":10,"startOffset":5,"endOffset":10,"message":"Expecting a data name.","warning":null,"hint":null,"related":[]}

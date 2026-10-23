@@ -1,0 +1,12 @@
+#[if(p)]
+{
+    type s = { f: i64 };
+}
+#[else]
+{
+    type s = { f: i32 };
+}
+#[export]
+fn f(x: &s) {
+    _ = x.f;
+}

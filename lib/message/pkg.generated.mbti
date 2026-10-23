@@ -23,6 +23,8 @@ pub fn int(Int32) -> Message
 
 pub fn int64(Int64) -> Message
 
+pub fn lazy_type(() -> String) -> Message
+
 pub fn print_styled(@printer.Printer, @colors.Theme, @colors.Style, String) -> Unit
 
 pub fn raw((@printer.Printer, @colors.Theme) -> Unit) -> Message

@@ -11,8 +11,18 @@
 pub struct TypeContext {
   /// The interned store the resolved indices point into.
   store : @type_store.TypeStore
-  /// Name to (index, definition), under the current branch assumption.
+  /// Name to (index, definition), under the current branch assumption. The
+  /// definitions are stored with their aliases expanded, for the readers that
+  /// take a definition apart (a field's storage type, a signature's value
+  /// types); `written` keeps them as written.
   types : Tbl[(@type_store.RefIndex, @ast.SubType)]
+  /// The value-type aliases, in the types' name space: a name is a type or an
+  /// alias, not both.
+  aliases : Tbl[AliasDef]
+  /// Each type definition as written, aliases included, with the form it was
+  /// stored in `types` as -- which says which declaration it is when branches
+  /// of a conditional declare one name more than once.
+  written : Map[String, Array[(@ast.SubType, @ast.SubType)]]
   features : @feature.Set
   /// Subtyping info for `store`, computed on demand and dropped whenever a type
   /// is added -- including a function type minted mid-check for an inline
@@ -25,8 +35,85 @@ pub fn TypeContext::new(
   store : @type_store.TypeStore,
   types : Tbl[(@type_store.RefIndex, @ast.SubType)],
   features : @feature.Set,
+  aliases? : Tbl[AliasDef],
 ) -> TypeContext {
-  { store, types, features, subtyping_cache: None, }
+  let aliases = match aliases {
+    Some(a) => a
+    None => Tbl::new("type alias", types.names, types.current)
+  }
+  { store, types, aliases, written: Map([]), features, subtyping_cache: None, }
+}
+
+///|
+/// A value-type alias definition, `type t = v;`.
+///
+/// Its value type is resolved at each use, as if written there, and an error
+/// that resolution meets is reported at the use. A POISONED alias, whose
+/// definition is in error (reported there: it is cyclic or names no type),
+/// stands for no value type. A CONDITIONAL one, defined under a conditional
+/// annotation, may stand for another type in another configuration; any other
+/// is mere notation.
+pub(all) struct AliasDef {
+  name : @ast.Ident
+  typ : @wasm_types.ValType[@ast.Ident]
+  mut conditional : Bool
+  mut poisoned : Bool
+  /// Whether a use resolved it. One nothing resolved is checked at the end, so
+  /// an error in its definition is still reported, at the definition.
+  mut used : Bool
+}
+
+///|
+pub fn AliasDef::new(
+  name : @ast.Ident,
+  typ : @wasm_types.ValType[@ast.Ident],
+  conditional~ : Bool,
+) -> AliasDef {
+  { name, typ, conditional, poisoned: false, used: false, }
+}
+
+///|
+/// The definition `def` of `name` as it was written, aliases included: what a
+/// reader that only resolves its value types should read, so that an alias is
+/// resolved where it is used, under that use's assumption. `def` itself when
+/// nothing recorded how it was written.
+pub fn TypeContext::written_form(
+  self : TypeContext,
+  name : String,
+  def : @ast.SubType,
+) -> @ast.SubType {
+  match self.written.get(name) {
+    Some(l) => {
+      for e in l {
+        if e.1 == def {
+          return e.0
+        }
+      }
+      def
+    }
+    None => def
+  }
+}
+
+///|
+/// `typ` with an alias use replaced by the value type it stands for, as its
+/// definition writes it, so an inferred type never carries an alias. An unknown
+/// or poisoned alias is kept: converting it fails, and was reported.
+pub fn TypeContext::unalias(
+  self : TypeContext,
+  typ : @wasm_types.ValType[@ast.Ident],
+) -> @wasm_types.ValType[@ast.Ident] {
+  // Bounded, so an alias cycle met before its definition was checked cannot
+  // loop: a cycle is poisoned once checked, and until then is left as written.
+  let mut t = typ
+  for _ in 0..<64 {
+    guard t is Alias(a) else { return t }
+    match self.aliases.find_no_mark(a.name) {
+      Some(al) if !al.poisoned => t = al.typ
+      _ => return t
+    }
+  }
+  t
 }
 
 ///|
@@ -186,6 +273,16 @@ pub struct ModuleContext {
   /// Lints that must read a result cell only once checking has pinned it -- the
   /// shift-count lint reads the shifted operand's width, which a later context
   /// can widen. Flushed when every cell is final.
+  /// The aliases the module defines under a conditional annotation, by name:
+  /// what a configuration, which has its conditionals spliced away, cannot see
+  /// for itself.
+  conditional_alias_names : Set[String]
+  /// The function bodies as WRITTEN, conditional annotations and all, keyed
+  /// by the field's span: what the source-shape lints walk when this context
+  /// checks one configuration of a conditional module. Those lints read the
+  /// source, not the types, so they see every branch in every configuration --
+  /// and a lint reported in all of them holds universally.
+  preserved_bodies : Map[(Int32, Int32), Array[@ast.Instr[@basic.Location]]]
   deferred_lints : Array[() -> Unit]
   /// The block labels declared in this function's body, collected up front, so
   /// one never branched to can be reported.
@@ -395,6 +492,8 @@ pub fn ModuleContext::new(
     local_decls: [],
     used_labels: [],
     deferred_lints: [],
+    preserved_bodies: Map([]),
+    conditional_alias_names: Set([]),
     label_decls: [],
     assigned_locals: Map([]),
     control_types: [],

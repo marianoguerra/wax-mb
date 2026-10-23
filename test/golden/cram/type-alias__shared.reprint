@@ -1,0 +1,12 @@
+#[if(portable_int)]
+{
+    type nativeint = i64;
+}
+#[else]
+{
+    type nativeint = i32;
+}
+#[export = "double"]
+fn double(x: nativeint) -> nativeint {
+    return x + x;
+}

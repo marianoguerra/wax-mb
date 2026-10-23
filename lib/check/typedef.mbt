@@ -23,10 +23,16 @@
 /// to stay unambiguous. `&i64` is the value type and `atomic::fence` the
 /// intrinsic, and neither can be shadowed. These are the value types, the
 /// abstract heap types, and the `atomic` intrinsic namespace; `cont` is a
-/// keyword and so cannot be written as a name at all.
+/// keyword and so cannot be written as a name at all. Also the packed storage
+/// types and the conversion target names (`i32_s`, ...), which a value-type
+/// alias -- sharing the types' name space -- would otherwise shadow where a
+/// storage or cast type is written: an alias `i8` of `i32` would read back as
+/// the packed `i8`.
 let reserved_type_names : Array[String] = [
-  "i32", "i64", "f32", "f64", "v128", "any", "array", "eq", "exn", "extern", "func",
-  "i31", "nocont", "noexn", "noextern", "nofunc", "none", "struct", "atomic",
+  "i32", "i64", "f32", "f64", "v128", "i8", "i16", "i32_s", "i32_u", "i32_s_strict",
+  "i32_u_strict", "i64_s", "i64_u", "i64_s_strict", "i64_u_strict", "f32_s", "f32_u",
+  "f64_s", "f64_u", "any", "array", "eq", "exn", "extern", "func", "i31", "nocont",
+  "noexn", "noextern", "nofunc", "none", "struct", "atomic",
 ]
 
 ///|
@@ -168,7 +174,8 @@ fn expand_splices(
             // `n_subtype`, so it is skipped rather than reported here.
             let parent = match idx {
               Rec(j) => if j < i { Some(expanded[j].desc.1) } else { None }
-              Def(_) => Some(parent)
+              // As written, so a field declared with an alias keeps it.
+              Def(_) => Some(as_written(ctx, sup.name, parent))
             }
             match parent {
               Some({ typ: Struct(pf), .. }) => Some(pf)
@@ -261,7 +268,14 @@ pub fn add_type(
     } else {
       typ
     }
-    ctx.types.override_(name.name, (Def(id.add(i)), typ))
+    // Stored without aliases, for the readers that take a definition apart (a
+    // field's storage type, a signature's value types); kept as written too.
+    let stored = unalias_subtype(ctx, typ)
+    match ctx.written.get(name.name) {
+      Some(l) => l.push((typ, stored))
+      None => ctx.written[name.name] = [(typ, stored)]
+    }
+    ctx.types.override_(name.name, (Def(id.add(i)), stored))
   }
   Some(id)
 }
@@ -286,7 +300,13 @@ fn check_descriptors(
       Some(Def(_)) =>
         descriptor_outside_rec_group(diagnostics, location, described=false)
       Some(Rec(pos)) =>
-        if !(resolved[pos].describes is Some(Rec(o)) && o == i) {
+        if resolved[pos].describes is Some(Rec(o)) && o == i {
+          // Reported on the described type only, so the reciprocal pair
+          // yields a single error.
+          if sub.final_ != resolved[pos].final_ {
+            descriptor_finality_mismatch(diagnostics, location)
+          }
+        } else {
           descriptor_not_reciprocal(diagnostics, location, described=false)
         }
     }

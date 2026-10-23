@@ -272,6 +272,27 @@ pub(all) enum Instruction {
   ///
   /// Carries no opcode of its own -- the encoder unwraps it.
   Spelled(String, Instruction)
+  /// An indirect call whose signature the source wrote INLINE -- `(t[0] as
+  /// &?fn() -> f64)()` -- rather than by a type name. The binary encodes the
+  /// index it resolved to; the text format writes the signature as the source
+  /// did, `(call_indirect $t (result f64) ..)`.
+  ///
+  /// Carries no opcode of its own -- the encoder unwraps it.
+  InlineSignature(FuncType, Instruction)
+  /// An instruction whose result type the source wrote with a value-type
+  /// alias -- a `select` of a conditional alias's type. The binary encodes
+  /// the type the alias stood for; the text format writes the alias,
+  /// `(select (result (@type $n)) ..)`.
+  ///
+  /// Carries no opcode of its own -- the encoder unwraps it.
+  AliasedResult(Bytes, Instruction)
+  /// An instruction the lowering MADE rather than translated -- the blocks and
+  /// branches `--try-table` builds around a legacy try. The text format writes
+  /// it unfolded, `block ... end` and a bare `br 1`, as the reference does for
+  /// what it inserts.
+  ///
+  /// Carries no opcode of its own -- the encoder unwraps it.
+  Unfolded(Instruction)
   /// An array construction that the source wrote as a STRING literal.
   ///
   /// The literal lowers to one constant per byte and an `array.new_fixed` over
@@ -1004,6 +1025,21 @@ pub(all) struct FunctionCode {
   /// The `#[if(..)]` groups written INSIDE this body, matched to the statements
   /// they hold by where each was written -- the same way the module's are.
   conditionals : Array[CondGroup]
+  /// Where each declared local's NAME was written, parallel to `locals`; a
+  /// local the source did not write sits at `dummy_loc`. The text form needs
+  /// it, as the place a comment written after the binding attaches to.
+  local_locs : Array[@basic.Location]
+  /// Where an `if`'s two arms were written, by the number its label takes in
+  /// the order blocks open (see the name section's labels): the text form
+  /// writes them as `(then ..)` and `(else ..)`, and a comment written against
+  /// an arm attaches there. An absent `else` sits at `dummy_loc`.
+  clause_locs : Map[Int32, (@basic.Location, @basic.Location)]
+  /// Where the function's name was written, for the comments written after it;
+  /// `dummy_loc` when nothing recorded one.
+  name_loc : @basic.Location
+  /// Where each NAMED parameter was written, by position: the parameter, and
+  /// its name.
+  param_locs : Map[Int32, (@basic.Location, @basic.Location)]
   /// `#[priority]` on the function, if any.
   priority : Priority?
 } derive(Eq, Debug)
@@ -1224,13 +1260,56 @@ pub(all) struct TextView {
   /// condition and the extent of each branch are recorded here and the fields
   /// are grouped back under them by where they stood.
   conditionals : Array[CondGroup]
+  /// The value-type aliases the source defined, `type n = v;`, by position:
+  /// the name and the type it stands for. The binary has no aliases -- the
+  /// lowering expands every use -- and the text format keeps them, as
+  /// `(@type $n v)` fields.
+  type_aliases : Array[(Bytes, @wasm_types.ValType[Int32])]
+  /// Where the source wrote a type with an alias, and which: the text format
+  /// writes `(@type $n)` there rather than the type it stands for.
+  alias_uses : Map[AliasSite, Bytes]
+  /// Where each field of a declared struct type was written, by type index and
+  /// field position: the field, and its name. A comment written against a
+  /// field attaches there.
+  field_spans : Map[(Int32, Int32), (@basic.Location, @basic.Location)]
+  /// Where each export's name was written, by export index, when the source
+  /// spelled it out: a comment written after it attaches there.
+  export_locs : Map[Int32, @basic.Location]
+  /// Where each declared type's name was written, by type index.
+  type_name_locs : Map[Int32, @basic.Location]
 } derive(Debug)
+
+///|
+/// A place a value type is written, for `TextView::alias_uses`.
+pub(all) enum AliasSite {
+  /// A parameter of a declaration's signature.
+  SiteParam(ParamOwner, Int32)
+  /// A result of a declaration's signature.
+  SiteResult(ParamOwner, Int32)
+  /// A field of a declared struct type, by type index and field position.
+  SiteField(Int32, Int32)
+  /// The element of a declared array type, by type index.
+  SiteElement(Int32)
+  /// A global's declared type, by global index.
+  SiteGlobal(Int32)
+  /// What an alias definition stands for, by its position in `type_aliases`.
+  SiteAlias(Int32)
+  /// A function's declared local, by function index and local index (the
+  /// parameters counted).
+  SiteLocal(Int32, Int32)
+  /// A block's single result, by function index and the number the block's
+  /// label takes in the order blocks open.
+  SiteBlock(Int32, Int32)
+} derive(Eq, Hash, Debug)
 
 ///|
 /// One `#[if(..)]` group: the condition as the TEXT format writes it, and
 /// where each branch stood in the source.
 pub(all) struct CondGroup {
   cond : String
+  /// The same condition as a tree, for a layout that can break it across
+  /// lines as the reference does.
+  tree : @wasm_types.Cond
   loc : @basic.Location
   then_ : @basic.Location
   else_ : @basic.Location?
@@ -1247,6 +1326,11 @@ pub fn TextView::empty() -> TextView {
     standalone_exports: Map([]),
     named_types: Map([]),
     conditionals: [],
+    type_aliases: [],
+    alias_uses: Map([]),
+    field_spans: Map([]),
+    export_locs: Map([]),
+    type_name_locs: Map([]),
   }
 }
 
@@ -1292,6 +1376,8 @@ pub(all) enum FieldRef {
   FTag(Int32)
   FElem(Int32)
   FData(Int32)
+  /// A value-type alias, by its position in `TextView::type_aliases`.
+  FTypeAlias(Int32)
 } derive(Eq, Debug)
 
 ///|

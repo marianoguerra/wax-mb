@@ -222,6 +222,13 @@ fn warn_unused_fields(
         for d in decls {
           report_unused_import(ctx, live_fns, d.desc)
         }
+      // An alias is used when something that can run -- a live function, a
+      // live type, a module-level context -- resolves it. One whose definition
+      // is in error was reported there, and is not reported again.
+      TypeAlias(name~, ..) =>
+        if !intentional(name.name) && !alias_live(ctx, live_fns, live_ts, name) {
+          unused_field(ctx.diagnostics, name.loc, "type alias", name.name)
+        }
       // Each member of a rec group is reported on its own; the group as a whole is
       // dead only when nothing outside it names any member.
       Type(rectype) =>
@@ -232,6 +239,37 @@ fn warn_unused_fields(
           }
         }
       _ => ()
+    }
+  })
+}
+
+///|
+/// Whether an alias is referred to by anything that can run, or is in error.
+fn alias_live(
+  ctx : @typing_env.ModuleContext,
+  live_fns : Map[String, Unit],
+  live_ts : Map[String, Unit],
+  name : @ast.Ident,
+) -> Bool {
+  let aliases = ctx.type_context.aliases
+  // Only an alias that was registered is reported: one whose name a type
+  // already bears was reported as a clash, and never declared.
+  let registered = aliases
+    .iter_entries()
+    .filter(e => e.0 == name.name && e.1.name.loc == name.loc)
+  guard registered is [entry, ..] else { return true }
+  if entry.1.poisoned {
+    return true
+  }
+  aliases
+  .referrers(name.name)
+  .iter()
+  .any(o => {
+    match o {
+      Root => true
+      FromFunction(f) => live_fns.contains(f)
+      FromType(t) => live_ts.contains(t)
+      Ignored => false
     }
   })
 }

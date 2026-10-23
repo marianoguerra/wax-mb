@@ -319,7 +319,7 @@ fn check_attributes(
         for dd in decls {
           check_import_attributes(ctx, dd.desc.attributes)
         }
-      Type(_) | Conditional(..) => ()
+      Type(_) | TypeAlias(..) | Conditional(..) => ()
     }
   })
   walk_fields(ctx, fields, field => {
@@ -340,7 +340,7 @@ fn check_attributes(
         for d in decls {
           visit(d.desc.attributes, Some(d.desc.id), d.info)
         }
-      Type(_) | Conditional(..) => ()
+      Type(_) | TypeAlias(..) | Conditional(..) => ()
     }
   })
 }

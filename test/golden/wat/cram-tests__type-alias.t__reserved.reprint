@@ -1,0 +1,6 @@
+type i8_2 = i32;
+type s = { f: mut i8_2 };
+#[export]
+fn mk(x: i32) -> &s {
+    { f: x };
+}

@@ -73,6 +73,7 @@ pub(all) enum CastType {
   Value(@types.ValType[Ident])
   Func(nullable~ : Bool, sign~ : FuncType)
   Signed(typ~ : NumType, signage~ : @types.Signage, strict~ : Bool)
+  Ascribed(@types.ValType[Ident])
 } derive(Eq, @debug.Debug)
 
 pub(all) enum Catch {
@@ -240,6 +241,7 @@ pub(all) struct MemData[Info] {
 
 pub(all) enum ModuleField[Info] {
   Type(Array[@basic.Annotated[(Ident, SubType), @basic.Location]])
+  TypeAlias(name~ : Ident, typ~ : @types.ValType[Ident])
   Func(name~ : Ident, typ~ : Ident?, sign~ : FuncType?, body~ : (Ident?, Array[Instr[Info]]), attributes~ : Array[Attribute])
   Global(name~ : Ident, mut_~ : Bool, typ~ : @types.ValType[Ident]?, def~ : Instr[Info], attributes~ : Array[Attribute])
   Tag(name~ : Ident, typ~ : Ident?, sign~ : FuncType?, attributes~ : Array[Attribute])

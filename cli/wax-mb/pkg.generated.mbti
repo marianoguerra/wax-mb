@@ -2,6 +2,7 @@
 package "marianoguerra/wax-cli/wax-mb"
 
 import {
+  "marianoguerra/wax/check",
   "marianoguerra/wax/colors",
   "marianoguerra/wax/diagnostic",
   "marianoguerra/wax/feature",
@@ -15,6 +16,8 @@ pub fn parse_args(Array[String]) -> Result[Options, (Status, String)]
 pub fn prog() -> String
 
 pub fn set_prog_name(String) -> Unit
+
+pub fn usage_line(Array[String]) -> String
 
 // Errors
 
@@ -38,6 +41,9 @@ pub(all) struct Options {
   inplace : Bool
   policy : @warning.Policy
   features : @feature.Set
+  try_table : Bool
+  validate : Bool
+  defines : Map[String, @check.Define]
 }
 
 pub(all) enum Status {

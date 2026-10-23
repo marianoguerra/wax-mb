@@ -98,7 +98,7 @@ fn lint_confusable(
   for field in fields {
     let location = field.info
     match field.desc {
-      Type(_) => ()
+      Type(_) | TypeAlias(..) => ()
       Func(body~, attributes~, ..) => {
         check_attrs(diagnostics, attributes)
         check_instrs(diagnostics, body.1)

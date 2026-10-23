@@ -37,15 +37,15 @@ pub fn check_lane_immediate(@diagnostic.Context, Int32, @basic.Annotated[@ast.In
 
 pub fn check_memarg(@diagnostic.Context, @types.AddressType, Int32, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?, @basic.Annotated[@ast.InstrDesc[@basic.Location], @basic.Location]?) -> Unit
 
-pub fn check_module(@diagnostic.Context, @store.TypeStore, @feature.Set, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], simplify? : Bool, warn_unused? : Bool) -> (@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]])
+pub fn check_module(@diagnostic.Context, @store.TypeStore, @feature.Set, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], simplify? : Bool, warn_unused? : Bool, lowering? : Bool, suggest? : Bool) -> (@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]])
 
 pub fn check_num_concrete(@diagnostic.Context, @basic.Location, @infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType]) -> Unit
 
 pub fn check_operands(@store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], Array[@infer.Cell[@infer.InferredType]]) -> Unit
 
-pub fn check_subtypes(@store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], pin? : Bool) -> Unit
+pub fn check_subtypes(@store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], pin? : Bool, expected_at? : @basic.Location) -> Unit
 
-pub fn checked_block(@env.ModuleContext, Operands, @basic.Location, @ast.Ident?, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], () -> Unit) -> Unit
+pub fn checked_block(@env.ModuleContext, Operands, @basic.Location, @ast.Ident?, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]], () -> Unit, fall_through? : @infer.Collecting) -> Unit
 
 pub fn classify_method_call(@env.ModuleContext, @ast.Ident, String) -> MethodCall
 
@@ -58,6 +58,8 @@ pub fn cont_functype(@store.SubtypingInfo, @types.HeapType[@store.Id]) -> @store
 pub fn[Info] declare_fields(@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]]) -> Unit
 
 pub fn declare_local(@env.ModuleContext, @ast.Ident, @types.ValType[@ast.Ident]) -> Unit
+
+pub fn declared_form(@infer.InferredValType) -> @types.ValType[@ast.Ident]
 
 pub fn deliver_to_branch_target(@store.SubtypingInfo, @diagnostic.Context, @basic.Location, Array[@infer.Cell[@infer.InferredType]], Array[@infer.Cell[@infer.InferredType]]) -> Array[@infer.Cell[@infer.InferredType]]
 
@@ -105,7 +107,7 @@ pub fn is_cont_heaptype(@env.TypeContext, @types.HeapType[@ast.Ident]) -> Bool
 
 pub fn is_defaultable(@types.ValType[@ast.Ident]) -> Bool
 
-pub fn is_effectless(@ast.Instr[@basic.Location]) -> Bool
+pub fn is_effectless(@ast.Instr[@basic.Location], unalias? : (@types.ValType[@ast.Ident]) -> @types.ValType[@ast.Ident]) -> Bool
 
 pub fn join_collected(@diagnostic.Context, @basic.Location, Array[(@basic.Location?, @infer.Cell[@infer.InferredType])], (@infer.InferredValType, @infer.InferredValType) -> @infer.InferredValType?) -> @infer.Cell[@infer.InferredType]?
 
@@ -123,9 +125,9 @@ pub fn lint_ref_cast(@env.ModuleContext, @basic.Location, is_test~ : Bool, @infe
 
 pub fn literal_type(@ast.InstrDesc[@basic.Location]) -> @infer.InferredType?
 
-pub fn lookup_array_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @types.MutType[@types.StorageType[@ast.Ident]]?
+pub fn lookup_array_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?, written? : Bool) -> @types.MutType[@types.StorageType[@ast.Ident]]?
 
-pub fn lookup_func_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> @ast.FuncType?
+pub fn lookup_func_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?, written? : Bool) -> @ast.FuncType?
 
 pub fn lookup_struct_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> Array[@basic.Annotated[(@ast.Ident, @types.MutType[@types.StorageType[@ast.Ident]]), @basic.Location]]?
 
@@ -147,6 +149,8 @@ pub fn n_functype(@env.TypeContext, @diagnostic.Context, @ast.FuncType) -> @stor
 
 pub fn n_heaptype(@env.TypeContext, @diagnostic.Context, @types.HeapType[@ast.Ident]) -> @types.HeapType[@store.RefIndex]?
 
+pub fn parse_define(String) -> Result[(String, Define), String]
+
 pub fn render_stack(Stack) -> String
 
 pub fn report_empty_exits(@diagnostic.Context, @infer.Collecting) -> Unit
@@ -163,9 +167,13 @@ pub fn resolve_type_name(@env.TypeContext, @diagnostic.Context, @ast.Ident) -> @
 
 pub fn resolve_variable(@env.ModuleContext, @ast.Ident) -> ResolvedVar
 
+pub fn rewrite_legacy_try(@diagnostic.Context, Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]], Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]
+
 pub fn segment_receiver(@env.ModuleContext, @ast.Ident) -> Bool
 
 pub fn set_suggestions(@env.ModuleContext, String) -> Array[String]
+
+pub fn specialize_defines(@diagnostic.Context, Map[String, Define], Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> (Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[(Int32, Int32)])
 
 pub fn storage_subtype(@store.SubtypingInfo, @types.StorageType[@store.Id], @types.StorageType[@store.Id]) -> Bool
 
@@ -187,6 +195,8 @@ pub fn valtype(@env.TypeContext, @diagnostic.Context, @types.ValType[@ast.Ident]
 
 pub fn[Info] walk_fields(@env.ModuleContext, Array[@basic.Annotated[@ast.ModuleField[Info], @basic.Location]], (@basic.Annotated[@ast.ModuleField[Info], @basic.Location]) -> Unit) -> Unit
 
+pub fn written_alias(@types.ValType[@ast.Ident]) -> @ast.Ident?
+
 // Errors
 
 // Types and methods
@@ -195,12 +205,21 @@ pub struct Checker {
   ops : Operands
   unpeeled : Map[String, Int32]
   mut holes : HoleRun
+  mut select : Map[(Int32, Int32), Bool]?
+  mut reinfer : Reinfer
+  mut pinned_name : @ast.Ident?
 }
 pub fn Checker::check(Self, @infer.Cell[@infer.InferredType], @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::expression(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 pub fn Checker::gaps(Self) -> Array[(String, Int32)]
 pub fn Checker::new(@env.ModuleContext, Operands) -> Self
 pub fn Checker::statement(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
+
+pub(all) enum Define {
+  DefineBool(Bool)
+  DefineVersion(Int32, Int32, Int32)
+  DefineString(String)
+} derive(Eq, @debug.Debug)
 
 type HoleRun
 
@@ -228,6 +247,8 @@ pub fn Operands::push(Self, @basic.Location?, @infer.Cell[@infer.InferredType]) 
 pub fn Operands::push_results(Self, @basic.Location, Array[@infer.Cell[@infer.InferredType]]) -> Unit
 pub fn Operands::set_unreachable(Self) -> Unit
 pub fn[A] Operands::with_empty(Self, () -> A) -> (A, Stack)
+
+type Reinfer
 
 pub(all) enum ResolvedVar {
   Local(@infer.InferredValType?, @basic.Location)

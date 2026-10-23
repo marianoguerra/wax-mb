@@ -35,6 +35,7 @@ pub fn[Info] Ctx::valtype(self : Ctx[Info], t : @ast.ValType) -> Unit {
     F64 => self.typ("f64")
     V128 => self.typ("v128")
     Ref(r) => self.reftype(r)
+    Alias(a) => self.typ(a.name)
   }
 }
 

@@ -196,6 +196,8 @@ fn Lowering::cast_instruction(
   loc : @basic.Location,
 ) -> Unit raise LowerError {
   match (from, target) {
+    // A type ascription is a static assertion: no instruction.
+    (_, Ascribed(_)) => ()
     (I32, Value(Ref({ typ: I31, .. }))) => out.push(RefI31)
     (Ref(_), Signed(typ=I32, signage~, ..)) => out.push(i31_get(signage))
     (

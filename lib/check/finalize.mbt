@@ -178,7 +178,7 @@ pub fn finalize_inferred(
         exacts,
       )
     }
-    return ([@infer.valtype_cell(iv)], { ..typ, results: [iv.typ], })
+    return ([@infer.valtype_cell(iv)], { ..typ, results: [declared_form(iv)], })
   }
   let result_cells : Array[@infer.Cell[@infer.InferredType]] = []
   for r in typ.results {

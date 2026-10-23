@@ -1,0 +1,22 @@
+#[if(portable_int)]
+{
+    type nativeint = i64;
+}
+#[else]
+{
+    type nativeint = i32;
+}
+import "nativeint" {
+    fn Nativeint_val(&eq) -> nativeint;
+    fn caml_copy_nativeint(nativeint) -> &eq;
+}
+type digits = [mut nativeint];
+#[export]
+fn id(v: &eq) -> &eq {
+    let n: nativeint = Nativeint_val(v);
+    caml_copy_nativeint(n);
+}
+#[export]
+fn digit(d: &digits) -> &eq {
+    caml_copy_nativeint(d[0]);
+}

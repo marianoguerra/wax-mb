@@ -20,7 +20,16 @@ fn export_clauses(
   let out : Array[Sexp] = []
   for k, e in m.exports {
     if e.desc == of_ && !m.text.standalone_exports.contains(k) {
-      out.push(List([Atom("export"), Atom(quoted(e.name))]))
+      let name = Atom(quoted(e.name))
+      out.push(
+        List([
+          Atom("export"),
+          match m.text.export_locs.get(k) {
+            Some(loc) => At(loc, name)
+            None => name
+          },
+        ]),
+      )
     }
   }
   out
@@ -152,7 +161,14 @@ fn opt_id(names : Map[Int32, Bytes], k : Int32) -> Array[Sexp] {
 /// final or has a supertype.
 fn subtype_field(m : @wasm_bin.Module, k : Int32) -> Sexp {
   let t = m.types[k]
-  let head = block([Atom("type"), ..opt_id(m.names.types, k)])
+  // The name where the source wrote it, so a comment trailing it is found.
+  let id = opt_id(m.names.types, k).map(a => {
+    match m.text.type_name_locs.get(k) {
+      Some(loc) => At(loc, a)
+      None => a
+    }
+  })
+  let head = block([Atom("type"), ..id])
   let body = comptype(m, k, t.composite)
   let clauses = describes_clauses(m, t)
   if t.final_ && t.supertypes.is_empty() {
@@ -207,12 +223,16 @@ fn comptype(
     Func(ft) => {
       let l : Array[Sexp] = [Atom("func")]
       let names = m.text.decl_param_names.get(OwnerType(of_)).unwrap_or(Map([]))
-      for x in functype(m, ft, names~) {
+      for x in functype(m, ft, names~, owner=Some(OwnerType(of_))) {
         l.push(x)
       }
       List(l)
     }
-    Array(at) => List([Atom("array"), Atom(fieldtype(m, at.element))])
+    Array(at) =>
+      List([
+        Atom("array"),
+        Atom(fieldtype(m, at.element, site=Some(SiteElement(of_)))),
+      ])
     Cont(i) => List([Atom("cont"), Atom(name_or(m.names.types, i))])
     Struct(st) => {
       let l : Array[Sexp] = [Atom("struct")]
@@ -222,7 +242,22 @@ fn comptype(
           Some(n) => ident(n)
           None => ""
         }
-        l.push(List(named_type(name, "field", fieldtype(m, f))))
+        let entry = named_type(
+          name,
+          "field",
+          fieldtype(m, f, site=Some(SiteField(of_, j))),
+        )
+        // The field and its name, where the source wrote them, so the comments
+        // written against them are found.
+        match m.text.field_spans.get((of_, j)) {
+          Some((loc, name_loc)) => {
+            if entry.length() == 3 {
+              entry[1] = At(name_loc, entry[1])
+            }
+            l.push(At(loc, List(entry)))
+          }
+          None => l.push(List(entry))
+        }
       }
       List(l)
     }
@@ -235,8 +270,25 @@ fn functype(
   m : @wasm_bin.Module,
   ft : @wasm_bin.FuncType,
   names~ : Map[Int32, Bytes] = Map([]),
+  owner~ : @wasm_bin.ParamOwner? = None,
 ) -> Array[Sexp] {
   let out : Array[Sexp] = []
+  // A parameter or result as the declaration wrote it: with its alias, if it
+  // used one.
+  fn param(k : Int32, t : @wasm_types.ValType[Int32]) -> String {
+    match owner {
+      Some(o) => aliased(m, SiteParam(o, k), valtype(t, m.names.types))
+      None => valtype(t, m.names.types)
+    }
+  }
+
+  fn result(k : Int32, t : @wasm_types.ValType[Int32]) -> String {
+    match owner {
+      Some(o) => aliased(m, SiteResult(o, k), valtype(t, m.names.types))
+      None => valtype(t, m.names.types)
+    }
+  }
+
   // Named parameters take a group each; unnamed ones share one. Same rule a
   // defined function follows, and for the same reason: the shared form has
   // nowhere to put a name.
@@ -246,19 +298,19 @@ fn functype(
         Some(b) => ident(b)
         None => ""
       }
-      out.push(List(named_type(n, "param", valtype(t, m.names.types))))
+      out.push(List(named_type(n, "param", param(k, t))))
     }
   } else if !ft.params.is_empty() {
     let l : Array[Sexp] = [Atom("param")]
-    for t in ft.params {
-      l.push(Atom(valtype(t, m.names.types)))
+    for k, t in ft.params {
+      l.push(Atom(param(k, t)))
     }
     out.push(List(l))
   }
   if !ft.results.is_empty() {
     let l : Array[Sexp] = [Atom("result")]
-    for t in ft.results {
-      l.push(Atom(valtype(t, m.names.types)))
+    for k, t in ft.results {
+      l.push(Atom(result(k, t)))
     }
     out.push(List(l))
   }
@@ -266,9 +318,17 @@ fn functype(
 }
 
 ///|
-fn fieldtype(m : @wasm_bin.Module, f : @wasm_bin.FieldType) -> String {
+fn fieldtype(
+  m : @wasm_bin.Module,
+  f : @wasm_bin.FieldType,
+  site~ : @wasm_bin.AliasSite? = None,
+) -> String {
   let t = match f.typ {
-    Value(v) => valtype(v, m.names.types)
+    Value(v) =>
+      match site {
+        Some(s) => aliased(m, s, valtype(v, m.names.types))
+        None => valtype(v, m.names.types)
+      }
     Packed(I8) => "i8"
     Packed(I16) => "i16"
   }
@@ -280,8 +340,15 @@ fn fieldtype(m : @wasm_bin.Module, f : @wasm_bin.FieldType) -> String {
 }
 
 ///|
-fn globaltype(m : @wasm_bin.Module, g : @wasm_bin.GlobalType) -> String {
-  let t = valtype(g.typ, m.names.types)
+fn globaltype(
+  m : @wasm_bin.Module,
+  g : @wasm_bin.GlobalType,
+  site~ : @wasm_bin.AliasSite? = None,
+) -> String {
+  let t = match site {
+    Some(s) => aliased(m, s, valtype(g.typ, m.names.types))
+    None => valtype(g.typ, m.names.types)
+  }
   if g.mut_ {
     "(mut " + t + ")"
   } else {
@@ -349,7 +416,7 @@ fn typeuse(
         Some(o) => m.text.decl_param_names.get(o).unwrap_or(Map([]))
         None => Map([])
       }
-      let sign = functype(m, ft, names~)
+      let sign = functype(m, ft, names~, owner~)
       if !sign.is_empty() {
         out.push(block(sign))
       }
@@ -568,7 +635,7 @@ fn import_parts(
       (
         "global",
         opt_id(m.names.globals, n),
-        [Atom(globaltype(m, g))],
+        [Atom(globaltype(m, g, site=Some(SiteGlobal(n))))],
         Global(n),
       )
     Tag(t) =>
@@ -597,7 +664,7 @@ fn global_field(m : @wasm_bin.Module, k : Int32) -> Sexp raise WatError {
   for e in export_clauses(m, Global(at)) {
     head.push(e)
   }
-  head.push(Atom(globaltype(m, g.type_)))
+  head.push(Atom(globaltype(m, g.type_, site=Some(SiteGlobal(at)))))
   let l : Array[Sexp] = [block(head)]
   for x in const_expr(m, g.init, spans=g.init_spans) {
     l.push(x)
@@ -800,6 +867,9 @@ fn const_expr(
     opened: 0,
     scope: [],
     conditionals: [],
+    clause_locs: Map([]),
+    func: -1,
+    outer: [],
   }
   let out : Array[Sexp] = []
   for node in fold(body, spans) {

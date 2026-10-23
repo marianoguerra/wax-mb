@@ -294,6 +294,7 @@ test "unknown, error and the bottom reference" {
     typ: Ref({ nullable: true, typ: Any, }),
     internal: Ref({ nullable: true, typ: Any, }),
     anon_comptype: None,
+    type_alias: None,
   }
   // A genuinely polymorphic value takes whatever consumes it -- and IS pinned,
   // because the lowering can only emit `unreachable` for a value with no type.
@@ -332,6 +333,7 @@ test "null" {
       typ: Ref({ nullable: n, typ: Any, }),
       internal: Ref({ nullable: n, typ: Any, }),
       anon_comptype: None,
+      type_alias: None,
     }
   }
 
@@ -711,6 +713,7 @@ test "the bottoms in a join" {
     typ: Ref({ nullable: true, typ: Any, }),
     internal: Ref({ nullable: true, typ: Any, }),
     anon_comptype: None,
+    type_alias: None,
   }
   let info = @type_store.TypeStore::new().subtyping_info()
   let _ = @typing.subtype(info, a, @infer.valtype_cell(anyref))
@@ -1216,6 +1219,7 @@ test "reading before initializing" {
       typ: Ref({ nullable: false, typ: Any, }),
       internal: Ref({ nullable: false, typ: Any, }),
       anon_comptype: None,
+      type_alias: None,
     }),
     loc_at(2, 3),
   )
@@ -5042,6 +5046,7 @@ test "an unrelated cast can never succeed" {
       typ: Ref({ nullable, typ: h, }),
       internal: Ref({ nullable, typ: ih, }),
       anon_comptype: None,
+      type_alias: None,
     })
   }
 
@@ -5109,6 +5114,7 @@ test "a chain of trapping casts is reported once" {
       typ: Ref({ nullable: false, typ: h, }),
       internal: Ref({ nullable: false, typ: ih, }),
       anon_comptype: None,
+      type_alias: None,
     })
   }
 
@@ -6143,6 +6149,7 @@ test "the lub climbs to a common supertype, or finds none" {
               typ: Ref({ nullable: false, typ: h, }),
               internal: Ref({ nullable: false, typ: Any, }),
               anon_comptype: None,
+              type_alias: None,
             }),
           ),
         )
@@ -7177,7 +7184,7 @@ test "a simd operation takes its receiver as its first operand" {
     @typing.bind_local(
       ctx,
       id("v"),
-      Some({ typ: V128, internal: V128, anon_comptype: None, }),
+      Some({ typ: V128, internal: V128, anon_comptype: None, type_alias: None, }),
     )
     let checker = @typing.Checker::new(ctx, @typing.Operands::new())
     let c = checker.statement(

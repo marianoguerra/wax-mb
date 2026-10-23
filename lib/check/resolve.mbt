@@ -65,6 +65,14 @@ fn resolve_type_ref(
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
 ) -> @type_store.RefIndex? {
+  // A value-type alias shares the types' name space but names no heap type.
+  // The mistaken use still counts as one, so the alias is not also reported
+  // unused.
+  if ctx.types.find_no_mark(name.name) is None &&
+    ctx.aliases.resolve(name.name, name.loc) is Some(_) {
+    alias_as_heap_type(diagnostics, name.loc, name.name)
+    return None
+  }
   find(ctx.types, diagnostics, name).map(r => r.0)
 }
 
@@ -165,6 +173,12 @@ pub fn valtype(
     F64 => Some(F64)
     V128 => Some(V128)
     Ref(r) => reftype(ctx, diagnostics, r).map(t => @wasm_types.ValType::Ref(t))
+    Alias(a) => {
+      guard alias_definition(ctx, diagnostics, a) is Some(al) else {
+        return None
+      }
+      resolve_alias(diagnostics, a, al, (d, t) => valtype(ctx, d, t))
+    }
   }
 }
 
@@ -234,6 +248,12 @@ fn n_valtype(
     V128 => Some(V128)
     Ref(r) =>
       n_reftype(ctx, diagnostics, r).map(t => @wasm_types.ValType::Ref(t))
+    Alias(a) => {
+      guard alias_definition(ctx, diagnostics, a) is Some(al) else {
+        return None
+      }
+      resolve_alias(diagnostics, a, al, (d, t) => n_valtype(ctx, d, t))
+    }
   }
 }
 
@@ -386,9 +406,39 @@ pub fn internalize_valtype(
   diagnostics : @diagnostic.Context,
   typ : @wasm_types.ValType[@ast.Ident],
 ) -> @infer.InferredValType? {
+  // The Wax-side type is stored with its aliases expanded; the alias it was
+  // written with, if any, is kept beside it.
   valtype(ctx, diagnostics, typ).map(internal => {
-    ({ typ, internal, anon_comptype: None, } : @infer.InferredValType)
+    (
+      {
+        typ: ctx.unalias(typ),
+        internal,
+        anon_comptype: None,
+        type_alias: written_alias(typ),
+      } : @infer.InferredValType)
   })
+}
+
+///|
+/// The alias a declaration written `typ` carries.
+pub fn written_alias(typ : @wasm_types.ValType[@ast.Ident]) -> @ast.Ident? {
+  match typ {
+    Alias(a) => Some(a)
+    _ => None
+  }
+}
+
+///|
+/// How a declaration whose type is inferred as `iv` is written: with the alias
+/// it was declared with, when it has one, so that the declaration has the right
+/// type in every configuration.
+pub fn declared_form(
+  iv : @infer.InferredValType,
+) -> @wasm_types.ValType[@ast.Ident] {
+  match iv.type_alias {
+    Some(a) => Alias(a)
+    None => iv.typ
+  }
 }
 
 ///|
@@ -404,6 +454,11 @@ pub fn internalize(
   inline~ : @ast.CompType? = None,
 ) -> @infer.Cell[@infer.InferredType]? {
   valtype(ctx, diagnostics, typ).map(internal => {
-    @infer.valtype_cell({ typ, internal, anon_comptype: inline, })
+    @infer.valtype_cell({
+      typ: ctx.unalias(typ),
+      internal,
+      anon_comptype: inline,
+      type_alias: written_alias(typ),
+    })
   })
 }

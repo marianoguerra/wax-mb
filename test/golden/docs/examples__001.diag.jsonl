@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/docs/examples__001.wax","startLine":6,"startColumn":8,"endLine":6,"endColumn":9,"startOffset":143,"endOffset":144,"message":"The result of this expression is discarded, and computing it has no effect.","warning":"unused-result","hint":null,"related":[]}

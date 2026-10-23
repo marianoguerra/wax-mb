@@ -1,5 +1,5 @@
-'outer: loop {
-    'inner: loop {
-        br 'outer;   // jump back to the start of the outer loop
-    }
+'next: loop {
+    total = total + i;
+    i = i + 1;
+    br_if 'next i <s n;   // jump back to the start while i < n
 }

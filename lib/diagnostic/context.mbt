@@ -175,6 +175,48 @@ pub fn Context::report(
 }
 
 ///|
+/// How many diagnostics a collector holds, which is where the next one lands.
+pub fn Context::queued(self : Context) -> Int32 {
+  self.queue.length()
+}
+
+///|
+/// Move a collector's most recent diagnostic to position `at`, for a report
+/// worked out after the fact that belongs where the diagnostics stood when the
+/// thing it is about was reached. A rendering context printed its warnings
+/// already, so it is left alone.
+pub fn Context::move_last_to(self : Context, at : Int32) -> Unit {
+  guard self.render is None else { return }
+  guard at >= 0 && at < self.queue.length() else { return }
+  let last = self.queue.pop().unwrap()
+  self.queue.insert(at, last)
+}
+
+///|
+/// Report again a diagnostic a collector gathered, optionally at another
+/// location and with more related spans -- which is how an error met while
+/// resolving a definition is reported where the definition is USED.
+pub fn Context::replay(
+  self : Context,
+  d : Diagnostic,
+  loc~ : @basic.Location? = None,
+  related~ : Array[Label] = [],
+) -> Unit {
+  let all_related = d.related.copy()
+  all_related.append(related)
+  self.report(
+    loc.unwrap_or(d.loc),
+    d.severity,
+    d.message,
+    warning=d.warning,
+    universal=d.universal,
+    hint=d.hint,
+    edit=d.edit,
+    related=all_related,
+  )
+}
+
+///|
 /// Run `f` in a rendering context, flushing its diagnostics afterwards.
 ///
 /// `color` and `palette` are both required: a rendering context must decide up

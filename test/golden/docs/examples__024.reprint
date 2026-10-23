@@ -1,21 +1,11 @@
-#![feature = "custom-descriptors"]
-
-rec {
-    type obj = descriptor obj_desc { x: i32 };
-    type obj_desc = describes obj { kind: i32 };
+#[export = "add_u128"]
+fn add_u128(a_lo: i64, a_hi: i64, b_lo: i64, b_hi: i64) -> (i64, i64) {
+    let (lo, hi) = i64::add128(a_lo, a_hi, b_lo, b_hi);
+    lo;
+    hi;
 }
 
-#[export = "make"]
-fn make(kind: i32, x: i32) -> &!obj {
-    { descriptor({obj_desc| kind })| x };
-}
-
-#[export = "kind_of"]
-fn kind_of(o: &obj) -> i32 {
-    o.descriptor.kind;
-}
-
-#[export = "narrow"]
-fn narrow(v: &?any, d: &!obj_desc) -> &?obj {
-    v as ?descriptor(d);
+#[export = "mul_u64_to_u128"]
+fn mul_u64_to_u128(a: i64, b: i64) -> (i64, i64) {
+    i64::mul_wide_u(a, b);
 }

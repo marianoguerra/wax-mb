@@ -746,8 +746,12 @@ fn encode_instruction(
     }
     // Neither a spelling nor a source form is part of the encoding: the bytes
     // are the value, and the construction is the construction.
-    Spelled(_, inner) | FromChar(_, inner) | FromString(_, inner) =>
-      encode_instruction(w, inner)
+    Spelled(_, inner)
+    | FromChar(_, inner)
+    | FromString(_, inner)
+    | InlineSignature(_, inner)
+    | AliasedResult(_, inner)
+    | Unfolded(inner) => encode_instruction(w, inner)
     // Stack switching. `wasm_core` had none of these; the encodings are
     // wasm_output.ml's, which is what they are measured against.
     ContNew(idx) => {

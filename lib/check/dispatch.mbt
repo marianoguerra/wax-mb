@@ -35,15 +35,79 @@ struct HoleRun {
   /// The first hole in emission order, which is where the reference anchors the
   /// report. `None` when the statement has no hole at all.
   first : @basic.Location?
-  /// How many of them have taken a value, which is `pop_any`'s `current`.
+  /// How many of them have taken a value -- the next hole's slot in `pending`.
   mut taken : Int32
+  /// The values the statement's holes draw from, popped together before the
+  /// statement is typed: deepest first, so the `k`-th hole in emission order
+  /// takes `pending[k]`. A missing value is an `Error` cell at the FRONT, which
+  /// is where the reference's top-down `pop_many` leaves its gaps.
+  pending : Array[@infer.Cell[@infer.InferredType]]
+  /// Where the diagnostics stood when each node of the statement began to be
+  /// typed, by span. The hole reports are worked out after the statement is
+  /// typed, from a walk in emission order, but the reference makes them AS it
+  /// types -- an ordering fault just before the operand holding the hole, an
+  /// underflow when the hole is reached -- so each is moved back to where its
+  /// node began.
+  starts : Map[(Int32, Int32), Int32]
 }
 
 ///|
 /// A statement with no holes: what every hole-free statement runs under, and
 /// what a hole reached outside any `with_holes` falls back to.
 fn HoleRun::none() -> HoleRun {
-  { batch: Ref(None), expected: 0, first: None, taken: 0, }
+  {
+    batch: Ref(None),
+    expected: 0,
+    first: None,
+    taken: 0,
+    pending: [],
+    starts: Map([]),
+  }
+}
+
+///|
+/// Note where the diagnostics stand as `i` begins to be typed, for the hole
+/// reports of a statement that has holes (see `HoleRun::starts`).
+fn Checker::note_start(self : Checker, i : @ast.Instr[@basic.Location]) -> Unit {
+  let run = self.holes
+  guard run.expected > 0 else { return }
+  let key = (i.info.start.cnum, i.info.end.cnum)
+  if !run.starts.contains(key) {
+    run.starts[key] = self.ctx.diagnostics.queued()
+  }
+}
+
+///|
+/// Type an operand that is emitted AFTER operands typed later -- a call's
+/// callee, a `StructDesc`'s descriptor, a continuation method's receiver --
+/// against the slots its holes occupy in emission order.
+///
+/// `skip` is how many holes the operands emitted before it hold. They are
+/// typed afterwards and take the slots from here; this operand takes the ones
+/// after them. Returns the typed operand and a `resume` to call once those
+/// earlier operands are typed, which moves the run past this operand's slots.
+fn[T] Checker::type_out_of_order(
+  self : Checker,
+  skip : Int32,
+  f : () -> T,
+) -> (T, () -> Unit) {
+  let run = self.holes
+  let start = run.taken
+  run.taken = start + skip
+  let r = f()
+  let after = run.taken
+  run.taken = start
+  (r, () => run.taken = after)
+}
+
+///|
+/// How many holes a list of operands holds between them.
+fn holes_in(l : Array[@ast.Instr[@basic.Location]]) -> Int32 {
+  let mut n = 0
+  for x in l {
+    n = n + hole_demand(x).0
+  }
+  n
 }
 
 ///|
@@ -57,11 +121,29 @@ pub struct Checker {
   unpeeled : Map[String, Int32]
   /// Set by `with_holes` around each statement; see `HoleRun`.
   mut holes : HoleRun
+  /// In a run over a body with `#[if]`s, the side of each the run selects,
+  /// typed in line (see `body_runs.mbt`); `None` otherwise.
+  mut select : Map[(Int32, Int32), Bool]?
+  /// What the node `check` last checked would re-infer to without the context:
+  /// the question a binding's annotation is redundant or not by (see
+  /// `suggest.mbt`).
+  mut reinfer : Reinfer
+  /// The struct type a CHECKED struct literal's context pins, handed to the
+  /// literal's own arm for the redundant-name suggestion; taken on entry.
+  mut pinned_name : @ast.Ident?
 }
 
 ///|
 pub fn Checker::new(ctx : @typing_env.ModuleContext, ops : Operands) -> Checker {
-  { ctx, ops, unpeeled: Map([]), holes: HoleRun::none(), }
+  {
+    ctx,
+    ops,
+    unpeeled: Map([]),
+    holes: HoleRun::none(),
+    select: None,
+    reinfer: Uninferrable,
+    pinned_name: None,
+  }
 }
 
 ///|
@@ -81,7 +163,22 @@ fn Checker::with_holes(
 ) -> @ast.Instr[@typing_env.InferredAnnotation] {
   let saved = self.holes
   let (expected, first) = hole_demand(i)
-  let run = { batch: Ref(None), expected, first, taken: 0, }
+  // Popped TOGETHER, before anything is typed, as the reference's `with_holes`
+  // does: each hole then takes the slot its position in emission order gives
+  // it, whatever order the statement's operands happen to be typed in.
+  let (pending, batch) = if expected > 0 {
+    self.ops.pop_many(expected)
+  } else {
+    ([], None)
+  }
+  let run = {
+    batch: Ref(batch),
+    expected,
+    first,
+    taken: 0,
+    pending,
+    starts: Map([]),
+  }
   self.holes = run
   let out = f()
   // On the finished statement, which is where the walk's two ingredients are
@@ -224,12 +321,11 @@ pub fn Checker::statement(
       // never fired over all 1951 -- so it is a guard on the two walks staying
       // in step, not a path with behaviour of its own.
       let run = self.holes
-      let (batch, current, expected) = if run.taken < run.expected {
-        (run.batch, run.taken, run.expected)
+      let ty = if run.taken < run.pending.length() {
+        run.pending[run.taken]
       } else {
-        (Ref(None), 0, 1)
+        self.ops.pop_any(Ref(None), 0, 1)
       }
-      let ty = self.ops.pop_any(batch, current, expected)
       run.taken += 1
       self.rebuild(i, [ty])
     }
@@ -257,33 +353,12 @@ pub fn Checker::statement(
     // element rather than only its last one's. `expression_type` is what
     // insists on the one, and reports an element that produces none or several.
     Sequence(l) => {
-      // A sequence leaves its values with the LAST on top, so a run of holes
-      // takes them from the top backwards: the rightmost hole gets the top,
-      // and the leftmost gets the deepest. Popping them in written order would
-      // hand the first hole the last value and pair every one of them with the
-      // wrong expectation.
-      //
-      // They are resolved in a pass of their own because a hole takes a value
-      // that is already there, while every other element PUSHES one -- so only
-      // the holes see the incoming stack, and they see it in reverse.
-      // An element that CONTAINS a hole -- the hole itself, or anything built
-      // over one -- is typed in this backwards pass, and the rest afterwards
-      // in written order. An element that consumes nothing does not care when
-      // it is typed; one that does has to be reached before everything to its
-      // left, or it takes a value meant for its neighbour.
-      let taken : Map[Int32, @ast.Instr[@typing_env.InferredAnnotation]] = Map([])
-      for k = l.length() - 1; k >= 0; k = k - 1 {
-        if contains_hole(l[k]) {
-          taken[k] = self.expression(l[k])
-        }
-      }
+      // Typed in written order, which is the order the elements are emitted
+      // in -- and so the order their holes take the statement's slots in.
       let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
       let types : Array[@infer.Cell[@infer.InferredType]] = []
-      for k, s in l {
-        let c = match taken.get(k) {
-          Some(c) => c
-          None => self.expression(s)
-        }
+      for s in l {
+        let c = self.expression(s)
         types.push(expression_type(ctx, c.info))
         checked.push(c)
       }
@@ -441,6 +516,8 @@ pub fn Checker::statement(
           branch_target(ctx, label),
         )
       } else {
+        // An unbound label is reported, as every branch reports one.
+        ignore(branch_target(ctx, label))
         delivered
       }
       {
@@ -463,11 +540,17 @@ pub fn Checker::statement(
       // Every target is resolved, so an unbound one reports at its own span and
       // each occurrence marks its label used. Only the BOUND ones impose a
       // shape.
+      // A label listed several times is one target, checked -- and reported
+      // about -- once.
       let bound : Array[Array[@infer.Cell[@infer.InferredType]]] = []
+      let bound_at : Array[@basic.Location] = []
+      let seen : Set[String] = Set([])
       for label in labels {
         let params = branch_target(ctx, label)
-        if label_in_scope(ctx, label) {
+        if label_in_scope(ctx, label) && !seen.contains(label.name) {
+          seen.add(label.name)
           bound.push(params)
+          bound_at.push(label.loc)
         }
       }
       if !bound.is_empty() {
@@ -486,7 +569,8 @@ pub fn Checker::statement(
         // Checked without PINNING: one set of values is checked against every
         // target, so resolving a polymorphic value against the first target's
         // type would wrongly reject a later, differently typed one.
-        for params in bound {
+        // Each mismatch points at the label whose target imposes the type.
+        for k, params in bound {
           if params.length() == delivered.length() {
             check_subtypes(
               ctx.type_context.subtyping_info(),
@@ -495,6 +579,7 @@ pub fn Checker::statement(
               delivered,
               params,
               pin=false,
+              expected_at=bound_at[k],
             )
           }
         }
@@ -640,12 +725,12 @@ pub fn Checker::statement(
           @infer.Cell::make(@infer.InferredType::Error)
         }
       }
-      {
+      ascribe_conditional_select(ctx, {
         desc: Select(cond_, a_, b_),
         info: annotate([ty], loc),
         hints: i.hints,
         expected: i.expected,
-      }
+      })
     }
 
     // --- Arithmetic ---
@@ -670,6 +755,7 @@ pub fn Checker::statement(
         ctx.deferred_lints.push(() => lint_shift(ctx, op, ty, b))
         lint_division(ctx, op, b)
         lint_comparison(ctx, op, a_, b_, a, b)
+        lint_redundant(ctx, op, a_, b_, a, b)
       }
       // An operand that already failed poisons the RESULT. The arms above treat
       // `Error` like `Unknown` on purpose, so the operand cells still get a
@@ -698,6 +784,9 @@ pub fn Checker::statement(
       let e_ = self.expression(e)
       let typ = expression_type(ctx, e_.info)
       let ty = type_unop(ctx.diagnostics, op, e.info, typ)
+      if ctx.warn_unused {
+        lint_redundant_unop(ctx, op, e_, e)
+      }
       {
         desc: UnOpI(op, e_),
         info: annotate([ty], loc),
@@ -754,6 +843,10 @@ pub fn Checker::statement(
       // A compound assignment's desugared READ already reported an unbound name
       // at this span; reporting the write too would say it twice.
       assign_target(ctx, idx, resolved, compound=op is Some(_))
+      // `x = x op e` has the compound form `x op= e`.
+      if ctx.suggest && op is None && resolved is (Local(_, _) | Global(_, _)) {
+        suggest_compound_assignment(ctx, loc, idx, value)
+      }
       {
         desc: Set(idx, op, checked),
         info: annotate([], loc),
@@ -804,6 +897,43 @@ pub fn Checker::statement(
         Some(ity) => self.check(@infer.valtype_cell(ity), init)
         None => self.expression(init)
       }
+      // An annotation the initializer's own type already gives is redundant,
+      // offered as a quick fix. A binding nothing assigns may also drop one
+      // that is a mere supertype of it.
+      if ctx.suggest && annotated is Some(ity) {
+        let drop_supertype = match bindings[0].0 {
+          Some(n) => !ctx.assigned_locals.contains(n.name)
+          None => true
+        }
+        let needed = reinfer_needed(
+            ctx,
+            self.reinfer,
+            @infer.valtype_cell(ity),
+            drop_supertype~,
+          ) ||
+          bindings[0].1 is Some(Alias(_))
+        if !needed {
+          let name_end = match bindings[0].0 {
+            Some(n) => n.loc.end
+            None => { ..i.info.start, cnum: i.info.start.cnum + 1, }
+          }
+          suggest_redundant_annotation(ctx, name_end, init.info.start)
+        }
+      }
+      // A value of an alias's type declares the local with the alias, so that
+      // it has the right type in every configuration. Read NOW: a later
+      // unification may settle the cell to what the alias stands for here.
+      let bindings = bindings.mapi((k, b) => {
+        match b {
+          (Some(_), None) if k < checked.info.0.length() =>
+            match checked.info.0[k].get() {
+              Valtype({ type_alias: Some(a), .. }) =>
+                (b.0, Some(@wasm_types.ValType::Alias(a)))
+              _ => b
+            }
+          _ => b
+        }
+      })
       if single_annotated {
         // An annotation that did not resolve was reported where it was
         // resolved, and declares nothing: a local with no type is worse than
@@ -815,7 +945,7 @@ pub fn Checker::statement(
         // One name takes the whole initializer, which must therefore be a
         // one-value expression -- `expression_type` says so if it is not.
         let ty = expression_type(ctx, checked.info)
-        self.bind(init.info, bindings[0], ty)
+        ignore(self.bind(init.info, bindings[0], ty, init=Some(init)))
       } else {
         // Each name takes one value off a multi-value initializer, left to
         // right: the names match the values in order.
@@ -834,7 +964,18 @@ pub fn Checker::statement(
           } else {
             @infer.Cell::make(@infer.InferredType::Error)
           }
-          self.bind(init.info, binding, ty)
+          let redundant = self.bind(init.info, binding, ty)
+          // The next name, or the initializer, bounds this one's `: t`.
+          if ctx.suggest && redundant && binding.0 is Some(name) {
+            let boundary = if k + 1 < bindings.length() {
+              bindings[k + 1].0.map(n => n.loc.start)
+            } else {
+              Some(init.info.start)
+            }
+            if boundary is Some(b) {
+              suggest_redundant_annotation(ctx, name.loc.end, b)
+            }
+          }
         }
       }
       {
@@ -972,13 +1113,21 @@ pub fn Checker::statement(
 
     // --- Constructing a struct ---
     Struct(name, fields) => {
+      let pinned = self.pinned_name
+      self.pinned_name = None
+      if ctx.suggest {
+        for f in fields {
+          suggest_punning(ctx, f.0, f.1)
+        }
+      }
       // Field inference takes PRECEDENCE over anything else: the fields name
       // the exact struct being constructed, where an expected type could be a
       // supertype of it.
+      let field_match = infer_struct_by_fields(ctx, fields.map(f => f.0))
       let resolved = match name {
         Some(n) => Some(n)
         None =>
-          match infer_struct_by_fields(ctx, fields.map(f => f.0)) {
+          match field_match {
             Some(n) => Some(n)
             None => {
               cannot_infer_struct_type(ctx.diagnostics, loc)
@@ -997,6 +1146,14 @@ pub fn Checker::statement(
         None => None
       }
       let checked = self.struct_fields(loc, declared, fields)
+      // A written name the fields alone, or the context, already pin.
+      if ctx.suggest && name is Some(n) && declared is Some(_) {
+        let unique = field_match is Some(m) && m.name == n.name
+        let by_context = pinned is Some(p) && p.name == n.name
+        if unique || by_context {
+          suggest_drop_type_name(ctx, n)
+        }
+      }
       let ty = match (resolved, declared) {
         (Some(n), Some(_)) =>
           match construction_result(ctx, n) {
@@ -1122,6 +1279,57 @@ pub fn Checker::statement(
     }
 
     // --- Casts and tests ---
+    // The parenthesized ascription `(e : t)`: a static assertion, not an
+    // operation. The operand must already be a subtype of `t` -- subsumption
+    // only, never a conversion or a `ref.cast` -- and the expression takes type
+    // `t`. It lowers to no instruction and is never simplified away.
+    Cast(operand, Ascribed(t)) => {
+      guard internalize_valtype(ctx.type_context, ctx.diagnostics, t)
+        is Some(ity) else {
+        let operand_ = self.expression(operand)
+        return {
+          desc: Cast(operand_, Ascribed(t)),
+          info: annotate([@infer.Cell::make(@infer.InferredType::Error)], loc),
+          hints: i.hints,
+          expected: i.expected,
+        }
+      }
+      let want = @infer.valtype_cell(ity)
+      let operand_ = if operand.desc is Hole {
+        // A bare hole is GROUNDED at the ascribed type instead of consuming a
+        // pending value. It is counted like any other hole, so a value is
+        // reserved for it -- but consuming that value would also TYPE it, and
+        // the value is a residual some other consumer reconnects to. So the
+        // hole takes its type from the ascription and leaves the value alone;
+        // the reserved-but-unconsumed slot is a tolerated leftover.
+        let run = self.holes
+        if run.taken < run.expected {
+          run.taken += 1
+        }
+        let hole = self.rebuild(operand, [
+          @infer.Cell::make(@infer.InferredType::Unknown),
+        ])
+        check_subtype(
+          ctx.type_context.subtyping_info(),
+          ctx.diagnostics,
+          operand.info,
+          hole.info.0[0],
+          want,
+        )
+        hole
+      } else {
+        // Checking against the type IS the ascription's rule: for a
+        // construction, a `null`, a nested block or a `?:` it flows the
+        // ascribed type inward, which is what asserting that type should do.
+        self.check(want, operand)
+      }
+      {
+        desc: Cast(operand_, Ascribed(t)),
+        info: annotate([want], loc),
+        hints: i.hints,
+        expected: i.expected,
+      }
+    }
     Cast(operand, target) => {
       let operand_ = self.expression(operand)
       let natural = expression_type(ctx, operand_.info)
@@ -1222,6 +1430,8 @@ pub fn Checker::statement(
             }
             None => @infer.Cell::make(@infer.InferredType::Error)
           }
+        // Handled by its own arm above.
+        Ascribed(_) => @infer.Cell::make(@infer.InferredType::Error)
         // `e as i32_s` and friends: a numeric conversion, whose result is the
         // named numeric type and nothing else.
         Signed(typ~, signage~, ..) => {
@@ -1262,6 +1472,18 @@ pub fn Checker::statement(
       // rest of the chain instead of repeating the same complaint.
       if cast_failed || natural.get() is Error {
         ty.set(Error)
+      }
+      // A cast to an alias of a value that already has the alias's type is the
+      // identity in every configuration: it lowers to nothing, as an
+      // ascription does, since no single instruction would do in every
+      // configuration.
+      let target = match (target, natural.get()) {
+        (Value(Alias(a)), Valtype({ type_alias: Some(a2), .. })) if a.name ==
+          a2.name &&
+          !ctx.simplify &&
+          conditional_alias(ctx, a) =>
+          @ast.CastType::Ascribed(@wasm_types.ValType::Alias(a))
+        _ => target
       }
       {
         desc: Cast(operand_, target),
@@ -1342,11 +1564,12 @@ pub fn Checker::statement(
     NonNull(operand) => {
       let operand_ = self.expression(operand)
       let ty = match expression_type(ctx, operand_.info).get() {
-        Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype, }) => {
+        Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype, .. }) => {
           let v : @infer.InferredValType = {
             typ: Ref({ nullable: false, typ: r.typ, }),
             internal: Ref({ nullable: false, typ: ir.typ, }),
             anon_comptype,
+            type_alias: None,
           }
           @infer.Cell::make(@infer.InferredType::Valtype(v))
         }
@@ -1688,6 +1911,8 @@ pub fn Checker::statement(
           branch_target(ctx, label),
         )
       } else {
+        // An unbound label is reported, as every branch reports one.
+        ignore(branch_target(ctx, label))
         below
       }
       let result = delivered.copy()
@@ -2203,7 +2428,11 @@ pub fn Checker::statement(
         // re-reported as a stack-switching operation.
         return typed
       }
-      guard typed.desc is Call(callee_, args_) else {
+      // A stack-switching METHOD -- `c.resume()` -- keeps the call's shape, but
+      // is no more a call than `k::new` is.
+      let switching = self.cont_method(callee) is Some(_) ||
+        self.cont_namespace(callee) is Some(_)
+      guard typed.desc is Call(callee_, args_) && !switching else {
         // It type-checked but is not a call: a stack-switching operation, which
         // hands control away by its own means and cannot be tail-called.
         // Reported rather than silently dropping the `become` -- which would
@@ -2458,8 +2687,22 @@ pub fn Checker::statement(
     // --- Constructing a struct through its descriptor ---
     StructDesc(desc, fields) => {
       // The DESCRIPTOR is typed first, because it is what says which struct is
-      // being built -- the type is not written down anywhere else.
-      let desc_ = self.expression(desc)
+      // being built -- the type is not written down anywhere else. It is
+      // emitted LAST, above the field values, so its holes take the slots after
+      // theirs.
+      let field_values : Array[@ast.Instr[@basic.Location]] = []
+      for f in fields {
+        if f.1 is Some(v) {
+          field_values.push(v)
+        }
+      }
+      // Its reads of locals are deferred to that slot, and its own writes
+      // withheld from the fields, as a call's callee's are: the fields run
+      // first.
+      let ((desc_, replay), resume_holes) = self.type_out_of_order(
+        holes_in(field_values),
+        () => type_trailing_operand(ctx, () => self.expression(desc)),
+      )
       let target = descriptor_reftype(
         ctx,
         desc.info,
@@ -2477,6 +2720,9 @@ pub fn Checker::statement(
         _ => None
       }
       let checked = self.struct_fields(loc, declared, fields)
+      // The descriptor's emission slot: after every field.
+      replay()
+      resume_holes()
       // Through `construction_result`, not from the recovered target directly:
       // the target's exactness came off the DESCRIPTOR's own type, and writing
       // it down again asks for the custom-descriptors feature a second time --
@@ -2782,6 +3028,7 @@ fn Checker::body(
   branch_target : Array[@infer.Cell[@infer.InferredType]],
   instrs : Array[@ast.Instr[@basic.Location]],
   body_results~ : Array[@infer.Cell[@infer.InferredType]]? = None,
+  fall_through? : @infer.Collecting,
 ) -> Array[@ast.Instr[@typing_env.InferredAnnotation]] {
   let typed_against = body_results.unwrap_or(results)
   let checked : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
@@ -2798,6 +3045,7 @@ fn Checker::body(
         checked.push(c)
       }
     },
+    fall_through?,
   )
   checked
 }
@@ -2983,13 +3231,17 @@ fn Checker::bind(
   location : @basic.Location,
   binding : (@ast.Ident?, @wasm_types.ValType[@ast.Ident]?),
   value : @infer.Cell[@infer.InferredType],
-) -> Unit {
+  init~ : @ast.Instr[@basic.Location]? = None,
+) -> Bool {
   let ctx = self.ctx
   match binding.1 {
     Some(typ) => {
+      // The type the value takes on its own, read before the check below
+      // settles it: an annotation equal to it is redundant.
+      let standalone = @typing_env.standalone_valtype(value)
       guard internalize_valtype(ctx.type_context, ctx.diagnostics, typ)
         is Some(ity) else {
-        return
+        return false
       }
       check_subtype(
         ctx.type_context.subtyping_info(),
@@ -3001,11 +3253,41 @@ fn Checker::bind(
       if binding.0 is Some(name) {
         bind_local(ctx, name, Some(ity))
       }
+      !(typ is Alias(_)) && standalone is Some(v) && valtype_equal(ctx, v, ity)
     }
-    None =>
+    None => {
+      // A packed AGGREGATE read bound (or dropped: the name may be anonymous)
+      // without a signedness. WebAssembly has no unsigned-by-default
+      // `array.get`/`struct.get` on a packed element or field, so the i32
+      // default the omitted annotation gives it below has no lowering. The
+      // cell is still resolved below so the report does not cascade.
+      if init is Some(init) &&
+        value.get() is (Int8 | Int16) &&
+        packed_aggregate_source(init) {
+        packed_read_needs_signedness(ctx.diagnostics, location)
+      }
       if binding.0 is Some(name) {
         bind_local(ctx, name, bound_value_type(ctx, location, value))
       }
+      false
+    }
+  }
+}
+
+///|
+/// Whether a value's own printed form is a packed AGGREGATE read -- an array
+/// or struct access on an `i8`/`i16` element or field.
+///
+/// Only those require an explicit signedness: a narrow MEMORY load carries the
+/// same `Int8`/`Int16` cell but legitimately defaults to the unsigned read, so
+/// the cell alone cannot make the distinction. Shallow on purpose: a
+/// `Labelled` wrapper is looked through, an exotic join that keeps a packed
+/// type is left to the compiled module's own validation.
+fn packed_aggregate_source(i : @ast.Instr[@basic.Location]) -> Bool {
+  match i.desc {
+    ArrayGet(_, _) | StructGet(_, _) => true
+    Labelled(_, e) => packed_aggregate_source(e)
+    _ => false
   }
 }
 
@@ -3032,7 +3314,9 @@ fn Checker::receiver_fields(
     Valtype({ typ: Ref({ typ: Type(name) | Exact(name), .. }), .. }) =>
       match ctx.types.find_no_mark(name.name) {
         Some((_, def)) =>
-          match def.typ {
+          // As written: the fields' types are only internalized, and a field
+          // declared with an alias gives its values the alias.
+          match as_written(ctx.type_context, name.name, def).typ {
             Struct(fields) => Some(fields)
             _ => {
               // A name that is an instruction method was almost certainly meant
@@ -3117,6 +3401,7 @@ fn Checker::element_slot(
         ctx.diagnostics,
         name,
         location=Some(location),
+        written=true,
       )
     Error => None
     Unknown | UnknownRef => {
@@ -3206,26 +3491,13 @@ fn Checker::struct_fields(
         )
     }
   }
-  // A field value that reads the incoming stack -- a hole, or anything built
-  // over one -- has to be reached before the fields emitted BEFORE it, or they
-  // take the values meant for it. The same backwards pass a sequence and a
-  // call's arguments need, and for the same reason; here it is DECLARED order
-  // that is walked backwards, since that is the order the fields are emitted
-  // in. A struct written `{S| y: _, x: _}` over a stack of `1; 2.0` therefore
-  // pairs `x` with the `1` and `y` with the `2.0`, not the other way round.
-  let taken : Map[Int32, @ast.Instr[@typing_env.InferredAnnotation]?] = Map([])
-  for k = slots.length() - 1; k >= 0; k = k - 1 {
-    let (fname, written, cell) = slots[k]
-    if written is Some(w) && contains_hole(w) {
-      taken[k] = self.field_value(fname, written, expect=cell)
-    }
-  }
-  for k, s in slots {
+  // Typed in DECLARED order, since that is the order the fields are emitted
+  // in -- and so the order their holes take the statement's slots in. A struct
+  // written `{S| y: _, x: _}` over a stack of `1; 2.0` therefore pairs `x` with
+  // the `1` and `y` with the `2.0`, not the other way round.
+  for s in slots {
     let (fname, written, cell) = s
-    let checked = match taken.get(k) {
-      Some(c) => c
-      None => self.field_value(fname, written, expect=cell)
-    }
+    let checked = self.field_value(fname, written, expect=cell)
     // Punning preserved: a field with no written value stays without one.
     out.push((fname, if written is Some(_) { checked } else { None }))
   }
@@ -3297,6 +3569,9 @@ fn Checker::allocated(
 ) -> @infer.Cell[@infer.InferredType] {
   ignore(location)
   match name {
+    // A name that does not resolve was reported by the element lookup.
+    Some(n) if self.ctx.type_context.types.find_no_mark(n.name) is None =>
+      @infer.Cell::make(@infer.InferredType::Error)
     Some(n) =>
       match construction_result(self.ctx, n) {
         Some(c) => c
@@ -3318,8 +3593,12 @@ fn Checker::inline_functype(
   location : @basic.Location,
   sign : @ast.FuncType,
 ) -> @ast.Ident? {
-  let name = "<fn:" + location.start.cnum.to_string() + ">"
+  let name = anon_function_type_name(self.ctx.type_context, sign)
   let id : @ast.Ident = { name, loc: location, }
+  // Identical signatures share one definition, registered by the first.
+  if self.ctx.type_context.types.find_no_mark(name) is Some(_) {
+    return Some(id)
+  }
   match
     add_type(self.ctx.type_context, self.ctx.diagnostics, [
       {
@@ -3339,6 +3618,83 @@ fn Checker::inline_functype(
     Some(_) => Some(id)
     None => None
   }
+}
+
+///|
+/// The synthetic name of an inline function signature: a deterministic
+/// mangling of it, so that identical signatures name the same definition --
+/// `fn(i32) -> i32` is `<fn:i;->i;>`.
+///
+/// A conditional alias names a type of its own, which holds in every
+/// configuration: `fn() -> word` is not `fn() -> i64`, though `word` may be
+/// `i64` in the configuration typed. Any other alias is mere notation.
+fn anon_function_type_name(
+  ctx : @typing_env.TypeContext,
+  sign : @ast.FuncType,
+) -> String {
+  let buf = StringBuilder()
+  fn ht(h : @wasm_types.HeapType[@ast.Ident]) -> Unit {
+    buf.write_string(
+      match h {
+        Func => "func"
+        NoFunc => "nofunc"
+        Exn => "exn"
+        NoExn => "noexn"
+        Cont => "cont"
+        NoCont => "nocont"
+        Extern => "extern"
+        NoExtern => "noextern"
+        Any => "any"
+        Eq => "eq"
+        I31 => "i31"
+        Struct => "struct"
+        Array => "array"
+        None_ => "none"
+        Type(id) => "$" + id.name
+        Exact(id) => "!$" + id.name
+      },
+    )
+  }
+
+  fn vt(t : @wasm_types.ValType[@ast.Ident]) -> Unit {
+    match t {
+      I32 => buf.write_char('i')
+      I64 => buf.write_char('I')
+      F32 => buf.write_char('f')
+      F64 => buf.write_char('F')
+      V128 => buf.write_char('v')
+      Ref(r) => {
+        buf.write_char('&')
+        if r.nullable {
+          buf.write_char('?')
+        }
+        ht(r.typ)
+      }
+      Alias(a) =>
+        match ctx.aliases.find_no_mark(a.name) {
+          Some(al) if al.conditional => buf.write_string("@" + a.name)
+          _ =>
+            match ctx.unalias(t) {
+              // An unknown alias, already reported: the type is never built.
+              Alias(_) => buf.write_string("?" + a.name)
+              u => vt(u)
+            }
+        }
+    }
+  }
+
+  buf.write_string("<fn:")
+  for p in sign.params {
+    vt(p.desc.1)
+    buf.write_char(';')
+  }
+  buf.write_string("->")
+  for r in sign.results {
+    vt(r)
+    buf.write_char(';')
+  }
+  buf.write_char('>')
+  buf.to_string()
 }
 
 ///|
@@ -3468,11 +3824,12 @@ fn Checker::non_null_of(
   ty : @infer.Cell[@infer.InferredType],
 ) -> @infer.Cell[@infer.InferredType] {
   match ty.get() {
-    Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype, }) => {
+    Valtype({ typ: Ref(r), internal: Ref(ir), anon_comptype, .. }) => {
       let v : @infer.InferredValType = {
         typ: Ref({ nullable: false, typ: r.typ, }),
         internal: Ref({ nullable: false, typ: ir.typ, }),
         anon_comptype,
+        type_alias: None,
       }
       @infer.Cell::make(@infer.InferredType::Valtype(v))
     }
@@ -3577,17 +3934,27 @@ fn Checker::call(
   // deferred to that slot (an argument may initialize one first) and its own
   // writes are withheld from it (an argument runs before it and must not see
   // them). `replay` below puts both back in the right place.
-  let (callee_, replay) = type_trailing_operand(ctx, () => {
-    self.expression(callee)
-  })
+  let ((callee_, replay), resume_holes) = self.type_out_of_order(
+    holes_in(args),
+    () => type_trailing_operand(ctx, () => self.expression(callee)),
+  )
   // Asked ONCE: `expression_type` reports a callee that produces no value or
   // several, so asking twice would report it twice.
   let callee_type = expression_type(ctx, callee_.info)
   let functype = match callee_type.get() {
     Valtype({ typ: Ref({ typ: Type(n) | Exact(n), .. }), .. }) =>
-      // Anchored at the TYPE NAME, not at the whole callee: what is wrong is
-      // the type, and the reader has to look at where it was named to see it.
-      lookup_func_type(ctx.type_context, ctx.diagnostics, n)
+      // At the CALLEE's own location, not at the type name: the name is the
+      // type reference the callee's declared type points at (a local's
+      // annotation, say), so every call of that local would be reported at the
+      // SAME spot -- indistinguishable duplicates when there are two such
+      // calls, and never pointing at the call that is wrong.
+      lookup_func_type(
+        ctx.type_context,
+        ctx.diagnostics,
+        n,
+        location=Some(callee.info),
+        written=true,
+      )
     _ => None
   }
   let params : Array[@infer.Cell[@infer.InferredType]] = []
@@ -3608,25 +3975,10 @@ fn Checker::call(
   // take the parameter's type as its own; synthesized when the arity does not
   // line up, since then no argument is reliably paired with any parameter.
   let paired = have_params && params.length() == args.length()
-  // An argument that reads the incoming stack -- a hole, or anything built
-  // over one -- has to be reached before the arguments to its LEFT, or they
-  // take the values meant for it. Everything else is typed in written order,
-  // which is the order it is emitted in.
-  let taken : Map[Int32, @ast.Instr[@typing_env.InferredAnnotation]] = Map([])
-  for k = args.length() - 1; k >= 0; k = k - 1 {
-    if contains_hole(args[k]) {
-      taken[k] = if paired {
-        self.check(params[k], args[k])
-      } else {
-        self.expression(args[k])
-      }
-    }
-  }
+  // Typed in written order, which is the order they are emitted in -- and so
+  // the order their holes take the statement's slots in.
   for k, a in args {
-    let c = match taken.get(k) {
-      Some(c) => c
-      None => if paired { self.check(params[k], a) } else { self.expression(a) }
-    }
+    let c = if paired { self.check(params[k], a) } else { self.expression(a) }
     if have_params && !paired && k < params.length() {
       check_subtype(
         ctx.type_context.subtyping_info(),
@@ -3640,6 +3992,7 @@ fn Checker::call(
   }
   // The callee's emission slot: after every argument.
   replay()
+  resume_holes()
   let results : Array[@infer.Cell[@infer.InferredType]] = match
     callee_type.get() {
     Valtype({ typ: Ref({ typ: Type(_) | Exact(_), .. }), .. }) =>
@@ -4373,7 +4726,12 @@ fn simd_cell(t : @simd.Ty) -> @infer.Cell[@infer.InferredType] {
     // `infer` carries no v128 constant, the type having no flexible form to
     // sit alongside -- a vector is only ever itself.
     TV128 =>
-      @infer.valtype_cell({ typ: V128, internal: V128, anon_comptype: None, })
+      @infer.valtype_cell({
+        typ: V128,
+        internal: V128,
+        anon_comptype: None,
+        type_alias: None,
+      })
     TI32 => @infer.valtype_cell(@infer.i32_valtype)
     TI64 => @infer.valtype_cell(@infer.i64_valtype)
     TF32 => @infer.valtype_cell(@infer.f32_valtype)
@@ -4502,10 +4860,10 @@ fn Checker::simd_vector_op(
   self : Checker,
   callee : @ast.Instr[@basic.Location],
 ) -> @simd.Intrinsic? {
-  ignore(self)
-  guard callee.desc is StructGet(_, meth) else { return None }
+  guard callee.desc is StructGet(recv, meth) else { return None }
   match @simd.classify(meth.name) {
-    Some(op) if !op.free => Some(op)
+    Some(op) if !op.free && !method_is_struct_field(self.ctx, recv, meth) =>
+      Some(op)
     _ => None
   }
 }
@@ -5018,10 +5376,9 @@ fn Checker::is_unary_intrinsic(
   callee : @ast.Instr[@basic.Location],
   args : Array[@ast.Instr[@basic.Location]],
 ) -> Bool {
-  ignore(self)
   guard args.is_empty() else { return false }
-  guard callee.desc is StructGet(_, meth) else { return false }
-  is_unary_method(meth.name)
+  guard callee.desc is StructGet(recv, meth) else { return false }
+  is_unary_method(meth.name) && !method_is_struct_field(self.ctx, recv, meth)
 }
 
 ///|

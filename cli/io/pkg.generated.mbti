@@ -10,6 +10,8 @@ pub fn print(String) -> Unit
 
 pub fn println(String) -> Unit
 
+pub fn read_stdin() -> Bytes
+
 pub fn stderr_is_tty() -> Bool
 
 pub fn stdout_is_tty() -> Bool

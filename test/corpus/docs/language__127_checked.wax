@@ -1,7 +1,6 @@
-#[if(debug)]
-{
-    const debug_enabled: i32 = 1;
-    fn debug_log(msg: i32) {
-        // ...
-    }
+type word = i64;
+type cell = { value: mut word };
+
+fn get(c: &cell) -> word {
+    return c.value;
 }

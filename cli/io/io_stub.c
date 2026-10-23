@@ -5,6 +5,8 @@
  * formatted output from stdout while reading diagnostics from stderr, so
  * mixing them would make every comparison meaningless. */
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #ifdef _WIN32
 #include <io.h>
 #define wax_isatty _isatty
@@ -33,4 +35,28 @@ MOONBIT_FFI_EXPORT void wax_write_stderr(moonbit_bytes_t s, int32_t len) {
     /* Flush per write, so stdout/stderr interleaving stays deterministic when
      * a parent process or a cram test captures both. */
     fflush(stderr);
+}
+
+/* All of stdin, for an input given as `-` or not given at all. Read in chunks
+ * into a growing buffer, then copied into a MoonBit byte string of exactly
+ * that length. */
+MOONBIT_FFI_EXPORT moonbit_bytes_t wax_read_stdin(void) {
+    size_t cap = 65536, len = 0;
+    char *buf = (char *)malloc(cap);
+    size_t n;
+    while (buf && (n = fread(buf + len, 1, cap - len, stdin)) > 0) {
+        len += n;
+        if (len == cap) {
+            char *grown = (char *)realloc(buf, cap * 2);
+            if (!grown) break;
+            buf = grown;
+            cap *= 2;
+        }
+    }
+    moonbit_bytes_t out = moonbit_make_bytes((int32_t)len, 0);
+    if (buf) {
+        memcpy(out, buf, len);
+        free(buf);
+    }
+    return out;
 }

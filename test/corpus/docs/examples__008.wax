@@ -1,16 +1,13 @@
-type counter = { value: mut i32 };
+type point = { x: i32, y: i32 };
 
-#[export = "new_counter"]
-fn new_counter() -> &counter {
-    {counter| value: 0};
+#[export = "make_point"]
+fn make_point(x: i32, y: i32) -> &point {
+    {point| x, y};             // field shorthand: {x, y} means {x: x, y: y}
 }
 
-#[export = "increment"]
-fn increment(c: &counter) {
-    c.value = c.value + 1;
-}
-
-#[export = "get_value"]
-fn get_value(c: &counter) -> i32 {
-    c.value;
+#[export = "distance_squared"]
+fn distance_squared(p1: &point, p2: &point) -> i32 {
+    let dx = p1.x - p2.x;
+    let dy = p1.y - p2.y;
+    dx * dx + dy * dy;
 }

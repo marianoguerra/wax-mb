@@ -28,7 +28,7 @@ pub(all) enum Origin {
   /// Not a source reference at all: the pass that re-checks every type
   /// definition, whose lookups should not mark anything used.
   Ignored
-} derive(Eq, Debug)
+} derive(Eq, Hash, Debug)
 
 ///|
 /// One declaration of a name: what kind of thing it declared, where, and under
@@ -147,6 +147,10 @@ pub struct Tbl[A] {
   /// the snapshot has been referenced, and the lint that asks reads the table
   /// the name was declared in.
   mut used : Map[String, Array[Origin]]
+  /// The pairs already in `used`, so recording a reference is constant time:
+  /// a module where many functions use the same type or helper otherwise pays
+  /// a scan of that name's origins for every reference.
+  mut used_pairs : Set[(String, Origin)]
   /// Where references are currently being made from. Shared by every table of
   /// one module context, so a resolution can be attributed without the context
   /// being threaded into the table.
@@ -164,7 +168,15 @@ pub fn[A] Tbl::new(
   current : Ref[Origin],
   hover~ : (A) -> HoverTarget? = _ => None,
 ) -> Tbl[A] {
-  { kind, names, entries: Map([]), used: Map([]), current, hover, }
+  {
+    kind,
+    names,
+    entries: Map([]),
+    used: Map([]),
+    used_pairs: Set([]),
+    current,
+    hover,
+  }
 }
 
 ///|
@@ -185,6 +197,7 @@ pub fn[A] Tbl::copy_entries_into(self : Tbl[A], dst : Tbl[A]) -> Unit {
     dst.entries[name] = l.copy()
   }
   dst.used = self.used
+  dst.used_pairs = self.used_pairs
 }
 
 ///|
@@ -273,12 +286,11 @@ pub fn[A] Tbl::visible(self : Tbl[A], name : String) -> Array[A] {
 /// The declaration of `name` in force here, without recording anything.
 ///
 /// Prefers one whose assumption the current one ENTAILS -- that is the branch
-/// actually being checked -- then any merely consistent with it, which keeps a
-/// name declared in a sibling branch from reading as unbound. Failing both it
-/// takes the most recent, so a name that was written somewhere resolves to
+/// actually being checked -- newest first, so a later declaration shadows an
+/// earlier one; then the oldest merely consistent with it, which keeps a name
+/// declared in a sibling branch from reading as unbound. Failing both it takes
+/// the most recent, so a name that was written somewhere resolves to
 /// something rather than to nothing.
-///
-/// Each search runs newest first: a later declaration shadows an earlier one.
 fn[A] Tbl::select(self : Tbl[A], name : String) -> A? {
   let here = self.names.cond.val
   guard self.entries.get(name) is Some(l) else { return None }
@@ -292,10 +304,22 @@ fn[A] Tbl::select(self : Tbl[A], name : String) -> A? {
     None
   }
 
+  // Merely consistent: the OLDEST, which for two branches of one conditional
+  // is the `then` one -- what the reference's primary run, the one selecting
+  // every `then`, resolves the name to.
+  fn pick_oldest(p : (@cond.T) -> Bool) -> A? {
+    for e in l {
+      if p(e.0) {
+        return Some(e.1)
+      }
+    }
+    None
+  }
+
   match pick(c => @cond.logical_implies(here, c)) {
     Some(v) => Some(v)
     None =>
-      match pick(c => @cond.is_satisfiable(@cond.and_(here, c))) {
+      match pick_oldest(c => @cond.is_satisfiable(@cond.and_(here, c))) {
         Some(v) => Some(v)
         None => Some(l[l.length() - 1].1)
       }
@@ -362,8 +386,11 @@ pub fn[A] Tbl::mark_reference(
   if origin is Ignored {
     return
   }
+  if !self.used_pairs.add_and_check((name, origin)) {
+    return
+  }
   match self.used.get(name) {
-    Some(l) => if !l.contains(origin) { l.push(origin) }
+    Some(l) => l.push(origin)
     None => self.used[name] = [origin]
   }
 }

@@ -57,9 +57,29 @@ fn check_fields(
     }
     // An annotated global checks its initializer against the annotation, so a
     // construction there can take the global's type as its own.
-    let def_ = match declared {
-      Some(v) => checker.check(@infer.valtype_cell(v), def)
-      None => checker.expression(def)
+    // One statement's hole run, as the reference's `check_toplevel` is: a hole
+    // here has nothing to take, and is reported -- against the initializer
+    // when recovery dropped it.
+    let def_ = checker.with_holes(def, () => {
+      match declared {
+        Some(v) => checker.check(@infer.valtype_cell(v), def)
+        None => checker.expression(def)
+      }
+    })
+    // An annotation the initializer already gives is redundant, offered as a
+    // quick fix as for a `let`; an immutable global may also drop one that is
+    // a mere supertype of it.
+    if ctx.suggest && declared is Some(v) {
+      let needed = reinfer_needed(
+          ctx,
+          checker.reinfer,
+          @infer.valtype_cell(v),
+          drop_supertype=!mut_,
+        ) ||
+        typ is Some(Alias(_))
+      if !needed {
+        suggest_redundant_annotation(ctx, name.loc.end, def.info.start)
+      }
     }
     // An unannotated global takes its initializer's type, resolved to a width
     // -- there is no later context to pin it, so it has to commit here.
@@ -124,6 +144,49 @@ fn check_field(
 
   match field.desc {
     Global(..) => None
+    Func(name~, typ~, sign~, body~, attributes~) if has_if_annotation(body.1) => {
+      // A body with `#[if]`s is typed once per run and stitched; see
+      // `body_runs.mbt`. Each run is the whole function under its assumption,
+      // so a parameter's conditional type means what its branch says.
+      let (label, instrs) = body
+      let runs = plan_body_runs(ctx, instrs)
+      let saved = ctx.cond.val
+      let typed = runs.map(run => {
+        ctx.cond.val = run.assumption
+        checker.select = Some(run.select)
+        let returns = enter_function_scope(
+          ctx,
+          name,
+          sign,
+          attributes,
+          label_decls=collect_labels(instrs),
+          assigned_locals=collect_assigned_locals(instrs),
+        )
+        let checked = checker.body(
+          field.info,
+          label,
+          [],
+          returns,
+          returns,
+          instrs,
+        )
+        flush_deferred_lints(ctx)
+        warn_unused_in_function(ctx)
+        leave_function_scope(ctx)
+        checker.select = None
+        checked
+      })
+      ctx.cond.val = saved
+      Some(
+        Func(
+          name~,
+          typ~,
+          sign~,
+          body=(label, stitch_body_runs(runs, typed)),
+          attributes~,
+        ),
+      )
+    }
     Func(name~, typ~, sign~, body~, attributes~) => {
       let (label, instrs) = body
       // The labels this body declares, collected up front: the unused-label
@@ -135,13 +198,17 @@ fn check_field(
         sign,
         attributes,
         label_decls=collect_labels(instrs),
+        assigned_locals=collect_assigned_locals(instrs),
       )
       // The source-shape lints read what was WRITTEN, so they run over the
       // original body -- and BEFORE it is typed, because the typing reports as
       // it goes (dead code, chiefly) and the two streams interleave by the order
       // they are produced, not by span.
       if ctx.warn_unused {
-        for s in instrs {
+        let source = ctx.preserved_bodies
+          .get((field.info.start.cnum, field.info.end.cnum))
+          .unwrap_or(instrs)
+        for s in source {
           lint_source(ctx, s)
         }
       }
@@ -284,6 +351,7 @@ fn check_field(
     }
     // Nothing to check: these declare and contain no instructions.
     Type(g) => Some(Type(g))
+    TypeAlias(name~, typ~) => Some(TypeAlias(name~, typ~))
     Tag(name~, typ~, sign~, attributes~) =>
       Some(Tag(name~, typ~, sign~, attributes~))
     ModuleAnnotation(a) => Some(ModuleAnnotation(a))
@@ -307,6 +375,8 @@ pub fn check_module(
   fields : @ast.Module[@basic.Location],
   simplify~ : Bool = false,
   warn_unused~ : Bool = false,
+  lowering~ : Bool = false,
+  suggest~ : Bool = false,
 ) -> (
   @typing_env.ModuleContext,
   Array[
@@ -343,6 +413,8 @@ pub fn check_module(
       fields,
       simplify~,
       warn_unused~,
+      lowering~,
+      suggest~,
     )
   }
   let build_diagnostics = if conditional {
@@ -356,6 +428,7 @@ pub fn check_module(
     features,
     simplify~,
     warn_unused~,
+    suggest~,
   )
   declare_fields(ctx, fields)
   // Once the whole table exists: a rec group's members may name each other, so
@@ -366,6 +439,9 @@ pub fn check_module(
   // one module name -- which no single field can answer on its own.
   check_attributes(ctx, fields)
   let typed = check_fields(ctx, Operands::new(), fields)
+  // The alias definitions no use resolved still have their errors reported, at
+  // the definition.
+  check_unused_aliases(ctx.type_context, ctx.diagnostics)
   // Last: what counts as a USE of a module field is what reached it while every
   // body was checked, so this cannot be answered until they all have been.
   warn_unused_fields(ctx, fields)

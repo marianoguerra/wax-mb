@@ -1,0 +1,15 @@
+type s1 = open { f: mut i32 };
+type s2: s1 = open { a: mut i32, f: i32 };
+type s3: s2 = { b: mut i32, c: i32 };
+#[export]
+fn get(x: &s2) -> i32 {
+    (x : &?s1).f;
+}
+#[export]
+fn set(x: &s2) {
+    (x : &?s1).f = 1;
+}
+#[export]
+fn get3(x: &s3) -> i32 {
+    (x : &?s2).f + (x : &?s1).f;
+}

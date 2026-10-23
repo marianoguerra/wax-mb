@@ -14,15 +14,20 @@
 
 ///|
 /// The function type a name refers to.
+///
+/// `written` asks for the signature as written, aliases included, for a caller
+/// that only internalizes its value types (see `as_written`).
 pub fn lookup_func_type(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
   location~ : @basic.Location? = None,
+  written~ : Bool = false,
 ) -> @ast.FuncType? {
   guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
     return None
   }
+  let def = if written { as_written(ctx, name.name, def) } else { def }
   match def.typ {
     Func(ft) => Some(ft)
     _ => {
@@ -64,10 +69,12 @@ pub fn lookup_array_type(
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
   location~ : @basic.Location? = None,
+  written~ : Bool = false,
 ) -> @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]? {
   guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
     return None
   }
+  let def = if written { as_written(ctx, name.name, def) } else { def }
   match def.typ {
     Array(field) => Some(field)
     _ => {
@@ -141,6 +148,8 @@ pub fn field_has_default(
     Packed(_) => true
     Value(I32 | I64 | F32 | F64 | V128) => true
     Value(Ref(r)) => r.nullable
+    // A definition is stored with its aliases expanded, so this is never met.
+    Value(Alias(_)) => false
   }
 }
 

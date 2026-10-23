@@ -665,8 +665,7 @@ def check_oracle1(
 # rather than silently tolerated so the set cannot grow unnoticed.
 NON_IDEMPOTENT_UPSTREAM = {
     "cram/custom-page-sizes__huge-pow2.wax",
-    "docs/language__127_checked.wax",
-    "docs/reference__129_checked.wax",
+    "docs/language__130_checked.wax",
 }
 
 
@@ -893,10 +892,8 @@ SPAN_FIELDS = {"startLine", "startColumn", "endLine", "endColumn",
 SPAN_EXEMPT = {
     # Finding 9: the offending token is a STRING, so the reference points at
     # its closing quote rather than at the string. We report the true span.
-    "docs/language__092.wax": "finding 9 (string span)",
-    "docs/language__094.wax": "finding 9 (string span)",
-    "docs/reference__094.wax": "finding 9 (string span)",
-    "docs/reference__096.wax": "finding 9 (string span)",
+    "docs/language__093.wax": "finding 9 (string span)",
+    "docs/language__095.wax": "finding 9 (string span)",
     # Finding 12, both directions: the two automata reduce at different
     # moments, so an action's check fires in one and not the other. Here the
     # reference runs the action and we do not; below, we run it and the
@@ -1476,14 +1473,24 @@ def grade(impl: list[str], src: str, policy: dict, oracles: list[int]) -> list[F
         GOLDEN.mkdir(parents=True)
         path = CORPUS / "mutant.wax"
         path.write_text(src, encoding="utf-8")
-        meta = write_golden(classify_one(path))
+        # A mutant the REFERENCE cannot report on in JSON -- it crashed, and
+        # printed a backtrace instead -- has no expected answer to grade
+        # against, so it is no find of ours: it is skipped.
+        try:
+            meta = write_golden(classify_one(path))
+        except json.JSONDecodeError:
+            return []
         want_path = GOLDEN / "mutant.diag.jsonl"
         if want_path.exists():
             want = parse_jsonl(want_path.read_text())
-            got = parse_jsonl(
-                impl_run(impl, "check", "--error-format", "json", str(path))
-                .err.decode("utf-8", "replace")
+            text = impl_run(impl, "check", "--error-format", "json", str(path)).err.decode(
+                "utf-8", "replace"
             )
+            # Ours printing something that is not JSON is a find in itself.
+            try:
+                got = parse_jsonl(text)
+            except json.JSONDecodeError:
+                return [Failure("mutant.wax", "errors", "non-JSON diagnostics:\n" + text[:2000])]
             if _is_finding9(src, want, got, policy):
                 SPAN_EXEMPT["mutant.wax"] = "finding 9 (string span)"
                 exempted = True
@@ -1647,6 +1654,15 @@ CRAM_OK_FLAGS = {
     # Recovery landed in grammar/recover.mbt; see task 7 of
     # implementation-plan.md for what its quality is measured against.
     "--all-errors",
+    # Validation on a conversion: lints too, and a same-format conversion is
+    # checked rather than only re-printed.
+    "-v", "--validate",
+    # The legacy-exception rewrite, on the wax and wat/wasm outputs alike.
+    "--try-table",
+    # The optional proposals.
+    "-X", "--feature",
+    # Conditional compilation resolved ahead of checking.
+    "-D", "--define",
 }
 
 # Formats the port handles, and they are not the same in both directions.
@@ -1750,7 +1766,7 @@ def _cram_wax_reason(seg: str) -> str | None:
     # The first positional names a subcommand only when it is not a path.
     if positionals:
         head = positionals[0]
-        if "." not in head and "/" not in head:
+        if "." not in head and "/" not in head and head != "-":
             if head not in CRAM_OK_COMMANDS:
                 return f"runs the {head!r} subcommand, which wax-mb does not implement"
             positionals = positionals[1:]

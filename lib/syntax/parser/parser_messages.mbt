@@ -19,7 +19,7 @@
 // expression") needs a second frame to tell them apart. `Deeper` says to
 // extend the key by one more frame.
 //
-// 462 keys from the golden's 550 sentences, 0 dropped
+// 469 keys from the golden's 568 sentences, 0 dropped
 // as unresolvable. A miss falls back to the locally rendered `Expecting ...`
 // list, which is always correct if less specific.
 
@@ -402,7 +402,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'descriptor' an identifier",
-          text: "Expecting 'descriptor', or an identifier.",
+          text: "Expecting 'descriptor' or an identifier.",
           subject: "",
           opener: "",
         }),
@@ -475,7 +475,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'!' '#' ''' '(' ')' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'tag' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting ')', or an argument.",
+          text: "Expecting ')' or an argument.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
@@ -511,7 +511,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'&' '(' '{' an identifier",
-          text: "Expecting a block, or a block type.",
+          text: "Expecting a block or a block type.",
           subject: "",
           opener: "",
         }),
@@ -610,7 +610,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'!' '#' ''' '(' ')' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'tag' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting ')', or an argument.",
+          text: "Expecting ')' or an argument.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
@@ -781,7 +781,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'else' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an index expression, or case labels.",
+          text: "Expecting an index expression or case labels.",
           subject: "",
           opener: "",
         }),
@@ -871,7 +871,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "',' ':'",
-          text: "Expecting ',', or ':'.",
+          text: "Expecting ',' or ':'.",
           subject: "",
           opener: "",
         }),
@@ -925,7 +925,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'import' an identifier",
-          text: "Expecting 'import', or an identifier.",
+          text: "Expecting 'import' or an identifier.",
           subject: "",
           opener: "",
         }),
@@ -961,7 +961,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "')' an identifier",
-          text: "Expecting ')', or a call target.",
+          text: "Expecting ')' or a call target.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
@@ -970,7 +970,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "')' an identifier",
-          text: "Expecting ')', or a call target.",
+          text: "Expecting ')' or a call target.",
           subject: "",
           opener: "",
         }),
@@ -988,7 +988,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "a float an integer",
-          text: "Expecting a float, or an integer.",
+          text: "Expecting a float or an integer.",
           subject: "",
           opener: "",
         }),
@@ -997,7 +997,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "')' ','",
-          text: "Expecting ')', or ','.",
+          text: "Expecting ')' or ','.",
           subject: "",
           opener: "",
         }),
@@ -1042,7 +1042,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'!' '#' ''' '(' ')' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting ')', or an expression.",
+          text: "Expecting ')' or an expression.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
@@ -1051,7 +1051,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'!' '#' ''' '(' ')' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting ')', or an expression.",
+          text: "Expecting ')' or an expression.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
@@ -1097,7 +1097,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'(' '_' an identifier",
-          text: "Expecting '(', or a binding name.",
+          text: "Expecting '(' or a binding name.",
           subject: "",
           opener: "",
         }),
@@ -1106,7 +1106,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "')' '_' an identifier",
-          text: "Expecting ')', or a let pattern.",
+          text: "Expecting ')' or a let pattern.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
@@ -1304,7 +1304,7 @@ fn entry_of(key : String) -> Entry? {
     "414" =>
       Some(
         Msg({
-          signature: "an identifier",
+          signature: "'as' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'catch' 'const' 'cont' 'data' 'describes' 'descriptor' 'dispatch' 'do' 'elem' 'else' 'fn' 'if' 'import' 'inf' 'is' 'let' 'loop' 'match' 'memory' 'mut' 'nan' 'nop' 'null' 'on' 'open' 'pagesize' 'rec' 'return' 'shared' 'suspend' 'table' 'tag' 'throw' 'throw_ref' 'try' 'try_legacy' 'type' 'unreachable' 'while' an identifier",
           text: "Expecting a condition.",
           subject: "",
           opener: "",
@@ -1313,8 +1313,26 @@ fn entry_of(key : String) -> Entry? {
     "415" =>
       Some(
         Msg({
-          signature: "'!=' '(' ')' '<' '<=' '=' '>' '>='",
-          text: "Expecting '(', ')', ',', or a comparison operator.",
+          signature: "'!=' ')' '<' '<=' '=' '>' '>='",
+          text: "Expecting ')', ',', or a comparison operator.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "417" =>
+      Some(
+        Msg({
+          signature: "')' 'as' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'catch' 'const' 'cont' 'data' 'describes' 'descriptor' 'dispatch' 'do' 'elem' 'else' 'fn' 'if' 'import' 'inf' 'is' 'let' 'loop' 'match' 'memory' 'mut' 'nan' 'nop' 'null' 'on' 'open' 'pagesize' 'rec' 'return' 'shared' 'suspend' 'table' 'tag' 'throw' 'throw_ref' 'try' 'try_legacy' 'type' 'unreachable' 'while' an identifier",
+          text: "Expecting ')' or a condition.",
+          subject: "",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "419" =>
+      Some(
+        Msg({
+          signature: "')' 'as' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'catch' 'const' 'cont' 'data' 'describes' 'descriptor' 'dispatch' 'do' 'elem' 'else' 'fn' 'if' 'import' 'inf' 'is' 'let' 'loop' 'match' 'memory' 'mut' 'nan' 'nop' 'null' 'on' 'open' 'pagesize' 'rec' 'return' 'shared' 'suspend' 'table' 'tag' 'throw' 'throw_ref' 'try' 'try_legacy' 'type' 'unreachable' 'while' an identifier",
+          text: "Expecting ')' or a condition.",
           subject: "",
           opener: "",
         }),
@@ -1328,7 +1346,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "420" =>
+    "426" =>
       Some(
         Msg({
           signature: "'(' a string",
@@ -1337,20 +1355,11 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "422" =>
+    "429" =>
       Some(
         Msg({
-          signature: "')' an identifier",
-          text: "Expecting ')', or a condition.",
-          subject: "",
-          opener: "This '(' opens the enclosing construct.",
-        }),
-      )
-    "424" =>
-      Some(
-        Msg({
-          signature: "')' an identifier",
-          text: "Expecting ')', or a condition.",
+          signature: "')' ','",
+          text: "Expecting ')' or ','.",
           subject: "",
           opener: "",
         }),
@@ -1367,8 +1376,8 @@ fn entry_of(key : String) -> Entry? {
     "430" =>
       Some(
         Msg({
-          signature: "')' ','",
-          text: "Expecting ')', or ','.",
+          signature: "an integer",
+          text: "Expecting an integer.",
           subject: "",
           opener: "",
         }),
@@ -1376,8 +1385,8 @@ fn entry_of(key : String) -> Entry? {
     "431" =>
       Some(
         Msg({
-          signature: "an integer",
-          text: "Expecting an integer.",
+          signature: "','",
+          text: "Expecting ','.",
           subject: "",
           opener: "",
         }),
@@ -1385,8 +1394,8 @@ fn entry_of(key : String) -> Entry? {
     "432" =>
       Some(
         Msg({
-          signature: "','",
-          text: "Expecting ','.",
+          signature: "an integer",
+          text: "Expecting an integer.",
           subject: "",
           opener: "",
         }),
@@ -1394,8 +1403,8 @@ fn entry_of(key : String) -> Entry? {
     "433" =>
       Some(
         Msg({
-          signature: "an integer",
-          text: "Expecting an integer.",
+          signature: "','",
+          text: "Expecting ','.",
           subject: "",
           opener: "",
         }),
@@ -1403,22 +1412,13 @@ fn entry_of(key : String) -> Entry? {
     "434" =>
       Some(
         Msg({
-          signature: "','",
-          text: "Expecting ','.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "435" =>
-      Some(
-        Msg({
           signature: "an integer",
           text: "Expecting an integer.",
           subject: "",
           opener: "",
         }),
       )
-    "436" =>
+    "435" =>
       Some(
         Msg({
           signature: "')'",
@@ -1427,13 +1427,13 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "439" =>
+    "438" =>
       Some(
         Msg({
           signature: "'!=' '(' ')' '<' '<=' '=' '>' '>='",
-          text: "Assuming that the condition is complete, expecting ')'.",
-          subject: "this condition",
-          opener: "This '(' opens the enclosing construct.",
+          text: "Expecting '(', ')', ',', or a comparison operator.",
+          subject: "",
+          opener: "",
         }),
       )
     "44" =>
@@ -1445,7 +1445,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "440" =>
+    "442" =>
+      Some(
+        Msg({
+          signature: "'!=' '(' ')' '<' '<=' '=' '>' '>='",
+          text: "Assuming that the condition is complete, expecting ')'.",
+          subject: "this condition",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "443" =>
       Some(
         Msg({
           signature: "']'",
@@ -1454,7 +1463,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "441" =>
+    "444" =>
       Some(
         Msg({
           signature: "'{'",
@@ -1463,7 +1472,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "452" =>
+    "455" =>
       Some(
         Msg({
           signature: "'=>'",
@@ -1472,7 +1481,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "453" =>
+    "456" =>
       Some(
         Msg({
           signature: "'{'",
@@ -1481,7 +1490,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "454" =>
+    "457" =>
       Some(
         Msg({
           signature: "'}'",
@@ -1490,25 +1499,25 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "456" =>
+    "459" =>
       Some(
         Msg({
           signature: "'&' ')' an identifier",
-          text: "Expecting ')', or a parameter type.",
+          text: "Expecting ')' or a parameter type.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "463" =>
+    "466" =>
       Some(
         Msg({
           signature: "'->' '{'",
-          text: "Expecting '->', or '{'.",
+          text: "Expecting '->' or '{'.",
           subject: "",
           opener: "",
         }),
       )
-    "465" =>
+    "468" =>
       Some(
         Msg({
           signature: "'&' '(' an identifier",
@@ -1517,25 +1526,25 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "468" =>
+    "471" =>
       Some(
         Msg({
           signature: "'&' ')' an identifier",
-          text: "Expecting ')', or a value type.",
+          text: "Expecting ')' or a value type.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "477" =>
+    "480" =>
       Some(
         Msg({
           signature: "'&' '(' '{' an identifier",
-          text: "Expecting a block, or a block type.",
+          text: "Expecting a block or a block type.",
           subject: "",
           opener: "",
         }),
       )
-    "479" =>
+    "482" =>
       Some(
         Msg({
           signature: "'catch'",
@@ -1544,16 +1553,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "480" =>
+    "483" =>
       Some(
         Msg({
           signature: "'[' '{'",
-          text: "Expecting '[', or '{'.",
+          text: "Expecting '[' or '{'.",
           subject: "",
           opener: "",
         }),
       )
-    "481" =>
+    "484" =>
       Some(
         Msg({
           signature: "';' '_' '}' an identifier",
@@ -1562,7 +1571,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "484" =>
+    "487" =>
       Some(
         Msg({
           signature: "';' '_' '}' an identifier",
@@ -1571,29 +1580,11 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "486" =>
+    "489" =>
       Some(
         Msg({
           signature: "'&' '=>'",
-          text: "Expecting '&', or '=>'.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "487" =>
-      Some(
-        Msg({
-          signature: "'=>'",
-          text: "Expecting '=>'.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "488" =>
-      Some(
-        Msg({
-          signature: "'{'",
-          text: "Expecting a block.",
+          text: "Expecting '&' or '=>'.",
           subject: "",
           opener: "",
         }),
@@ -1610,13 +1601,31 @@ fn entry_of(key : String) -> Entry? {
     "490" =>
       Some(
         Msg({
+          signature: "'=>'",
+          text: "Expecting '=>'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "491" =>
+      Some(
+        Msg({
           signature: "'{'",
           text: "Expecting a block.",
           subject: "",
           opener: "",
         }),
       )
-    "491" =>
+    "493" =>
+      Some(
+        Msg({
+          signature: "'{'",
+          text: "Expecting a block.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "494" =>
       Some(
         Msg({
           signature: "';' '_' '}' an identifier",
@@ -1625,29 +1634,11 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "496" =>
+    "499" =>
       Some(
         Msg({
           signature: "'&' '=>'",
-          text: "Expecting '&', or '=>'.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "497" =>
-      Some(
-        Msg({
-          signature: "'=>'",
-          text: "Expecting '=>'.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "498" =>
-      Some(
-        Msg({
-          signature: "'{'",
-          text: "Expecting a block.",
+          text: "Expecting '&' or '=>'.",
           subject: "",
           opener: "",
         }),
@@ -1656,12 +1647,21 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'import' an identifier",
-          text: "Expecting 'import', or an identifier.",
+          text: "Expecting 'import' or an identifier.",
           subject: "",
           opener: "",
         }),
       )
     "500" =>
+      Some(
+        Msg({
+          signature: "'=>'",
+          text: "Expecting '=>'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "501" =>
       Some(
         Msg({
           signature: "'{'",
@@ -1670,7 +1670,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "501" =>
+    "503" =>
+      Some(
+        Msg({
+          signature: "'{'",
+          text: "Expecting a block.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "504" =>
       Some(
         Msg({
           signature: "'}'",
@@ -1679,47 +1688,29 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "502" =>
+    "505" =>
       Some(
         Msg({
           signature: "']' '_' an identifier",
-          text: "Expecting ']', or a catch.",
+          text: "Expecting ']' or a catch.",
           subject: "",
           opener: "This '[' opens the enclosing construct.",
-        }),
-      )
-    "504" =>
-      Some(
-        Msg({
-          signature: "']' '_' an identifier",
-          text: "Expecting ']', or a catch.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "506" =>
-      Some(
-        Msg({
-          signature: "'&' '->'",
-          text: "Expecting '&', or '->'.",
-          subject: "",
-          opener: "",
         }),
       )
     "507" =>
       Some(
         Msg({
-          signature: "'->'",
-          text: "Expecting '->'.",
+          signature: "']' '_' an identifier",
+          text: "Expecting ']' or a catch.",
           subject: "",
           opener: "",
         }),
       )
-    "508" =>
+    "509" =>
       Some(
         Msg({
-          signature: "'''",
-          text: "Expecting '''.",
+          signature: "'&' '->'",
+          text: "Expecting '&' or '->'.",
           subject: "",
           opener: "",
         }),
@@ -1727,22 +1718,40 @@ fn entry_of(key : String) -> Entry? {
     "510" =>
       Some(
         Msg({
+          signature: "'->'",
+          text: "Expecting '->'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "511" =>
+      Some(
+        Msg({
           signature: "'''",
           text: "Expecting '''.",
           subject: "",
           opener: "",
         }),
       )
-    "512" =>
+    "513" =>
       Some(
         Msg({
-          signature: "'&' '->'",
-          text: "Expecting '&', or '->'.",
+          signature: "'''",
+          text: "Expecting '''.",
           subject: "",
           opener: "",
         }),
       )
-    "513" =>
+    "515" =>
+      Some(
+        Msg({
+          signature: "'&' '->'",
+          text: "Expecting '&' or '->'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "516" =>
       Some(
         Msg({
           signature: "'->'",
@@ -1751,34 +1760,34 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "514" =>
-      Some(
-        Msg({
-          signature: "'''",
-          text: "Expecting '''.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "516" =>
-      Some(
-        Msg({
-          signature: "'''",
-          text: "Expecting '''.",
-          subject: "",
-          opener: "",
-        }),
-      )
     "517" =>
       Some(
         Msg({
-          signature: "',' ']'",
-          text: "Expecting ',', or ']'.",
+          signature: "'''",
+          text: "Expecting '''.",
           subject: "",
           opener: "",
         }),
       )
-    "521" =>
+    "519" =>
+      Some(
+        Msg({
+          signature: "'''",
+          text: "Expecting '''.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "520" =>
+      Some(
+        Msg({
+          signature: "',' ']'",
+          text: "Expecting ',' or ']'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "524" =>
       Some(
         Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
@@ -1787,7 +1796,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "525" =>
+    "528" =>
       Some(
         Msg({
           signature: "'&' '(' an identifier",
@@ -1796,7 +1805,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "529" =>
+    "532" =>
       Some(
         Msg({
           signature: "'{'",
@@ -1805,16 +1814,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "532" =>
+    "535" =>
       Some(
         Msg({
           signature: "'&' '(' '{' an identifier",
-          text: "Expecting a block, or a block type.",
+          text: "Expecting a block or a block type.",
           subject: "",
           opener: "",
         }),
       )
-    "535" =>
+    "538" =>
       Some(
         Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
@@ -1823,7 +1832,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "537" =>
+    "540" =>
       Some(
         Msg({
           signature: "'('",
@@ -1832,7 +1841,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "538" =>
+    "541" =>
       Some(
         Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' a character a float a string an identifier an integer",
@@ -1841,7 +1850,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "543" =>
+    "546" =>
       Some(
         Msg({
           signature: "'{'",
@@ -1850,20 +1859,11 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "546" =>
+    "549" =>
       Some(
         Msg({
           signature: "'&' '(' '{' an identifier",
-          text: "Expecting a block, or a block type.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "548" =>
-      Some(
-        Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
-          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          text: "Expecting a block or a block type.",
           subject: "",
           opener: "",
         }),
@@ -1872,13 +1872,22 @@ fn entry_of(key : String) -> Entry? {
     "551" =>
       Some(
         Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "554" =>
+      Some(
+        Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
           text: "Expecting an expression.",
           subject: "",
           opener: "",
         }),
       )
-    "555" =>
+    "558" =>
       Some(
         Msg({
           signature: "'!' '?' 'cont' 'fn' an identifier",
@@ -1887,7 +1896,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "557" =>
+    "56" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a parenthesized expression or an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "560" =>
       Some(
         Msg({
           signature: "'('",
@@ -1896,25 +1914,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "558" =>
+    "561" =>
       Some(
         Msg({
           signature: "'&' ')' an identifier",
-          text: "Expecting ')', or a function parameter.",
+          text: "Expecting ')' or a function parameter.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "56" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a parenthesized expression, or an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "560" =>
+    "563" =>
       Some(
         Msg({
           signature: "'&' ')' an identifier",
@@ -1923,7 +1932,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "564" =>
+    "567" =>
       Some(
         Msg({
           signature: "'&' an identifier",
@@ -1932,7 +1941,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "566" =>
+    "569" =>
       Some(
         Msg({
           signature: "')' ',' ':'",
@@ -1941,7 +1950,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "568" =>
+    "571" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '->' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
@@ -1950,43 +1959,43 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "575" =>
+    "578" =>
       Some(
         Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' ',' '-' '.' '/' '/s' '/u' ':' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
           text: "Assuming that the parenthesized expression is complete, expecting ')'.",
           subject: "this parenthesized expression",
-          opener: "This '(' opens the enclosing construct.",
-        }),
-      )
-    "576" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' ')' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting ')', or an expression.",
-          subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
       )
     "579" =>
       Some(
         Msg({
+          signature: "'!' '#' ''' '(' ')' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting ')' or an expression.",
+          subject: "",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "582" =>
+      Some(
+        Msg({
+          signature: "'&' an identifier",
+          text: "Expecting a value type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "584" =>
+      Some(
+        Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
-          text: "Assuming that the structure field is complete, expecting ',', or '}'.",
+          text: "Assuming that the structure field is complete, expecting ',' or '}'.",
           subject: "this structure field",
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "580" => Some(Deeper)
-    "582" =>
-      Some(
-        Msg({
-          signature: "'}'",
-          text: "Expecting '}'.",
-          subject: "",
-          opener: "This '{' opens the enclosing construct.",
-        }),
-      )
+    "585" => Some(Deeper)
     "587" =>
       Some(
         Msg({
@@ -1999,26 +2008,8 @@ fn entry_of(key : String) -> Entry? {
     "592" =>
       Some(
         Msg({
-          signature: "'}' an identifier",
-          text: "Expecting '}', or a structure field.",
-          subject: "",
-          opener: "This '{' opens the enclosing construct.",
-        }),
-      )
-    "595" =>
-      Some(
-        Msg({
-          signature: "',' ':' '|' '}'",
-          text: "Expecting ',', ':', '|', or '}'.",
-          subject: "",
-          opener: "This '{' opens the enclosing construct.",
-        }),
-      )
-    "596" =>
-      Some(
-        Msg({
-          signature: "'..' '}' an identifier",
-          text: "Expecting '..', '}', or a structure field.",
+          signature: "'}'",
+          text: "Expecting '}'.",
           subject: "",
           opener: "This '{' opens the enclosing construct.",
         }),
@@ -2026,8 +2017,8 @@ fn entry_of(key : String) -> Entry? {
     "597" =>
       Some(
         Msg({
-          signature: "'}'",
-          text: "Expecting '}'.",
+          signature: "'}' an identifier",
+          text: "Expecting '}' or a structure field.",
           subject: "",
           opener: "This '{' opens the enclosing construct.",
         }),
@@ -2041,31 +2032,31 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "606" =>
+    "600" =>
       Some(
         Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a length expression.",
+          signature: "',' ':' '|' '}'",
+          text: "Expecting ',', ':', '|', or '}'.",
           subject: "",
-          opener: "",
+          opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "608" =>
+    "601" =>
       Some(
         Msg({
-          signature: "'!' '!=' '#' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '::' ':=' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '@' '[' ']' '^' 'as' 'is' 'on' '|'",
-          text: "Assuming that the array body is complete, expecting ']'.",
-          subject: "this array body",
-          opener: "This '[' opens the enclosing construct.",
+          signature: "'..' '}' an identifier",
+          text: "Expecting '..', '}', or a structure field.",
+          subject: "",
+          opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "609" =>
+    "602" =>
       Some(
         Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
+          signature: "'}'",
+          text: "Expecting '}'.",
           subject: "",
-          opener: "",
+          opener: "This '{' opens the enclosing construct.",
         }),
       )
     "611" =>
@@ -2080,13 +2071,40 @@ fn entry_of(key : String) -> Entry? {
     "613" =>
       Some(
         Msg({
+          signature: "'!' '!=' '#' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '::' ':=' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '@' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the array body is complete, expecting ']'.",
+          subject: "this array body",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "614" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "616" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a length expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "618" =>
+      Some(
+        Msg({
           signature: "'!' '#' ''' '(' '+' '-' '..' '[' ']' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting ']', or an array body.",
+          text: "Expecting ']' or an array body.",
           subject: "",
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "616" =>
+    "621" =>
       Some(
         Msg({
           signature: "'!' '!=' '#' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '::' ':=' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '@' '[' ']' '^' 'as' 'is' 'on' '|'",
@@ -2104,7 +2122,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "632" =>
+    "637" =>
       Some(
         Msg({
           signature: "'if'",
@@ -2113,7 +2131,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "633" =>
+    "638" =>
       Some(
         Msg({
           signature: "'('",
@@ -2122,16 +2140,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "634" =>
+    "639" =>
       Some(
         Msg({
-          signature: "an identifier",
+          signature: "'as' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'catch' 'const' 'cont' 'data' 'describes' 'descriptor' 'dispatch' 'do' 'elem' 'else' 'fn' 'if' 'import' 'inf' 'is' 'let' 'loop' 'match' 'memory' 'mut' 'nan' 'nop' 'null' 'on' 'open' 'pagesize' 'rec' 'return' 'shared' 'suspend' 'table' 'tag' 'throw' 'throw_ref' 'try' 'try_legacy' 'type' 'unreachable' 'while' an identifier",
           text: "Expecting a condition.",
           subject: "",
           opener: "",
         }),
       )
-    "635" =>
+    "640" =>
       Some(
         Msg({
           signature: "'!=' '(' ')' '<' '<=' '=' '>' '>='",
@@ -2140,7 +2158,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "636" =>
+    "641" =>
       Some(
         Msg({
           signature: "']'",
@@ -2149,7 +2167,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "638" =>
+    "643" =>
       Some(
         Msg({
           signature: "',' '=' ']'",
@@ -2158,47 +2176,11 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "644" =>
+    "649" =>
       Some(
         Msg({
           signature: "a string",
           text: "Expecting a string.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "645" =>
-      Some(
-        Msg({
-          signature: "'#' 'const' 'fn' 'let' 'memory' 'table' 'tag' '{'",
-          text: "Assuming that the attributes are complete, expecting an import declaration.",
-          subject: "these attributes",
-          opener: "",
-        }),
-      )
-    "647" =>
-      Some(
-        Msg({
-          signature: "an identifier",
-          text: "Expecting an identifier.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "648" =>
-      Some(
-        Msg({
-          signature: "':'",
-          text: "Expecting ':'.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "649" =>
-      Some(
-        Msg({
-          signature: "'&' an identifier",
-          text: "Expecting a reference type, or an address type.",
           subject: "",
           opener: "",
         }),
@@ -2212,63 +2194,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "651" =>
+    "650" =>
       Some(
         Msg({
-          signature: "';' '['",
-          text: "Expecting ';', or memory limits.",
-          subject: "",
+          signature: "'#' 'const' 'fn' 'let' 'memory' 'table' 'tag' '{'",
+          text: "Assuming that the attributes are complete, expecting an import declaration.",
+          subject: "these attributes",
           opener: "",
         }),
       )
-    "653" =>
-      Some(
-        Msg({
-          signature: "an integer",
-          text: "Expecting an integer.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "654" =>
-      Some(
-        Msg({
-          signature: "',' ']'",
-          text: "Expecting ',', or ']'.",
-          subject: "",
-          opener: "This '[' opens the enclosing construct.",
-        }),
-      )
-    "655" =>
-      Some(
-        Msg({
-          signature: "an integer",
-          text: "Expecting an integer.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "656" =>
-      Some(
-        Msg({
-          signature: "']'",
-          text: "Expecting ']'.",
-          subject: "",
-          opener: "This '[' opens the enclosing construct.",
-        }),
-      )
-    "659" => Some(Deeper)
-    "660" =>
-      Some(
-        Msg({
-          signature: "';' '['",
-          text: "Expecting ';', or memory limits.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "662" => Some(Deeper)
-    "663" =>
+    "652" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -2277,7 +2212,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "664" =>
+    "653" =>
       Some(
         Msg({
           signature: "':'",
@@ -2286,20 +2221,85 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "665" =>
+    "654" =>
       Some(
         Msg({
-          signature: "an identifier",
-          text: "Expecting an address type.",
+          signature: "'&' an identifier",
+          text: "Expecting a reference type or an address type.",
           subject: "",
           opener: "",
         }),
       )
-    "667" =>
+    "656" =>
       Some(
         Msg({
-          signature: "';' '{'",
-          text: "Expecting ';', or '{'.",
+          signature: "';' '['",
+          text: "Expecting ';' or memory limits.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "658" =>
+      Some(
+        Msg({
+          signature: "an integer",
+          text: "Expecting an integer.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "659" =>
+      Some(
+        Msg({
+          signature: "',' ']'",
+          text: "Expecting ',' or ']'.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "660" =>
+      Some(
+        Msg({
+          signature: "an integer",
+          text: "Expecting an integer.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "661" =>
+      Some(
+        Msg({
+          signature: "']'",
+          text: "Expecting ']'.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "664" => Some(Deeper)
+    "665" =>
+      Some(
+        Msg({
+          signature: "';' '['",
+          text: "Expecting ';' or memory limits.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "667" => Some(Deeper)
+    "668" =>
+      Some(
+        Msg({
+          signature: "an identifier",
+          text: "Expecting an identifier.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "669" =>
+      Some(
+        Msg({
+          signature: "':'",
+          text: "Expecting ':'.",
           subject: "",
           opener: "",
         }),
@@ -2313,7 +2313,25 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
+    "670" =>
+      Some(
+        Msg({
+          signature: "an identifier",
+          text: "Expecting an address type.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "672" =>
+      Some(
+        Msg({
+          signature: "';' '{'",
+          text: "Expecting ';' or '{'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "677" =>
       Some(
         Msg({
           signature: "an integer",
@@ -2322,8 +2340,8 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "673" => Some(Deeper)
-    "679" =>
+    "678" => Some(Deeper)
+    "684" =>
       Some(
         Msg({
           signature: "':'",
@@ -2332,7 +2350,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "680" =>
+    "685" =>
       Some(
         Msg({
           signature: "'&' an identifier",
@@ -2341,7 +2359,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "681" =>
+    "686" =>
       Some(
         Msg({
           signature: "';'",
@@ -2350,7 +2368,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "684" =>
+    "689" =>
       Some(
         Msg({
           signature: "'#' ';' 'const' 'fn' 'let' 'memory' 'table' 'tag' '}'",
@@ -2359,7 +2377,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "685" =>
+    "690" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -2368,7 +2386,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "687" =>
+    "692" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -2377,16 +2395,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "690" =>
+    "695" =>
       Some(
         Msg({
           signature: "'&' ')' an identifier",
-          text: "Expecting ')', or a function parameter.",
+          text: "Expecting ')' or a function parameter.",
           subject: "",
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "692" =>
+    "697" =>
       Some(
         Msg({
           signature: "''' '->' '{'",
@@ -2395,7 +2413,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "694" =>
+    "699" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -2404,7 +2422,6 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "696" => Some(Deeper)
     "70" =>
       Some(
         Msg({
@@ -2414,7 +2431,8 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "700" =>
+    "701" => Some(Deeper)
+    "705" =>
       Some(
         Msg({
           signature: "'->' ';'",
@@ -2423,7 +2441,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "701" =>
+    "706" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -2432,17 +2450,17 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "704" =>
+    "709" =>
       Some(
         Msg({
           signature: "'!' an identifier",
-          text: "Expecting '!', or a type name.",
+          text: "Expecting '!' or a type name.",
           subject: "",
           opener: "",
         }),
       )
-    "710" => Some(Deeper)
-    "711" =>
+    "715" => Some(Deeper)
+    "716" =>
       Some(
         Msg({
           signature: "'#' ';' 'const' 'fn' 'let' 'memory' 'table' 'tag' '}'",
@@ -2451,7 +2469,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "714" =>
+    "719" =>
       Some(
         Msg({
           signature: "'#' ';' 'const' 'fn' 'let' 'memory' 'table' 'tag' '}'",
@@ -2469,7 +2487,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "721" =>
+    "726" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -2478,7 +2496,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "722" =>
+    "727" =>
       Some(
         Msg({
           signature: "':'",
@@ -2487,7 +2505,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "723" =>
+    "728" =>
       Some(
         Msg({
           signature: "'&'",
@@ -2496,16 +2514,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "724" =>
+    "729" =>
       Some(
         Msg({
           signature: "'=' '@'",
-          text: "Expecting '=', or '@'.",
+          text: "Expecting '=' or '@'.",
           subject: "",
           opener: "",
         }),
       )
-    "725" =>
+    "730" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -2514,7 +2532,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "726" =>
+    "731" =>
       Some(
         Msg({
           signature: "'['",
@@ -2523,7 +2541,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "727" =>
+    "732" =>
       Some(
         Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
@@ -2532,7 +2550,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "729" =>
+    "734" =>
       Some(
         Msg({
           signature: "'='",
@@ -2541,29 +2559,11 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "730" =>
+    "735" =>
       Some(
         Msg({
           signature: "'['",
           text: "Expecting '['.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "731" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' ']' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting ']', or an expression.",
-          subject: "",
-          opener: "This '[' opens the enclosing construct.",
-        }),
-      )
-    "733" =>
-      Some(
-        Msg({
-          signature: "';'",
-          text: "Expecting ';'.",
           subject: "",
           opener: "",
         }),
@@ -2571,22 +2571,13 @@ fn entry_of(key : String) -> Entry? {
     "736" =>
       Some(
         Msg({
-          signature: "'['",
-          text: "Expecting '['.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "737" =>
-      Some(
-        Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' ']' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting ']', or an expression.",
+          text: "Expecting ']' or an expression.",
           subject: "",
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "739" =>
+    "738" =>
       Some(
         Msg({
           signature: "';'",
@@ -2599,93 +2590,12 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "']' an identifier",
-          text: "Expecting ']', or an on-clause.",
+          text: "Expecting ']' or an on-clause.",
           subject: "",
           opener: "This '[' opens the enclosing construct.",
         }),
       )
     "741" =>
-      Some(
-        Msg({
-          signature: "an identifier",
-          text: "Expecting an identifier.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "742" =>
-      Some(
-        Msg({
-          signature: "':'",
-          text: "Expecting ':'.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "743" =>
-      Some(
-        Msg({
-          signature: "'&' an identifier",
-          text: "Expecting a reference type, or an address type.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "745" =>
-      Some(
-        Msg({
-          signature: "';' '=' '['",
-          text: "Expecting ';', '=', or memory limits.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "746" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "755" =>
-      Some(
-        Msg({
-          signature: "';' '=' '['",
-          text: "Expecting ';', '=', or memory limits.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "76" =>
-      Some(
-        Msg({
-          signature: "']' an identifier",
-          text: "Expecting ']', or an on-clause.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "763" =>
-      Some(
-        Msg({
-          signature: "'_' an identifier",
-          text: "Expecting a data name.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "765" =>
-      Some(
-        Msg({
-          signature: "an identifier",
-          text: "Expecting an identifier.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "766" =>
       Some(
         Msg({
           signature: "'['",
@@ -2694,34 +2604,25 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "767" =>
+    "742" =>
       Some(
         Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a constant expression.",
+          signature: "'!' '#' ''' '(' '+' '-' '[' ']' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting ']' or an expression.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "744" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
           subject: "",
           opener: "",
         }),
       )
-    "769" =>
-      Some(
-        Msg({
-          signature: "';' '='",
-          text: "Expecting ';', or '='.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "772" =>
-      Some(
-        Msg({
-          signature: "'[' a string",
-          text: "Expecting a data element.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "774" =>
+    "746" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -2730,7 +2631,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "775" =>
+    "747" =>
       Some(
         Msg({
           signature: "':'",
@@ -2739,20 +2640,110 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "776" =>
+    "748" =>
       Some(
         Msg({
-          signature: "'+' '-' ']' 'inf' 'nan' a float an identifier an integer",
-          text: "Expecting ']', or a data value.",
+          signature: "'&' an identifier",
+          text: "Expecting a reference type or an address type.",
           subject: "",
-          opener: "This '[' opens the enclosing construct.",
+          opener: "",
         }),
       )
-    "778" =>
+    "750" =>
       Some(
         Msg({
-          signature: "'+' '-' ']' 'inf' 'nan' a float an identifier an integer",
-          text: "Expecting ']', or a data value.",
+          signature: "';' '=' '['",
+          text: "Expecting ';', '=', or memory limits.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "751" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "76" =>
+      Some(
+        Msg({
+          signature: "']' an identifier",
+          text: "Expecting ']' or an on-clause.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "760" =>
+      Some(
+        Msg({
+          signature: "';' '=' '['",
+          text: "Expecting ';', '=', or memory limits.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "768" =>
+      Some(
+        Msg({
+          signature: "'_' an identifier",
+          text: "Expecting a data name.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "770" =>
+      Some(
+        Msg({
+          signature: "an identifier",
+          text: "Expecting an identifier.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "771" =>
+      Some(
+        Msg({
+          signature: "'['",
+          text: "Expecting '['.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "772" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a constant expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "774" =>
+      Some(
+        Msg({
+          signature: "';' '='",
+          text: "Expecting ';' or '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "777" =>
+      Some(
+        Msg({
+          signature: "'[' a string",
+          text: "Expecting a data element.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "779" =>
+      Some(
+        Msg({
+          signature: "an identifier",
+          text: "Expecting an identifier.",
           subject: "",
           opener: "",
         }),
@@ -2766,108 +2757,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "782" => Some(Deeper)
-    "785" =>
-      Some(
-        Msg({
-          signature: "'inf' 'nan' a float an integer",
-          text: "Expecting a number.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "789" =>
-      Some(
-        Msg({
-          signature: "'('",
-          text: "Expecting '('.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "79" =>
-      Some(
-        Msg({
-          signature: "''' an identifier",
-          text: "Expecting ''', or an identifier.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "790" =>
-      Some(
-        Msg({
-          signature: "')' '+' '-' 'inf' 'nan' a float an integer",
-          text: "Expecting ')', or a number.",
-          subject: "",
-          opener: "This '(' opens the enclosing construct.",
-        }),
-      )
-    "792" =>
-      Some(
-        Msg({
-          signature: "')' '+' '-' 'inf' 'nan' a float an integer",
-          text: "Expecting ')', or a number.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "8" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a statement, or an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "80" =>
-      Some(
-        Msg({
-          signature: "',' ']'",
-          text: "Expecting ',', or ']'.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "801" =>
-      Some(
-        Msg({
-          signature: "'++' ';'",
-          text: "Expecting '++', or ';'.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "803" =>
-      Some(
-        Msg({
-          signature: "'[' a string",
-          text: "Expecting a data element.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "806" =>
-      Some(
-        Msg({
-          signature: "'#' ';' 'const' 'data' 'elem' 'fn' 'import' 'let' 'memory' 'rec' 'table' 'tag' 'type' '}'",
-          text: "Expecting ';', '}', or a module field.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "807" => Some(Deeper)
-    "809" =>
-      Some(
-        Msg({
-          signature: "an identifier",
-          text: "Expecting an identifier.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "810" =>
+    "780" =>
       Some(
         Msg({
           signature: "':'",
@@ -2876,11 +2766,130 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
+    "781" =>
+      Some(
+        Msg({
+          signature: "'+' '-' ']' 'inf' 'nan' a float an identifier an integer",
+          text: "Expecting ']' or a data value.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "783" =>
+      Some(
+        Msg({
+          signature: "'+' '-' ']' 'inf' 'nan' a float an identifier an integer",
+          text: "Expecting ']' or a data value.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "787" => Some(Deeper)
+    "79" =>
+      Some(
+        Msg({
+          signature: "''' an identifier",
+          text: "Expecting ''' or an identifier.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "790" =>
+      Some(
+        Msg({
+          signature: "'inf' 'nan' a float an integer",
+          text: "Expecting a number.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "794" =>
+      Some(
+        Msg({
+          signature: "'('",
+          text: "Expecting '('.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "795" =>
+      Some(
+        Msg({
+          signature: "')' '+' '-' 'inf' 'nan' a float an integer",
+          text: "Expecting ')' or a number.",
+          subject: "",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "797" =>
+      Some(
+        Msg({
+          signature: "')' '+' '-' 'inf' 'nan' a float an integer",
+          text: "Expecting ')' or a number.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "8" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a statement or an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "80" =>
+      Some(
+        Msg({
+          signature: "',' ']'",
+          text: "Expecting ',' or ']'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "806" =>
+      Some(
+        Msg({
+          signature: "'++' ';'",
+          text: "Expecting '++' or ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "808" =>
+      Some(
+        Msg({
+          signature: "'[' a string",
+          text: "Expecting a data element.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "811" =>
       Some(
         Msg({
+          signature: "'#' ';' 'const' 'data' 'elem' 'fn' 'import' 'let' 'memory' 'rec' 'table' 'tag' 'type' '}'",
+          text: "Expecting ';', '}', or a module field.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "812" => Some(Deeper)
+    "814" =>
+      Some(
+        Msg({
           signature: "an identifier",
-          text: "Expecting an address type.",
+          text: "Expecting an identifier.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "815" =>
+      Some(
+        Msg({
+          signature: "':'",
+          text: "Expecting ':'.",
           subject: "",
           opener: "",
         }),
@@ -2888,17 +2897,8 @@ fn entry_of(key : String) -> Entry? {
     "816" =>
       Some(
         Msg({
-          signature: "'data' '}'",
-          text: "Expecting '}', or a data item.",
-          subject: "",
-          opener: "This '{' opens the enclosing construct.",
-        }),
-      )
-    "819" =>
-      Some(
-        Msg({
-          signature: "'_' an identifier",
-          text: "Expecting a data name.",
+          signature: "an identifier",
+          text: "Expecting an address type.",
           subject: "",
           opener: "",
         }),
@@ -2915,13 +2915,31 @@ fn entry_of(key : String) -> Entry? {
     "821" =>
       Some(
         Msg({
+          signature: "'data' '}'",
+          text: "Expecting '}' or a data item.",
+          subject: "",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "824" =>
+      Some(
+        Msg({
+          signature: "'_' an identifier",
+          text: "Expecting a data name.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "826" =>
+      Some(
+        Msg({
           signature: "'['",
           text: "Expecting '['.",
           subject: "",
           opener: "",
         }),
       )
-    "822" =>
+    "827" =>
       Some(
         Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
@@ -2930,20 +2948,11 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "824" =>
+    "829" =>
       Some(
         Msg({
           signature: "';' '='",
-          text: "Expecting ';', or '='.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "826" =>
-      Some(
-        Msg({
-          signature: "'data' '}'",
-          text: "Expecting '}', or a data item.",
+          text: "Expecting ';' or '='.",
           subject: "",
           opener: "",
         }),
@@ -2952,16 +2961,16 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'data' '}'",
-          text: "Expecting '}', or a data item.",
+          text: "Expecting '}' or a data item.",
           subject: "",
-          opener: "This '{' opens the enclosing construct.",
+          opener: "",
         }),
       )
-    "837" =>
+    "836" =>
       Some(
         Msg({
           signature: "'data' '}'",
-          text: "Expecting '}', or a data item.",
+          text: "Expecting '}' or a data item.",
           subject: "",
           opener: "This '{' opens the enclosing construct.",
         }),
@@ -2970,48 +2979,57 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'data' '}'",
-          text: "Expecting '}', or a data item.",
+          text: "Expecting '}' or a data item.",
           subject: "",
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "856" =>
+    "847" =>
       Some(
         Msg({
-          signature: "':' '='",
-          text: "Expecting ':', or '='.",
+          signature: "'data' '}'",
+          text: "Expecting '}' or a data item.",
           subject: "",
-          opener: "",
-        }),
-      )
-    "858" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a constant expression.",
-          subject: "",
-          opener: "",
+          opener: "This '{' opens the enclosing construct.",
         }),
       )
     "861" =>
       Some(
         Msg({
+          signature: "':' '='",
+          text: "Expecting ':' or '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "863" =>
+      Some(
+        Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
           text: "Expecting a constant expression.",
           subject: "",
           opener: "",
         }),
       )
-    "864" =>
+    "866" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a constant expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "869" =>
       Some(
         Msg({
           signature: "''' '->' '{'",
-          text: "Assuming that the function type is complete, expecting ''', or '{'.",
+          text: "Assuming that the function type is complete, expecting ''' or '{'.",
           subject: "this function type",
           opener: "",
         }),
       )
-    "865" =>
+    "870" =>
       Some(
         Msg({
           signature: "'{'",
@@ -3020,7 +3038,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "866" =>
+    "871" =>
       Some(
         Msg({
           signature: "'!' '#' ''' '(' '+' '-' ';' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' '}' a character a float a string an identifier an integer",
@@ -3029,16 +3047,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "872" =>
+    "878" =>
       Some(
         Msg({
           signature: "'!' '['",
-          text: "Expecting '!', or '['.",
+          text: "Expecting '!' or '['.",
           subject: "",
           opener: "",
         }),
       )
-    "873" =>
+    "879" =>
       Some(
         Msg({
           signature: "'['",
@@ -3047,7 +3065,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "874" =>
+    "880" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -3056,16 +3074,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "875" =>
+    "881" =>
       Some(
         Msg({
           signature: "'=' ']'",
-          text: "Expecting '=', or ']'.",
+          text: "Expecting '=' or ']'.",
           subject: "",
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "877" =>
+    "883" =>
       Some(
         Msg({
           signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
@@ -3074,7 +3092,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "880" =>
+    "886" =>
       Some(
         Msg({
           signature: "'else' 'if' 'import' an identifier",
@@ -3083,7 +3101,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "881" =>
+    "887" =>
       Some(
         Msg({
           signature: "']'",
@@ -3092,7 +3110,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "882" =>
+    "888" =>
       Some(
         Msg({
           signature: "'{'",
@@ -3101,7 +3119,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "883" =>
+    "889" =>
       Some(
         Msg({
           signature: "'#' ';' 'const' 'data' 'elem' 'fn' 'import' 'let' 'memory' 'rec' 'table' 'tag' 'type' '}'",
@@ -3110,7 +3128,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "886" =>
+    "892" =>
       Some(
         Msg({
           signature: "'#' ';' 'const' 'data' 'elem' 'fn' 'import' 'let' 'memory' 'rec' 'table' 'tag' 'type' '}'",
@@ -3119,7 +3137,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "889" =>
+    "895" =>
       Some(
         Msg({
           signature: "'{'",
@@ -3128,38 +3146,20 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "890" =>
-      Some(
-        Msg({
-          signature: "'type' '}'",
-          text: "Expecting '}', or a type definition.",
-          subject: "",
-          opener: "This '{' opens the enclosing construct.",
-        }),
-      )
-    "893" =>
-      Some(
-        Msg({
-          signature: "an identifier",
-          text: "Expecting a type name.",
-          subject: "",
-          opener: "",
-        }),
-      )
     "896" =>
       Some(
         Msg({
-          signature: "an identifier",
-          text: "Expecting a type name.",
+          signature: "'type' '}'",
+          text: "Expecting '}' or a type definition.",
           subject: "",
-          opener: "",
+          opener: "This '{' opens the enclosing construct.",
         }),
       )
     "899" =>
       Some(
         Msg({
-          signature: "'[' 'cont' 'describes' 'descriptor' 'fn' 'open' '{'",
-          text: "Expecting 'describes', 'descriptor', 'open', or a composite type.",
+          signature: "an identifier",
+          text: "Expecting a type name.",
           subject: "",
           opener: "",
         }),
@@ -3173,7 +3173,25 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "900" =>
+    "901" =>
+      Some(
+        Msg({
+          signature: "an identifier",
+          text: "Expecting a type name.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "904" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'describes' 'descriptor' 'fn' 'open' '{'",
+          text: "Expecting 'describes', 'descriptor', 'open', or a composite type (a type with a supertype is a struct, array or function type; a type alias has none).",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "905" =>
       Some(
         Msg({
           signature: "'[' 'cont' 'describes' 'descriptor' 'fn' '{'",
@@ -3182,7 +3200,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "902" =>
+    "907" =>
       Some(
         Msg({
           signature: "'('",
@@ -3191,43 +3209,34 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "903" =>
-      Some(
-        Msg({
-          signature: "'&' ')' an identifier",
-          text: "Expecting ')', or a function parameter.",
-          subject: "",
-          opener: "This '(' opens the enclosing construct.",
-        }),
-      )
-    "905" =>
-      Some(
-        Msg({
-          signature: "'->' ';'",
-          text: "Expecting '->', or ';'.",
-          subject: "",
-          opener: "",
-        }),
-      )
     "908" =>
       Some(
         Msg({
-          signature: "an identifier",
-          text: "Expecting a type name.",
+          signature: "'&' ')' an identifier",
+          text: "Expecting ')' or a function parameter.",
           subject: "",
-          opener: "",
+          opener: "This '(' opens the enclosing construct.",
         }),
       )
     "910" =>
       Some(
         Msg({
+          signature: "'->' ';'",
+          text: "Expecting '->' or ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "913" =>
+      Some(
+        Msg({
           signature: "an identifier",
           text: "Expecting a type name.",
           subject: "",
           opener: "",
         }),
       )
-    "916" =>
+    "915" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -3239,13 +3248,22 @@ fn entry_of(key : String) -> Entry? {
     "921" =>
       Some(
         Msg({
+          signature: "an identifier",
+          text: "Expecting a type name.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "926" =>
+      Some(
+        Msg({
           signature: "'&' 'mut' an identifier",
           text: "Expecting a field type.",
           subject: "",
           opener: "",
         }),
       )
-    "922" =>
+    "927" =>
       Some(
         Msg({
           signature: "'&' an identifier",
@@ -3254,8 +3272,8 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "928" => Some(Deeper)
-    "929" =>
+    "933" => Some(Deeper)
+    "934" =>
       Some(
         Msg({
           signature: "'..' '}' an identifier",
@@ -3264,7 +3282,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "934" =>
+    "939" =>
       Some(
         Msg({
           signature: "'&' 'mut' an identifier",
@@ -3273,7 +3291,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "938" =>
+    "943" =>
       Some(
         Msg({
           signature: "';'",
@@ -3282,34 +3300,61 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "939" =>
+    "944" =>
       Some(
         Msg({
           signature: "',' '}'",
-          text: "Expecting ',', or '}'.",
+          text: "Expecting ',' or '}'.",
           subject: "",
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "940" =>
+    "945" =>
       Some(
         Msg({
           signature: "'}' an identifier",
-          text: "Expecting '}', or a structure type field.",
+          text: "Expecting '}' or a structure type field.",
           subject: "",
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "951" =>
+    "957" =>
       Some(
         Msg({
-          signature: "'type' '}'",
-          text: "Expecting '}', or a type definition.",
+          signature: "'[' 'cont' 'describes' 'descriptor' 'fn' 'open' '{'",
+          text: "Expecting 'describes', 'descriptor', 'open', or a composite type (a rec group holds struct, array and function types; a type alias goes outside it).",
           subject: "",
           opener: "",
         }),
       )
-    "957" =>
+    "969" =>
+      Some(
+        Msg({
+          signature: "'type' '}'",
+          text: "Expecting '}' or a type definition.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "972" =>
+      Some(
+        Msg({
+          signature: "an identifier",
+          text: "Expecting a type name.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "974" =>
+      Some(
+        Msg({
+          signature: "'&' '[' 'cont' 'describes' 'descriptor' 'fn' 'open' '{' an identifier",
+          text: "Expecting 'describes', 'descriptor', 'open', a composite type, or a value type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "980" =>
       Some(
         Msg({
           signature: "'('",
@@ -3318,16 +3363,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "958" =>
+    "981" =>
       Some(
         Msg({
-          signature: "an identifier",
+          signature: "'as' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'catch' 'const' 'cont' 'data' 'describes' 'descriptor' 'dispatch' 'do' 'elem' 'else' 'fn' 'if' 'import' 'inf' 'is' 'let' 'loop' 'match' 'memory' 'mut' 'nan' 'nop' 'null' 'on' 'open' 'pagesize' 'rec' 'return' 'shared' 'suspend' 'table' 'tag' 'throw' 'throw_ref' 'try' 'try_legacy' 'type' 'unreachable' 'while' an identifier",
           text: "Expecting a condition.",
           subject: "",
           opener: "",
         }),
       )
-    "959" =>
+    "982" =>
       Some(
         Msg({
           signature: "'!=' '(' ')' '<' '<=' '=' '>' '>='",
@@ -3336,7 +3381,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "960" =>
+    "983" =>
       Some(
         Msg({
           signature: "']'",
@@ -3345,7 +3390,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "961" =>
+    "984" =>
       Some(
         Msg({
           signature: "'{'",
@@ -3520,7 +3565,7 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'!' 'cont' an identifier",
-          text: "Expecting '!', or a heap type.",
+          text: "Expecting '!' or a heap type.",
           subject: "",
           opener: "",
         }),
@@ -3696,7 +3741,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "44 580" =>
+    "44 585" =>
       Some(
         Msg({
           signature: "',' ':' '}'",
@@ -3705,7 +3750,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "456 356" =>
+    "459 356" =>
       Some(
         Msg({
           signature: "')' ','",
@@ -3714,7 +3759,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "468 356" =>
+    "471 356" =>
       Some(
         Msg({
           signature: "')' ','",
@@ -3723,7 +3768,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "477 356" =>
+    "480 356" =>
       Some(
         Msg({
           signature: "'{'",
@@ -3732,16 +3777,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "521 55" =>
+    "524 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '=>' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '{' '|'",
-          text: "Assuming that the condition expression is complete, expecting '=>', or a block.",
+          text: "Assuming that the condition expression is complete, expecting '=>' or a block.",
           subject: "this condition expression",
           opener: "",
         }),
       )
-    "525 356" =>
+    "528 356" =>
       Some(
         Msg({
           signature: "'{'",
@@ -3750,25 +3795,25 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "532 356" =>
+    "535 356" =>
       Some(
         Msg({
           signature: "'{'",
           text: "Expecting a block.",
           subject: "",
-          opener: "",
-        }),
-      )
-    "535 55" =>
-      Some(
-        Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ':' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '{' '|'",
-          text: "Assuming that the condition expression is complete, expecting ':', or a block.",
-          subject: "this condition expression",
           opener: "",
         }),
       )
     "538 55" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ':' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '{' '|'",
+          text: "Assuming that the condition expression is complete, expecting ':' or a block.",
+          subject: "this condition expression",
+          opener: "",
+        }),
+      )
+    "541 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
@@ -3777,7 +3822,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "546 356" =>
+    "549 356" =>
       Some(
         Msg({
           signature: "'{'",
@@ -3786,7 +3831,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "555 15" =>
+    "558 15" =>
       Some(
         Msg({
           signature: "'!' 'cont' 'fn' an identifier",
@@ -3795,7 +3840,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "576 55" =>
+    "579 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
@@ -3804,7 +3849,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "592 580" =>
+    "597 585" =>
       Some(
         Msg({
           signature: "',' ':' '}'",
@@ -3813,7 +3858,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "596 580" =>
+    "601 585" =>
       Some(
         Msg({
           signature: "',' ':' '}'",
@@ -3822,7 +3867,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "609 55" =>
+    "614 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
@@ -3831,16 +3876,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "624 55" =>
-      Some(
-        Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
-          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "627 55" =>
+    "629 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
@@ -3858,7 +3894,16 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "649 662" =>
+    "632 55" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "654 667" =>
       Some(
         Msg({
           signature: "'&'",
@@ -3867,16 +3912,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "654 659" => Some(Deeper)
-    "665 662" =>
-      Some(
-        Msg({
-          signature: "';' '[' 'pagesize' 'shared'",
-          text: "Expecting ';', 'shared', a page-size clause, or memory limits.",
-          subject: "",
-          opener: "",
-        }),
-      )
+    "659 664" => Some(Deeper)
     "67 55" =>
       Some(
         Msg({
@@ -3886,8 +3922,17 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "672 673" => Some(Deeper)
-    "687 336" =>
+    "670 667" =>
+      Some(
+        Msg({
+          signature: "';' '[' 'pagesize' 'shared'",
+          text: "Expecting ';', 'shared', a page-size clause, or memory limits.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "677 678" => Some(Deeper)
+    "692 336" =>
       Some(
         Msg({
           signature: "'(' ':' ';'",
@@ -3896,18 +3941,18 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "694 696" =>
+    "699 701" =>
       Some(
         Msg({
           signature: "'(' ';'",
-          text: "Expecting ';', or a function type.",
+          text: "Expecting ';' or a function type.",
           subject: "",
           opener: "",
         }),
       )
-    "701 710" => Some(Deeper)
-    "702 203" => Some(Deeper)
-    "704 203" =>
+    "706 715" => Some(Deeper)
+    "707 203" => Some(Deeper)
+    "709 203" =>
       Some(
         Msg({
           signature: "an identifier",
@@ -3916,8 +3961,8 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "705 696" => Some(Deeper)
-    "727 55" =>
+    "710 701" => Some(Deeper)
+    "732 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
@@ -3926,7 +3971,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "731 55" =>
+    "736 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
@@ -3935,7 +3980,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "737 55" =>
+    "742 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
@@ -3944,7 +3989,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "743 662" =>
+    "748 667" =>
       Some(
         Msg({
           signature: "'&'",
@@ -3953,7 +3998,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "746 55" =>
+    "751 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
@@ -3962,7 +4007,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "763 807" =>
+    "768 812" =>
       Some(
         Msg({
           signature: "';' '=' '@'",
@@ -3971,7 +4016,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "767 55" =>
+    "772 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
@@ -3980,25 +4025,25 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "776 782" =>
+    "781 787" =>
       Some(
         Msg({
           signature: "',' ']'",
-          text: "Expecting ',', or ']'.",
+          text: "Expecting ',' or ']'.",
           subject: "",
           opener: "",
         }),
       )
-    "790 782" =>
+    "795 787" =>
       Some(
         Msg({
           signature: "')' ','",
-          text: "Expecting ')', or ','.",
+          text: "Expecting ')' or ','.",
           subject: "",
           opener: "",
         }),
       )
-    "811 662" =>
+    "816 667" =>
       Some(
         Msg({
           signature: "';' '[' 'pagesize' 'shared' '{'",
@@ -4007,7 +4052,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "819 807" =>
+    "824 812" =>
       Some(
         Msg({
           signature: "'@'",
@@ -4016,7 +4061,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "822 55" =>
+    "827 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
@@ -4025,16 +4070,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "858 55" =>
-      Some(
-        Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
-          text: "Assuming that the constant expression is complete, expecting ';'.",
-          subject: "this constant expression",
-          opener: "",
-        }),
-      )
-    "861 55" =>
+    "863 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
@@ -4046,13 +4082,22 @@ fn entry_of(key : String) -> Entry? {
     "866 55" =>
       Some(
         Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the constant expression is complete, expecting ';'.",
+          subject: "this constant expression",
+          opener: "",
+        }),
+      )
+    "871 55" =>
+      Some(
+        Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
-          text: "Assuming that the statement is complete, expecting ';', or '}'.",
+          text: "Assuming that the statement is complete, expecting ';' or '}'.",
           subject: "this statement",
           opener: "",
         }),
       )
-    "877 55" =>
+    "883 55" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
@@ -4061,20 +4106,11 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "893 696" =>
+    "899 701" =>
       Some(
         Msg({
           signature: "':' '='",
-          text: "Expecting ':', or '='.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "896 696" =>
-      Some(
-        Msg({
-          signature: "'='",
-          text: "Expecting '='.",
+          text: "Expecting ':' or '='.",
           subject: "",
           opener: "",
         }),
@@ -4083,12 +4119,21 @@ fn entry_of(key : String) -> Entry? {
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
-          text: "Assuming that the attribute expression is complete, expecting ']', or an attribute guard.",
+          text: "Assuming that the attribute expression is complete, expecting ']' or an attribute guard.",
           subject: "this attribute expression",
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "908 696" =>
+    "901 701" =>
+      Some(
+        Msg({
+          signature: "'='",
+          text: "Expecting '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "913 701" =>
       Some(
         Msg({
           signature: "'[' 'cont' 'fn' '{'",
@@ -4097,17 +4142,17 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "910 696" =>
+    "915 701" =>
       Some(
         Msg({
           signature: "'[' 'cont' 'descriptor' 'fn' '{'",
-          text: "Expecting 'descriptor', or a composite type.",
+          text: "Expecting 'descriptor' or a composite type.",
           subject: "",
           opener: "",
         }),
       )
-    "925 928" => Some(Deeper)
-    "929 580" =>
+    "930 933" => Some(Deeper)
+    "934 585" =>
       Some(
         Msg({
           signature: "':'",
@@ -4116,7 +4161,25 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "646 701 710" =>
+    "972 701" =>
+      Some(
+        Msg({
+          signature: "':' '='",
+          text: "Expecting ':' or '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "974 356" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "651 706 715" =>
       Some(
         Msg({
           signature: "'!' '(' ':' ';'",
@@ -4125,28 +4188,28 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "653 654 659" => Some(Deeper)
-    "666 672 673" =>
+    "658 659 664" => Some(Deeper)
+    "671 677 678" =>
       Some(
         Msg({
           signature: "';' 'shared'",
-          text: "Expecting ';', or 'shared'.",
+          text: "Expecting ';' or 'shared'.",
           subject: "",
           opener: "",
         }),
       )
-    "668 672 673" =>
+    "673 677 678" =>
       Some(
         Msg({
           signature: "';' 'shared'",
-          text: "Expecting ';', or 'shared'.",
+          text: "Expecting ';' or 'shared'.",
           subject: "",
           opener: "",
         }),
       )
-    "701 702 203" => Some(Deeper)
-    "704 705 696" => Some(Deeper)
-    "719 701 710" =>
+    "706 707 203" => Some(Deeper)
+    "709 710 701" => Some(Deeper)
+    "724 706 715" =>
       Some(
         Msg({
           signature: "'!' ''' '(' ':' '{'",
@@ -4155,7 +4218,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "812 672 673" =>
+    "817 677 678" =>
       Some(
         Msg({
           signature: "';' 'shared' '{'",
@@ -4164,7 +4227,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "813 672 673" =>
+    "818 677 678" =>
       Some(
         Msg({
           signature: "';' 'shared' '{'",
@@ -4173,7 +4236,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "921 925 928" =>
+    "926 930 933" =>
       Some(
         Msg({
           signature: "']'",
@@ -4182,7 +4245,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "934 925 928" =>
+    "939 930 933" =>
       Some(
         Msg({
           signature: "',' '}'",
@@ -4191,7 +4254,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "This '{' opens the enclosing construct.",
         }),
       )
-    "646 701 702 203" =>
+    "651 706 707 203" =>
       Some(
         Msg({
           signature: "'(' ':' ';'",
@@ -4200,7 +4263,7 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "666 653 654 659" =>
+    "671 658 659 664" =>
       Some(
         Msg({
           signature: "';' 'pagesize' 'shared'",
@@ -4209,8 +4272,8 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "703 704 705 696" => Some(Deeper)
-    "719 701 702 203" =>
+    "708 709 710 701" => Some(Deeper)
+    "724 706 707 203" =>
       Some(
         Msg({
           signature: "''' '(' ':' '{'",
@@ -4219,25 +4282,25 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "745 653 654 659" =>
+    "750 658 659 664" =>
       Some(
         Msg({
           signature: "';' '='",
-          text: "Expecting ';', or '='.",
+          text: "Expecting ';' or '='.",
           subject: "",
           opener: "",
         }),
       )
-    "755 653 654 659" =>
+    "760 658 659 664" =>
       Some(
         Msg({
           signature: "';' '='",
-          text: "Expecting ';', or '='.",
+          text: "Expecting ';' or '='.",
           subject: "",
           opener: "",
         }),
       )
-    "812 653 654 659" =>
+    "817 658 659 664" =>
       Some(
         Msg({
           signature: "';' 'pagesize' 'shared' '{'",
@@ -4246,18 +4309,18 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "702 703 704 705 696" => Some(Deeper)
-    "701 702 703 704 705 696" => Some(Deeper)
-    "646 701 702 703 704 705 696" =>
+    "707 708 709 710 701" => Some(Deeper)
+    "706 707 708 709 710 701" => Some(Deeper)
+    "651 706 707 708 709 710 701" =>
       Some(
         Msg({
           signature: "'(' ';'",
-          text: "Expecting ';', or a function type.",
+          text: "Expecting ';' or a function type.",
           subject: "",
           opener: "",
         }),
       )
-    "719 701 702 703 704 705 696" =>
+    "724 706 707 708 709 710 701" =>
       Some(
         Msg({
           signature: "''' '(' '{'",

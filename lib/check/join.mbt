@@ -115,6 +115,12 @@ pub fn join_value_types(
       ty1.merge(ty2, a)
       Some(ty1)
     }
+    // Two values of the same alias's type have that type in every
+    // configuration.
+    (
+      Valtype({ type_alias: Some(a1), .. }),
+      Valtype({ type_alias: Some(a2), .. }),
+    ) if a1.name == a2.name => Some(ty2)
     // Two concrete types that differ: the reference hierarchy decides.
     (Valtype(v1), Valtype(v2)) =>
       match lub(v1, v2) {
@@ -159,6 +165,7 @@ fn nullable_of(r : @wasm_types.RefType[@ast.Ident]) -> @infer.InferredValType {
     typ: Ref({ nullable: true, typ: r.typ, }),
     internal: Ref({ nullable: true, typ: None_, }),
     anon_comptype: None,
+    type_alias: None,
   }
 }
 

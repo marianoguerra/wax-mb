@@ -62,7 +62,8 @@
         "oracle1": "match",
         "oracle2": "skip",
         "oracle3": "match",
-        "oracle4": "skip"
+        "oracle4": "match",
+        "_why": "Rejected as a binary but often printable as text: a module with unresolved conditionals has no single wasm form, and the reference still writes it as WAT with (@if) annotations. check_oracle4 skips the files the reference cannot print, so this compares exactly the ones it can."
       }
     }
   },

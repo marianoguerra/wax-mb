@@ -1,0 +1,10 @@
+#[export = "madd_i32x4"]
+fn madd_i32x4(a: v128, b: v128, c: v128) -> v128 {
+    a.mul_i32x4(b).add_i32x4(c);          // a * b + c, four i32 lanes at once
+}
+
+#[export = "sum_lanes"]
+fn sum_lanes(v: v128) -> i32 {
+    v.extract_lane_i32x4(0) + v.extract_lane_i32x4(1)
+        + v.extract_lane_i32x4(2) + v.extract_lane_i32x4(3);
+}

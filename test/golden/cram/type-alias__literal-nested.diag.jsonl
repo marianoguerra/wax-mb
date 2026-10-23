@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__literal-nested.wax","startLine":16,"startColumn":15,"endLine":16,"endColumn":18,"startOffset":138,"endOffset":141,"message":"The result of this expression is discarded, and computing it has no effect.","warning":"unused-result","hint":null,"related":[]}

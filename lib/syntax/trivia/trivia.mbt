@@ -132,3 +132,21 @@ pub fn Context::entries(self : Context) -> ArrayView[Entry] {
 pub fn Context::locations(self : Context) -> ArrayView[@basic.Location] {
   self.locations[:]
 }
+
+///|
+/// Drop the comments whose anchor lies in one of `ranges`, each `[start, end)`
+/// in bytes: the source of a branch `-D` removed, whose comments would
+/// otherwise attach to whatever survived beside it.
+pub fn Context::drop_in_ranges(
+  self : Context,
+  ranges : Array[(Int32, Int32)],
+) -> Unit {
+  guard !ranges.is_empty() else { return }
+  let kept = self.entries.filter(e => {
+    !ranges.iter().any(r => e.anchor >= r.0 && e.anchor < r.1)
+  })
+  self.entries.clear()
+  for e in kept {
+    self.entries.push(e)
+  }
+}

@@ -98,6 +98,16 @@ pub(all) struct Options {
   /// The optional proposals, as `-X` left them: the defaults with each `-X`
   /// applied in order.
   features : @feature.Set
+  /// `--try-table`: rewrite the legacy exception-handling instructions (`try`
+  /// with `catch`/`catch_all`) into the standard `try_table`, for engines and
+  /// tools that only accept the current exception-handling proposal.
+  try_table : Bool
+  /// `-v`: check even a same-format conversion, and report the lints -- the
+  /// unused locals among them -- that a conversion otherwise leaves to `check`.
+  validate : Bool
+  /// `-D NAME[=VALUE]`: the conditional-compilation variables set, resolving
+  /// every `#[if]` they decide before anything else sees the module.
+  defines : Map[String, @wax.Define]
 }
 
 ///|
@@ -116,6 +126,10 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
   let mut check_only = false
   let mut all_errors = false
   let mut inplace = false
+  let mut try_table = false
+  let mut validate = false
+  let mut format_given = false
+  let defines : Map[String, @wax.Define] = Map([])
   // The defaults, then WAX_WARN, then the `-W` flags -- each left to right, so
   // later settings win. The environment is read directly rather than as a
   // fallback for the flag: a `-W` refines the environment's policy instead of
@@ -185,6 +199,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
               input_format = v
             } else {
               output_format = v
+              format_given = true
             }
             i = i + (if consumed_inline { 1 } else { 2 })
           }
@@ -225,7 +240,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
                 return Err(
                   (
                     BadArgs,
-                    "unknown error format '\{v}'; expected human, json, or short",
+                    "option '--error-format': Unknown error format: \{v}",
                   ),
                 )
             }
@@ -242,10 +257,7 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
               "auto" => color = Auto
               _ =>
                 return Err(
-                  (
-                    BadArgs,
-                    "unknown color mode '\{v}'; expected always, never, or auto",
-                  ),
+                  (BadArgs, "option '--color': Unknown color setting: \{v}"),
                 )
             }
             i = i + (if consumed_inline { 1 } else { 2 })
@@ -276,6 +288,26 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
         all_errors = true
         i = i + 1
       }
+      "--try-table" => {
+        try_table = true
+        i = i + 1
+      }
+      "-v" | "--validate" => {
+        validate = true
+        i = i + 1
+      }
+      "-D" | "--define" =>
+        match value(i) {
+          Ok(v) =>
+            match @wax.parse_define(v) {
+              Err(msg) => return Err((BadArgs, "option '\{name}': \{msg}"))
+              Ok((n, d)) => {
+                defines[n] = d
+                i = i + (if consumed_inline { 1 } else { 2 })
+              }
+            }
+          Err(e) => return Err(e)
+        }
       "-X" | "--feature" =>
         match value(i) {
           Ok(v) =>
@@ -297,6 +329,14 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
         }
     }
   }
+  // With no `-f`, the output file's extension says which format it is.
+  if !format_given && output_path is Some(out) {
+    for ext in ["wax", "wat", "wasm"] {
+      if out.has_suffix("." + ext) {
+        output_format = ext
+      }
+    }
+  }
   Ok({
     command,
     files,
@@ -310,6 +350,9 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
     inplace,
     policy,
     features: @feature.configure(features),
+    try_table,
+    validate,
+    defines,
   })
 }
 
@@ -344,4 +387,19 @@ fn env_policy() -> @warning.Policy {
     }
   }
   policy
+}
+
+///|
+/// The usage line the reference's command-line parser prints above an error in
+/// an option's value, for the subcommand `argv` names.
+pub fn usage_line(argv : Array[String]) -> String {
+  for a in argv {
+    match a {
+      "check" => return "Usage: wax check [--help] [OPTION]… FILE…"
+      "format" => return "Usage: wax format [--help] [OPTION]… [FILE]…"
+      "convert" => return "Usage: wax convert [--help] [OPTION]… [INPUT]"
+      _ => ()
+    }
+  }
+  "Usage: wax [--help] [COMMAND] …"
 }

@@ -45,19 +45,9 @@ export WAX_WARN="correctness=hidden"
 # ways: a listed test that starts passing is an error too, so the list cannot
 # quietly outlive what it excuses.
 #
-# The lint and diagnostic entries are the cram-side view of the oracle 3
-# residual; closing that closes these.
+# Empty: every in-scope test passes. An entry goes here, with its reason, only
+# for a gap found and not yet closed.
 declare -A KNOWN_FAILING=(
-  [block-exit-mismatch.t]="an exit's flexible literal is rendered by family ('number') where the reference has resolved it to its default width ('i32')"
-  [duplicate-diagnostic-chains.t]="diagnostic chain differs"
-  [error-format-short.t]="usage text for an unknown --error-format differs"
-  [new-lints-wax.t]="missing lints"
-  [redundant-mul-zero-float.t]="missing lint: redundant-operation on floats"
-  [redundant-sub-self-float.t]="missing lint: redundant-operation on floats"
-  [suggestions.t]="missing suggestion: redundant-annotation"
-  [typing-crash-recovery.t]="missing check"
-  [typing-error-recovery.t]="missing check"
-  [unicode-identifier.t]="caret width counts UTF-16 units, not display columns"
 )
 
 pass=0; fail=0; known=0; failed=(); fixed=()

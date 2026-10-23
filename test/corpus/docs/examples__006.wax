@@ -1,11 +1,9 @@
-type cell = { value: i32 };
-type cons = { head: &eq, tail: &?eq };
-
-#[export = "sum_list"]
-fn sum_list(v: &?eq) -> i32 {
-    match v {
-        c: &cons => { return (c.head as &cell).value + sum_list(c.tail); }
-        x: &cell => { return x.value; }
-        _ => { return 0; }
+#[export = "rgb_channel"]
+fn rgb_channel(color: i32, value: i32) -> i32 {
+    dispatch color ['red, 'green, 'blue, else 'bad] {
+        'bad:   { return -1; }
+        'blue:  { return value & 255; }
+        'green: { return (value & 255) << 8; }
+        'red:   { return (value & 255) << 16; }
     }
 }

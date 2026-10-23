@@ -1,18 +1,12 @@
-type ints = [i32];
+#[export = "factorial"]
+fn factorial(n: i32) -> i32 {
+    become factorial_helper(n, 1);
+}
 
-#[export = "find_first_zero"]
-fn find_first_zero(arr: &ints) -> i32 {
-    let len = arr.length();
-    let i = 0;
-    'search: loop {
-        if i >=s len {
-            return -1;
-        }
-        if arr[i] == 0 {
-            return i;
-        }
-        i += 1;
-        br 'search;
+fn factorial_helper(n: i32, acc: i32) -> i32 {
+    if n <=s 1 => i32 {
+        acc;
+    } else {
+        become factorial_helper(n - 1, n * acc);
     }
-    unreachable;
 }

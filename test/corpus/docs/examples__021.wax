@@ -1,7 +1,10 @@
-memory mem: i32 [1];
+fn divmod(a: i32, b: i32) -> (i32, i32) {
+    a /s b;
+    a %s b;
+}
 
-// "GIF89a" header, then a 4-lane f32 palette and two i16 dimensions.
-data header @ mem[0] =
-    "GIF89a"
-    ++ [f32: 1.0, 0.5, 0.25, 0.0]
-    ++ [i16: 640, 480];
+#[export = "checksum"]
+fn checksum(a: i32, b: i32) -> i32 {
+    let (q, r) = divmod(a, b);
+    q + r;
+}

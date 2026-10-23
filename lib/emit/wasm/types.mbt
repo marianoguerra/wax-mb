@@ -31,6 +31,12 @@ let type_remap : Ref[Map[Int32, Int32]] = { val: Map([]), }
 ///|
 /// The emitted index a store index became.
 fn emitted_type_index(store_index : Int32) -> Int32 {
+  // Several declarations of one shape under different conditions: the one
+  // visible from where the reference stands.
+  if current_layout.val is Some(layout) &&
+    layout.visible_slot(store_index) is Some(i) {
+    return i
+  }
   match type_remap.val.get(store_index) {
     Some(i) => i
     None => store_index
@@ -71,6 +77,13 @@ fn emitted_named_index(name : String, store_index : Int32) -> Int32 {
   }
   let at = named_index(layout, name, store_index)
   layout.referenced[at] = true
+  // Its OWN entry, not a declared type it was found equal to.
+  if is_synthetic(name) &&
+    layout.by_name.get(name) == Some(at) &&
+    !layout.declared_slots.contains(at) &&
+    !layout.extras_seen.contains(name) {
+    layout.extras_seen.push(name)
+  }
   at
 }
 
@@ -80,7 +93,7 @@ fn named_index(
   name : String,
   store_index : Int32,
 ) -> Int32 {
-  if layout.by_name.get(name) is Some(i) {
+  if layout.resolve_name(name, layout.site) is Some(i) {
     return i
   }
   if layout.aliases.get(name) is Some(i) {
@@ -107,21 +120,17 @@ fn named_index(
       layout.by_name[name] = existing
       return existing
     }
-    if !layout.declared_slots.contains(existing) {
-      // Recorded as an ALIAS, not as a name. The entry was already there --
-      // interned like an inline signature rather than written down -- and the
-      // reference leaves such an entry unnamed. Only a type materialised FOR a
-      // name carries it, because only then does the entry exist for it alone.
-      layout.aliases[name] = existing
-      return existing
-    }
   }
   guard layout.written.get(name) is Some(mine) else {
     return emitted_type_index(store_index)
   }
   for entry in layout.declared {
-    if entry.0 == mine {
-      layout.by_name[name] = entry.1
+    if same_written(entry.0, mine) && layout.slot_visible(entry.1) {
+      // Remembered only when no conditional makes the answer depend on where
+      // the reference stands.
+      if layout.conds.is_empty() {
+        layout.by_name[name] = entry.1
+      }
       return entry.1
     }
   }
@@ -131,6 +140,46 @@ fn named_index(
   layout.types.push(layout.pending[store_index])
   layout.groups.push({ start: emitted, len: 1, explicit: false, })
   emitted
+}
+
+///|
+/// The emitted indices that share a rec group with another type.
+fn in_shared_groups(layout : TypeLayout) -> Map[Int32, Unit] {
+  let out : Map[Int32, Unit] = Map([])
+  for g in layout.groups {
+    if g.len > 1 {
+      for k in g.start..<(g.start + g.len) {
+        out[k] = ()
+      }
+    }
+  }
+  out
+}
+
+///|
+/// The emitted index of a store entry no NAME refers to here, materialising an
+/// unnamed one if the section holds none.
+///
+/// A string literal's byte array is such a reference: the reference writes the
+/// literal as an `@string` annotation, which takes the first array type of
+/// that shape the section holds -- one the source declared, or one a name
+/// materialised -- and otherwise appends an unnamed one where the literal is.
+/// Referring to it by its synthesized name instead would make it a field.
+fn emitted_store_index(store_index : Int32) -> Int32 {
+  guard current_layout.val is Some(layout) else {
+    return emitted_type_index(store_index)
+  }
+  match layout.by_store.get(store_index) {
+    Some(e) => layout.visible_slot(store_index).unwrap_or(e)
+    None => {
+      let emitted = layout.types.length()
+      layout.by_store[store_index] = emitted
+      layout.store_of.push(store_index)
+      layout.types.push(layout.pending[store_index])
+      layout.groups.push({ start: emitted, len: 1, explicit: false, })
+      emitted
+    }
+  }
 }
 
 ///|
@@ -146,8 +195,14 @@ fn emitted_shape_index(
   results : Array[@wasm_types.ValType[Int32]],
 ) -> Int32? {
   guard current_layout.val is Some(layout) else { return None }
+  let grouped = in_shared_groups(layout)
   for emitted, sub in layout.types {
-    if sub.composite is Func(ft) && ft.params == params && ft.results == results {
+    if sub.composite is Func(ft) &&
+      sub.final_ &&
+      sub.supertypes.is_empty() &&
+      !grouped.contains(emitted) &&
+      ft.params == params &&
+      ft.results == results {
       return Some(emitted)
     }
   }
@@ -167,8 +222,20 @@ fn emitted_shape_index(
 ///|
 /// Where each type name lands in the emitted section.
 priv struct TypeLayout {
-  /// Emitted index for a declared name.
+  /// Emitted index for a declared name: its FIRST declaration, when branches
+  /// of a conditional declare it more than once (see `decls`).
   by_name : Map[String, Int32]
+  /// Every declaration of a name, with where it was written and the emitted
+  /// index it took. Two branches of a conditional may each declare a name, and
+  /// the text form writes both, each at an index of its own.
+  decls : Map[String, Array[(Int32, @basic.Location)]]
+  /// What each declaration's slot holds, as its own branch defined it.
+  decl_written : Map[Int32, @ast.SubType]
+  /// The conditional groups the source wrote, for the site a reference stands
+  /// at to pick the declaration it can see.
+  conds : Array[@wasm_bin.CondGroup]
+  /// Where the reference being resolved stands: the field being lowered.
+  mut site : @basic.Location?
   /// Emitted index for a store index: the FIRST declaration of that shape,
   /// which is the one a reference carrying only an interned id must mean.
   by_store : Map[Int32, Int32]
@@ -186,6 +253,10 @@ priv struct TypeLayout {
   declared : Array[(@ast.SubType, Int32)]
   /// The name a store-tier entry was placed FOR, when it was placed for one.
   slot_names : Map[Int32, String]
+  /// The synthesized names that came to own an entry of their own, in the
+  /// order they were first referred to: the reference's extra types, which
+  /// it writes after the declared ones (see `type_layout`'s `extras`).
+  extras_seen : Array[String]
   /// Names that resolve to an entry they do not own: the entry was interned
   /// for its own reasons and this name merely reaches it. Kept apart from
   /// `by_name` because the name section emits the latter and not this.
@@ -208,14 +279,25 @@ fn type_layout(
   ctx : @typing_env.ModuleContext,
   source : @ast.Module[@basic.Location],
   store : @type_store.TypeStore,
+  extras~ : Array[String] = [],
+  conds~ : Array[@wasm_bin.CondGroup] = [],
 ) -> TypeLayout {
   let by_name : Map[String, Int32] = Map([])
+  let decls : Map[String, Array[(Int32, @basic.Location)]] = Map([])
+  let decl_written : Map[Int32, @ast.SubType] = Map([])
   let by_store : Map[Int32, Int32] = Map([])
   let store_of : Array[Int32] = []
   let groups : Array[@wasm_bin.RecGroup] = []
-  fn place(name : String, store_index : Int32) -> Unit {
+  fn place(name : @ast.Ident, store_index : Int32, def : @ast.SubType) -> Unit {
     let emitted = store_of.length()
-    by_name[name] = emitted
+    if !by_name.contains(name.name) {
+      by_name[name.name] = emitted
+    }
+    match decls.get(name.name) {
+      Some(l) => l.push((emitted, name.loc))
+      None => decls[name.name] = [(emitted, name.loc)]
+    }
+    decl_written[emitted] = def
     if !by_store.contains(store_index) {
       by_store[store_index] = emitted
     }
@@ -228,11 +310,13 @@ fn type_layout(
     let start = store_of.length()
     for entry in rectype {
       let (name, _) = entry.desc
-      guard ctx.type_context.types.find_no_mark(name.name) is Some((idx, _)) else {
+      // Under the branch's own assumption (`walk_fields` sets it), so a name
+      // two branches declare reads as this branch's declaration.
+      guard ctx.type_context.types.find_no_mark(name.name) is Some((idx, def)) else {
         continue
       }
       guard idx is Def(id) else { continue }
-      place(name.name, id.to_int_for_tests_only())
+      place(name, id.to_int_for_tests_only(), def)
     }
     // Pushed even when EMPTY: `rec {}` is a rec group of no types, and it is
     // WRITTEN -- a group the author declared and the format can spell, not an
@@ -240,6 +324,26 @@ fn type_layout(
     let len = store_of.length() - start
     groups.push({ start, len, explicit: len != 1, })
   })
+  // Then the synthesized types that own an entry of their own -- the
+  // reference's extra types, which it writes after every declared one and
+  // before anything it interns from a signature, in its hash table's order
+  // (`extras`, worked out by a first lowering). An inline signature of the
+  // same shape then reuses one of them, as the reference's does. Kept out of
+  // `by_name` until the declared types have been read off it below.
+  let extra_slots : Array[(String, Int32)] = []
+  for name in extras {
+    guard ctx.type_context.types.find_no_mark(name) is Some((Def(id), _)) else {
+      continue
+    }
+    let si = id.to_int_for_tests_only()
+    let emitted = store_of.length()
+    if !by_store.contains(si) {
+      by_store[si] = emitted
+    }
+    store_of.push(si)
+    groups.push({ start: emitted, len: 1, explicit: false, })
+    extra_slots.push((name, emitted))
+  }
   // Then the types the LOWERING interns rather than the checker, in the order
   // the sections that need them are written -- which is binary section order,
   // not source order: imports, then functions, then tags. A module whose tags
@@ -265,14 +369,19 @@ fn type_layout(
   // siblings -- so reading the entry back from the store would resolve them to
   // whichever sibling happened to be declared first.
   let slot_names : Map[Int32, String] = Map([])
+  // What each of those was written as, read under the assumption it was
+  // placed under: two branches may mint one synthesized name for two
+  // signatures -- an import in one, a definition in the other.
+  let slot_written : Map[Int32, @ast.SubType] = Map([])
   fn place_named(name : String) -> Unit {
-    guard ctx.type_context.types.find_no_mark(name) is Some((Def(id), _)) else {
+    guard ctx.type_context.types.find_no_mark(name) is Some((Def(id), def)) else {
       return
     }
     let before = store_of.length()
     place_store(id.to_int_for_tests_only())
     if store_of.length() > before {
       slot_names[before] = name
+      slot_written[before] = def
     }
   }
 
@@ -304,9 +413,19 @@ fn type_layout(
       _ => ()
     }
   })
+  // A defined tag's inline signature is NOT placed here: the reference interns
+  // it after every body's block types, so the lowering resolves it once the
+  // code is lowered. An entry only a tag uses is left for then.
+  let tag_only : Map[Int32, Unit] = Map([])
   @typing.walk_fields(ctx, source, field => {
     match field.desc {
-      Tag(name~, ..) => place_named("<functype:" + name.name + ">")
+      Tag(name~, typ=None, ..) =>
+        match
+          ctx.type_context.types.find_no_mark("<functype:" + name.name + ">") {
+          Some((Def(id), _)) if !by_store.contains(id.to_int_for_tests_only()) =>
+            tag_only[id.to_int_for_tests_only()] = ()
+          _ => ()
+        }
       _ => ()
     }
   })
@@ -317,7 +436,7 @@ fn type_layout(
     let start = store_of.length()
     let mut added = 0
     for _ in group {
-      if !by_store.contains(store_index) {
+      if !by_store.contains(store_index) && !tag_only.contains(store_index) {
         by_store[store_index] = store_of.length()
         store_of.push(store_index)
         added = added + 1
@@ -341,17 +460,31 @@ fn type_layout(
   for _, i in by_name {
     declared_slots[i] = true
   }
+  for i, _ in decl_written {
+    declared_slots[i] = true
+  }
+  // As WRITTEN, aliases included: a signature written with an alias is not
+  // the one written with what the alias stands for, and a synthesized type
+  // reuses only a declaration written the same.
   for entry in ctx.type_context.types.iter_entries() {
     let (name, (_, sub)) = entry
-    written[name] = sub
+    written[name] = ctx.type_context.written_form(name, sub)
   }
   for name, i in by_name {
     if written.get(name) is Some(sub) {
       declared.push((sub, i))
     }
   }
+  for e in extra_slots {
+    by_name[e.0] = e.1
+    slot_names[e.1] = e.0
+  }
   let layout = {
     by_name,
+    decls,
+    decl_written,
+    conds,
+    site: None,
     by_store,
     store_of,
     types,
@@ -363,6 +496,7 @@ fn type_layout(
     referenced,
     aliases,
     slot_names,
+    extras_seen: [],
   }
   current_layout.val = Some(layout)
   for si in 0..<store.last_index() {
@@ -377,11 +511,18 @@ fn type_layout(
     let written_form = match declared_at(ctx, layout, emitted) {
       Some(sub) => Some(sub)
       None =>
-        match slot_names.get(emitted) {
-          Some(name) => layout.written.get(name)
-          None => None
+        match slot_written.get(emitted) {
+          Some(sub) => Some(sub)
+          None =>
+            match slot_names.get(emitted) {
+              Some(name) => layout.written.get(name)
+              None => None
+            }
         }
     }
+    // A declaration's inner references are read from where it was written:
+    // under a conditional, a name the branch declares means its own.
+    layout.site = layout.decl_site(emitted)
     match written_form {
       Some(sub) => types.push(layout.source_subtype(ctx, sub))
       None =>
@@ -390,7 +531,98 @@ fn type_layout(
         )
     }
   }
+  layout.site = None
   layout
+}
+
+///|
+/// The declared slot of a store entry visible from the current site, when
+/// declarations under different conditions share the entry and the first of
+/// them is not visible from there. `None` leaves the answer to `type_remap`.
+fn TypeLayout::visible_slot(self : TypeLayout, store_index : Int32) -> Int32? {
+  guard self.site is Some(_) else { return None }
+  guard self.by_store.get(store_index) is Some(first) else { return None }
+  if self.slot_visible(first) {
+    return None
+  }
+  for slot, si in self.store_of {
+    if si == store_index &&
+      self.decl_written.contains(slot) &&
+      self.slot_visible(slot) {
+      return Some(slot)
+    }
+  }
+  None
+}
+
+///|
+/// Whether the declaration at a slot can be seen from the current site: its
+/// conditional guards are a prefix of the site's. A slot no declaration put
+/// there, or a reference with no site, sees everything.
+fn TypeLayout::slot_visible(self : TypeLayout, slot : Int32) -> Bool {
+  guard self.site is Some(site) else { return true }
+  match self.decl_site(slot) {
+    None => true
+    Some(d) => {
+      let g = guards_at(self.conds, d)
+      let here = guards_at(self.conds, site)
+      g.length() <= here.length() &&
+      g.iter().zip(here.iter()).all(p => p.0 == p.1)
+    }
+  }
+}
+
+///|
+/// Where the declaration at an emitted index was written, if one put it there.
+fn TypeLayout::decl_site(
+  self : TypeLayout,
+  emitted : Int32,
+) -> @basic.Location? {
+  for _, l in self.decls {
+    for e in l {
+      if e.0 == emitted {
+        return Some(e.1)
+      }
+    }
+  }
+  None
+}
+
+///|
+/// The emitted index of the declaration of `name` a reference at `at` can see:
+/// the one whose conditional guards are the longest prefix of the site's, as
+/// for every other index space (see `Space::resolve`). The first declaration
+/// when there is no site, or only one declaration.
+fn TypeLayout::resolve_name(
+  self : TypeLayout,
+  name : String,
+  at : @basic.Location?,
+) -> Int32? {
+  guard self.decls.get(name) is Some(l) && l.length() > 1 && at is Some(at) else {
+    return self.by_name.get(name)
+  }
+  let here = guards_at(self.conds, at)
+  let mut best : Int32? = None
+  let mut best_len = -1
+  for entry in l {
+    let g = guards_at(self.conds, entry.1)
+    guard g.length() <= here.length() else { continue }
+    let mut ok = true
+    for k in 0..<g.length() {
+      if g[k] != here[k] {
+        ok = false
+        break
+      }
+    }
+    if ok && g.length() > best_len {
+      best_len = g.length()
+      best = Some(entry.0)
+    }
+  }
+  match best {
+    Some(_) => best
+    None => self.by_name.get(name)
+  }
 }
 
 ///|
@@ -400,6 +632,9 @@ fn declared_at(
   layout : TypeLayout,
   emitted : Int32,
 ) -> @ast.SubType? {
+  if layout.decl_written.get(emitted) is Some(sub) {
+    return Some(sub)
+  }
   for name, i in layout.by_name {
     if i == emitted {
       if ctx.type_context.types.find_no_mark(name) is Some((_, sub)) {
@@ -418,7 +653,7 @@ fn TypeLayout::source_subtype(
   s : @ast.SubType,
 ) -> @wasm_bin.SubType {
   fn idx(n : @ast.Ident) -> Int32 {
-    match self.by_name.get(n.name) {
+    match self.resolve_name(n.name, self.site) {
       Some(i) => i
       None =>
         match ctx.type_context.types.find_no_mark(n.name) {
@@ -485,9 +720,16 @@ fn TypeLayout::source_valtype(
     F32 => F32
     F64 => F64
     V128 => V128
+    // Expanded here: the binary format has no aliases. One that stands for no
+    // type was reported, and the module is never lowered.
+    Alias(_) =>
+      match ctx.type_context.unalias(v) {
+        Alias(a) => abort("unresolved type alias " + a.name)
+        t => self.source_valtype(ctx, t)
+      }
     Ref(r) => {
       fn idx(n : @ast.Ident) -> Int32 {
-        match self.by_name.get(n.name) {
+        match self.resolve_name(n.name, self.site) {
           Some(i) => i
           None =>
             match ctx.type_context.types.find_no_mark(n.name) {
@@ -578,6 +820,8 @@ fn lower_valtype(
     F64 => F64
     V128 => V128
     Ref(r) => Ref(lower_reftype(r))
+    // The store never holds an alias: it interns what one stands for.
+    Alias(_) => abort("a type alias reached the type store")
   }
 }
 
@@ -620,4 +864,47 @@ fn lower_storagetype(
     Value(v) => Value(lower_valtype(v))
     Packed(p) => Packed(p)
   }
+}
+
+///|
+/// Whether two definitions were written the same: an alias is the same alias
+/// wherever its name was written, so its location does not take part.
+fn same_written(a : @ast.SubType, b : @ast.SubType) -> Bool {
+  fn v(t : @wasm_types.ValType[@ast.Ident]) -> @wasm_types.ValType[@ast.Ident] {
+    match t {
+      Alias(n) => Alias({ name: n.name, loc: @basic.dummy_loc, })
+      _ => t
+    }
+  }
+
+  fn storage(
+    t : @wasm_types.StorageType[@ast.Ident],
+  ) -> @wasm_types.StorageType[@ast.Ident] {
+    match t {
+      Value(x) => Value(v(x))
+      Packed(_) => t
+    }
+  }
+
+  fn norm(st : @ast.SubType) -> @ast.SubType {
+    let typ : @ast.CompType = match st.typ {
+      Func(ft) =>
+        Func({
+          params: ft.params.map(p => { ..p, desc: (p.desc.0, v(p.desc.1)), }),
+          results: ft.results.map(v),
+        })
+      Struct(fields) =>
+        Struct(
+          fields.map(f => {
+            ..f,
+            desc: (f.desc.0, { ..f.desc.1, typ: storage(f.desc.1.typ), }),
+          }),
+        )
+      Array(f) => Array({ ..f, typ: storage(f.typ), })
+      Cont(_) => st.typ
+    }
+    { ..st, typ, }
+  }
+
+  norm(a) == norm(b)
 }

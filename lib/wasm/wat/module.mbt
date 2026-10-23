@@ -275,12 +275,41 @@ fn default_string_type(m : @wasm_bin.Module, t : Int32) -> Bool {
 }
 
 ///|
+/// A condition as the text format writes one, as a tree the layout can break.
+fn cond_sexp(c : @wasm_types.Cond) -> Sexp {
+  match c {
+    Var(v) => Atom("$" + v.desc)
+    Str(s) => Atom(quoted(s.desc))
+    Version(a, b, c2) =>
+      List([Atom(a.to_string()), Atom(b.to_string()), Atom(c2.to_string())])
+    And(l) => List([Atom("and"), ..l.map(cond_sexp)])
+    Or(l) => List([Atom("or"), ..l.map(cond_sexp)])
+    Not(e) => List([Atom("not"), cond_sexp(e)])
+    Cmp(op, a, b) =>
+      List([
+        Atom(
+          match op {
+            Eq => "="
+            Ne => "<>"
+            Lt => "<"
+            Gt => ">"
+            Le => "<="
+            Ge => ">="
+          },
+        ),
+        cond_sexp(a),
+        cond_sexp(b),
+      ])
+  }
+}
+
+///|
 /// `(@if $c (@then) (@else ...))` -- an else run with no then beside it.
 fn cond_else_only(c : @wasm_bin.CondGroup, else_ : Array[Sexp]) -> Sexp {
   At(
     c.loc,
     List([
-      block([Atom("@if"), Atom(c.cond)]),
+      block([Atom("@if"), cond_sexp(c.tree)]),
       List([Atom("@then")]),
       List([Atom("@else"), ..else_]),
     ]),
@@ -294,7 +323,7 @@ fn cond_field(
   then_ : Array[Sexp],
   else_ : Array[Sexp],
 ) -> Sexp {
-  let l : Array[Sexp] = [block([Atom("@if"), Atom(c.cond)])]
+  let l : Array[Sexp] = [block([Atom("@if"), cond_sexp(c.tree)])]
   l.push(List([Atom("@then"), ..then_]))
   if !else_.is_empty() {
     l.push(List([Atom("@else"), ..else_]))
@@ -346,6 +375,28 @@ fn field(m : @wasm_bin.Module, f : @wasm_bin.FieldRef) -> Sexp raise WatError {
     FTag(k) => tag_field(m, k)
     FElem(k) => elem_field(m, k)
     FData(k) => data_field(m, k)
+    FTypeAlias(k) => {
+      let (name, typ) = m.text.type_aliases[k]
+      List([
+        Atom("@type"),
+        Atom(ident(name)),
+        Atom(aliased(m, SiteAlias(k), valtype(typ, m.names.types))),
+      ])
+    }
+  }
+}
+
+///|
+/// A value type as the source wrote it at `site`: `(@type $n)` where it wrote
+/// an alias, else `spelled`, the type the alias stands for.
+fn aliased(
+  m : @wasm_bin.Module,
+  site : @wasm_bin.AliasSite,
+  spelled : String,
+) -> String {
+  match m.text.alias_uses.get(site) {
+    Some(a) => "(@type " + ident(a) + ")"
+    None => spelled
   }
 }
 
@@ -368,9 +419,15 @@ fn function_field(
   }
   // The head -- name, exports, signature -- breaks as one group, so a long
   // signature wraps under the name rather than each clause taking a line.
+  // The name is where the source wrote it, so a comment trailing it is found.
+  let name = Atom(name_or(m.names.functions, index))
   let head : Array[Sexp] = [
     Atom("func"),
-    Atom(name_or(m.names.functions, index)),
+    if code.name_loc.is_dummy() {
+      name
+    } else {
+      At(code.name_loc, name)
+    },
   ]
   for e in export_clauses(m, Func(index)) {
     head.push(e)
@@ -401,24 +458,47 @@ fn function_field(
     ()
   } else if any_named {
     for p, ty in ft.params {
-      sign.push(
-        List(
-          named_type(local_name(locals, p), "param", valtype(ty, m.names.types)),
-        ),
+      let entry = named_type(
+        local_name(locals, p),
+        "param",
+        aliased(m, SiteParam(OwnerFunc(index), p), valtype(ty, m.names.types)),
       )
+      // Each parameter, and its name, where the source wrote it: a comment
+      // written after one attaches to it.
+      match code.param_locs.get(p) {
+        Some((loc, name_loc)) => {
+          if entry.length() == 3 {
+            entry[1] = At(name_loc, entry[1])
+          }
+          sign.push(At(loc, List(entry)))
+        }
+        None => sign.push(List(entry))
+      }
     }
   } else if !ft.params.is_empty() {
     let g : Array[Sexp] = [Atom("param")]
-    for ty in ft.params {
-      g.push(Atom(valtype(ty, m.names.types)))
+    for p, ty in ft.params {
+      g.push(
+        Atom(
+          aliased(m, SiteParam(OwnerFunc(index), p), valtype(ty, m.names.types)),
+        ),
+      )
     }
     sign.push(List(g))
   }
   if (!by_name || wrote is Some({ spelled: true, .. })) &&
     !ft.results.is_empty() {
     let r : Array[Sexp] = [Atom("result")]
-    for ty in ft.results {
-      r.push(Atom(valtype(ty, m.names.types)))
+    for j, ty in ft.results {
+      r.push(
+        Atom(
+          aliased(
+            m,
+            SiteResult(OwnerFunc(index), j),
+            valtype(ty, m.names.types),
+          ),
+        ),
+      )
     }
     sign.push(List(r))
   }
@@ -452,15 +532,23 @@ fn function_field(
   if !code.locals.is_empty() {
     let l : Array[Sexp] = []
     for j, ty in code.locals {
-      l.push(
-        List(
-          named_type(
-            local_name(locals, ft.params.length() + j),
-            "local",
-            valtype(ty, m.names.types),
-          ),
+      let entry = named_type(
+        local_name(locals, ft.params.length() + j),
+        "local",
+        aliased(
+          m,
+          SiteLocal(index, ft.params.length() + j),
+          valtype(ty, m.names.types),
         ),
       )
+      // The name is where the binding was written, so a comment written after
+      // the binding is found there -- the local itself has no span.
+      if entry.length() == 3 &&
+        code.local_locs.get(j) is Some(loc) &&
+        loc.start.cnum >= 0 {
+        entry[1] = At(loc, entry[1])
+      }
+      l.push(List(entry))
     }
     out.push(Block(l, KHov, false))
   }
@@ -471,6 +559,9 @@ fn function_field(
     opened: 0,
     scope: [],
     conditionals: code.conditionals,
+    clause_locs: code.clause_locs,
+    func: index,
+    outer: [],
   }
   for
     st in statements(
@@ -519,6 +610,14 @@ priv struct Ctx {
   /// The `#[if(..)]` groups written in this body, for the statements at every
   /// level of it -- a conditional can hold a block whose body holds another.
   conditionals : Array[@wasm_bin.CondGroup]
+  /// Where each `if`'s arms were written, by the block's opening number.
+  clause_locs : Map[Int32, (@basic.Location, @basic.Location)]
+  /// The function's index, for the places it names (see `AliasSite`); -1 for a
+  /// body that is not a function's.
+  func : Int32
+  /// The conditional frames the enclosing located node already wrote, for a
+  /// node written nowhere -- one the lowering made -- to inherit.
+  mut outer : Array[(Int32, Bool)]
 }
 
 ///|
@@ -592,6 +691,20 @@ fn folded_bare(node : Node, ctx : Ctx) -> Sexp raise WatError {
     }
     return folded({ ..node, head: inner, }, ctx)
   }
+  // What the lowering made rather than translated is written unfolded.
+  if node.head is Unfolded(inner) {
+    let node = { ..node, head: inner, }
+    if inner is (Block(_, _) | Loop(_, _) | TryTable(_, _, _)) {
+      return flat_structural(node, ctx)
+    }
+    let l : Array[Sexp] = [
+      mnemonic(inner, ctx.m.names, ctx.locals, scope=ctx.scope),
+    ]
+    for operand in node.operands {
+      l.push(folded(operand, ctx))
+    }
+    return Block(l, KBox, true)
+  }
   if !node.bodies.is_empty() ||
     node.head is (Block(_, _) | Loop(_, _) | If(_, _, _)) {
     return structural(node, ctx)
@@ -609,9 +722,37 @@ fn folded_bare(node : Node, ctx : Ctx) -> Sexp raise WatError {
 }
 
 ///|
+/// `block $l (result T) ... end`: a block written unfolded, its head and `end`
+/// on lines of their own around its contents -- a `try_table`'s handlers each
+/// on its own line before the code it guards.
+fn flat_structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
+  guard structural(node, ctx) is List(l) && l.length() > 0 else {
+    raise NotPrinted(constructor_of(node.head))
+  }
+  let contents : Array[Sexp] = []
+  for k in 1..<l.length() {
+    match (node.head, l[k]) {
+      (TryTable(_, _, _), Block(hs, _, _)) if k == 1 =>
+        for h in hs {
+          contents.push(h)
+        }
+      (_, x) => contents.push(x)
+    }
+  }
+  SBlock([Delimiter(l[0]), Contents(contents), Delimiter(Atom("end"))])
+}
+
+///|
 /// `(block $l (result T) body...)`, and the two that shape their bodies
 /// differently: `if`, whose operand comes before two named clauses.
 fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
+  // An `if`'s folded condition is executed, and its blocks opened, BEFORE the
+  // `if` itself, so it is printed first: a block in it is numbered ahead of
+  // the `if`.
+  let operands : Array[Sexp] = []
+  for operand in node.operands {
+    operands.push(folded(operand, ctx))
+  }
   // The label is claimed BEFORE the body is printed, because that is the order
   // the blocks open in and so the order the names are numbered in.
   let opened = ctx.opened
@@ -632,7 +773,7 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
   if name is Some(n) {
     head.push(Atom(n))
   }
-  for t in blocktype(bt, ctx.m) {
+  for t in blocktype(bt, ctx.m, site=Some(SiteBlock(ctx.func, opened))) {
     head.push(t)
   }
   // The `if` condition is an operand, so it joins the head's group; the
@@ -640,11 +781,7 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
   let l : Array[Sexp] = if node.operands.is_empty() {
     [block(head)]
   } else {
-    let g : Array[Sexp] = [block(head)]
-    for operand in node.operands {
-      g.push(folded(operand, ctx))
-    }
-    [Block(g, KBox, true)]
+    [Block([block(head), ..operands], KBox, true)]
   }
   // A `try_table`'s handlers are IMMEDIATES that branch OUT of it, so their
   // labels are read in the enclosing scope -- the try_table's own label is in
@@ -674,13 +811,17 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
     }
     _ => []
   }
+  // The frames this node stands in: its own, or -- for a node written
+  // nowhere -- those of the located node around it.
+  let outer = if node.loc.is_dummy() {
+    ctx.outer
+  } else {
+    guards_of(ctx.conditionals, node.loc)
+  }
+  let saved_outer = ctx.outer
+  ctx.outer = outer
   for j, body in node.bodies {
-    let inner = statements(
-      body,
-      ctx,
-      ctx.conditionals,
-      outer=guards_of(ctx.conditionals, node.loc),
-    )
+    let inner = statements(body, ctx, ctx.conditionals, outer~)
     if j < clauses.length() {
       // An `else` with nothing in it is not written. `then` always is, even
       // empty, because it is what the condition guards.
@@ -689,7 +830,17 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
         for x in inner {
           c.push(x)
         }
-        l.push(List(c))
+        // An `if`'s arm is where the source wrote it, so a comment written
+        // against the arm -- after its brace, or after it -- is found.
+        let arm = match ctx.clause_locs.get(opened) {
+          Some((t, _)) if j == 0 => Some(t)
+          Some((_, e)) if j == 1 => Some(e)
+          _ => None
+        }
+        match arm {
+          Some(loc) if loc.start.cnum >= 0 => l.push(At(loc, List(c)))
+          _ => l.push(List(c))
+        }
       }
     } else {
       for x in inner {
@@ -697,16 +848,28 @@ fn structural(node : Node, ctx : Ctx) -> Sexp raise WatError {
       }
     }
   }
+  ctx.outer = saved_outer
   let _ = ctx.scope.pop()
   List(l)
 }
 
 ///|
 /// What a block produces, when it produces anything.
-fn blocktype(bt : @wasm_bin.BlockType, m : @wasm_bin.Module) -> Array[Sexp] {
+fn blocktype(
+  bt : @wasm_bin.BlockType,
+  m : @wasm_bin.Module,
+  site~ : @wasm_bin.AliasSite? = None,
+) -> Array[Sexp] {
   match bt {
     Empty => []
-    Value(t) => [List([Atom("result"), Atom(valtype(t, m.names.types))])]
+    Value(t) => {
+      let spelled = valtype(t, m.names.types)
+      let written = match site {
+        Some(s) => aliased(m, s, spelled)
+        None => spelled
+      }
+      [List([Atom("result"), Atom(written)])]
+    }
     MultiValue(ts) | InlineType([], ts) => {
       let out : Array[Sexp] = []
       for t in ts {

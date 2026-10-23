@@ -1,15 +1,6 @@
-#[export = "clamp_low"]
-fn clamp_low(x: i32) -> i32 {
-    #[likely] if x >=s 0 => i32 {
-        x;
-    } else {
-        0;
-    }
-}
+#![feature = "custom-descriptors"]
 
-#[export = "drain"]
-fn drain(n: i32) {
-    'l: loop {
-        #[unlikely] br_if 'l n;
-    }
+rec {
+    type obj = descriptor obj_desc { x: i32 };
+    type obj_desc = describes obj { };
 }

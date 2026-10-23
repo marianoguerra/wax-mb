@@ -1,0 +1,51 @@
+tag a(i32);
+tag b(i32, i64);
+tag c();
+
+// numeric branches from the body (to the try, past it) and from handlers
+fn depths(x: i32) -> i32 {
+    'l: do {
+        'l_2: try_legacy {
+            br_table [ 'l_2, 'l, else 'l_2 ] (100, x);
+        } catch {
+            a => {
+                (br_if 'l (_, x)) + 1;
+            }
+            b => {
+                br 'l_2 _ + _ as i32;
+            }
+            _ => {
+                7;
+            }
+        }
+    }
+}
+
+// block parameters, a catch_all only, and no handler at all
+fn params(x: i32) -> i32 {
+    x;
+    3;
+    try_legacy (i32, i32) -> i32 {
+        _ + _;
+    } catch {
+        _ => {
+            9;
+        }
+    }
+    try_legacy {} catch {}
+}
+
+// nested: the inner try's handler branches to the outer try
+fn nested(x: i32) -> i32 {
+    'outer: try_legacy {
+        try_legacy {
+            x;
+        } catch {
+            c => {
+                br 'outer 77;
+            }
+        }
+    } catch {
+        a => {}
+    }
+}

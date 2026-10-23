@@ -120,9 +120,9 @@ fn type_mismatch(
     @message.text("Argument")
     .sep(@message.int(current))
     .sep(@message.text("should have type"))
-    .sep(@message.type_(@infer.to_string(expected)))
+    .sep(@message.lazy_type(() => @infer.to_string(expected)))
     .sep(@message.text("but has type"))
-    .sep(@message.type_(@infer.to_string(provided)))
+    .sep(@message.lazy_type(() => @infer.to_string(provided)))
     .seq(@message.text(".")),
   )
 }
@@ -146,9 +146,9 @@ fn expression_type_mismatch(
     location,
     Error,
     @message.text("This expression has type")
-    .sep(@message.type_(@infer.to_string(provided)))
+    .sep(@message.lazy_type(() => @infer.to_string(provided)))
     .sep(@message.text("but is expected to have type"))
-    .sep(@message.type_(@infer.to_string(expected)))
+    .sep(@message.lazy_type(() => @infer.to_string(expected)))
     .seq(@message.text(".")),
     related~,
   )
@@ -282,6 +282,180 @@ fn unbound_name(
 }
 
 ///|
+/// A bare name in a value-type position that names no value type and no alias.
+///
+/// A name that is a TYPE gets the spelling of a reference to it as its hint:
+/// `t` where `&t` was meant is the likeliest reading.
+fn unknown_value_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+  suggestions~ : Array[String],
+  is_type~ : Bool,
+) -> Unit {
+  if ctx.in_recovery() {
+    return
+  }
+  let hint = if is_type {
+    Some(
+      @message.text("A reference to type")
+      .sep(@message.ident(name))
+      .sep(@message.text("is written"))
+      .sep(@message.code("&" + name))
+      .seq(@message.text(".")),
+    )
+  } else {
+    did_you_mean(suggestions)
+  }
+  ctx.report(
+    location,
+    Error,
+    @message.ident(name).sep(
+      @message.text("is not a value type or a type alias."),
+    ),
+    hint~,
+  )
+}
+
+///|
+/// An alias named where a type -- a heap type, a supertype -- is expected.
+fn alias_as_heap_type(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.ident(name).sep(
+      @message.text(
+        "is a type alias, which names a value type, where a type is expected.",
+      ),
+    ),
+    hint=Some(
+      @message.text("An alias is written where a value type is expected, as")
+      .sep(@message.ident(name))
+      .sep(@message.text("alone, without '&'.")),
+    ),
+  )
+}
+
+///|
+/// A cast to a conditional alias, which stands for different types in
+/// different configurations: no one instruction is the cast in all of them.
+fn conditional_alias_literal(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This literal takes the type of the type alias")
+    .sep(@message.ident(name))
+    .sep(
+      @message.text(
+        "and has no single WebAssembly form: the alias stands for different types under a conditional annotation.",
+      ),
+    ),
+    hint=Some(
+      @message.text(
+        "Write it in the branches of a conditional, give it a type of its own, or resolve the conditionals with -D.",
+      ),
+    ),
+  )
+}
+
+///|
+fn conditional_alias_cast(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("This cast to the type alias")
+    .sep(@message.ident(name))
+    .sep(
+      @message.text(
+        "has no single WebAssembly form: the alias stands for different types under a conditional annotation.",
+      ),
+    ),
+    hint=Some(
+      @message.text(
+        "Cast in the branches of a conditional, or resolve the conditionals with -D.",
+      ),
+    ),
+  )
+}
+
+///|
+/// A field access whose field is at different positions in the struct types
+/// its receiver has in different configurations.
+fn configuration_dependent_field(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The field")
+    .sep(@message.ident(name))
+    .sep(
+      @message.text(
+        "is at a different position in the struct types this value has under different conditional annotations, so this access has no single WebAssembly form.",
+      ),
+    ),
+    hint=Some(
+      @message.text(
+        "Access it in the branches of a conditional, or resolve the conditionals with -D.",
+      ),
+    ),
+  )
+}
+
+///|
+/// An alias whose definition leads back to itself.
+fn cyclic_alias(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("The type alias")
+    .sep(@message.ident(name))
+    .sep(@message.text("is defined in terms of itself.")),
+  )
+}
+
+///|
+/// A name declared twice. The kind named is what the name is already taken by.
+fn name_already_bound(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  prev_loc : @basic.Location,
+  kind : String,
+  name : String,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A")
+    .sep(@message.text(kind))
+    .sep(@message.text("named"))
+    .sep(@message.ident(name))
+    .sep(@message.text("is already bound.")),
+    related=[
+      { loc: prev_loc, message: @message.text("previously bound here"), },
+    ],
+  )
+}
+
+///|
 /// A write to something that cannot be written.
 fn immutable(
   ctx : @diagnostic.Context,
@@ -323,9 +497,9 @@ fn binop_type_mismatch(
     location,
     Error,
     @message.text("This operator cannot be applied to operands of types")
-    .sep(@message.type_(@infer.to_string(ty1)))
+    .sep(@message.lazy_type(() => @infer.to_string(ty1)))
     .sep(@message.text("and"))
-    .sep(@message.type_(@infer.to_string(ty2)))
+    .sep(@message.lazy_type(() => @infer.to_string(ty2)))
     .seq(@message.text(".")),
   )
 }
@@ -381,7 +555,7 @@ fn typed_branch_label(
   location : @basic.Location,
   ty : @infer.Cell[@infer.InferredType],
 ) -> @diagnostic.Label {
-  { loc: location, message: @message.type_(@infer.to_string(ty)), }
+  { loc: location, message: @message.lazy_type(() => @infer.to_string(ty)), }
 }
 
 ///|
@@ -492,6 +666,40 @@ fn descriptor_not_reciprocal(
         "The descriptor of this type does not describe it back."
       },
     ),
+  )
+}
+
+///|
+/// A packed (`i8`/`i16`) array or field read whose signedness was never
+/// resolved: WebAssembly has no unsigned-by-default read of a packed value, so
+/// the value cannot take the `i32` default an omitted annotation would give it.
+fn packed_read_needs_signedness(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "This value is read from a packed (i8/i16) array or field; specify the sign extension with 'as i32_s' or 'as i32_u'.",
+    ),
+  )
+}
+
+///|
+/// A type and its descriptor that disagree on finality: an `open` type whose
+/// descriptor is final (or the reverse) could never be extended, since a
+/// subtype would need a descriptor extending a final one.
+fn descriptor_finality_mismatch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text("A type and its descriptor must both be")
+    .sep(@message.code("open"))
+    .seq(@message.text(", or neither.")),
   )
 }
 
@@ -1086,9 +1294,9 @@ fn incompatible_element_type(
     location,
     Error,
     @message.text("The element type")
-    .sep(@message.type_(@infer.to_string(provided)))
+    .sep(@message.lazy_type(() => @infer.to_string(provided)))
     .sep(@message.text("is not compatible with the expected element type"))
-    .sep(@message.type_(@infer.to_string(expected)))
+    .sep(@message.lazy_type(() => @infer.to_string(expected)))
     .seq(@message.text(".")),
   )
 }
@@ -1120,9 +1328,9 @@ fn catch_target_mismatch(
     location,
     Error,
     @message.text("Catching this exception provides a value of type")
-    .sep(@message.type_(@infer.to_string(provided)))
+    .sep(@message.lazy_type(() => @infer.to_string(provided)))
     .sep(@message.text("but the handler's branch target expects"))
-    .sep(@message.type_(@infer.to_string(expected)))
+    .sep(@message.lazy_type(() => @infer.to_string(expected)))
     .seq(@message.text(".")),
   )
 }
@@ -1172,7 +1380,7 @@ fn invalid_cast(
     location,
     Error,
     @message.text("This value of type")
-    .sep(@message.type_(@infer.to_string(ty)))
+    .sep(@message.lazy_type(() => @infer.to_string(ty)))
     .sep(@message.text("cannot be cast to the target type.")),
   )
 }
@@ -1324,7 +1532,7 @@ fn invalid_method_receiver(
     location,
     Error,
     @message.text("This operation cannot be applied to a value of type")
-    .sep(@message.type_(@infer.to_string(ty)))
+    .sep(@message.lazy_type(() => @infer.to_string(ty)))
     .seq(@message.text(".")),
   )
 }
@@ -1785,6 +1993,28 @@ fn eager_select(
 ///
 /// Anchored at the unreachable statement, with a secondary caret pointing back
 /// at the instruction that took control away -- which is the one to look at.
+fn dead_branch(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  side~ : Bool,
+) -> Unit {
+  ctx.report(
+    location,
+    Warning,
+    @message.text(
+      if side {
+        "The then-branch of this conditional is unreachable:"
+      } else {
+        "The else-branch of this conditional is unreachable:"
+      },
+    ).sep(@message.text("no configuration selects it.")),
+    warning=Some(DeadCode),
+    universal=true,
+  )
+}
+
+///|
+/// Code past an instruction control never returns from.
 fn dead_code(
   ctx : @diagnostic.Context,
   location : @basic.Location,

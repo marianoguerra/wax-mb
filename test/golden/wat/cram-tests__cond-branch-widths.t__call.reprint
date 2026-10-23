@@ -1,0 +1,13 @@
+#[if(p)]
+{
+    import "n" fn v(&eq) -> i64;
+}
+#[else]
+{
+    import "n" fn v(&eq) -> i32;
+}
+#[export]
+fn succ(x: &eq) -> i32 {
+    _ = v(x);
+    0;
+}

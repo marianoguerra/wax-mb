@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__negative.wax","startLine":11,"startColumn":11,"endLine":11,"endColumn":13,"startOffset":91,"endOffset":93,"message":"The result of this expression is discarded, and computing it has no effect.","warning":"unused-result","hint":null,"related":[]}

@@ -1,0 +1,5 @@
+type copier = fn(i32, i32, i32, i32) -> i32;
+type holder = { copy: &copier };
+fn invoke(h: &holder) -> i32 {
+    h.copy(1, 2, 3, 4); // call_ref through the field, not array.copy
+}

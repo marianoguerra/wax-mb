@@ -1,0 +1,17 @@
+#[if(p)]
+{
+    type n = i64;
+}
+#[else]
+{
+    type n = &?s;
+}
+type s = { f: mut n };
+#[export]
+fn f(x: n, y: n, c: i32) -> n {
+    let l: n =
+        do n {
+            x;
+        };
+    (c?l:y : n);
+}

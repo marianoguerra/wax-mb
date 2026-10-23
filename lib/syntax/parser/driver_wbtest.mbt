@@ -16,11 +16,13 @@ test "one item stands alone" {
 }
 
 ///|
-test "two items keep the comma before 'or'" {
-  // As the reference's `format_human_list` does: "a, or b", not "a or b".
+test "two items take no comma before 'or'" {
+  // As the reference's `format_human_list` does: "a or b", not "a, or b".
   inspect(
     expecting_message([TK_LBRACE, TK_QUOTE]),
-    content="Expecting ''', or '{'.",
+    content=(
+      #|Expecting ''' or '{'.
+    ),
   )
 }
 
@@ -31,7 +33,9 @@ test "sorted lexicographically, not shortlex" {
   // String.compare, so 'd' < '{' decides it.
   inspect(
     expecting_message([TK_LBRACE, TK_DO]),
-    content="Expecting 'do', or '{'.",
+    content=(
+      #|Expecting 'do' or '{'.
+    ),
   )
 }
 
@@ -41,7 +45,9 @@ test "a lone class member keeps its own spelling" {
   // 26 are legal too.
   inspect(
     expecting_message([TK_PLUS, TK_RBRACE]),
-    content="Expecting '+', or '}'.",
+    content=(
+      #|Expecting '+' or '}'.
+    ),
   )
 }
 
@@ -49,7 +55,9 @@ test "a lone class member keeps its own spelling" {
 test "two or more members collapse into the class label" {
   inspect(
     expecting_message([TK_PLUS, TK_MINUS, TK_RBRACE]),
-    content="Expecting '}', or an operator.",
+    content=(
+      #|Expecting '}' or an operator.
+    ),
   )
 }
 
@@ -65,7 +73,9 @@ test "each class collapses independently" {
 test "a repeated kind is listed once" {
   inspect(
     expecting_message([TK_RBRACE, TK_SEMI, TK_RBRACE]),
-    content="Expecting ';', or '}'.",
+    content=(
+      #|Expecting ';' or '}'.
+    ),
   )
 }
 
@@ -105,7 +115,7 @@ test "the reference's own message is used when the stack is one it knows" {
   inspect(
     r.errors[0].message,
     content=(
-      #|Assuming that the function type is complete, expecting ''', or '{'.
+      #|Assuming that the function type is complete, expecting ''' or '{'.
     ),
   )
 }

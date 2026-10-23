@@ -38,6 +38,9 @@ pub struct Context {
 pub fn Context::collected(Self) -> Array[Diagnostic]
 pub fn Context::failed(Self) -> Bool
 pub fn Context::in_recovery(Self) -> Bool
+pub fn Context::move_last_to(Self, Int32) -> Unit
+pub fn Context::queued(Self) -> Int32
+pub fn Context::replay(Self, Diagnostic, loc? : @basic.Location?, related? : Array[Label]) -> Unit
 pub fn Context::report(Self, @basic.Location, Severity, @message.Message, warning? : @warning.Warning?, universal? : Bool, hint? : @message.Message?, edit? : Edit?, related? : Array[Label]) -> Unit
 pub fn Context::set_recovery(Self, Bool) -> Unit
 pub fn Context::source(Self) -> String?

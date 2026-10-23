@@ -250,6 +250,7 @@ fn format(
             },
             indent=INDENT - 1,
           )
+          print_trivia(p, within)
           p.string(")")
         })
       } else {

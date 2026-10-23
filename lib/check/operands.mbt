@@ -73,6 +73,7 @@ pub fn check_subtypes(
   provided : Array[@infer.Cell[@infer.InferredType]],
   expected : Array[@infer.Cell[@infer.InferredType]],
   pin~ : Bool = true,
+  expected_at? : @basic.Location,
 ) -> Unit {
   if provided.length() != expected.length() {
     value_count_mismatch(
@@ -84,7 +85,15 @@ pub fn check_subtypes(
     return
   }
   for i in 0..<provided.length() {
-    check_subtype(info, diagnostics, location, provided[i], expected[i], pin~)
+    check_subtype(
+      info,
+      diagnostics,
+      location,
+      provided[i],
+      expected[i],
+      pin~,
+      expected_at~,
+    )
   }
 }
 

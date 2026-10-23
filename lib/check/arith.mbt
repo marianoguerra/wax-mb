@@ -234,6 +234,7 @@ fn type_binop(
                 typ: Ref({ nullable: true, typ: Eq, }),
                 internal: eqref(),
                 anon_comptype: None,
+                type_alias: None,
               }),
             )
           _ => if !comparable(info, typ) { mismatch() }

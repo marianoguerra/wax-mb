@@ -89,6 +89,11 @@ pub(all) enum ValType[Idx] {
   F64
   V128
   Ref(RefType[Idx])
+  /// A use of a value-type alias, `type t = v;`: the name stands for the value
+  /// type its definition writes. Only the Wax side, where `Idx` names things,
+  /// ever builds one; the binary format has no aliases, and the lowering
+  /// expands each to the type it stands for.
+  Alias(Idx)
 } derive(Eq, Hash, Debug)
 
 ///|

@@ -8,7 +8,7 @@ import {
 }
 
 // Values
-pub fn encode(Module) -> Bytes raise EncodeError
+pub fn encode(Module, label_names? : Bool) -> Bytes raise EncodeError
 
 // Errors
 pub suberror EncodeError {
@@ -17,6 +17,17 @@ pub suberror EncodeError {
 pub impl Show for EncodeError
 
 // Types and methods
+pub(all) enum AliasSite {
+  SiteParam(ParamOwner, Int32)
+  SiteResult(ParamOwner, Int32)
+  SiteField(Int32, Int32)
+  SiteElement(Int32)
+  SiteGlobal(Int32)
+  SiteAlias(Int32)
+  SiteLocal(Int32, Int32)
+  SiteBlock(Int32, Int32)
+} derive(Eq, Hash, @debug.Debug)
+
 pub(all) struct ArrayType {
   element : @types.MutType[@types.StorageType[Int32]]
 } derive(Eq, @debug.Debug)
@@ -45,6 +56,7 @@ pub(all) enum CompositeType {
 
 pub(all) struct CondGroup {
   cond : String
+  tree : @types.Cond
   loc : @basic.Location
   then_ : @basic.Location
   else_ : @basic.Location?
@@ -107,6 +119,7 @@ pub(all) enum FieldRef {
   FTag(Int32)
   FElem(Int32)
   FData(Int32)
+  FTypeAlias(Int32)
 } derive(Eq, @debug.Debug)
 
 pub(all) struct FuncType {
@@ -120,6 +133,10 @@ pub(all) struct FunctionCode {
   spans : Array[Span]
   nested_spans : Array[Array[Span]]
   conditionals : Array[CondGroup]
+  local_locs : Array[@basic.Location]
+  clause_locs : Map[Int32, (@basic.Location, @basic.Location)]
+  name_loc : @basic.Location
+  param_locs : Map[Int32, (@basic.Location, @basic.Location)]
   priority : Priority?
 } derive(Eq, @debug.Debug)
 
@@ -233,6 +250,9 @@ pub(all) enum Instruction {
   Switch(Int32, Int32)
   Hinted(InstrHints, Instruction)
   Spelled(String, Instruction)
+  InlineSignature(FuncType, Instruction)
+  AliasedResult(Bytes, Instruction)
+  Unfolded(Instruction)
   FromString(Bytes, Instruction)
   FromChar(Bytes, Instruction)
   RefNull(@types.HeapType[Int32])
@@ -785,6 +805,11 @@ pub(all) struct TextView {
   standalone_exports : Map[Int32, Bool]
   named_types : Map[Int32, Bool]
   conditionals : Array[CondGroup]
+  type_aliases : Array[(Bytes, @types.ValType[Int32])]
+  alias_uses : Map[AliasSite, Bytes]
+  field_spans : Map[(Int32, Int32), (@basic.Location, @basic.Location)]
+  export_locs : Map[Int32, @basic.Location]
+  type_name_locs : Map[Int32, @basic.Location]
 } derive(@debug.Debug)
 pub fn TextView::empty() -> Self
 

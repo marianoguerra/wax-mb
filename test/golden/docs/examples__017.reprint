@@ -1,17 +1,13 @@
-type chars = [i8];
-type wide = [i16];
-
-#[export = "newline"]
-fn newline() -> i32 {
-    '\n'; // 10
+// Import a function and a global from the host environment
+import "env" {
+    fn log(value: i32);
+    const base_value: i32;
 }
 
-#[export = "greeting"]
-fn greeting() -> &chars {
-    chars#"hi!"; // the bytes 'h', 'i', '!'
-}
-
-#[export = "wide_greeting"]
-fn wide_greeting() -> &wide {
-    wide#"café"; // the UTF-16 units 'c', 'a', 'f', 'é'
+// Export a function that uses the imports
+#[export = "compute_and_log"]
+fn compute_and_log(x: i32) -> i32 {
+    let result = x + base_value;
+    log(result);
+    result;
 }

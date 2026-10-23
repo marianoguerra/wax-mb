@@ -12,6 +12,7 @@ import {
   "marianoguerra/wax/diagnostic",
   "marianoguerra/wax/emit/wasm" @to_wasm,
   "marianoguerra/wax/feature",
+  "marianoguerra/wax/message",
   "marianoguerra/wax/syntax/trivia",
   "marianoguerra/wax/warning",
   "marianoguerra/wax/wasm/bin" @wasm_bin,

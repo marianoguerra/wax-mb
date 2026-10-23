@@ -124,7 +124,7 @@ test "the checker annotates every node it reaches" {
   }
   inspect(
     "nodes \{seen[0]} poisoned \{seen[1]} files \{files} clean \{clean}",
-    content="nodes 180520 poisoned 0 files 1821 clean 1646",
+    content="nodes 180895 poisoned 0 files 1878 clean 1694",
   )
   let top : Array[(String, Int32)] = []
   for m, n in messages {
@@ -138,14 +138,14 @@ test "the checker annotates every node it reaches" {
   inspect(
     top[0:n].map(e => e.1.to_string() + " " + e.0).join("\n"),
     content=(
-      #|29 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
+      #|31 This uses the custom-descriptors feature, which is not enabled; pass --feature custom-descriptors.
       #|24 This cast always traps: the value can never have this type.
       #|17 This type test is always true: the value already has this type.
       #|7 This expression occurs before a hole '_'.
       #|6 This value remains on the stack.
+      #|6 Expecting 1 returned value(s) from the stack, but there are 0.
       #|5 Expecting 1 value(s) from the stack, but there are 0.
-      #|4 Expecting 1 returned value(s) from the stack, but there are 0.
-      #|4 This expression has type 'i64' but is expected to have type 'i32'.
+      #|5 A block, loop or if used as an expression cannot take parameters.
     ),
   )
 }

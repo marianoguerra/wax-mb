@@ -172,6 +172,39 @@ fn mnemonic_text(
   if i is Spelled(text, inner) {
     return const_keyword(inner) + " " + text
   }
+  // A result written with an alias is written with it again.
+  if i is AliasedResult(a, SelectTyped(_)) {
+    return "select (result (@type " + ident(a) + "))"
+  }
+  // A signature written inline is written inline again, as a typeuse.
+  if i
+    is InlineSignature(
+      ft,
+      CallIndirect(_, tab)
+      | ReturnCallIndirect(_, tab) as inner
+    ) {
+    let head = if inner is CallIndirect(_, _) {
+      "call_indirect"
+    } else {
+      "return_call_indirect"
+    }
+    let sig = StringBuilder()
+    if !ft.params.is_empty() {
+      sig.write_string(" (param")
+      for t in ft.params {
+        sig.write_string(" " + valtype(t, names.types))
+      }
+      sig.write_string(")")
+    }
+    if !ft.results.is_empty() {
+      sig.write_string(" (result")
+      for t in ft.results {
+        sig.write_string(" " + valtype(t, names.types))
+      }
+      sig.write_string(")")
+    }
+    return head + opt_index(names.tables, tab) + sig.to_string()
+  }
   if nullary(i) is Some(name) {
     return name
   }

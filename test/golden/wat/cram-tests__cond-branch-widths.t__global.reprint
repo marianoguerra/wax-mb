@@ -1,0 +1,12 @@
+#[if(p)]
+{
+    let g: i64 = 0;
+}
+#[else]
+{
+    let g = 0;
+}
+#[export]
+fn f() {
+    _ = g;
+}

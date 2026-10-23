@@ -53,6 +53,8 @@ fn[Info] get_prec(i : @ast.Instr[Info]) -> Prec {
         Cast
       }
     On(_) => Cast
+    // The ascription's own parentheses are its syntax: never re-wrapped.
+    Cast(_, Ascribed(_)) => Atom
     Cast(_) | CastDesc(_) | Test(_) => Cast
     NonNull(_) => UnaryPostfix
     UnOpI(_) => UnaryPrefix
@@ -128,6 +130,7 @@ fn[Info] starts_with_block_prec(prec : Prec, i : @ast.Instr[Info]) -> Bool {
     Call(inner, _) | ArrayGet(inner, _) =>
       starts_with_block_prec(CallAndFieldAccess, inner)
     ArraySet(inner, _, _) => starts_with_block_prec(Assignement, inner)
+    Cast(_, Ascribed(_)) => false
     Cast(inner, _) | CastDesc(inner, _, _) | Test(inner, _) =>
       starts_with_block_prec(Cast, inner)
     NonNull(inner) => starts_with_block_prec(UnaryPostfix, inner)

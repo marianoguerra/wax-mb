@@ -1,2 +1,1 @@
-{"severity":"warning","file":"test/corpus/docs/language__097_checked.wax","startLine":1,"startColumn":7,"endLine":1,"endColumn":10,"startOffset":7,"endOffset":10,"message":"The memory 'buf' is never used.","warning":"unused-field","hint":null,"related":[]}
-{"severity":"warning","file":"test/corpus/docs/language__097_checked.wax","startLine":3,"startColumn":3,"endLine":3,"endColumn":7,"startOffset":25,"endOffset":29,"message":"The function 'sum2' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/docs/language__097_checked.wax","startLine":1,"startColumn":6,"endLine":1,"endColumn":10,"startOffset":6,"endOffset":10,"message":"The global 'ones' is never used.","warning":"unused-field","hint":null,"related":[]}

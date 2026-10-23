@@ -189,6 +189,16 @@ fn[T] annot(p : (Position, Position), desc : T) -> Annotated[T, Location] {
 }
 
 ///|
+/// Build an identifier and register its span, as the reference's `ident`
+/// does: a comment written after a binding that lowers to nothing but a name
+/// -- `let x: i32; // ...` -- has nothing else to attach to in the text format.
+fn ident_at(p : (Position, Position), name : String) -> @ast.Ident {
+  let loc = loc_of(p)
+  context.val.record_pos(loc)
+  { name, loc, }
+}
+
+///|
 /// Re-span an already-built annotated node.
 ///
 /// Used where a branch of a conditional group must keep its own

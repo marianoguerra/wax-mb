@@ -1,0 +1,13 @@
+#[if(p)]
+{
+    type ft = fn() -> i64;
+}
+#[else]
+{
+    type ft = fn() -> i32;
+}
+table t: &?func [1];
+#[export]
+fn f() {
+    _ = (t[0] as &?ft)();
+}

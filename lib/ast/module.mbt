@@ -94,6 +94,9 @@ pub(all) enum ElemMode[Info] {
 /// A top-level definition.
 pub(all) enum ModuleField[Info] {
   Type(RecType)
+  /// A value-type alias, `type t = v;`: the name `t` then stands for the value
+  /// type `v` wherever a value type is expected.
+  TypeAlias(name~ : Ident, typ~ : ValType)
   Func(
     name~ : Ident,
     typ~ : Ident?,

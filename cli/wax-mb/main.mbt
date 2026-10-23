@@ -71,7 +71,7 @@ fn check(
   opts : Options,
 ) -> Bool {
   let session = @wax.Session::new(source=src, features=opts.features)
-  let _ = session.check(m, warn_unused=true)
+  let _ = session.check(m, warn_unused=true, suggest=true)
   ignore(path)
   render_diagnostics(src, opts, session.reports())
 }
@@ -89,9 +89,25 @@ fn render_diagnostics(
   src : String,
   opts : Options,
   collected : Array[@diagnostic.Diagnostic],
+  first_error~ : Bool = false,
 ) -> Bool {
   let resolved = @wax.apply_policy(opts.policy, collected)
   guard !resolved.is_empty() else { return false }
+  // A conversion stops at its first error, as the reference's does: its error
+  // queue holds one and flushes, ending the run, when it fills. The warnings
+  // before that error have been printed as they came.
+  let resolved = if first_error {
+    let upto : Array[@diagnostic.Diagnostic] = []
+    for d in resolved {
+      upto.push(d)
+      if d.severity is Error {
+        break
+      }
+    }
+    upto
+  } else {
+    resolved
+  }
   let theme = @diagnostic.get_theme(
     color=opts.color,
     palette=@colors.wax_theme,
@@ -135,14 +151,44 @@ fn compile(
   let session = @wax.Session::new(source=src, features=opts.features)
   // No lints on the conversion path: a compile reports what stops it producing
   // a module, and a style warning does not. The reference draws the same line --
-  // `wax f.wax -f wasm` is silent on a module `wax check` would comment on.
-  let checked = session.check(m)
-  if render_diagnostics(src, opts, session.reports()) {
+  // `wax f.wax -f wasm` is silent on a module `wax check` would comment on --
+  // unless `-v` asks for them.
+  let checked = session.check(m, lowering=true, warn_unused=opts.validate)
+  if render_diagnostics(src, opts, session.reports(), first_error=true) {
     return Err(None)
   }
-  Ok(checked.to_bytes()) catch {
-    e => Err(Some("\{path}: \{e}"))
+  Ok(checked.to_bytes(try_table=opts.try_table)) catch {
+    // What the binary format cannot hold is the module's to fix, and is
+    // reported as the reference reports it; anything else is a gap here.
+    e =>
+      match e.diagnostic() {
+        Some(d) => {
+          let _ = render_diagnostics(src, opts, [d])
+          Err(None)
+        }
+        None => Err(Some("\{path}: \{e}"))
+      }
   }
+}
+
+///|
+/// The module with its legacy tries rewritten into the structured `try`, or
+/// `None` when checking it or rewriting it was rejected.
+fn rewrite_legacy_try(
+  src : String,
+  m : @ast.LocModule,
+  opts : Options,
+) -> @ast.LocModule? {
+  let session = @wax.Session::new(source=src, features=opts.features)
+  let checked = session.check(m, warn_unused=opts.validate)
+  if render_diagnostics(src, opts, session.reports(), first_error=true) {
+    return None
+  }
+  let rewritten = checked.rewrite_legacy_try()
+  if render_diagnostics(src, opts, session.reports(), first_error=true) {
+    return None
+  }
+  Some(rewritten)
 }
 
 ///|
@@ -158,14 +204,14 @@ fn compile_text(
   trivia : @trivia.Context,
 ) -> Result[String, String?] {
   let session = @wax.Session::new(source=src, features=opts.features)
-  let checked = session.check(m)
-  if render_diagnostics(src, opts, session.reports()) {
+  let checked = session.check(m, lowering=true, warn_unused=opts.validate)
+  if render_diagnostics(src, opts, session.reports(), first_error=true) {
     return Err(None)
   }
   // `to_wat` keeps the conditionals rather than resolving them -- a module with
   // an unresolved conditional has no single binary form, which is what a
   // conditional is for -- and re-delimits the comments the parse collected.
-  Ok(checked.to_wat(trivia~)) catch {
+  Ok(checked.to_wat(trivia~, try_table=opts.try_table)) catch {
     e => Err(Some("\{path}: \{e}"))
   }
 }
@@ -197,15 +243,25 @@ fn formatted(
 ///|
 fn run(argv : Array[String]) -> Status {
   let opts = match parse_args(argv) {
+    // A value an option does not accept is reported as the reference's
+    // command-line parser reports it: the usage line, then the option.
+    Err((status, msg)) if msg.has_prefix("option '") => {
+      @io.eprintln(usage_line(argv))
+      @io.eprintln("wax: " + msg)
+      return status
+    }
     Err((status, msg)) => {
       @io.eprintln(prog() + msg)
       return status
     }
     Ok(o) => o
   }
-  if opts.files.is_empty() {
-    @io.eprintln(prog() + "no input file")
-    return Usage
+  // No input file reads stdin, named `-` in what it reports, as the
+  // reference does.
+  let opts = if opts.files.is_empty() {
+    { ..opts, files: ["-"], }
+  } else {
+    opts
   }
   // Only the Wax front end exists, so anything else is a usage error rather
   // than a silent no-op that would make a differential comparison meaningless.
@@ -230,15 +286,40 @@ fn run(argv : Array[String]) -> Status {
   let mut rejected = false
   let mut needs_format = false
   for path in opts.files {
-    let src = @fs.read_file_to_string(path) catch {
-      _ => {
-        @io.eprintln(prog() + "cannot read \{path}")
-        return Usage
+    // An input that cannot be read rejects the run, as the reference's does,
+    // and says why in its words.
+    let src = if path == "-" {
+      @utf8.decode_lossy(@io.read_stdin())
+    } else {
+      @fs.read_file_to_string(path) catch {
+        _ => {
+          let why = if @fs.path_exists(path) {
+            "cannot be read"
+          } else {
+            "No such file or directory"
+          }
+          @io.eprintln("Error: \{path}: \{why}")
+          return Rejected
+        }
       }
     }
     let (module_, trivia, failed) = process(path, src, opts)
     if failed {
       rejected = true
+    }
+    // `-D` resolves the conditionals it decides before anything else reads the
+    // module, and drops the comments of the branches it removes.
+    let module_ = match module_ {
+      Some(m) if !opts.defines.is_empty() => {
+        let d = @diagnostic.collector()
+        let (m, dropped) = @wax.specialize_defines(d, opts.defines, m)
+        trivia.drop_in_ranges(dropped)
+        if render_diagnostics(src, opts, d.collected()) {
+          return Rejected
+        }
+        Some(m)
+      }
+      other => other
     }
     match (module_, opts.command) {
       (None, _) => ()
@@ -305,7 +386,32 @@ fn run(argv : Array[String]) -> Status {
             }
         }
       }
-      (Some(m), Convert) =>
+      (Some(m), Convert) => {
+        // `--try-table` rewrites a legacy try into the structured `try` in the
+        // source itself. That rewrite is semantic -- it needs the result type
+        // the checker infers for an unannotated try -- so the module is
+        // type-checked, as a conversion to another format would check it.
+        // `-v` checks a same-format conversion too, which otherwise only
+        // re-prints.
+        if opts.validate && !opts.try_table {
+          if failed {
+            return Rejected
+          }
+          if check(path, src, m, opts) {
+            return Rejected
+          }
+        }
+        let m = if opts.try_table {
+          if failed {
+            return Rejected
+          }
+          match rewrite_legacy_try(src, m, opts) {
+            Some(r) => r
+            None => return Rejected
+          }
+        } else {
+          m
+        }
         match opts.output_path {
           // Writing to stdout, which may be a terminal.
           None => @io.print(formatted(m, trivia, opts, @io.stdout_is_tty()))
@@ -319,6 +425,7 @@ fn run(argv : Array[String]) -> Status {
             }
           }
         }
+      }
       (Some(m), Format) =>
         if opts.check_only {
           // A file already formatted is left alone and unreported; only the

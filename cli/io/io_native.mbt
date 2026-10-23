@@ -61,3 +61,12 @@ pub fn stdout_is_tty() -> Bool {
 pub fn stderr_is_tty() -> Bool {
   isatty_fd(2) == 1
 }
+
+///|
+extern "C" fn read_stdin_ffi() -> Bytes = "wax_read_stdin"
+
+///|
+/// All of stdin, as bytes: the input when it is given as `-` or not at all.
+pub fn read_stdin() -> Bytes {
+  read_stdin_ffi()
+}

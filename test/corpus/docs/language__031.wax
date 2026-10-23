@@ -1,3 +1,5 @@
-answer = do i32 {
-    42;
-};
+do {
+    let x: i32;
+    x = compute();
+    use(x);
+}

@@ -23,7 +23,7 @@ fn binop_instruction(
     I64 => i64_binop(op)
     F32 => f32_binop(op)
     F64 => f64_binop(op)
-    V128 | Ref(_) => None
+    V128 | Ref(_) | Alias(_) => None
   }
 }
 

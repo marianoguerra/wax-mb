@@ -34,6 +34,8 @@ fn Out::field(self : Out, f : @ast.ModuleField[@basic.Location]) -> Unit {
           }
         })
       }
+    TypeAlias(name~, typ~) =>
+      self.line("type " + name.name + " = " + valtype(typ) + ";")
     Func(name~, sign~, body~, attributes~, ..) => {
       let s = match sign {
         Some(ft) => signature(ft)

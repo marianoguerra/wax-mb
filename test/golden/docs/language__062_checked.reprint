@@ -1,3 +1,3 @@
-#[start, if(debug)]
+#[start]
 fn init() {}
-// only run under `-D debug=true`
+// initialization code

@@ -1,21 +1,18 @@
-#[export = "triangle"]
-fn triangle(n: i32) -> i32 {
-    let i: i32 = 0;
-    let total: i32 = 0;
-    while i <s n {
-        i += 1;
-        total += i;
-    }
-    total;
-}
+type ints = [i32];
 
-#[export = "countdown"]
-fn countdown(n: i32) -> i32 {
-    let steps: i32 = 0;
-    'loop: loop {
-        n -= 1;
-        steps += 1;
-        br_if 'loop n >s 0;
+#[export = "find_first_zero"]
+fn find_first_zero(arr: &ints) -> i32 {
+    let len = arr.length();
+    let i = 0;
+    'search: loop {
+        if i >=s len {
+            return -1;
+        }
+        if arr[i] == 0 {
+            return i;
+        }
+        i += 1;
+        br 'search;
     }
-    steps;
+    unreachable;
 }

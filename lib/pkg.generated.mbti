@@ -4,6 +4,7 @@ package "marianoguerra/wax"
 import {
   "marianoguerra/wax/ast",
   "marianoguerra/wax/basic",
+  "marianoguerra/wax/check",
   "marianoguerra/wax/colors",
   "marianoguerra/wax/compile",
   "marianoguerra/wax/diagnostic",
@@ -16,11 +17,13 @@ import {
 // Values
 pub fn apply_policy(@warning.Policy, Array[@diagnostic.Diagnostic]) -> Array[@diagnostic.Diagnostic]
 
-pub fn compile_string(String, fname? : String, features? : @feature.Set, policy? : @warning.Policy) -> Result[Bytes, Array[@diagnostic.Diagnostic]] raise @compile.CompileError
+pub fn compile_string(String, fname? : String, features? : @feature.Set, policy? : @warning.Policy, label_names? : Bool) -> Result[Bytes, Array[@diagnostic.Diagnostic]] raise @compile.CompileError
 
 pub fn compile_string_to_wat(String, fname? : String, features? : @feature.Set, policy? : @warning.Policy) -> Result[String, Array[@diagnostic.Diagnostic]] raise @compile.CompileError
 
 pub fn format_string(String, fname? : String, theme? : @colors.Theme) -> Result[String, Array[@diagnostic.Diagnostic]]
+
+pub fn parse_define(String) -> Result[(String, @check.Define), String]
 
 pub fn parse_recover(String, fname? : String) -> @parser.ParseResult
 
@@ -30,6 +33,8 @@ pub fn rejected(Array[@diagnostic.Diagnostic]) -> Bool
 
 pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], @trivia.Context, theme? : @colors.Theme) -> String
 
+pub fn specialize_defines(@diagnostic.Context, Map[String, @check.Define], Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> (Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[(Int32, Int32)])
+
 // Errors
 
 // Types and methods
@@ -38,6 +43,8 @@ pub fn render(Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.L
 pub using @compile {type Checked}
 
 pub using @compile {type CompileError}
+
+pub using @check {type Define}
 
 pub using @parser {type ParseResult}
 

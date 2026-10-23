@@ -143,6 +143,7 @@ pub fn expr(i : @ast.Instr[@basic.Location], min_prec~ : Int32 = 0) -> String {
       opt_name(t) + "[" + elems.map(e => expr(e)).join(", ") + "]"
     ArraySegment(t, d, off, n) =>
       opt_name(t) + "[" + d.name + " at " + expr(off) + " ** " + expr(n) + "]"
+    Cast(v, Ascribed(t)) => "(" + expr(v) + " : " + valtype(t) + ")"
     Cast(v, ct) =>
       paren_if(min_prec > 17, expr(v, min_prec=18) + " as " + cast_text(ct))
     CastDesc(v, nullable, d) =>
@@ -399,6 +400,8 @@ fn cast_text(ct : @ast.CastType) -> String {
       })
     Func(nullable~, sign~) =>
       (if nullable { "&?" } else { "&" }) + "fn" + signature(sign)
+    // Printed by the `Cast` case itself, as `(e : t)`.
+    Ascribed(v) => valtype(v)
   }
 }
 

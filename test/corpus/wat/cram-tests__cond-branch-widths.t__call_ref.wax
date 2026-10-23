@@ -1,0 +1,12 @@
+#[if(p)]
+{
+    type ft = fn() -> i64;
+}
+#[else]
+{
+    type ft = fn() -> i32;
+}
+#[export]
+fn f(x: &ft) {
+    _ = x();
+}

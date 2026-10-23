@@ -10,6 +10,7 @@ pub fn valtype(t : @wasm_types.ValType[@ast.Ident]) -> String {
     F64 => "f64"
     V128 => "v128"
     Ref(r) => reftype(r)
+    Alias(a) => a.name
   }
 }
 

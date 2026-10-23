@@ -1,31 +1,18 @@
-type bytes = [mut i8];
-
-#[export = "sum_bytes"]
-fn sum_bytes(arr: &bytes) -> i32 {
-    let sum = 0;
-    let i = 0;
-    let len = arr.length();
-    'loop: loop {
-        if i >=s len {
-            return sum;
-        }
-        sum += arr[i] as i32_u;
-        i += 1;
-        br 'loop;
+#[export = "max0"]
+fn max0(n: i32) -> i32 {
+    // `=> i32` omitted: inferred from the branches and the return type
+    if n <s 0 {
+        0;
+    } else {
+        n;
     }
-    unreachable;
 }
 
-#[export = "fill_bytes"]
-fn fill_bytes(arr: &bytes, val: i32) {
-    let i = 0;
-    let len = arr.length();
-    'loop: loop {
-        if i >=s len {
-            return;
-        }
-        arr[i] = val;
-        i += 1;
-        br 'loop;
-    }
+#[export = "answer"]
+fn answer() -> i32 {
+    // the `do` block's result type is inferred from the value it leaves
+    let x = do {
+        40 + 2;
+    };
+    x;
 }

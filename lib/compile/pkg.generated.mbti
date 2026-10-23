@@ -4,6 +4,7 @@ package "marianoguerra/wax/compile"
 import {
   "marianoguerra/wax/ast",
   "marianoguerra/wax/basic",
+  "marianoguerra/wax/check",
   "marianoguerra/wax/check/env",
   "marianoguerra/wax/check/infer",
   "marianoguerra/wax/check/store",
@@ -19,7 +20,11 @@ import {
 // Values
 pub fn apply_policy(@warning.Policy, Array[@diagnostic.Diagnostic]) -> Array[@diagnostic.Diagnostic]
 
+pub fn parse_define(String) -> Result[(String, @check.Define), String]
+
 pub fn rejected(Array[@diagnostic.Diagnostic]) -> Bool
+
+pub fn specialize_defines(@diagnostic.Context, Map[String, @check.Define], Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]) -> (Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], Array[(Int32, Int32)])
 
 // Errors
 pub suberror CompileError {
@@ -27,6 +32,7 @@ pub suberror CompileError {
   Encode(@bin.EncodeError)
   Wat(@wat.WatError)
 }
+pub fn CompileError::diagnostic(Self) -> @diagnostic.Diagnostic?
 pub impl Show for CompileError
 
 // Types and methods
@@ -36,19 +42,21 @@ pub struct Checked {
   source_module : Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]
   typed : Array[@basic.Annotated[@ast.ModuleField[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)], @basic.Location]]
 }
-pub fn Checked::to_bytes(Self) -> Bytes raise CompileError
-pub fn Checked::to_module(Self, keep_conditionals? : Bool) -> @bin.Module raise @wasm.LowerError
-pub fn Checked::to_wat(Self, trivia? : @trivia.Context) -> String raise CompileError
+pub fn Checked::rewrite_legacy_try(Self) -> Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]
+pub fn Checked::to_bytes(Self, label_names? : Bool, try_table? : Bool) -> Bytes raise CompileError
+pub fn Checked::to_module(Self, keep_conditionals? : Bool, try_table? : Bool) -> @bin.Module raise @wasm.LowerError
+pub fn Checked::to_wat(Self, trivia? : @trivia.Context, try_table? : Bool) -> String raise CompileError
 
 pub struct Session {
   store : @store.TypeStore
   features : @feature.Set
   diagnostics : @diagnostic.Context
 }
-pub fn Session::check(Self, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], warn_unused? : Bool, simplify? : Bool) -> Checked
+pub fn Session::check(Self, Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]], warn_unused? : Bool, simplify? : Bool, lowering? : Bool, suggest? : Bool) -> Checked
 pub fn Session::new(features? : @feature.Set, source? : String) -> Self
 pub fn Session::reports(Self, policy? : @warning.Policy) -> Array[@diagnostic.Diagnostic]
 
 // Type aliases
+pub using @check {type Define}
 
 // Traits

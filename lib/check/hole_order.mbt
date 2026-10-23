@@ -61,6 +61,30 @@ priv struct HoleOrder {
   run : HoleRun
   mut value_loc : @basic.Location?
   mut reported : Bool
+  /// The positions reports were moved back to, so each later one accounts for
+  /// those inserted ahead of it.
+  moved : Array[Int32]
+}
+
+///|
+/// Report with `report`, then move what it reported back to where the
+/// diagnostics stood when `node` began to be typed -- which is when the
+/// reference makes it.
+fn HoleOrder::report_at(
+  self : HoleOrder,
+  node : @basic.Location,
+  report : () -> Unit,
+) -> Unit {
+  let d = self.ctx.diagnostics
+  let before = d.queued()
+  report()
+  guard d.queued() > before else { return }
+  guard self.run.starts.get((node.start.cnum, node.end.cnum)) is Some(raw) else {
+    return
+  }
+  let shift = self.moved.filter(m => m <= raw).length()
+  d.move_last_to(raw + shift)
+  self.moved.push(raw)
 }
 
 ///|
@@ -112,7 +136,9 @@ fn check_holes(
   if count_holes(node) == 0 {
     return
   }
-  HoleOrder::{ ctx, run, value_loc: None, reported: false, }.walk(node)
+  HoleOrder::{ ctx, run, value_loc: None, reported: false, moved: [], }.walk(
+    node,
+  )
 }
 
 ///|
@@ -139,11 +165,13 @@ fn HoleOrder::walk(
   // missing values to the LEADING holes, so its report always lands on the
   // statement's first hole whichever one noticed the underflow.
   if node.desc is Hole {
-    report_hole_underflow(
-      self.ctx.diagnostics,
-      self.run.first.unwrap_or(node.info.1),
-      self.run.batch,
-    )
+    self.report_at(node.info.1, () => {
+      report_hole_underflow(
+        self.ctx.diagnostics,
+        self.run.first.unwrap_or(node.info.1),
+        self.run.batch,
+      )
+    })
   }
   // A compound assignment reads its target before evaluating its right-hand
   // side: `x op= e` is `x = x op e`, and the implicit `x` is pushed first. The
@@ -155,7 +183,7 @@ fn HoleOrder::walk(
   }
   for child in operands(node) {
     if !self.reported && self.value_loc is Some(loc) && count_holes(child) > 0 {
-      before_hole(self.ctx.diagnostics, loc)
+      self.report_at(child.info.1, () => before_hole(self.ctx.diagnostics, loc))
       self.reported = true
     }
     self.walk(child)
@@ -347,6 +375,9 @@ fn[I] hole_operands(
 fn emits_value(node : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
   match node.desc {
     Hole => false
+    // An ascribed hole lowers to no instruction, so -- like the bare hole -- it
+    // emits nothing a following hole's value could hide behind.
+    Cast(_) if is_ascribed_hole(node) => false
     Cast(inner, _) =>
       if cast_is_transparent(node, inner) {
         emits_value(inner)
@@ -354,6 +385,17 @@ fn emits_value(node : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
         true
       }
     _ => true
+  }
+}
+
+///|
+/// An ASCRIBED bare hole, possibly under further casts: the ascription is a
+/// static assertion, so the chain lowers to no instruction.
+fn is_ascribed_hole(node : @ast.Instr[@typing_env.InferredAnnotation]) -> Bool {
+  match node.desc {
+    Cast({ desc: Hole, .. }, Ascribed(_)) => true
+    Cast(inner, _) => is_ascribed_hole(inner)
+    _ => false
   }
 }
 

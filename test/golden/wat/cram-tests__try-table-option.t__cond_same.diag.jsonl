@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/wat/cram-tests__try-table-option.t__cond_same.wax","startLine":9,"startColumn":3,"endLine":9,"endColumn":4,"startOffset":63,"endOffset":64,"message":"The function 'f' is never used.","warning":"unused-field","hint":null,"related":[]}

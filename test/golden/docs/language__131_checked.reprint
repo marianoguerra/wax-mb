@@ -1,0 +1,10 @@
+fn size() -> i32 {
+    #[if(debug)]
+    {
+        return 16;
+    }
+    #[else]
+    {
+        return 20;
+    }
+}

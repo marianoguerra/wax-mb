@@ -266,6 +266,7 @@ pub fn type_get(
           typ: Ref({ nullable: false, typ, }),
           internal: Ref({ nullable: false, typ: internal, }),
           anon_comptype: inline_comptype(ctx, name),
+          type_alias: None,
         }),
       )
     }
@@ -456,66 +457,122 @@ fn bound_value_type(
 }
 
 ///|
-/// Whether a method receiver names a value whose type is a REFERENCE.
+/// The type a method call's receiver statically has, resolved PURELY.
+///
+/// No typing, so the call dispatch can consult it as a GUARD without recording
+/// a use, reporting an error, or grounding an inference cell. Only the shapes
+/// whose type is written down are resolved -- a name (its local or global
+/// declaration) and a field access (the field's declared type, its own receiver
+/// resolved recursively) -- through the wrappers that leave the type unchanged.
+/// `None` means "cannot tell" (a literal, a call, a cast), which every caller
+/// reads as "not a reference": the answer that leaves the dispatch as it was.
+///
+/// A static approximation rather than the receiver's real type because the
+/// receiver cannot be typed BEFORE the arm is chosen: the arms disagree about
+/// where it sits in emission order, so they draw its holes from different
+/// slices of the pending values.
+fn receiver_valtype(
+  ctx : @typing_env.ModuleContext,
+  recv : @ast.Instr[@basic.Location],
+) -> @wasm_types.ValType[@ast.Ident]? {
+  match recv.desc {
+    Get(name) => {
+      let declared = match ctx.locals.get(name.name) {
+        Some((ity, _)) => ity
+        None =>
+          match ctx.globals.visible(name.name) {
+            [(_, ity), ..] => ity
+            [] => None
+          }
+      }
+      declared.map(ity => ity.typ)
+    }
+    NonNull(recv) => receiver_valtype(ctx, recv)
+    // A field read used as a receiver (`o.f.min(..)`, `o.f.copy(..)`): the
+    // field's DECLARED type, off the struct definition the inner receiver
+    // resolves to. A packed field, a name the struct does not declare, and a
+    // receiver of any other kind of definition are all unresolvable.
+    StructGet(recv, field) => {
+      guard receiver_type_definition(ctx, recv) is Some(Struct(fields)) else {
+        return None
+      }
+      for f in fields {
+        if f.desc.0.name == field.name {
+          guard f.desc.1.typ is Value(t) else { return None }
+          return Some(t)
+        }
+      }
+      None
+    }
+    _ => None
+  }
+}
+
+///|
+/// The definition of the named reference type a receiver has, for the guards
+/// that need the shape of the type and not just the fact of a reference. Read
+/// from the type table without marking it used, like everything here.
+fn receiver_type_definition(
+  ctx : @typing_env.ModuleContext,
+  recv : @ast.Instr[@basic.Location],
+) -> @ast.CompType? {
+  guard receiver_valtype(ctx, recv)
+    is Some(Ref({ typ: Type(n) | Exact(n), .. })) else {
+    return None
+  }
+  match ctx.types.find_no_mark(n.name) {
+    Some((_, sub)) => Some(sub.typ)
+    None => None
+  }
+}
+
+///|
+/// Whether a method receiver has a type that is a REFERENCE.
 ///
 /// This decides between two readings of the same spelling. `x.min(y)` is the
 /// scalar intrinsic when `x` is a number, and an indirect call through a
 /// function-pointer field when `x` is a struct reference -- so the receiver's
 /// type disambiguates, not the argument count.
-///
-/// Pure: it reads the name's type out of the locals and globals and records
-/// nothing, because it runs as a GUARD, before anything has been typed.
 fn receiver_is_ref(
   ctx : @typing_env.ModuleContext,
   recv : @ast.Instr[@basic.Location],
 ) -> Bool {
-  fn is_ref(t : @infer.InferredValType?) -> Bool {
-    t is Some({ typ: Ref(_), .. })
-  }
-
-  guard recv.desc is Get(name) else { return false }
-  match ctx.locals.get(name.name) {
-    Some((ity, _)) => is_ref(ity)
-    None =>
-      match ctx.globals.visible(name.name) {
-        [(_, ity), ..] => is_ref(ity)
-        [] => false
-      }
-  }
+  receiver_valtype(ctx, recv) is Some(Ref(_))
 }
 
 ///|
-/// Whether a method receiver names a value whose type is a reference to an ARRAY
-/// type.
+/// Whether a method receiver has a type that is a reference to an ARRAY type.
 ///
-/// Pure like `receiver_is_ref`, and for the same reason: it gates a bulk-method
-/// call before anything has been typed, so a struct with a field named `fill` or
-/// `copy` is left to the indirect-call path.
+/// It gates the recovery of a wrong-arity bulk-method call, so a struct with a
+/// field named `fill` or `copy` is left to the indirect-call path.
 fn receiver_is_array_ref(
   ctx : @typing_env.ModuleContext,
   recv : @ast.Instr[@basic.Location],
 ) -> Bool {
-  fn ref_name(t : @infer.InferredValType?) -> @ast.Ident? {
-    match t {
-      Some({ typ: Ref({ typ: Type(n) | Exact(n), .. }), .. }) => Some(n)
-      _ => None
-    }
-  }
+  receiver_type_definition(ctx, recv) is Some(Array(_))
+}
 
-  guard recv.desc is Get(name) else { return false }
-  let named = match ctx.locals.get(name.name) {
-    Some((ity, _)) => ref_name(ity)
-    None =>
-      match ctx.globals.visible(name.name) {
-        [(_, ity), ..] => ref_name(ity)
-        [] => None
-      }
+///|
+/// Whether a method call's receiver is a reference to a STRUCT that declares a
+/// field of the method's name -- the one condition under which `recv.m(args)`
+/// must be an indirect call through a function-pointer field rather than the
+/// built-in intrinsic `m`.
+///
+/// Every intrinsic-method arm whose receiver is a general expression is gated
+/// on its negation, so a struct that happens to name a field `copy`, `length`,
+/// `switch` or `add_i32x4` keeps its indirect call -- which is what the
+/// lowering has always chosen. Stated as "is definitely a struct field" so that
+/// a receiver `receiver_valtype` cannot resolve keeps the arm it has always
+/// taken: the guard only ever DIVERTS a call it can prove belongs elsewhere.
+fn method_is_struct_field(
+  ctx : @typing_env.ModuleContext,
+  recv : @ast.Instr[@basic.Location],
+  meth : @ast.Ident,
+) -> Bool {
+  guard receiver_type_definition(ctx, recv) is Some(Struct(fields)) else {
+    return false
   }
-  guard named is Some(n) else { return false }
-  match ctx.types.find_no_mark(n.name) {
-    Some((_, sub)) => sub.typ is Array(_)
-    None => false
-  }
+  fields.iter().any(f => f.desc.0.name == meth.name)
 }
 
 ///|

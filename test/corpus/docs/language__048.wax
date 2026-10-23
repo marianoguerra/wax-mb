@@ -1,6 +1,9 @@
-#[freq = 16] 'l: loop {          // runs about 16 times per call
-    #[never_opt] slow_path();    // never worth optimizing
+#[likely] if cond {
+    // the common case
+} else {
+    // the rare case
 }
 
-#[targets(draw_rect: 0.73, draw_circle: 0.21)]
-shape.draw();                    // the indirect call's likely callees
+'next: loop {
+    #[unlikely] br_if 'next done;   // rarely taken
+}

@@ -1,5 +1,4 @@
-#[priority = 1] #[run_once]
-fn init() { /* compiled early, never optimized */ }
-
-#[priority = 5] #[optimization = 10]
-fn hot(x: i32) -> i32 { x }
+#[freq = 4] f(x);            // fine: the hint is on the call
+let y = #[freq = 4] f(x);    // fine: the initialiser is delimited
+(#[freq = 4] f(x)) + 1       // fine: parentheses say which operand
+#[freq = 4] f(x) + 1         // error: the hint lands on the `+`

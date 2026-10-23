@@ -1,8 +1,8 @@
-#[export = "factorial"]
-fn factorial(n: i32) -> i32 {
-    if n <=s 1 => i32 {
-        1;
-    } else {
-        n * factorial(n - 1);
-    }
+type point = { x: i32, y: i32 };
+
+#[export = "origin_key"]
+fn origin_key() -> i64 {
+    let p: &?any = ({point| x: 0, y: 0 } : &?any);
+    _ = p;
+    (1 : i64);
 }

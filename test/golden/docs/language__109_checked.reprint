@@ -1,3 +1,0 @@
-tag stop(); // no payload
-tag overflow(i32); // carries an i32
-tag pair(i32, f64); // carries several values

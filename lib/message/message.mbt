@@ -60,6 +60,15 @@ pub fn type_(s : String) -> Message {
 }
 
 ///|
+/// An emphasized type whose text is worked out when the message is RENDERED,
+/// not when it is made: a type still being inferred when it is reported -- a
+/// flexible literal -- reads as what it settled to by the time it is shown,
+/// as the reference's diagnostics do.
+pub fn lazy_type(f : () -> String) -> Message {
+  Raw((p, theme) => render_doc(p, theme, Atom(Type, true, f())))
+}
+
+///|
 /// One unbreakable styled atom, never quoted.
 pub fn styled(style : @colors.Style, s : String) -> Message {
   Atom(style, false, s)

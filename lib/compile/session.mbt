@@ -59,11 +59,23 @@ pub fn Session::new(features? : @feature.Set, source? : String) -> Session {
 /// producing a module and a style warning does not -- the reference draws the
 /// same line, and `wax f.wax -f wasm` is silent on a module `wax check`
 /// comments on.
+///
+/// `lowering` says the module is checked to be converted to wasm or WAT: a
+/// conditional module is then also rejected for a construct whose form differs
+/// between its configurations, which each configuration accepts on its own but
+/// no single lowered module can express.
+///
+/// `suggest` also offers the machine-applicable simplifications -- a redundant
+/// annotation, a compound assignment, a punned field -- as `Suggestion`
+/// diagnostics carrying their edits; they are shown only where the warning
+/// policy enables them, as `wax check` does.
 pub fn Session::check(
   self : Session,
   module_ : @ast.LocModule,
   warn_unused? : Bool,
   simplify? : Bool,
+  lowering? : Bool,
+  suggest? : Bool,
 ) -> Checked {
   let (context, typed) = @typing.check_module(
     self.diagnostics,
@@ -72,6 +84,8 @@ pub fn Session::check(
     module_,
     simplify?,
     warn_unused?,
+    lowering?,
+    suggest?,
   )
   { session: self, context, source_module: module_, typed, }
 }
@@ -135,3 +149,11 @@ pub fn rejected(diagnostics : Array[@diagnostic.Diagnostic]) -> Bool {
   }
   false
 }
+
+///|
+/// Conditional compilation resolved ahead of checking -- what `-D` does --
+/// re-exported from the checker: `parse_define` reads one `NAME[=VALUE]`, and
+/// `specialize_defines` resolves every conditional the defines decide,
+/// returning the source ranges it dropped so their comments can be dropped too
+/// (`@trivia.Context::drop_in_ranges`).
+pub using @typing {type Define, parse_define, specialize_defines}

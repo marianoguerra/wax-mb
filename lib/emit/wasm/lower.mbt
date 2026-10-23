@@ -82,6 +82,13 @@ struct Lowering {
   /// order, so the map is built by walking the same way.
   mut locals : Map[String, Int32]
   mut local_types : Array[@wasm_types.ValType[Int32]]
+  mut local_locs : Array[@basic.Location]
+  /// The locals declared with a value-type alias, written or carried by the
+  /// value they were inferred from, by local index.
+  mut local_aliases : Map[Int32, String]
+  /// The blocks whose result is written with an alias, by the number their
+  /// label takes in the order blocks open.
+  mut block_aliases : Map[Int32, String]
   /// The slot each `let` binding took, keyed by where its NAME was written.
   ///
   /// Slots are assigned in one pass up front, but a name comes into scope only
@@ -109,10 +116,20 @@ struct Lowering {
   /// lowered side by side and told apart afterwards by where they were
   /// written -- which is not a module anyone could run, and is never encoded.
   keep_conditionals : Bool
+  /// Rewrite the legacy `try`/`catch` into `try_table` and a ladder of blocks
+  /// (`--try-table`), for engines and tools that only accept the current
+  /// exception-handling proposal.
+  try_table : Bool
+  /// The tags whose signature is resolved by SHAPE, waiting for the code to be
+  /// lowered: the position in the tag section, the tag, and where it was
+  /// written. The reference interns a tag's signature after every body's block
+  /// types, so a type only a tag uses takes its index after theirs.
+  deferred_tags : Array[(Int32, @ast.Ident, @ast.FuncType?, @basic.Location)]
   /// A `#[start]` an import named, waiting for the import's own field entry.
   mut pending_start : (Int32, @ast.Attribute)?
   /// The `#[if(..)]` groups written inside the body being lowered.
   mut body_conditionals : Array[@wasm_bin.CondGroup]
+  mut clause_locs : Map[Int32, (@basic.Location, @basic.Location)]
   mut spans : Array[@wasm_bin.Span]
   /// The spans of every NESTED body -- a block's, a loop's, each arm of an
   /// `if` -- in the order those bodies COMPLETE, which is deepest-first and
@@ -189,8 +206,15 @@ fn functype_index(
   // the store and two shapes here -- and it is this section a signature is
   // matched against. First match wins, which is the order a search finds.
   ignore(store)
+  let grouped = in_shared_groups(layout)
   for emitted, sub in layout.types {
-    if sub.composite is Func(ft) {
+    // Only a type that could have been written as an inline signature: a
+    // final function type with no supertype, alone in its rec group. One in a
+    // group with others is a different type, however alike it looks.
+    if sub.composite is Func(ft) &&
+      sub.final_ &&
+      sub.supertypes.is_empty() &&
+      !grouped.contains(emitted) {
       let key = (ft.params, ft.results)
       if !out.contains(key) {
         out[key] = emitted
@@ -222,6 +246,11 @@ fn source_type_index(
           }
         }
     }
+  }
+  // Every declaration of a name two branches declare, as its own branch
+  // defined it.
+  for emitted, sub in layout.decl_written {
+    out[emitted] = sub
   }
   out
 }
@@ -294,6 +323,39 @@ fn node_valtype(
     return None
   }
   Some(inferred_valtype(v))
+}
+
+///|
+/// The alias a node's single value carries, if it was declared with one.
+fn node_alias(i : @ast.Instr[@typing_env.InferredAnnotation]) -> @ast.Ident? {
+  guard i.info.0.length() == 1 else { return None }
+  match i.info.0[0].get() {
+    Valtype({ type_alias, .. }) => type_alias
+    _ => None
+  }
+}
+
+///|
+/// A node's value type for a DECISION rather than for emission: by its interned
+/// entry, so that asking does not make a synthesized type a named field. The
+/// reference writes a type only where an instruction or declaration states it,
+/// and a type consulted to choose an opcode is stated nowhere.
+fn node_valtype_quiet(
+  i : @ast.Instr[@typing_env.InferredAnnotation],
+) -> @wasm_types.ValType[Int32]? {
+  node_valtype_internal(i).map(lower_valtype)
+}
+
+///|
+/// The interned value type a node produced, without resolving any name.
+fn node_valtype_internal(
+  i : @ast.Instr[@typing_env.InferredAnnotation],
+) -> @wasm_types.ValType[@type_store.Id]? {
+  guard i.info.0.length() == 1 else { return None }
+  guard @typing_env.standalone_valtype(i.info.0[0]) is Some(v) else {
+    return None
+  }
+  Some(v.internal)
 }
 
 ///|

@@ -1,12 +1,8 @@
-fn size() -> i32 {
-    let s: i32;
-    #[if(debug)]
-    {
-        s = 16;
-    }
-    #[else]
-    {
-        s = 20;
-    }
-    return s;
+#[if(ocaml_version >= (5, 1, 0))]
+{
+    const caml_marshal_header_size: i32 = 16;
+}
+#[else]
+{
+    const caml_marshal_header_size: i32 = 20;
 }

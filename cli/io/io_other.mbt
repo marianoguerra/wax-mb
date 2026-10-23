@@ -54,3 +54,9 @@ pub fn stdout_is_tty() -> Bool {
 pub fn stderr_is_tty() -> Bool {
   false
 }
+
+///|
+pub fn read_stdin() -> Bytes {
+  unsupported("reading stdin")
+  b""
+}
