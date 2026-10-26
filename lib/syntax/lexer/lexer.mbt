@@ -115,7 +115,7 @@ fn skip_trivia(
             cur.slice(from, cur.idx),
           )
         } else {
-          fail(MalformedComment, cur.span(start))
+          fail(MalformedComment, point(cur.pos()))
         }
         true
       } else {

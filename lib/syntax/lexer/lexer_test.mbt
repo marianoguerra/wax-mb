@@ -489,3 +489,28 @@ test "string literals carry raw bytes, not decoded text" {
   // Byte escapes and text can be interleaved, and the bytes stay adjacent.
   assert_eq(bytes_of("\"a\\x00b\""), b"\x61\x00\x62")
 }
+
+///|
+/// The byte offsets an error spans, start and end.
+fn err_span(src : String) -> (Int32, Int32) {
+  let e = @lexer.tokens_from_string(src).errors[0]
+  (e.loc.start.cnum, e.loc.end.cnum)
+}
+
+///|
+test "a malformed string or comment is a zero-width point where lexing stopped" {
+  // The reference raises these from a sedlex `_` catch-all, which consumes
+  // nothing: the span is the backslash of a bad escape, the raw control
+  // character, or the end of input -- never the text before it, and never the
+  // offending character itself (a newline there would end the span on the
+  // next line).
+  assert_eq(err_span("\"a\\qb\""), (2, 2))
+  assert_eq(err_span("\"a\\x4zb\""), (2, 2))
+  assert_eq(err_span("\"a\\u{12 b\""), (2, 2))
+  assert_eq(err_span("\"a\tb\""), (2, 2))
+  assert_eq(err_span("'\"';\n"), (4, 4))
+  assert_eq(err_span("\"ab"), (3, 3))
+  assert_eq(err_span("x /* a\nb"), (8, 8))
+  // A bad Unicode escape is a different error and does span the escape.
+  assert_eq(err_span("\"a\\u{110000}b\""), (2, 12))
+}

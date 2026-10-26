@@ -20,7 +20,7 @@ fn scan_string(cur : Cursor, fail : (LexError, Location) -> Unit) -> Token? {
       Some(c) => c
       None => {
         // End of input inside a string.
-        fail(MalformedString, cur.span(start))
+        fail(MalformedString, point(cur.pos()))
         return None
       }
     }
@@ -41,7 +41,7 @@ fn scan_string(cur : Cursor, fail : (LexError, Location) -> Unit) -> Token? {
     if code <= 31 || code == 0x7F {
       let from = cur.pos()
       cur.bump() |> ignore
-      fail(MalformedString, cur.span(from))
+      fail(MalformedString, point(from))
       return None
     }
     // Consume by SCALAR, not by code unit: `bump` steps over both halves of a
@@ -99,7 +99,7 @@ fn scan_escape(
         // arbitrary binary data.
         buf.write_byte((hex_val(a) * 16 + hex_val(b)).to_byte())
       } else {
-        fail(MalformedString, cur.span(start))
+        fail(MalformedString, point(start))
         return false
       }
     }
@@ -112,7 +112,7 @@ fn scan_escape(
         }
         let digits = cur.slice(from, cur.idx)
         if !(cur.peek() is Some('}')) {
-          fail(MalformedString, cur.span(start))
+          fail(MalformedString, point(start))
           return false
         }
         cur.bump() |> ignore
@@ -126,11 +126,11 @@ fn scan_escape(
           }
         }
       } else {
-        fail(MalformedString, cur.span(start))
+        fail(MalformedString, point(start))
         return false
       }
     _ => {
-      fail(MalformedString, cur.span(start))
+      fail(MalformedString, point(start))
       return false
     }
   }
@@ -309,4 +309,16 @@ fn scan_char(cur : Cursor, fail : (LexError, Location) -> Unit) -> Token? {
       return None
     }
   }
+}
+
+///|
+/// A zero-width location at `p`.
+///
+/// What the reference reports for a malformed string or comment: those errors
+/// come from a sedlex `_` catch-all, which matches without consuming, so
+/// `lexing_bytes_positions` gives the position where no rule applied -- the
+/// backslash of a bad escape, the raw control character, or the end of input --
+/// as both ends (wax/src/lib-wax/lexer.ml:76-82,141-145).
+fn point(p : Position) -> Location {
+  { start: p, end: p, }
 }
