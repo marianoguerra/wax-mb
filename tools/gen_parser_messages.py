@@ -26,8 +26,17 @@ sentence must fail on its LAST token (otherwise the source we wrote is not the
 sentence the reference meant), and a key two different reference messages claim
 is dropped rather than guessed at. Both counts are printed.
 
-Needs the `wax/` checkout and a native build. Like regenerating goldens, this
-is a deliberate local act; the OUTPUT is committed.
+It writes a second file first, `error_reduce.mbt`: which of OUR nonterminals
+are the ones the reference declares `%on_error_reduce`. Menhir makes those
+reductions before it reports an error, so the stack it names is the one they
+lead to; `ErrorState::reduced_stack` replays them, and keys a second table on
+where they end. The ids come from the tables of a COMMENTED moonyacc build
+(each action names its source line, so its rule), and a parameterised list is
+matched to its element by the automaton itself: its instance over X is the one
+a goto on X leads into. The tree is then rebuilt, since errstate needs the set.
+
+Needs the `wax/` checkout. Like regenerating goldens, this is a deliberate
+local act; the OUTPUT is committed.
 
     moon build --target native && tools/gen_parser_messages.py && moon fmt
 
@@ -45,6 +54,9 @@ ROOT = Path(__file__).resolve().parent.parent
 EXPECTED = ROOT / "wax/src/lib-wax/parser_messages.expected"
 GRAMMAR = ROOT / "lib/syntax/parser/parser.mbty"
 OUT = ROOT / "lib/syntax/parser/parser_messages.mbt"
+REDUCE_OUT = ROOT / "lib/syntax/parser/error_reduce.mbt"
+MLY = ROOT / "wax/src/lib-wax/parser.mly"
+MOONYACC = ["moonx", "moonbitlang/yacc@0.7.25"]
 ERRSTATE = ROOT / "_build/native/debug/build/marianoguerra/wax-dev/tools/errstate/errstate.exe"
 
 # The terminals with no alias in the grammar: what a user actually types.
@@ -211,7 +223,146 @@ def build(items: list[tuple[list[int], str]], depth: int, out: dict) -> int:
     return dropped
 
 
+def parser_tables(src: str, name: str) -> list[int]:
+    m = re.search(r"let %s : FixedArray\[\w+\] = \[(.*?)\]" % name, src, re.S)
+    return [
+        int(x.strip().replace("yy_action_", ""))
+        for x in m.group(1).replace("\n", " ").split(",")
+        if x.strip()
+    ]
+
+
+# How the reference spells a parameterised rule, against how our grammar does.
+GENERIC = {
+    "separated_nonempty_list_trailing": "non_empty_sep_trailing",
+    "list": "list_of",
+    "semi_list": "semi_list",
+}
+
+
+def on_error_reduce_ids() -> dict[int, str]:
+    """Our nonterminal id -> the reference's `%on_error_reduce` symbol it is."""
+    with tempfile.TemporaryDirectory() as d:
+        out = Path(d) / "parser.mbt"
+        subprocess.run(
+            [*MOONYACC, "--external-tokens", "--table", str(GRAMMAR), "-o", str(out)],
+            check=True,
+            capture_output=True,
+        )
+        src = out.read_text()
+    lhs = parser_tables(src, "yy_prod_lhs_table")
+    act = parser_tables(src, "yy_prod_act_table")
+    length = parser_tables(src, "yy_prod_len_table")
+    table = parser_tables(src, "yy_state_table")
+    m = re.search(r"fn yy_state\(.*?\[state \* (\d+) \+ symbol\]", src, re.S)
+    cols = int(m.group(1))
+    m = re.search(r"2\.\.=(\d+) => Shift.*?(\d+)\.\.=(\d+) =>", src, re.S)
+    last_shift, first_reduce, last_reduce = int(m.group(1)), int(m.group(2)), int(m.group(3))
+
+    def decide(s, sym):
+        e = table[s * cols + sym]
+        if 2 <= e <= last_shift:
+            return ("shift", e - 2)
+        if e >= first_reduce:
+            p = e - first_reduce if e <= last_reduce else e - (last_reduce + 1)
+            return ("reduce", p)
+        return None
+
+    rules = GRAMMAR.read_text().splitlines()
+
+    def rule_at(line: int) -> str:
+        for i in range(line - 1, -1, -1):
+            r = re.match(r"^([a-z_][a-z0-9_]*)\b", rules[i])
+            if r:
+                return r.group(1)
+        sys.exit(f"gen_parser_messages: no rule above parser.mbty:{line}")
+
+    # moonyacc's own library rules (option, list) carry another file's lines;
+    # they are never on the reference's list, so they get no name.
+    line_of = {
+        int(a): int(l)
+        # An action spanning several source lines is quoted line by line.
+        for f, l, a in re.findall(
+            r"// file:///(\S+)\n// (\d+)\|[^\n]*\n(?:// \d+\|[^\n]*\n)*"
+            r"fn yy_action_(\d+)\(",
+            src,
+        )
+        if f.endswith("parser.mbty")
+    }
+    ids_of = defaultdict(set)
+    for p in range(len(lhs)):
+        if act[p] in line_of:
+            ids_of[rule_at(line_of[act[p]])].add(lhs[p])
+    terminals = int(
+        re.search(
+            r"let terminal_symbol_count = (\d+)",
+            (ROOT / "lib/syntax/parser/state.mbt").read_text(),
+        ).group(1)
+    )
+    states = len(table) // cols
+
+    out = {}
+    for d in re.search(r"%on_error_reduce (.*)", MLY.read_text()).group(1).split():
+        g = re.match(r'(\w+)\((?:"[^"]*",)?(\w+)\)$', d)
+        if not g:
+            found = set(ids_of.get(d, ()))
+        else:
+            if len(ids_of[g.group(2)]) != 1:
+                sys.exit(f"gen_parser_messages: no single rule {g.group(2)}: {sorted(ids_of[g.group(2)])}")
+            (x,) = ids_of[g.group(2)]
+            found = set()
+            for L in ids_of[GENERIC[g.group(1)]]:
+                for s in range(states):
+                    t = decide(s, x)
+                    if not t or t[0] != "shift":
+                        continue
+                    t = t[1]
+                    reduces_x = any(
+                        (r := decide(t, a)) and r[0] == "reduce"
+                        and lhs[r[1]] == L and length[r[1]] == 1
+                        for a in range(1, terminals + 1)
+                    )
+                    goto = decide(t, L)
+                    if reduces_x or (goto and goto[0] == "shift"):
+                        found.add(L)
+                        break
+        # One of ours per declared symbol, or the mapping is not to be trusted.
+        if len(found) != 1:
+            sys.exit(f"gen_parser_messages: {d} maps to {sorted(found)} of ours")
+        out[found.pop()] = d
+    return out
+
+
+def write_error_reduce(ids: dict[int, str]) -> None:
+    arms = "\n".join(f"    {i} => true // {d}" for i, d in sorted(ids.items()))
+    REDUCE_OUT.write_text(
+        f'''// The reference's `%on_error_reduce` set, as OUR nonterminal ids.
+//
+// GENERATED by tools/gen_parser_messages.py from wax/src/lib-wax/parser.mly
+// and parser.mbty -- do not edit. The ids are the generated parser's, so this
+// is stale the moment the grammar changes: regenerate with the messages.
+
+///|
+/// Whether Menhir reduces to `symbol` when an error is detected. See
+/// `error_reduction`.
+fn on_error_reduce(symbol : Int) -> Bool {{
+  match symbol {{
+{arms}
+    _ => false
+  }}
+}}
+''',
+        encoding="utf-8",
+    )
+
+
 def main():
+    ids = on_error_reduce_ids()
+    write_error_reduce(ids)
+    print(f"on_error_reduce:    {len(ids)} symbols")
+    subprocess.run(["moon", "build", "--target", "native"], cwd=ROOT, check=True,
+                   capture_output=True)
+
     # `dummy_ctx` is the reference's fake start symbol, declared to keep its
     # unused-token report quiet. No real parse enters there.
     es = [e for e in entries() if e["entry"] != "dummy_ctx"]

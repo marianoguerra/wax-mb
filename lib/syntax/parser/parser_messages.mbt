@@ -21,7 +21,7 @@
 //
 // 469 keys from the golden's 568 sentences, 0 dropped
 // as unresolvable. A miss retries with the stack the failure REDUCES to, in a
-// second table built the same way (160 keys, 170 dropped): Menhir
+// second table built the same way (161 keys, 15 dropped): Menhir
 // reports from the state after those reductions, MoonYacc fails before them.
 // A miss in both falls back to the locally rendered `Expecting ...` list,
 // which is always correct if less specific.
@@ -69,7 +69,7 @@ fn lookup(
   entry_of : (String) -> Entry?,
 ) -> Message? {
   let key = StringBuilder()
-  for depth = 1; depth <= stack.length() && depth <= 12; depth = depth + 1 {
+  for depth = 1; depth <= stack.length() && depth <= 7; depth = depth + 1 {
     // The key reads bottom-up within the suffix, as the generator writes it.
     key.reset()
     let from = stack.length() - depth
@@ -4353,11 +4353,69 @@ fn entry_of(key : String) -> Entry? {
 ///|
 fn entry_of_reduced(key : String) -> Entry? {
   match key {
-    "136" => Some(Deeper)
-    "16" => Some(Deeper)
-    "20" => Some(Deeper)
-    "204" => Some(Deeper)
-    "209" => Some(Deeper)
+    "16" =>
+      Some(
+        Msg({
+          signature: "'descriptor'",
+          text: "Expecting a descriptor operand.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "17" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "20" =>
+      Some(
+        Msg({
+          signature: "'descriptor'",
+          text: "Expecting a descriptor operand.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "202" =>
+      Some(
+        Msg({
+          signature: "'!' 'cont' an identifier",
+          text: "Expecting '!' or a heap type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "204" =>
+      Some(
+        Msg({
+          signature: "'cont' an identifier",
+          text: "Expecting a heap type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "209" =>
+      Some(
+        Msg({
+          signature: "'descriptor'",
+          text: "Expecting a descriptor operand.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "21" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "215" =>
       Some(
         Msg({
@@ -4367,13 +4425,65 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "223" => Some(Deeper)
-    "226" => Some(Deeper)
+    "223" =>
+      Some(
+        Msg({
+          signature: "'do' 'if' 'loop' 'try' 'try_legacy' 'while'",
+          text: "Expecting a labeled block: 'do', 'while', 'loop', 'if', 'try', or 'try_legacy'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "226" =>
+      Some(
+        Msg({
+          signature: "'{'",
+          text: "Expecting a block.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "23" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "230" =>
+      Some(
+        Msg({
+          signature: "';' '_' '}' an identifier",
+          text: "Expecting ';', '_', '}', or a catch clause.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "238" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Assuming that the statement is complete, expecting ';' or '}'.",
+          subject: "this statement",
+          opener: "",
+        }),
+      )
     "247" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
           text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "25" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
           subject: "",
           opener: "",
         }),
@@ -4396,6 +4506,15 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
+    "263" =>
+      Some(
+        Msg({
+          signature: "'&' ';' '_' 'null' an identifier",
+          text: "Expecting ';', '_', or a match arm.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "267" =>
       Some(
         Msg({
@@ -4405,7 +4524,15 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "275" => Some(Deeper)
+    "27" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "276" =>
       Some(
         Msg({
@@ -4433,7 +4560,24 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "295" => Some(Deeper)
+    "288" =>
+      Some(
+        Msg({
+          signature: "''' ';' '}'",
+          text: "Expecting ';', '}', or a dispatch arm.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "311" =>
+      Some(
+        Msg({
+          signature: "')' ','",
+          text: "Expecting ')' or ','.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "32" =>
       Some(
         Msg({
@@ -4443,7 +4587,6 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "320" => Some(Deeper)
     "328" =>
       Some(
         Msg({
@@ -4480,13 +4623,38 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "361" => Some(Deeper)
-    "378" => Some(Deeper)
+    "352" =>
+      Some(
+        Msg({
+          signature: "')' ',' ':'",
+          text: "Expecting ')', ',', or ':'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "361" =>
+      Some(
+        Msg({
+          signature: "')' '_' an identifier",
+          text: "Assuming that the let pattern is complete, expecting ')'.",
+          subject: "this let pattern",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
     "381" =>
       Some(
         Msg({
           signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
           text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "383" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
           subject: "",
           opener: "",
         }),
@@ -4500,6 +4668,24 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
+    "418" =>
+      Some(
+        Msg({
+          signature: "')' ','",
+          text: "Expecting ')' or ','.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "421" =>
+      Some(
+        Msg({
+          signature: "'!=' ')' '<' '<=' '=' '>' '>='",
+          text: "Expecting ')', ',', or a comparison operator.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "428" =>
       Some(
         Msg({
@@ -4509,9 +4695,42 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "440" => Some(Deeper)
-    "453" => Some(Deeper)
-    "465" => Some(Deeper)
+    "446" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the constant expression is complete, expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "449" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' ';' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' '}' a character a float a string an identifier an integer",
+          text: "Assuming that the statement list is complete, expecting '}'.",
+          subject: "this statement list",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "453" =>
+      Some(
+        Msg({
+          signature: "'}'",
+          text: "Expecting '}'.",
+          subject: "",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "465" =>
+      Some(
+        Msg({
+          signature: "')' ','",
+          text: "Assuming that the parameter types are complete, expecting ')'.",
+          subject: "these parameter types",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
     "475" =>
       Some(
         Msg({
@@ -4521,11 +4740,69 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "481" => Some(Deeper)
-    "497" => Some(Deeper)
-    "522" => Some(Deeper)
-    "530" => Some(Deeper)
-    "536" => Some(Deeper)
+    "481" =>
+      Some(
+        Msg({
+          signature: "'{'",
+          text: "Expecting a block.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "485" =>
+      Some(
+        Msg({
+          signature: "';' '_' '}' an identifier",
+          text: "Expecting ';', '_', '}', or a catch arm.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "497" =>
+      Some(
+        Msg({
+          signature: "'}'",
+          text: "Expecting '}'.",
+          subject: "",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "506" =>
+      Some(
+        Msg({
+          signature: "',' ']'",
+          text: "Expecting ',' or ']'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "526" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '=>' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '{' '|'",
+          text: "Assuming that the condition expression is complete, expecting '=>' or a block.",
+          subject: "this condition expression",
+          opener: "",
+        }),
+      )
+    "530" =>
+      Some(
+        Msg({
+          signature: "'{'",
+          text: "Expecting a block.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "536" =>
+      Some(
+        Msg({
+          signature: "'{'",
+          text: "Expecting a block.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "539" =>
       Some(
         Msg({
@@ -4535,7 +4812,33 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "550" => Some(Deeper)
+    "543" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a statement or an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "545" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the statement is complete, expecting ')'.",
+          subject: "this statement",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "550" =>
+      Some(
+        Msg({
+          signature: "'{'",
+          text: "Expecting a block.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "552" =>
       Some(
         Msg({
@@ -4543,6 +4846,15 @@ fn entry_of_reduced(key : String) -> Entry? {
           text: "Assuming that the argument list is complete, expecting ')'.",
           subject: "this argument list",
           opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "559" =>
+      Some(
+        Msg({
+          signature: "'!' 'cont' 'fn' an identifier",
+          text: "Expecting '!', 'fn', or a heap type.",
+          subject: "",
+          opener: "",
         }),
       )
     "57" =>
@@ -4554,7 +4866,15 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "570" => Some(Deeper)
+    "570" =>
+      Some(
+        Msg({
+          signature: "'&' ')' an identifier",
+          text: "Assuming that the parameter list is complete, expecting ')'.",
+          subject: "this parameter list",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
     "580" =>
       Some(
         Msg({
@@ -4564,10 +4884,51 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '(' opens the enclosing construct.",
         }),
       )
-    "589" => Some(Deeper)
-    "595" => Some(Deeper)
-    "598" => Some(Deeper)
-    "604" => Some(Deeper)
+    "589" =>
+      Some(
+        Msg({
+          signature: "',' ':' '}'",
+          text: "Assuming that the structure is complete, expecting '}'.",
+          subject: "this structure",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "595" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Assuming that the structure field is complete, expecting ',' or '}'.",
+          subject: "this structure field",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "598" =>
+      Some(
+        Msg({
+          signature: "',' ':' '}'",
+          text: "Assuming that the structure is complete, expecting '}'.",
+          subject: "this structure",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "6" =>
+      Some(
+        Msg({
+          signature: "',' '=' ']'",
+          text: "Expecting '=', ']', or an attribute guard.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "604" =>
+      Some(
+        Msg({
+          signature: "',' ':' '}'",
+          text: "Assuming that the structure is complete, expecting '}'.",
+          subject: "this structure",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
     "608" =>
       Some(
         Msg({
@@ -4595,7 +4956,105 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "635" => Some(Deeper)
+    "625" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "626" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "627" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "628" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "629" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "630" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "631" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "632" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "633" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|' '}'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "634" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the attribute expression is complete, expecting ']' or an attribute guard.",
+          subject: "this attribute expression",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "635" =>
+      Some(
+        Msg({
+          signature: "']'",
+          text: "Expecting ']'.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
     "64" =>
       Some(
         Msg({
@@ -4632,6 +5091,42 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
+    "671" =>
+      Some(
+        Msg({
+          signature: "';' '[' 'pagesize' 'shared'",
+          text: "Expecting ';', 'shared', a page-size clause, or memory limits.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "673" =>
+      Some(
+        Msg({
+          signature: "';' 'pagesize' 'shared'",
+          text: "Expecting ';', 'shared', or a page-size clause.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "674" =>
+      Some(
+        Msg({
+          signature: "';' 'shared'",
+          text: "Expecting ';' or 'shared'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "679" =>
+      Some(
+        Msg({
+          signature: "';' 'shared'",
+          text: "Expecting ';' or 'shared'.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "68" =>
       Some(
         Msg({
@@ -4650,10 +5145,63 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "688" => Some(Deeper)
-    "696" => Some(Deeper)
-    "7" => Some(Deeper)
-    "710" => Some(Deeper)
+    "688" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "693" =>
+      Some(
+        Msg({
+          signature: "'(' ':' ';'",
+          text: "Expecting ':', ';', or a function type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "696" =>
+      Some(
+        Msg({
+          signature: "'&' ')' an identifier",
+          text: "Assuming that the parameter list is complete, expecting ')'.",
+          subject: "this parameter list",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "7" =>
+      Some(
+        Msg({
+          signature: "']'",
+          text: "Expecting ']'.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "702" =>
+      Some(
+        Msg({
+          signature: "'(' ';'",
+          text: "Expecting ';' or a function type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "707" => Some(Deeper)
+    "708" => Some(Deeper)
+    "710" =>
+      Some(
+        Msg({
+          signature: "an identifier",
+          text: "Expecting a type name.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "712" => Some(Deeper)
     "717" =>
       Some(
         Msg({
@@ -4708,29 +5256,29 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
+    "75" =>
+      Some(
+        Msg({
+          signature: "',' ']'",
+          text: "Expecting ',' or ']'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "752" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "753" =>
       Some(
         Msg({
           signature: "';' '='",
           text: "Expecting ';' or '='.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "754" =>
-      Some(
-        Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
-          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "757" =>
-      Some(
-        Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
-          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
           subject: "",
           opener: "",
         }),
@@ -4744,20 +5292,11 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "762" =>
+    "769" =>
       Some(
         Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
-          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "765" =>
-      Some(
-        Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
-          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          signature: "';' '=' '@'",
+          text: "Expecting ';', '=', or '@'.",
           subject: "",
           opener: "",
         }),
@@ -4771,11 +5310,11 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "775" =>
+    "782" =>
       Some(
         Msg({
-          signature: "';' '='",
-          text: "Expecting ';' or '='.",
+          signature: "',' ']'",
+          text: "Expecting ',' or ']'.",
           subject: "",
           opener: "",
         }),
@@ -4789,10 +5328,69 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "800" => Some(Deeper)
-    "804" => Some(Deeper)
-    "810" => Some(Deeper)
-    "820" => Some(Deeper)
+    "796" =>
+      Some(
+        Msg({
+          signature: "')' ','",
+          text: "Expecting ')' or ','.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "807" =>
+      Some(
+        Msg({
+          signature: "'++' ';'",
+          text: "Expecting '++' or ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "817" =>
+      Some(
+        Msg({
+          signature: "';' '[' 'pagesize' 'shared' '{'",
+          text: "Expecting ';', 'shared', '{', a page-size clause, or memory limits.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "818" =>
+      Some(
+        Msg({
+          signature: "';' 'pagesize' 'shared' '{'",
+          text: "Expecting ';', 'shared', '{', or a page-size clause.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "819" =>
+      Some(
+        Msg({
+          signature: "';' 'shared' '{'",
+          text: "Expecting ';', 'shared', or '{'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "820" =>
+      Some(
+        Msg({
+          signature: "';' '{'",
+          text: "Expecting ';' or '{'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "822" =>
+      Some(
+        Msg({
+          signature: "'data' '}'",
+          text: "Expecting '}' or a data item.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "825" =>
       Some(
         Msg({
@@ -4811,47 +5409,51 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "830" =>
+    "835" =>
       Some(
         Msg({
-          signature: "';' '='",
-          text: "Expecting ';' or '='.",
+          signature: "';' '{'",
+          text: "Expecting ';' or '{'.",
           subject: "",
           opener: "",
         }),
       )
-    "832" =>
+    "840" =>
       Some(
         Msg({
-          signature: "'data' '}'",
-          text: "Expecting '}' or a data item.",
+          signature: "';' 'shared' '{'",
+          text: "Expecting ';', 'shared', or '{'.",
           subject: "",
-          opener: "This '{' opens the enclosing construct.",
+          opener: "",
         }),
       )
-    "835" => Some(Deeper)
-    "837" =>
+    "841" =>
       Some(
         Msg({
-          signature: "'data' '}'",
-          text: "Expecting '}' or a data item.",
+          signature: "';' '{'",
+          text: "Expecting ';' or '{'.",
           subject: "",
-          opener: "This '{' opens the enclosing construct.",
+          opener: "",
         }),
       )
-    "841" => Some(Deeper)
-    "843" =>
+    "846" =>
       Some(
         Msg({
-          signature: "'data' '}'",
-          text: "Expecting '}' or a data item.",
+          signature: "';' '{'",
+          text: "Expecting ';' or '{'.",
           subject: "",
-          opener: "This '{' opens the enclosing construct.",
+          opener: "",
         }),
       )
-    "846" => Some(Deeper)
-    "848" => Some(Deeper)
-    "858" => Some(Deeper)
+    "858" =>
+      Some(
+        Msg({
+          signature: "'->' ';'",
+          text: "Assuming that the tag signature is complete, expecting ';'.",
+          subject: "this tag signature",
+          opener: "",
+        }),
+      )
     "860" =>
       Some(
         Msg({
@@ -4880,7 +5482,15 @@ fn entry_of_reduced(key : String) -> Entry? {
         }),
       )
     "867" => Some(Deeper)
-    "870" => Some(Deeper)
+    "872" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' ';' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' '}' a character a float a string an identifier an integer",
+          text: "Assuming that the statement list is complete, expecting '}'.",
+          subject: "this statement list",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
     "884" =>
       Some(
         Msg({
@@ -4895,6 +5505,15 @@ fn entry_of_reduced(key : String) -> Entry? {
         Msg({
           signature: "'#' ';' 'const' 'data' 'elem' 'fn' 'import' 'let' 'memory' 'rec' 'table' 'tag' 'type' '}'",
           text: "Expecting ';', '}', or a module field.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "897" =>
+      Some(
+        Msg({
+          signature: "'type' '}'",
+          text: "Expecting '}' or a type definition.",
           subject: "",
           opener: "",
         }),
@@ -4917,8 +5536,24 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "906" => Some(Deeper)
-    "909" => Some(Deeper)
+    "906" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'describes' 'descriptor' 'fn' '{'",
+          text: "Expecting 'describes', 'descriptor', or a composite type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "909" =>
+      Some(
+        Msg({
+          signature: "'&' ')' an identifier",
+          text: "Assuming that the parameter list is complete, expecting ')'.",
+          subject: "this parameter list",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
     "917" =>
       Some(
         Msg({
@@ -4955,7 +5590,15 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "This '[' opens the enclosing construct.",
         }),
       )
-    "930" => Some(Deeper)
+    "930" =>
+      Some(
+        Msg({
+          signature: "'&' an identifier",
+          text: "Expecting a storage type.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "938" =>
       Some(
         Msg({
@@ -4965,8 +5608,24 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "942" => Some(Deeper)
-    "946" => Some(Deeper)
+    "942" =>
+      Some(
+        Msg({
+          signature: "',' '}'",
+          text: "Assuming that the structure type is complete, expecting '}'.",
+          subject: "this structure type",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "946" =>
+      Some(
+        Msg({
+          signature: "',' '}'",
+          text: "Assuming that the structure type is complete, expecting '}'.",
+          subject: "this structure type",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
     "950" =>
       Some(
         Msg({
@@ -5003,7 +5662,15 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "958" => Some(Deeper)
+    "958" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'describes' 'descriptor' 'fn' '{'",
+          text: "Expecting 'describes', 'descriptor', or a composite type.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "959" =>
       Some(
         Msg({
@@ -5058,8 +5725,15 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "968" => Some(Deeper)
-    "970" => Some(Deeper)
+    "968" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "973" =>
       Some(
         Msg({
@@ -5078,1074 +5752,70 @@ fn entry_of_reduced(key : String) -> Entry? {
           opener: "",
         }),
       )
-    "982" =>
-      Some(
-        Msg({
-          signature: "'!=' ')' '<' '<=' '=' '>' '>='",
-          text: "Expecting ')', ',', or a comparison operator.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "10 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "138 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "14 16" => Some(Deeper)
-    "140 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "142 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "144 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "146 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "148 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "150 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "152 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "154 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "156 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "158 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "160 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "162 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "164 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "166 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "168 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "17 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "170 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "172 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "174 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "176 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "178 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "180 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "182 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "184 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "186 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "188 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "19 20" => Some(Deeper)
-    "190 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "192 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "197 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "202 204" => Some(Deeper)
-    "208 209" => Some(Deeper)
-    "21 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "212 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "221 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "224 226" => Some(Deeper)
-    "23 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "246 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "25 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "258 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "260 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "262 275" => Some(Deeper)
-    "27 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "28 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "281 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "283 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'else' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an index expression or case labels.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "287 295" => Some(Deeper)
-    "29 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "30 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "310 320" => Some(Deeper)
-    "325 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "342 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "348 361" => Some(Deeper)
-    "363 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "370 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "372 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "383 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "385 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "40 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a length expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "404 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "406 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "417 440" => Some(Deeper)
-    "42 595" => Some(Deeper)
-    "44 589" => Some(Deeper)
-    "451 453" => Some(Deeper)
-    "459 465" => Some(Deeper)
-    "480 481" => Some(Deeper)
-    "49 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "495 497" => Some(Deeper)
-    "505 522" => Some(Deeper)
-    "524 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a condition expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "526 530" => Some(Deeper)
-    "535 536" => Some(Deeper)
-    "538 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a condition expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "541 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a statement.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "541 378" =>
-      Some(
-        Msg({
-          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
-          text: "Assuming that the statement is complete, expecting ')'.",
-          subject: "this statement",
-          opener: "This '(' opens the enclosing construct.",
-        }),
-      )
-    "543 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a statement or an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "549 550" => Some(Deeper)
-    "559 204" => Some(Deeper)
-    "56 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a parenthesized expression or an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "561 570" => Some(Deeper)
-    "597 598" => Some(Deeper)
-    "6 7" => Some(Deeper)
-    "60 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "601 604" => Some(Deeper)
-    "611 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a length expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "614 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "616 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a length expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "629 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "63 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a then-branch.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "632 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "634 635" => Some(Deeper)
-    "65 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "651 688" => Some(Deeper)
-    "67 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an index expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "695 696" => Some(Deeper)
-    "70 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "709 710" => Some(Deeper)
-    "724 858" => Some(Deeper)
-    "732 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a constant expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "74 136" => Some(Deeper)
-    "751 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "769 810" => Some(Deeper)
-    "772 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a constant expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "781 804" => Some(Deeper)
-    "795 800" => Some(Deeper)
-    "817 846" => Some(Deeper)
-    "818 835" => Some(Deeper)
-    "819 820" => Some(Deeper)
-    "827 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a constant expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "840 841" => Some(Deeper)
-    "847 848" => Some(Deeper)
-    "863 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a constant expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "866 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting a constant expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
+    "706 707" => Some(Deeper)
+    "707 708" => Some(Deeper)
+    "708 712" => Some(Deeper)
     "866 867" => Some(Deeper)
-    "869 870" => Some(Deeper)
-    "871 223" =>
+    "651 706 707" =>
       Some(
         Msg({
-          signature: "'do' 'if' 'loop' 'try' 'try_legacy' 'while'",
-          text: "Expecting a labeled block: 'do', 'while', 'loop', 'if', 'try', or 'try_legacy'.",
+          signature: "'!' '(' ':' ';'",
+          text: "Expecting '!', ':', ';', or a function type.",
           subject: "",
           opener: "",
         }),
       )
-    "871 378" => Some(Deeper)
-    "883 223" =>
+    "706 707 708" => Some(Deeper)
+    "707 708 712" => Some(Deeper)
+    "724 706 707" =>
       Some(
         Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an attribute expression.",
+          signature: "'!' ''' '(' ':' '{'",
+          text: "Expecting '!', ''', ':', '{', or a function type.",
           subject: "",
           opener: "",
         }),
       )
-    "896 970" => Some(Deeper)
-    "9 223" =>
-      Some(
-        Msg({
-          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
-          text: "Expecting an attribute expression.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "904 906" => Some(Deeper)
-    "908 909" => Some(Deeper)
-    "926 930" => Some(Deeper)
-    "934 942" => Some(Deeper)
-    "939 930" =>
-      Some(
-        Msg({
-          signature: "'&' 'mut' an identifier",
-          text: "Expecting a field type.",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "945 946" => Some(Deeper)
-    "957 958" =>
-      Some(
-        Msg({
-          signature: "'[' 'cont' 'describes' 'descriptor' 'fn' 'open' '{'",
-          text: "Expecting 'describes', 'descriptor', 'open', or a composite type (a rec group holds struct, array and function types; a type alias goes outside it).",
-          subject: "",
-          opener: "",
-        }),
-      )
-    "958 968" => Some(Deeper)
-    "974 958" => Some(Deeper)
-    "13 14 16" => Some(Deeper)
-    "18 19 20" => Some(Deeper)
-    "201 202 204" => Some(Deeper)
-    "223 224 226" => Some(Deeper)
-    "223 480 481" => Some(Deeper)
-    "223 535 536" => Some(Deeper)
-    "223 549 550" => Some(Deeper)
-    "224 459 465" => Some(Deeper)
-    "229 451 453" => Some(Deeper)
-    "261 262 275" => Some(Deeper)
-    "286 287 295" => Some(Deeper)
-    "309 310 320" => Some(Deeper)
-    "347 348 361" => Some(Deeper)
-    "409 6 7" =>
-      Some(
-        Msg({
-          signature: "'(' ',' '=' ']'",
-          text: "Expecting '(', '=', ']', or an attribute guard.",
-          subject: "",
-          opener: "This '[' opens the enclosing construct.",
-        }),
-      )
-    "416 417 440" => Some(Deeper)
-    "43 44 589" => Some(Deeper)
-    "483 505 522" => Some(Deeper)
-    "484 495 497" => Some(Deeper)
-    "524 526 530" => Some(Deeper)
-    "558 559 204" => Some(Deeper)
-    "560 561 570" => Some(Deeper)
-    "595 597 598" => Some(Deeper)
-    "600 601 604" => Some(Deeper)
-    "650 651 688" => Some(Deeper)
-    "708 695 696" => Some(Deeper)
-    "708 709 710" => Some(Deeper)
-    "72 74 136" => Some(Deeper)
-    "724 869 870" => Some(Deeper)
-    "740 208 209" => Some(Deeper)
-    "768 769 810" => Some(Deeper)
-    "780 781 804" => Some(Deeper)
-    "794 795 800" => Some(Deeper)
-    "816 817 846" => Some(Deeper)
-    "817 818 835" => Some(Deeper)
-    "817 840 841" => Some(Deeper)
-    "818 819 820" => Some(Deeper)
-    "846 847 848" => Some(Deeper)
     "861 866 867" => Some(Deeper)
-    "870 871 378" => Some(Deeper)
-    "871 42 595" => Some(Deeper)
-    "886 6 7" => Some(Deeper)
-    "895 896 970" => Some(Deeper)
-    "9 634 635" => Some(Deeper)
-    "903 904 906" => Some(Deeper)
-    "907 908 909" => Some(Deeper)
-    "944 945 946" => Some(Deeper)
-    "958 926 930" => Some(Deeper)
-    "958 934 942" => Some(Deeper)
-    "973 974 958" => Some(Deeper)
-    "974 958 968" => Some(Deeper)
-    "208 558 559 204" => Some(Deeper)
-    "223 224 459 465" => Some(Deeper)
-    "223 524 526 530" => Some(Deeper)
-    "228 229 451 453" => Some(Deeper)
-    "260 261 262 275" => Some(Deeper)
-    "285 286 287 295" => Some(Deeper)
-    "409 309 310 320" => Some(Deeper)
-    "42 43 44 589" => Some(Deeper)
-    "42 595 597 598" => Some(Deeper)
-    "42 600 601 604" => Some(Deeper)
-    "482 483 505 522" => Some(Deeper)
-    "483 484 495 497" => Some(Deeper)
-    "559 560 561 570" => Some(Deeper)
-    "6 9 634 635" => Some(Deeper)
-    "649 650 651 688" => Some(Deeper)
-    "707 708 695 696" => Some(Deeper)
-    "707 708 709 710" => Some(Deeper)
-    "724 768 769 810" => Some(Deeper)
-    "740 72 74 136" => Some(Deeper)
-    "748 201 202 204" => Some(Deeper)
-    "779 780 781 804" => Some(Deeper)
-    "781 794 795 800" => Some(Deeper)
-    "815 816 817 846" => Some(Deeper)
-    "816 817 818 835" => Some(Deeper)
-    "816 817 840 841" => Some(Deeper)
-    "817 818 819 820" => Some(Deeper)
-    "817 846 847 848" => Some(Deeper)
+    "651 706 707 708" =>
+      Some(
+        Msg({
+          signature: "'(' ':' ';'",
+          text: "Expecting ':', ';', or a function type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "706 707 708 712" => Some(Deeper)
+    "724 706 707 708" =>
+      Some(
+        Msg({
+          signature: "''' '(' ':' '{'",
+          text: "Expecting ''', ':', '{', or a function type.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "860 861 866 867" => Some(Deeper)
-    "866 740 208 209" => Some(Deeper)
-    "869 870 871 378" => Some(Deeper)
-    "870 871 42 595" => Some(Deeper)
-    "871 13 14 16" => Some(Deeper)
-    "871 18 19 20" => Some(Deeper)
-    "871 223 224 226" => Some(Deeper)
-    "871 223 480 481" => Some(Deeper)
-    "871 223 535 536" => Some(Deeper)
-    "871 223 549 550" => Some(Deeper)
-    "871 347 348 361" => Some(Deeper)
-    "878 886 6 7" => Some(Deeper)
-    "934 944 945 946" => Some(Deeper)
-    "958 907 908 909" => Some(Deeper)
-    "972 973 974 958" => Some(Deeper)
-    "973 903 904 906" => Some(Deeper)
-    "973 974 958 968" => Some(Deeper)
-    "974 958 926 930" => Some(Deeper)
-    "974 958 934 942" => Some(Deeper)
-    "981 416 417 440" => Some(Deeper)
-    "227 228 229 451 453" => Some(Deeper)
-    "283 285 286 287 295" => Some(Deeper)
-    "408 409 309 310 320" => Some(Deeper)
-    "481 482 483 505 522" => Some(Deeper)
-    "482 483 484 495 497" => Some(Deeper)
-    "558 559 560 561 570" => Some(Deeper)
-    "706 707 708 695 696" => Some(Deeper)
-    "706 707 708 709 710" => Some(Deeper)
+    "651 706 707 708 712" =>
+      Some(
+        Msg({
+          signature: "'(' ';'",
+          text: "Expecting ';' or a function type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "724 706 707 708 712" =>
+      Some(
+        Msg({
+          signature: "''' '(' '{'",
+          text: "Expecting ''', '{', or a function type.",
+          subject: "",
+          opener: "",
+        }),
+      )
     "724 860 861 866 867" => Some(Deeper)
-    "724 869 870 871 378" => Some(Deeper)
-    "740 208 558 559 204" => Some(Deeper)
-    "747 748 201 202 204" => Some(Deeper)
-    "777 779 780 781 804" => Some(Deeper)
-    "780 781 794 795 800" => Some(Deeper)
-    "814 815 816 817 846" => Some(Deeper)
-    "815 816 817 818 835" => Some(Deeper)
-    "815 816 817 840 841" => Some(Deeper)
-    "816 817 818 819 820" => Some(Deeper)
-    "816 817 846 847 848" => Some(Deeper)
-    "861 866 740 208 209" => Some(Deeper)
-    "866 740 72 74 136" => Some(Deeper)
-    "869 870 871 42 595" => Some(Deeper)
-    "870 871 13 14 16" => Some(Deeper)
-    "870 871 18 19 20" => Some(Deeper)
-    "870 871 223 224 226" => Some(Deeper)
-    "870 871 223 480 481" => Some(Deeper)
-    "870 871 223 535 536" => Some(Deeper)
-    "870 871 223 549 550" => Some(Deeper)
-    "870 871 347 348 361" => Some(Deeper)
-    "871 223 224 459 465" => Some(Deeper)
-    "871 223 524 526 530" => Some(Deeper)
-    "871 260 261 262 275" => Some(Deeper)
-    "871 42 43 44 589" => Some(Deeper)
-    "871 42 595 597 598" => Some(Deeper)
-    "871 42 600 601 604" => Some(Deeper)
-    "886 6 9 634 635" => Some(Deeper)
-    "958 934 944 945 946" => Some(Deeper)
-    "972 973 903 904 906" => Some(Deeper)
-    "972 973 974 958 968" => Some(Deeper)
-    "973 974 958 926 930" => Some(Deeper)
-    "973 974 958 934 942" => Some(Deeper)
-    "974 958 907 908 909" => Some(Deeper)
-    "980 981 416 417 440" => Some(Deeper)
-    "208 558 559 560 561 570" => Some(Deeper)
-    "226 227 228 229 451 453" => Some(Deeper)
-    "282 283 285 286 287 295" => Some(Deeper)
-    "480 481 482 483 505 522" => Some(Deeper)
-    "481 482 483 484 495 497" => Some(Deeper)
-    "651 706 707 708 709 710" => Some(Deeper)
-    "724 706 707 708 695 696" => Some(Deeper)
-    "724 706 707 708 709 710" => Some(Deeper)
-    "724 814 815 816 817 846" => Some(Deeper)
-    "724 869 870 871 42 595" => Some(Deeper)
-    "746 747 748 201 202 204" => Some(Deeper)
-    "769 777 779 780 781 804" => Some(Deeper)
-    "779 780 781 794 795 800" => Some(Deeper)
-    "814 815 816 817 818 835" => Some(Deeper)
-    "814 815 816 817 840 841" => Some(Deeper)
-    "815 816 817 818 819 820" => Some(Deeper)
-    "815 816 817 846 847 848" => Some(Deeper)
-    "860 861 866 740 208 209" => Some(Deeper)
-    "861 866 740 72 74 136" => Some(Deeper)
-    "866 740 208 558 559 204" => Some(Deeper)
-    "869 870 871 13 14 16" => Some(Deeper)
-    "869 870 871 18 19 20" => Some(Deeper)
-    "869 870 871 223 224 226" => Some(Deeper)
-    "869 870 871 223 480 481" => Some(Deeper)
-    "869 870 871 223 535 536" => Some(Deeper)
-    "869 870 871 223 549 550" => Some(Deeper)
-    "869 870 871 347 348 361" => Some(Deeper)
-    "870 871 223 224 459 465" => Some(Deeper)
-    "870 871 223 524 526 530" => Some(Deeper)
-    "870 871 260 261 262 275" => Some(Deeper)
-    "870 871 42 43 44 589" => Some(Deeper)
-    "870 871 42 595 597 598" => Some(Deeper)
-    "870 871 42 600 601 604" => Some(Deeper)
-    "871 408 409 309 310 320" => Some(Deeper)
-    "878 886 6 9 634 635" => Some(Deeper)
-    "886 980 981 416 417 440" => Some(Deeper)
-    "972 973 974 958 926 930" => Some(Deeper)
-    "972 973 974 958 934 942" => Some(Deeper)
-    "973 974 958 907 908 909" => Some(Deeper)
-    "974 958 934 944 945 946" => Some(Deeper)
-    "223 480 481 482 483 505 522" => Some(Deeper)
-    "224 226 227 228 229 451 453" => Some(Deeper)
-    "281 282 283 285 286 287 295" => Some(Deeper)
-    "480 481 482 483 484 495 497" => Some(Deeper)
-    "650 651 706 707 708 709 710" => Some(Deeper)
-    "724 746 747 748 201 202 204" => Some(Deeper)
-    "724 814 815 816 817 818 835" => Some(Deeper)
-    "724 814 815 816 817 840 841" => Some(Deeper)
-    "724 860 861 866 740 208 209" => Some(Deeper)
-    "724 869 870 871 13 14 16" => Some(Deeper)
-    "724 869 870 871 18 19 20" => Some(Deeper)
-    "724 869 870 871 223 224 226" => Some(Deeper)
-    "724 869 870 871 223 480 481" => Some(Deeper)
-    "724 869 870 871 223 535 536" => Some(Deeper)
-    "724 869 870 871 223 549 550" => Some(Deeper)
-    "724 869 870 871 347 348 361" => Some(Deeper)
-    "740 208 558 559 560 561 570" => Some(Deeper)
-    "768 769 777 779 780 781 804" => Some(Deeper)
-    "777 779 780 781 794 795 800" => Some(Deeper)
-    "814 815 816 817 818 819 820" => Some(Deeper)
-    "814 815 816 817 846 847 848" => Some(Deeper)
-    "860 861 866 740 72 74 136" => Some(Deeper)
-    "861 866 740 208 558 559 204" => Some(Deeper)
-    "869 870 871 223 224 459 465" => Some(Deeper)
-    "869 870 871 223 524 526 530" => Some(Deeper)
-    "869 870 871 260 261 262 275" => Some(Deeper)
-    "869 870 871 42 43 44 589" => Some(Deeper)
-    "869 870 871 42 595 597 598" => Some(Deeper)
-    "869 870 871 42 600 601 604" => Some(Deeper)
-    "870 871 408 409 309 310 320" => Some(Deeper)
-    "878 886 980 981 416 417 440" => Some(Deeper)
-    "972 973 974 958 907 908 909" => Some(Deeper)
-    "973 974 958 934 944 945 946" => Some(Deeper)
-    "223 224 226 227 228 229 451 453" => Some(Deeper)
-    "223 480 481 482 483 484 495 497" => Some(Deeper)
-    "649 650 651 706 707 708 709 710" => Some(Deeper)
-    "724 768 769 777 779 780 781 804" => Some(Deeper)
-    "724 814 815 816 817 818 819 820" => Some(Deeper)
-    "724 814 815 816 817 846 847 848" => Some(Deeper)
-    "724 860 861 866 740 72 74 136" => Some(Deeper)
-    "724 869 870 871 223 224 459 465" => Some(Deeper)
-    "724 869 870 871 223 524 526 530" => Some(Deeper)
-    "724 869 870 871 260 261 262 275" => Some(Deeper)
-    "724 869 870 871 42 43 44 589" => Some(Deeper)
-    "724 869 870 871 42 595 597 598" => Some(Deeper)
-    "724 869 870 871 42 600 601 604" => Some(Deeper)
-    "769 777 779 780 781 794 795 800" => Some(Deeper)
-    "860 861 866 740 208 558 559 204" => Some(Deeper)
-    "866 740 208 558 559 560 561 570" => Some(Deeper)
-    "869 870 871 408 409 309 310 320" => Some(Deeper)
-    "871 223 480 481 482 483 505 522" => Some(Deeper)
-    "871 281 282 283 285 286 287 295" => Some(Deeper)
-    "972 973 974 958 934 944 945 946" => Some(Deeper)
-    "724 860 861 866 740 208 558 559 204" => Some(Deeper)
-    "724 869 870 871 408 409 309 310 320" => Some(Deeper)
-    "768 769 777 779 780 781 794 795 800" => Some(Deeper)
-    "861 866 740 208 558 559 560 561 570" => Some(Deeper)
-    "870 871 223 480 481 482 483 505 522" => Some(Deeper)
-    "870 871 281 282 283 285 286 287 295" => Some(Deeper)
-    "871 223 224 226 227 228 229 451 453" => Some(Deeper)
-    "871 223 480 481 482 483 484 495 497" => Some(Deeper)
-    "724 768 769 777 779 780 781 794 795 800" => Some(Deeper)
-    "860 861 866 740 208 558 559 560 561 570" => Some(Deeper)
-    "869 870 871 223 480 481 482 483 505 522" => Some(Deeper)
-    "869 870 871 281 282 283 285 286 287 295" => Some(Deeper)
-    "870 871 223 224 226 227 228 229 451 453" => Some(Deeper)
-    "870 871 223 480 481 482 483 484 495 497" => Some(Deeper)
-    "724 860 861 866 740 208 558 559 560 561 570" => Some(Deeper)
-    "724 869 870 871 223 480 481 482 483 505 522" => Some(Deeper)
-    "724 869 870 871 281 282 283 285 286 287 295" => Some(Deeper)
-    "869 870 871 223 224 226 227 228 229 451 453" => Some(Deeper)
-    "869 870 871 223 480 481 482 483 484 495 497" => Some(Deeper)
-    "724 869 870 871 223 224 226 227 228 229 451 453" => Some(Deeper)
-    "724 869 870 871 223 480 481 482 483 484 495 497" => Some(Deeper)
     _ => None
   }
 }

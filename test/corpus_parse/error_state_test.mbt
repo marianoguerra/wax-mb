@@ -94,12 +94,7 @@ test "a resolved label points at real source" {
     }
   }
   // The count is the coverage; it falling means the table stopped resolving.
-  inspect(
-    labelled,
-    content=(
-      #|13
-    ),
-  )
+  inspect(labelled, content="26")
 }
 
 ///|

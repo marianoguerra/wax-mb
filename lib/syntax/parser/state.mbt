@@ -157,20 +157,14 @@ pub fn error_state(tokens : Array[(Token, Position, Position)]) -> ErrorState? {
 /// The reference's `Assuming that the X is complete` messages carry a label
 /// pointing AT that X. Menhir names it by the reductions it performs once the
 /// error token is in hand -- annotated `%on_error_reduce` -- and the completed
-/// construct is what the outermost of them pushes.
-///
-/// Nothing here has those annotations, so this reduces while the reduction is
-/// unambiguous: a state whose only reduce action, over every terminal
-/// lookahead, is one production. That is the same move for the same reason, and
-/// where it is not the same the span simply does not match the reference's and
-/// the label is dropped (see the calibration in tools/gen_parser_messages.py).
+/// construct is what the outermost of them pushes. `reduction_chain` replays
+/// the same reductions, so this is the span of the last cell it pushes.
 ///
 /// `None` when the stack does not reduce at all, or when the construct is
 /// empty -- underlining nothing is noise, which is the rule the reference
 /// applies to an epsilon reduction too.
 pub fn ErrorState::subject_span(self : Self) -> (Position, Position)? {
-  let chain = self.reduction_chain()
-  guard chain.last() is Some((_, spans)) else { return None }
+  guard self.reduction_chain().last() is Some((_, spans)) else { return None }
   let span = spans[spans.length() - 1]
   if span.0.cnum >= span.1.cnum {
     None
@@ -180,12 +174,12 @@ pub fn ErrorState::subject_span(self : Self) -> (Position, Position)? {
 }
 
 ///|
-/// The stacks the unambiguous reductions from the failure pass through, each
-/// with its spans, nearest first. The failing stack itself is not included.
+/// The stacks the reductions Menhir makes at an error pass through, each with
+/// its spans, nearest first. The failing stack itself is not included.
 ///
-/// This is Menhir's move at an error: it performs the reductions the offending
-/// token cannot stop before it reports, so the state it names is the one at the
-/// end of this chain, not the one the shift failed in. See `subject_span`.
+/// Menhir performs these before it reports, so the state it names is the one
+/// at the end of this chain, not the one the shift failed in. Which reduction
+/// a state makes, if any, is `error_reduction`'s call.
 fn ErrorState::reduction_chain(
   self : Self,
 ) -> Array[(Array[Int32], Array[(Position, Position)])] {
@@ -193,7 +187,7 @@ fn ErrorState::reduction_chain(
   let spans = self.spans.copy()
   let chain = []
   while true {
-    guard sole_reduction(stack[stack.length() - 1]) is Some((count, symbol)) else {
+    guard error_reduction(stack[stack.length() - 1]) is Some((count, symbol)) else {
       break
     }
     // Never eat the bottom cell: it stands for the whole parse, not a
@@ -221,36 +215,70 @@ fn ErrorState::reduction_chain(
 }
 
 ///|
-/// The stack at the end of `reduction_chain`, or `None` when the failing state
-/// reduces nothing.
+/// The stack Menhir would report this failure from, or `None` when that is
+/// the failing stack itself.
 ///
-/// The second key into the message table: the reference names the state it
-/// reaches after the reductions it performs at the error, so a failing stack
-/// it has no sentence for may still reduce to one it has.
+/// The second key into the message table: a failing stack the reference's
+/// sentences never produced may still reduce to one they did.
 pub fn ErrorState::reduced_stack(self : Self) -> Array[Int32]? {
   self.reduction_chain().last().map(c => c.0)
 }
 
 ///|
-/// The one production a state reduces by, if it has exactly one.
+/// The reduction Menhir would make in `state` with an error in hand, if any,
+/// as (symbols popped, nonterminal pushed).
+///
+/// Two kinds. A DEFAULT reduction -- a state that shifts nothing and reduces
+/// by one production -- Menhir makes without looking at the token at all. And
+/// a state that can reduce to a nonterminal the reference declares
+/// `%on_error_reduce` (`on_error_reduce`, generated) reduces to it, so long as
+/// exactly one such reduction is on offer: the reference lists them all in one
+/// declaration, so they share a priority and there is nothing to break a tie
+/// with.
+///
+/// Reducing whatever is unique instead, which this used to do, goes too far:
+/// past a `br_if` operand, which is no `%on_error_reduce` symbol, Menhir stops
+/// and asks for an operator, where a plain statement goes on to "the statement
+/// is complete" -- and the two then claim the same stack.
 ///
 /// Probes every terminal lookahead. A goto (a nonterminal column) is a shift
 /// and cannot be confused with a reduction, so the terminal range is only a
 /// bound on the work, not on correctness.
-fn sole_reduction(state : Int32) -> (Int32, Int32)? {
-  let mut found : (Int32, Int32)? = None
+fn error_reduction(state : Int32) -> (Int32, Int32)? {
+  let mut shifts = false
+  let mut sole : (Int32, Int32)? = None
+  let mut several = false
+  let mut listed : (Int32, Int32)? = None
+  let mut listed_several = false
   let last = terminal_symbol_count + 1
   for sym in 1..<last {
     match yy_state(state, sym) {
-      Reduce(count, symbol, _) | ReduceNoLookahead(count, symbol, _) =>
-        match found {
-          None => found = Some((count, symbol))
-          Some((c, s)) => if c != count || s != symbol { return None }
+      Shift(_) => shifts = true
+      Reduce(count, symbol, _) | ReduceNoLookahead(count, symbol, _) => {
+        match sole {
+          None => sole = Some((count, symbol))
+          Some((c, s)) => if c != count || s != symbol { several = true }
         }
+        if on_error_reduce(symbol) {
+          match listed {
+            None => listed = Some((count, symbol))
+            Some((c, s)) =>
+              if c != count || s != symbol {
+                listed_several = true
+              }
+          }
+        }
+      }
       _ => ()
     }
   }
-  found
+  if !shifts && !several && sole is Some(_) {
+    sole
+  } else if !listed_several {
+    listed
+  } else {
+    None
+  }
 }
 
 ///|

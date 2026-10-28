@@ -17,8 +17,8 @@
 //     (Consequence: parsing is not reentrant. Documented, and fine for a CLI.)
 //
 //   * %on_error_reduce -- no MoonYacc equivalent. It only shapes WHICH state an
-//     error is reported from, so dropping it costs message quality, not
-//     correctness, and message wording is explicitly not gated yet.
+//     error is reported from, so state.mbt replays its reductions afterwards,
+//     from the set tools/gen_parser_messages.py writes to error_reduce.mbt.
 //
 //   * Every rule must state its result type (`nonterm -> Type`), which Menhir
 //     infers from the OCaml actions.

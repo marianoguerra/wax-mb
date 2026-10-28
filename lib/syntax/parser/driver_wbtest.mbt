@@ -292,3 +292,25 @@ test "a stack with no message of its own borrows the one it reduces to" {
     content="Assuming that the attributes are complete, expecting a definition.",
   )
 }
+
+///|
+test "the reductions at an error stop where Menhir's do" {
+  // A statement followed by a stray token: Menhir reduces the call through
+  // `plaininstr` and `statement`, both `%on_error_reduce`, and says the
+  // statement is complete.
+  let r = parse_string("fn g() { return_call g(); }\n")
+  inspect(
+    r.errors[0].message,
+    content="Assuming that the statement is complete, expecting ';' or '}'.",
+  )
+  inspect(labels_of(r.errors[0]), content="9-20 this statement")
+  // A `br_if` operand is no `%on_error_reduce` symbol, so Menhir stops there
+  // and asks for more of the expression. Reducing everything unambiguous
+  // would carry it on to the statement, and claim the message above.
+  let r = parse_string("fn g() { br_if 'l x y; }\n")
+  inspect(
+    r.errors[0].message,
+    content="Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+  )
+  inspect(labels_of(r.errors[0]), content="")
+}
