@@ -140,18 +140,17 @@ test "the labels the reference draws under the snippet" {
 }
 
 ///|
-test "a state the table does not cover falls back, labels and all" {
-  // The reference says "Assuming that the attributes are complete, expecting a
-  // definition." here and underlines the attributes. Its message table is
-  // keyed by ITS states; the sentence that produced this one lands in a
-  // different state of ours, so we have neither its wording nor its label.
-  // Falling back is the whole design: less specific, never wrong.
+test "a state the table misses is looked up again once reduced" {
+  // The sentence that produced the reference's message here lands in a
+  // different state of ours: we fail on `if` before reducing `#[likely]` to
+  // complete attributes, Menhir reduces first. The reduced stack is keyed,
+  // and the label follows from the same reductions.
   let r = parse_string("#[likely] if c { nop; }\n")
   inspect(
     r.errors[0].message,
-    content="Expecting '#', 'const', 'data', 'elem', 'fn', 'let', 'memory', 'table', or 'tag'.",
+    content="Assuming that the attributes are complete, expecting a definition.",
   )
-  inspect(labels_of(r.errors[0]), content="")
+  inspect(labels_of(r.errors[0]), content="0-9 these attributes")
 }
 
 ///|
@@ -274,4 +273,22 @@ fn describe(errors : Array[@basic.Report]) -> String {
     )
   }
   out.join("\n")
+}
+
+///|
+test "a stack with no message of its own borrows the one it reduces to" {
+  // MoonYacc fails before reducing `3` to a complete element; Menhir reduces
+  // first and reports from there. The raw stack misses the table, the reduced
+  // one does not.
+  let r = parse_string("fn f() { let a = [1, 2, 3 }; }\n")
+  inspect(
+    r.errors[0].message,
+    content="Assuming that the array body is complete, expecting ']'.",
+  )
+  // Likewise a module-level expression, which reduces to "attributes".
+  let r = parse_string("p.x = 1;\n")
+  inspect(
+    r.errors[0].message,
+    content="Assuming that the attributes are complete, expecting a definition.",
+  )
 }

@@ -20,8 +20,11 @@
 // extend the key by one more frame.
 //
 // 469 keys from the golden's 568 sentences, 0 dropped
-// as unresolvable. A miss falls back to the locally rendered `Expecting ...`
-// list, which is always correct if less specific.
+// as unresolvable. A miss retries with the stack the failure REDUCES to, in a
+// second table built the same way (160 keys, 170 dropped): Menhir
+// reports from the state after those reductions, MoonYacc fails before them.
+// A miss in both falls back to the locally rendered `Expecting ...` list,
+// which is always correct if less specific.
 
 ///|
 /// One recorded message.
@@ -46,13 +49,27 @@ priv enum Entry {
 }
 
 ///|
-/// The reference's message for a stack, bottom first, or None.
-///
+/// The reference's message for a failing stack, bottom first, or None.
+fn reference_message(stack : ArrayView[Int32], signature : String) -> Message? {
+  lookup(stack, signature, entry_of)
+}
+
+///|
+/// The reference's message for the stack a failure reduces to, or None.
+fn reduced_message(stack : ArrayView[Int32], signature : String) -> Message? {
+  lookup(stack, signature, entry_of_reduced)
+}
+
+///|
 /// Walks from the top frame down, deepening only where the table says the
 /// shallower key stands for more than one message.
-fn reference_message(stack : ArrayView[Int32], signature : String) -> Message? {
+fn lookup(
+  stack : ArrayView[Int32],
+  signature : String,
+  entry_of : (String) -> Entry?,
+) -> Message? {
   let key = StringBuilder()
-  for depth = 1; depth <= stack.length() && depth <= 7; depth = depth + 1 {
+  for depth = 1; depth <= stack.length() && depth <= 12; depth = depth + 1 {
     // The key reads bottom-up within the suffix, as the generator writes it.
     key.reset()
     let from = stack.length() - depth
@@ -4329,6 +4346,1806 @@ fn entry_of(key : String) -> Entry? {
           opener: "",
         }),
       )
+    _ => None
+  }
+}
+
+///|
+fn entry_of_reduced(key : String) -> Entry? {
+  match key {
+    "136" => Some(Deeper)
+    "16" => Some(Deeper)
+    "20" => Some(Deeper)
+    "204" => Some(Deeper)
+    "209" => Some(Deeper)
+    "215" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "223" => Some(Deeper)
+    "226" => Some(Deeper)
+    "247" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "250" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the argument list is complete, expecting ')'.",
+          subject: "this argument list",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "261" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '{' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "267" =>
+      Some(
+        Msg({
+          signature: "'=>'",
+          text: "Expecting '=>'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "275" => Some(Deeper)
+    "276" =>
+      Some(
+        Msg({
+          signature: "'}'",
+          text: "Expecting '}'.",
+          subject: "",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "282" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "285" =>
+      Some(
+        Msg({
+          signature: "']'",
+          text: "Expecting ']'.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "295" => Some(Deeper)
+    "32" =>
+      Some(
+        Msg({
+          signature: "'('",
+          text: "Expecting '('.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "320" => Some(Deeper)
+    "328" =>
+      Some(
+        Msg({
+          signature: "'('",
+          text: "Expecting '('.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "330" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the expression list is complete, expecting ')'.",
+          subject: "this expression list",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "341" =>
+      Some(
+        Msg({
+          signature: "']'",
+          text: "Expecting ']'.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "35" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the expression list is complete, expecting ')'.",
+          subject: "this expression list",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "361" => Some(Deeper)
+    "378" => Some(Deeper)
+    "381" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "403" =>
+      Some(
+        Msg({
+          signature: "'='",
+          text: "Expecting '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "428" =>
+      Some(
+        Msg({
+          signature: "'(' a string",
+          text: "Expecting a condition literal.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "440" => Some(Deeper)
+    "453" => Some(Deeper)
+    "465" => Some(Deeper)
+    "475" =>
+      Some(
+        Msg({
+          signature: "')' ','",
+          text: "Assuming that the result type is complete, expecting ')'.",
+          subject: "this result type",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "481" => Some(Deeper)
+    "497" => Some(Deeper)
+    "522" => Some(Deeper)
+    "530" => Some(Deeper)
+    "536" => Some(Deeper)
+    "539" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ':' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '{' '|'",
+          text: "Assuming that the condition expression is complete, expecting ':' or a block.",
+          subject: "this condition expression",
+          opener: "",
+        }),
+      )
+    "550" => Some(Deeper)
+    "552" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the argument list is complete, expecting ')'.",
+          subject: "this argument list",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "57" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' ',' '-' '.' '/' '/s' '/u' ':' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the parenthesized expression is complete, expecting ')'.",
+          subject: "this parenthesized expression",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "570" => Some(Deeper)
+    "580" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the expression list is complete, expecting ')'.",
+          subject: "this expression list",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "589" => Some(Deeper)
+    "595" => Some(Deeper)
+    "598" => Some(Deeper)
+    "604" => Some(Deeper)
+    "608" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '#' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '::' ':=' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '@' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the array body is complete, expecting ']'.",
+          subject: "this array body",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "615" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "619" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '#' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '::' ':=' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '@' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the array body is complete, expecting ']'.",
+          subject: "this array body",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "635" => Some(Deeper)
+    "64" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ':' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the then-branch is complete, expecting ':'.",
+          subject: "this then-branch",
+          opener: "",
+        }),
+      )
+    "651" =>
+      Some(
+        Msg({
+          signature: "'#' 'const' 'fn' 'let' 'memory' 'table' 'tag' '{'",
+          text: "Assuming that the attributes are complete, expecting an import declaration.",
+          subject: "these attributes",
+          opener: "",
+        }),
+      )
+    "655" =>
+      Some(
+        Msg({
+          signature: "'&'",
+          text: "Expecting a reference type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "662" =>
+      Some(
+        Msg({
+          signature: "']'",
+          text: "Expecting ']'.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "68" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the index expression is complete, expecting ']'.",
+          subject: "this index expression",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "683" =>
+      Some(
+        Msg({
+          signature: "an identifier",
+          text: "Expecting an identifier.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "688" => Some(Deeper)
+    "696" => Some(Deeper)
+    "7" => Some(Deeper)
+    "710" => Some(Deeper)
+    "717" =>
+      Some(
+        Msg({
+          signature: "'#' ';' 'const' 'fn' 'let' 'memory' 'table' 'tag' '}'",
+          text: "Expecting ';', '}', or an import item.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "724" =>
+      Some(
+        Msg({
+          signature: "'#' ';' 'const' 'data' 'elem' 'fn' 'import' 'let' 'memory' 'rec' 'table' 'tag' 'type' end of file",
+          text: "Assuming that the attributes are complete, expecting a definition.",
+          subject: "these attributes",
+          opener: "",
+        }),
+      )
+    "733" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the constant expression is complete, expecting ']'.",
+          subject: "this constant expression",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "737" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the expression list is complete, expecting ']'.",
+          subject: "this expression list",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "743" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' ',' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the expression list is complete, expecting ']'.",
+          subject: "this expression list",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "749" =>
+      Some(
+        Msg({
+          signature: "'&'",
+          text: "Expecting a reference type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "753" =>
+      Some(
+        Msg({
+          signature: "';' '='",
+          text: "Expecting ';' or '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "754" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "757" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "761" =>
+      Some(
+        Msg({
+          signature: "';' '='",
+          text: "Expecting ';' or '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "762" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "765" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Expecting an operator, a postfix operator ('.', '[', '(', '!', 'as', 'is', 'on', or '?'), or the end of the expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "773" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the constant expression is complete, expecting ']'.",
+          subject: "this constant expression",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "775" =>
+      Some(
+        Msg({
+          signature: "';' '='",
+          text: "Expecting ';' or '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "791" =>
+      Some(
+        Msg({
+          signature: "'inf' 'nan' a float an integer",
+          text: "Expecting a number.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "800" => Some(Deeper)
+    "804" => Some(Deeper)
+    "810" => Some(Deeper)
+    "820" => Some(Deeper)
+    "825" =>
+      Some(
+        Msg({
+          signature: "'@'",
+          text: "Expecting '@'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "828" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the constant expression is complete, expecting ']'.",
+          subject: "this constant expression",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "830" =>
+      Some(
+        Msg({
+          signature: "';' '='",
+          text: "Expecting ';' or '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "832" =>
+      Some(
+        Msg({
+          signature: "'data' '}'",
+          text: "Expecting '}' or a data item.",
+          subject: "",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "835" => Some(Deeper)
+    "837" =>
+      Some(
+        Msg({
+          signature: "'data' '}'",
+          text: "Expecting '}' or a data item.",
+          subject: "",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "841" => Some(Deeper)
+    "843" =>
+      Some(
+        Msg({
+          signature: "'data' '}'",
+          text: "Expecting '}' or a data item.",
+          subject: "",
+          opener: "This '{' opens the enclosing construct.",
+        }),
+      )
+    "846" => Some(Deeper)
+    "848" => Some(Deeper)
+    "858" => Some(Deeper)
+    "860" =>
+      Some(
+        Msg({
+          signature: "an identifier",
+          text: "Expecting an identifier.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "862" =>
+      Some(
+        Msg({
+          signature: "'='",
+          text: "Expecting '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "864" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' ';' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the constant expression is complete, expecting ';'.",
+          subject: "this constant expression",
+          opener: "",
+        }),
+      )
+    "867" => Some(Deeper)
+    "870" => Some(Deeper)
+    "884" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' ']' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the attribute expression is complete, expecting ']'.",
+          subject: "this attribute expression",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "890" =>
+      Some(
+        Msg({
+          signature: "'#' ';' 'const' 'data' 'elem' 'fn' 'import' 'let' 'memory' 'rec' 'table' 'tag' 'type' '}'",
+          text: "Expecting ';', '}', or a module field.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "900" =>
+      Some(
+        Msg({
+          signature: "':' '='",
+          text: "Expecting ':' or '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "903" =>
+      Some(
+        Msg({
+          signature: "'='",
+          text: "Expecting '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "906" => Some(Deeper)
+    "909" => Some(Deeper)
+    "917" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'descriptor' 'fn' '{'",
+          text: "Expecting 'descriptor' or a composite type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "918" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'fn' '{'",
+          text: "Expecting a composite type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "919" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "928" =>
+      Some(
+        Msg({
+          signature: "']'",
+          text: "Expecting ']'.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "930" => Some(Deeper)
+    "938" =>
+      Some(
+        Msg({
+          signature: "':'",
+          text: "Expecting ':'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "942" => Some(Deeper)
+    "946" => Some(Deeper)
+    "950" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "952" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'fn' '{'",
+          text: "Expecting a composite type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "953" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "955" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "958" => Some(Deeper)
+    "959" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'descriptor' 'fn' '{'",
+          text: "Expecting 'descriptor' or a composite type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "960" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'fn' '{'",
+          text: "Expecting a composite type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "961" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "963" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "965" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'fn' '{'",
+          text: "Expecting a composite type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "966" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "968" => Some(Deeper)
+    "970" => Some(Deeper)
+    "973" =>
+      Some(
+        Msg({
+          signature: "':' '='",
+          text: "Expecting ':' or '='.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "975" =>
+      Some(
+        Msg({
+          signature: "';'",
+          text: "Expecting ';'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "982" =>
+      Some(
+        Msg({
+          signature: "'!=' ')' '<' '<=' '=' '>' '>='",
+          text: "Expecting ')', ',', or a comparison operator.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "10 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "138 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "14 16" => Some(Deeper)
+    "140 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "142 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "144 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "146 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "148 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "150 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "152 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "154 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "156 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "158 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "160 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "162 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "164 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "166 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "168 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "17 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "170 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "172 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "174 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "176 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "178 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "180 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "182 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "184 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "186 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "188 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "19 20" => Some(Deeper)
+    "190 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "192 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "197 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "202 204" => Some(Deeper)
+    "208 209" => Some(Deeper)
+    "21 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "212 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "221 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "224 226" => Some(Deeper)
+    "23 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "246 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "25 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "258 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "260 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "262 275" => Some(Deeper)
+    "27 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "28 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "281 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "283 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'else' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an index expression or case labels.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "287 295" => Some(Deeper)
+    "29 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "30 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "310 320" => Some(Deeper)
+    "325 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "342 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "348 361" => Some(Deeper)
+    "363 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "370 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "372 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "383 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "385 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "40 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a length expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "404 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "406 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "417 440" => Some(Deeper)
+    "42 595" => Some(Deeper)
+    "44 589" => Some(Deeper)
+    "451 453" => Some(Deeper)
+    "459 465" => Some(Deeper)
+    "480 481" => Some(Deeper)
+    "49 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "495 497" => Some(Deeper)
+    "505 522" => Some(Deeper)
+    "524 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a condition expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "526 530" => Some(Deeper)
+    "535 536" => Some(Deeper)
+    "538 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a condition expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "541 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a statement.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "541 378" =>
+      Some(
+        Msg({
+          signature: "'!' '!=' '%s' '%u' '&' '(' ')' '*' '+' '-' '.' '/' '/s' '/u' '<' '<<' '<=' '<=s' '<=u' '<s' '<u' '==' '>' '>=' '>=s' '>=u' '>>s' '>>u' '>s' '>u' '?' '[' '^' 'as' 'is' 'on' '|'",
+          text: "Assuming that the statement is complete, expecting ')'.",
+          subject: "this statement",
+          opener: "This '(' opens the enclosing construct.",
+        }),
+      )
+    "543 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'become' 'br' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'br_table' 'dispatch' 'do' 'if' 'inf' 'let' 'loop' 'match' 'nan' 'nop' 'null' 'return' 'suspend' 'throw' 'throw_ref' 'try' 'try_legacy' 'unreachable' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a statement or an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "549 550" => Some(Deeper)
+    "559 204" => Some(Deeper)
+    "56 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a parenthesized expression or an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "561 570" => Some(Deeper)
+    "597 598" => Some(Deeper)
+    "6 7" => Some(Deeper)
+    "60 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "601 604" => Some(Deeper)
+    "611 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a length expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "614 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "616 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a length expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "629 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "63 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a then-branch.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "632 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "634 635" => Some(Deeper)
+    "65 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "651 688" => Some(Deeper)
+    "67 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an index expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "695 696" => Some(Deeper)
+    "70 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "709 710" => Some(Deeper)
+    "724 858" => Some(Deeper)
+    "732 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a constant expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "74 136" => Some(Deeper)
+    "751 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "769 810" => Some(Deeper)
+    "772 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a constant expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "781 804" => Some(Deeper)
+    "795 800" => Some(Deeper)
+    "817 846" => Some(Deeper)
+    "818 835" => Some(Deeper)
+    "819 820" => Some(Deeper)
+    "827 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a constant expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "840 841" => Some(Deeper)
+    "847 848" => Some(Deeper)
+    "863 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a constant expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "866 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting a constant expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "866 867" => Some(Deeper)
+    "869 870" => Some(Deeper)
+    "871 223" =>
+      Some(
+        Msg({
+          signature: "'do' 'if' 'loop' 'try' 'try_legacy' 'while'",
+          text: "Expecting a labeled block: 'do', 'while', 'loop', 'if', 'try', or 'try_legacy'.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "871 378" => Some(Deeper)
+    "883 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an attribute expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "896 970" => Some(Deeper)
+    "9 223" =>
+      Some(
+        Msg({
+          signature: "'!' '#' ''' '(' '+' '-' '[' '_' 'br_if' 'br_on_cast' 'br_on_cast_fail' 'br_on_non_null' 'br_on_null' 'dispatch' 'do' 'if' 'inf' 'loop' 'match' 'nan' 'null' 'suspend' 'try' 'try_legacy' 'while' '{' a character a float a string an identifier an integer",
+          text: "Expecting an attribute expression.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "904 906" => Some(Deeper)
+    "908 909" => Some(Deeper)
+    "926 930" => Some(Deeper)
+    "934 942" => Some(Deeper)
+    "939 930" =>
+      Some(
+        Msg({
+          signature: "'&' 'mut' an identifier",
+          text: "Expecting a field type.",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "945 946" => Some(Deeper)
+    "957 958" =>
+      Some(
+        Msg({
+          signature: "'[' 'cont' 'describes' 'descriptor' 'fn' 'open' '{'",
+          text: "Expecting 'describes', 'descriptor', 'open', or a composite type (a rec group holds struct, array and function types; a type alias goes outside it).",
+          subject: "",
+          opener: "",
+        }),
+      )
+    "958 968" => Some(Deeper)
+    "974 958" => Some(Deeper)
+    "13 14 16" => Some(Deeper)
+    "18 19 20" => Some(Deeper)
+    "201 202 204" => Some(Deeper)
+    "223 224 226" => Some(Deeper)
+    "223 480 481" => Some(Deeper)
+    "223 535 536" => Some(Deeper)
+    "223 549 550" => Some(Deeper)
+    "224 459 465" => Some(Deeper)
+    "229 451 453" => Some(Deeper)
+    "261 262 275" => Some(Deeper)
+    "286 287 295" => Some(Deeper)
+    "309 310 320" => Some(Deeper)
+    "347 348 361" => Some(Deeper)
+    "409 6 7" =>
+      Some(
+        Msg({
+          signature: "'(' ',' '=' ']'",
+          text: "Expecting '(', '=', ']', or an attribute guard.",
+          subject: "",
+          opener: "This '[' opens the enclosing construct.",
+        }),
+      )
+    "416 417 440" => Some(Deeper)
+    "43 44 589" => Some(Deeper)
+    "483 505 522" => Some(Deeper)
+    "484 495 497" => Some(Deeper)
+    "524 526 530" => Some(Deeper)
+    "558 559 204" => Some(Deeper)
+    "560 561 570" => Some(Deeper)
+    "595 597 598" => Some(Deeper)
+    "600 601 604" => Some(Deeper)
+    "650 651 688" => Some(Deeper)
+    "708 695 696" => Some(Deeper)
+    "708 709 710" => Some(Deeper)
+    "72 74 136" => Some(Deeper)
+    "724 869 870" => Some(Deeper)
+    "740 208 209" => Some(Deeper)
+    "768 769 810" => Some(Deeper)
+    "780 781 804" => Some(Deeper)
+    "794 795 800" => Some(Deeper)
+    "816 817 846" => Some(Deeper)
+    "817 818 835" => Some(Deeper)
+    "817 840 841" => Some(Deeper)
+    "818 819 820" => Some(Deeper)
+    "846 847 848" => Some(Deeper)
+    "861 866 867" => Some(Deeper)
+    "870 871 378" => Some(Deeper)
+    "871 42 595" => Some(Deeper)
+    "886 6 7" => Some(Deeper)
+    "895 896 970" => Some(Deeper)
+    "9 634 635" => Some(Deeper)
+    "903 904 906" => Some(Deeper)
+    "907 908 909" => Some(Deeper)
+    "944 945 946" => Some(Deeper)
+    "958 926 930" => Some(Deeper)
+    "958 934 942" => Some(Deeper)
+    "973 974 958" => Some(Deeper)
+    "974 958 968" => Some(Deeper)
+    "208 558 559 204" => Some(Deeper)
+    "223 224 459 465" => Some(Deeper)
+    "223 524 526 530" => Some(Deeper)
+    "228 229 451 453" => Some(Deeper)
+    "260 261 262 275" => Some(Deeper)
+    "285 286 287 295" => Some(Deeper)
+    "409 309 310 320" => Some(Deeper)
+    "42 43 44 589" => Some(Deeper)
+    "42 595 597 598" => Some(Deeper)
+    "42 600 601 604" => Some(Deeper)
+    "482 483 505 522" => Some(Deeper)
+    "483 484 495 497" => Some(Deeper)
+    "559 560 561 570" => Some(Deeper)
+    "6 9 634 635" => Some(Deeper)
+    "649 650 651 688" => Some(Deeper)
+    "707 708 695 696" => Some(Deeper)
+    "707 708 709 710" => Some(Deeper)
+    "724 768 769 810" => Some(Deeper)
+    "740 72 74 136" => Some(Deeper)
+    "748 201 202 204" => Some(Deeper)
+    "779 780 781 804" => Some(Deeper)
+    "781 794 795 800" => Some(Deeper)
+    "815 816 817 846" => Some(Deeper)
+    "816 817 818 835" => Some(Deeper)
+    "816 817 840 841" => Some(Deeper)
+    "817 818 819 820" => Some(Deeper)
+    "817 846 847 848" => Some(Deeper)
+    "860 861 866 867" => Some(Deeper)
+    "866 740 208 209" => Some(Deeper)
+    "869 870 871 378" => Some(Deeper)
+    "870 871 42 595" => Some(Deeper)
+    "871 13 14 16" => Some(Deeper)
+    "871 18 19 20" => Some(Deeper)
+    "871 223 224 226" => Some(Deeper)
+    "871 223 480 481" => Some(Deeper)
+    "871 223 535 536" => Some(Deeper)
+    "871 223 549 550" => Some(Deeper)
+    "871 347 348 361" => Some(Deeper)
+    "878 886 6 7" => Some(Deeper)
+    "934 944 945 946" => Some(Deeper)
+    "958 907 908 909" => Some(Deeper)
+    "972 973 974 958" => Some(Deeper)
+    "973 903 904 906" => Some(Deeper)
+    "973 974 958 968" => Some(Deeper)
+    "974 958 926 930" => Some(Deeper)
+    "974 958 934 942" => Some(Deeper)
+    "981 416 417 440" => Some(Deeper)
+    "227 228 229 451 453" => Some(Deeper)
+    "283 285 286 287 295" => Some(Deeper)
+    "408 409 309 310 320" => Some(Deeper)
+    "481 482 483 505 522" => Some(Deeper)
+    "482 483 484 495 497" => Some(Deeper)
+    "558 559 560 561 570" => Some(Deeper)
+    "706 707 708 695 696" => Some(Deeper)
+    "706 707 708 709 710" => Some(Deeper)
+    "724 860 861 866 867" => Some(Deeper)
+    "724 869 870 871 378" => Some(Deeper)
+    "740 208 558 559 204" => Some(Deeper)
+    "747 748 201 202 204" => Some(Deeper)
+    "777 779 780 781 804" => Some(Deeper)
+    "780 781 794 795 800" => Some(Deeper)
+    "814 815 816 817 846" => Some(Deeper)
+    "815 816 817 818 835" => Some(Deeper)
+    "815 816 817 840 841" => Some(Deeper)
+    "816 817 818 819 820" => Some(Deeper)
+    "816 817 846 847 848" => Some(Deeper)
+    "861 866 740 208 209" => Some(Deeper)
+    "866 740 72 74 136" => Some(Deeper)
+    "869 870 871 42 595" => Some(Deeper)
+    "870 871 13 14 16" => Some(Deeper)
+    "870 871 18 19 20" => Some(Deeper)
+    "870 871 223 224 226" => Some(Deeper)
+    "870 871 223 480 481" => Some(Deeper)
+    "870 871 223 535 536" => Some(Deeper)
+    "870 871 223 549 550" => Some(Deeper)
+    "870 871 347 348 361" => Some(Deeper)
+    "871 223 224 459 465" => Some(Deeper)
+    "871 223 524 526 530" => Some(Deeper)
+    "871 260 261 262 275" => Some(Deeper)
+    "871 42 43 44 589" => Some(Deeper)
+    "871 42 595 597 598" => Some(Deeper)
+    "871 42 600 601 604" => Some(Deeper)
+    "886 6 9 634 635" => Some(Deeper)
+    "958 934 944 945 946" => Some(Deeper)
+    "972 973 903 904 906" => Some(Deeper)
+    "972 973 974 958 968" => Some(Deeper)
+    "973 974 958 926 930" => Some(Deeper)
+    "973 974 958 934 942" => Some(Deeper)
+    "974 958 907 908 909" => Some(Deeper)
+    "980 981 416 417 440" => Some(Deeper)
+    "208 558 559 560 561 570" => Some(Deeper)
+    "226 227 228 229 451 453" => Some(Deeper)
+    "282 283 285 286 287 295" => Some(Deeper)
+    "480 481 482 483 505 522" => Some(Deeper)
+    "481 482 483 484 495 497" => Some(Deeper)
+    "651 706 707 708 709 710" => Some(Deeper)
+    "724 706 707 708 695 696" => Some(Deeper)
+    "724 706 707 708 709 710" => Some(Deeper)
+    "724 814 815 816 817 846" => Some(Deeper)
+    "724 869 870 871 42 595" => Some(Deeper)
+    "746 747 748 201 202 204" => Some(Deeper)
+    "769 777 779 780 781 804" => Some(Deeper)
+    "779 780 781 794 795 800" => Some(Deeper)
+    "814 815 816 817 818 835" => Some(Deeper)
+    "814 815 816 817 840 841" => Some(Deeper)
+    "815 816 817 818 819 820" => Some(Deeper)
+    "815 816 817 846 847 848" => Some(Deeper)
+    "860 861 866 740 208 209" => Some(Deeper)
+    "861 866 740 72 74 136" => Some(Deeper)
+    "866 740 208 558 559 204" => Some(Deeper)
+    "869 870 871 13 14 16" => Some(Deeper)
+    "869 870 871 18 19 20" => Some(Deeper)
+    "869 870 871 223 224 226" => Some(Deeper)
+    "869 870 871 223 480 481" => Some(Deeper)
+    "869 870 871 223 535 536" => Some(Deeper)
+    "869 870 871 223 549 550" => Some(Deeper)
+    "869 870 871 347 348 361" => Some(Deeper)
+    "870 871 223 224 459 465" => Some(Deeper)
+    "870 871 223 524 526 530" => Some(Deeper)
+    "870 871 260 261 262 275" => Some(Deeper)
+    "870 871 42 43 44 589" => Some(Deeper)
+    "870 871 42 595 597 598" => Some(Deeper)
+    "870 871 42 600 601 604" => Some(Deeper)
+    "871 408 409 309 310 320" => Some(Deeper)
+    "878 886 6 9 634 635" => Some(Deeper)
+    "886 980 981 416 417 440" => Some(Deeper)
+    "972 973 974 958 926 930" => Some(Deeper)
+    "972 973 974 958 934 942" => Some(Deeper)
+    "973 974 958 907 908 909" => Some(Deeper)
+    "974 958 934 944 945 946" => Some(Deeper)
+    "223 480 481 482 483 505 522" => Some(Deeper)
+    "224 226 227 228 229 451 453" => Some(Deeper)
+    "281 282 283 285 286 287 295" => Some(Deeper)
+    "480 481 482 483 484 495 497" => Some(Deeper)
+    "650 651 706 707 708 709 710" => Some(Deeper)
+    "724 746 747 748 201 202 204" => Some(Deeper)
+    "724 814 815 816 817 818 835" => Some(Deeper)
+    "724 814 815 816 817 840 841" => Some(Deeper)
+    "724 860 861 866 740 208 209" => Some(Deeper)
+    "724 869 870 871 13 14 16" => Some(Deeper)
+    "724 869 870 871 18 19 20" => Some(Deeper)
+    "724 869 870 871 223 224 226" => Some(Deeper)
+    "724 869 870 871 223 480 481" => Some(Deeper)
+    "724 869 870 871 223 535 536" => Some(Deeper)
+    "724 869 870 871 223 549 550" => Some(Deeper)
+    "724 869 870 871 347 348 361" => Some(Deeper)
+    "740 208 558 559 560 561 570" => Some(Deeper)
+    "768 769 777 779 780 781 804" => Some(Deeper)
+    "777 779 780 781 794 795 800" => Some(Deeper)
+    "814 815 816 817 818 819 820" => Some(Deeper)
+    "814 815 816 817 846 847 848" => Some(Deeper)
+    "860 861 866 740 72 74 136" => Some(Deeper)
+    "861 866 740 208 558 559 204" => Some(Deeper)
+    "869 870 871 223 224 459 465" => Some(Deeper)
+    "869 870 871 223 524 526 530" => Some(Deeper)
+    "869 870 871 260 261 262 275" => Some(Deeper)
+    "869 870 871 42 43 44 589" => Some(Deeper)
+    "869 870 871 42 595 597 598" => Some(Deeper)
+    "869 870 871 42 600 601 604" => Some(Deeper)
+    "870 871 408 409 309 310 320" => Some(Deeper)
+    "878 886 980 981 416 417 440" => Some(Deeper)
+    "972 973 974 958 907 908 909" => Some(Deeper)
+    "973 974 958 934 944 945 946" => Some(Deeper)
+    "223 224 226 227 228 229 451 453" => Some(Deeper)
+    "223 480 481 482 483 484 495 497" => Some(Deeper)
+    "649 650 651 706 707 708 709 710" => Some(Deeper)
+    "724 768 769 777 779 780 781 804" => Some(Deeper)
+    "724 814 815 816 817 818 819 820" => Some(Deeper)
+    "724 814 815 816 817 846 847 848" => Some(Deeper)
+    "724 860 861 866 740 72 74 136" => Some(Deeper)
+    "724 869 870 871 223 224 459 465" => Some(Deeper)
+    "724 869 870 871 223 524 526 530" => Some(Deeper)
+    "724 869 870 871 260 261 262 275" => Some(Deeper)
+    "724 869 870 871 42 43 44 589" => Some(Deeper)
+    "724 869 870 871 42 595 597 598" => Some(Deeper)
+    "724 869 870 871 42 600 601 604" => Some(Deeper)
+    "769 777 779 780 781 794 795 800" => Some(Deeper)
+    "860 861 866 740 208 558 559 204" => Some(Deeper)
+    "866 740 208 558 559 560 561 570" => Some(Deeper)
+    "869 870 871 408 409 309 310 320" => Some(Deeper)
+    "871 223 480 481 482 483 505 522" => Some(Deeper)
+    "871 281 282 283 285 286 287 295" => Some(Deeper)
+    "972 973 974 958 934 944 945 946" => Some(Deeper)
+    "724 860 861 866 740 208 558 559 204" => Some(Deeper)
+    "724 869 870 871 408 409 309 310 320" => Some(Deeper)
+    "768 769 777 779 780 781 794 795 800" => Some(Deeper)
+    "861 866 740 208 558 559 560 561 570" => Some(Deeper)
+    "870 871 223 480 481 482 483 505 522" => Some(Deeper)
+    "870 871 281 282 283 285 286 287 295" => Some(Deeper)
+    "871 223 224 226 227 228 229 451 453" => Some(Deeper)
+    "871 223 480 481 482 483 484 495 497" => Some(Deeper)
+    "724 768 769 777 779 780 781 794 795 800" => Some(Deeper)
+    "860 861 866 740 208 558 559 560 561 570" => Some(Deeper)
+    "869 870 871 223 480 481 482 483 505 522" => Some(Deeper)
+    "869 870 871 281 282 283 285 286 287 295" => Some(Deeper)
+    "870 871 223 224 226 227 228 229 451 453" => Some(Deeper)
+    "870 871 223 480 481 482 483 484 495 497" => Some(Deeper)
+    "724 860 861 866 740 208 558 559 560 561 570" => Some(Deeper)
+    "724 869 870 871 223 480 481 482 483 505 522" => Some(Deeper)
+    "724 869 870 871 281 282 283 285 286 287 295" => Some(Deeper)
+    "869 870 871 223 224 226 227 228 229 451 453" => Some(Deeper)
+    "869 870 871 223 480 481 482 483 484 495 497" => Some(Deeper)
+    "724 869 870 871 223 224 226 227 228 229 451 453" => Some(Deeper)
+    "724 869 870 871 223 480 481 482 483 484 495 497" => Some(Deeper)
     _ => None
   }
 }

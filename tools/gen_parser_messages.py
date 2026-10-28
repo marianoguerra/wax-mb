@@ -124,7 +124,7 @@ def entries():
 
 
 def states_of(sources: list[str]) -> list[tuple | None]:
-    """(state, stack, index, count, signature) per source, via tools/errstate.
+    """(state, stack, index, count, signature, reduced) per source, via tools/errstate.
 
     errstate prints more columns than this needs (the per-cell spans and the
     resolved label positions, for diagnosing by hand); the rest are ignored.
@@ -143,9 +143,18 @@ def states_of(sources: list[str]) -> list[tuple | None]:
         if r == "-":
             parsed.append(None)
             continue
-        state, stack, idx, count, signature = r.split("\t")[:5]
+        cols = r.split("\t")
+        state, stack, idx, count, signature = cols[:5]
+        reduced = None if cols[8] == "-" else [int(s) for s in cols[8].split()]
         parsed.append(
-            (int(state), [int(s) for s in stack.split()], int(idx), int(count), signature)
+            (
+                int(state),
+                [int(s) for s in stack.split()],
+                int(idx),
+                int(count),
+                signature,
+                reduced,
+            )
         )
     return parsed
 
@@ -211,11 +220,12 @@ def main():
 
     parsed_fine = misplaced = 0
     items = []
+    reduced_items = []
     for e, r in zip(es, results):
         if r is None:
             parsed_fine += 1
             continue
-        _state, stack, idx, _count, signature = r
+        _state, stack, idx, _count, signature, reduced = r
         # The sentence's last token is the offending one by construction, so
         # anything else means the source we wrote is not that sentence.
         if idx != len([t for t in e["sentence"] if lexeme(t) != ""]) - 1:
@@ -223,11 +233,30 @@ def main():
             continue
         subject, opener = labels_of(e["markers"])
         items.append((stack, (signature, e["message"], subject, opener)))
+        if reduced is not None:
+            reduced_items.append(
+                (reduced, (signature, e["message"], subject, opener))
+            )
 
     table: dict[str, str | None] = {}
     dropped = build(items, 1, table)
     resolved = {k: v for k, v in table.items() if v is not None}
-    max_depth = max(len(k.split()) for k in table) if table else 0
+    # The same messages keyed by the stack each sentence REDUCES to, consulted
+    # only when the failing stack misses. Menhir names the state it reaches
+    # after the reductions the offending token cannot stop; MoonYacc fails
+    # before making them, so `x y` and `'c' y` fail in different states here
+    # but reduce to the same one -- the one Menhir reports from.
+    # Only the END of the chain: keying every step was tried and is worse --
+    # Menhir stops short in some contexts (a `br_if` operand) and not in
+    # others (a statement), and a one-step key then borrows the wrong one.
+    reduced_table: dict[str, str | None] = {}
+    reduced_dropped = build(reduced_items, 1, reduced_table)
+    reduced_resolved = {k: v for k, v in reduced_table.items() if v is not None}
+    max_depth = (
+        max(len(k.split()) for k in [*table, *reduced_table])
+        if table
+        else 0
+    )
     shallow = sum(1 for k in resolved if len(k.split()) == 1)
 
     print(f"entries:            {len(es)}")
@@ -235,22 +264,27 @@ def main():
     print(f"  wrong token:      {misplaced}")
     print(f"  dropped:          {dropped} (a key two messages claim, no deeper frame)")
     print(f"  keys:             {len(resolved)} ({shallow} on one frame)")
+    print(f"  reduced keys:     {len(reduced_resolved)} ({reduced_dropped} dropped)")
     print(f"  deepest key:      {max_depth} frames")
 
-    arms = []
-    for key in sorted(table, key=lambda k: (len(k.split()), k)):
-        v = table[key]
-        arms.append(
-            f'    {mbt_string(key)} => Some('
-            + (
-                "Deeper"
-                if v is None
-                else "Msg({signature: %s, text: %s, subject: %s, opener: %s})"
-                % tuple(mbt_string(x) for x in v)
+    def arms_of(t):
+        arms = []
+        for key in sorted(t, key=lambda k: (len(k.split()), k)):
+            v = t[key]
+            arms.append(
+                f'    {mbt_string(key)} => Some('
+                + (
+                    "Deeper"
+                    if v is None
+                    else "Msg({signature: %s, text: %s, subject: %s, opener: %s})"
+                    % tuple(mbt_string(x) for x in v)
+                )
+                + ")"
             )
-            + ")"
-        )
-    body = "\n".join(arms)
+        return "\n".join(arms)
+
+    body = arms_of(table)
+    reduced_body = arms_of(reduced_table)
     OUT.write_text(
         f'''// The reference's syntax messages, keyed by OUR parser stack.
 //
@@ -274,8 +308,11 @@ def main():
 // extend the key by one more frame.
 //
 // {len(resolved)} keys from the golden's {len(es)} sentences, {dropped} dropped
-// as unresolvable. A miss falls back to the locally rendered `Expecting ...`
-// list, which is always correct if less specific.
+// as unresolvable. A miss retries with the stack the failure REDUCES to, in a
+// second table built the same way ({len(reduced_resolved)} keys, {reduced_dropped} dropped): Menhir
+// reports from the state after those reductions, MoonYacc fails before them.
+// A miss in both falls back to the locally rendered `Expecting ...` list,
+// which is always correct if less specific.
 
 ///|
 /// One recorded message.
@@ -300,11 +337,25 @@ priv enum Entry {{
 }}
 
 ///|
-/// The reference's message for a stack, bottom first, or None.
-///
+/// The reference's message for a failing stack, bottom first, or None.
+fn reference_message(stack : ArrayView[Int], signature : String) -> Message? {{
+  lookup(stack, signature, entry_of)
+}}
+
+///|
+/// The reference's message for the stack a failure reduces to, or None.
+fn reduced_message(stack : ArrayView[Int], signature : String) -> Message? {{
+  lookup(stack, signature, entry_of_reduced)
+}}
+
+///|
 /// Walks from the top frame down, deepening only where the table says the
 /// shallower key stands for more than one message.
-fn reference_message(stack : ArrayView[Int], signature : String) -> Message? {{
+fn lookup(
+  stack : ArrayView[Int],
+  signature : String,
+  entry_of : (String) -> Entry?,
+) -> Message? {{
   let key = StringBuilder()
   for depth = 1; depth <= stack.length() && depth <= {max_depth}; depth = depth + 1 {{
     // The key reads bottom-up within the suffix, as the generator writes it.
@@ -337,6 +388,14 @@ fn reference_message(stack : ArrayView[Int], signature : String) -> Message? {{
 fn entry_of(key : String) -> Entry? {{
   match key {{
 {body}
+    _ => None
+  }}
+}}
+
+///|
+fn entry_of_reduced(key : String) -> Entry? {{
+  match key {{
+{reduced_body}
     _ => None
   }}
 }}

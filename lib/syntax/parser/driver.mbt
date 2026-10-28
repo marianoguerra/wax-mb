@@ -188,7 +188,20 @@ fn syntax_report(
   loc : @basic.Location,
   expected : Array[TokenKind],
 ) -> @basic.Report {
-  match reference_message(st.stack[:], expected_signature(expected)) {
+  // A stack the table has no message for may still REDUCE to one it has: `x y`
+  // fails here right after the identifier, where Menhir has already reduced it
+  // to a complete statement. The failing stack keeps precedence, so this only
+  // ever fills a miss.
+  let signature = expected_signature(expected)
+  let found = match reference_message(st.stack[:], signature) {
+    Some(m) => Some(m)
+    None =>
+      match st.reduced_stack() {
+        Some(stack) => reduced_message(stack[:], signature)
+        None => None
+      }
+  }
+  match found {
     None => @basic.Report::error(loc, expecting_message(expected))
     Some(m) => {
       let report = @basic.Report::error(loc, m.text)

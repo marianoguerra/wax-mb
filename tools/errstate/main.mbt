@@ -6,6 +6,7 @@
 /// pay a process launch for each. One line of source in, one line out:
 ///
 ///     STATE TAB stack TAB token-index TAB token-count TAB expected-signature
+///       TAB spans TAB subject TAB opener TAB reduced-stack
 ///     -                                    -- the line parses, or fails to lex
 ///
 /// The two indices are how the caller checks that the source it wrote really
@@ -79,12 +80,16 @@ fn main {
           Some((a, b)) => "\{a.cnum}-\{b.cnum}"
           None => "-"
         }
+        let reduced = match st.reduced_stack() {
+          Some(r) => r.map(s => s.to_string()).join(" ")
+          None => "-"
+        }
         let spans = []
         for sp in st.spans {
           spans.push("\{sp.0.cnum}-\{sp.1.cnum}")
         }
         println(
-          "\{st.state}\t\{stack.join(" ")}\t\{st.token_index}\t\{lexed.tokens.length()}\t\{signature}\t\{spans.join(" ")}\t\{subject}\t\{opener}",
+          "\{st.state}\t\{stack.join(" ")}\t\{st.token_index}\t\{lexed.tokens.length()}\t\{signature}\t\{spans.join(" ")}\t\{subject}\t\{opener}\t\{reduced}",
         )
       }
     }

@@ -169,9 +169,29 @@ pub fn error_state(tokens : Array[(Token, Position, Position)]) -> ErrorState? {
 /// empty -- underlining nothing is noise, which is the rule the reference
 /// applies to an epsilon reduction too.
 pub fn ErrorState::subject_span(self : Self) -> (Position, Position)? {
+  let chain = self.reduction_chain()
+  guard chain.last() is Some((_, spans)) else { return None }
+  let span = spans[spans.length() - 1]
+  if span.0.cnum >= span.1.cnum {
+    None
+  } else {
+    Some(span)
+  }
+}
+
+///|
+/// The stacks the unambiguous reductions from the failure pass through, each
+/// with its spans, nearest first. The failing stack itself is not included.
+///
+/// This is Menhir's move at an error: it performs the reductions the offending
+/// token cannot stop before it reports, so the state it names is the one at the
+/// end of this chain, not the one the shift failed in. See `subject_span`.
+fn ErrorState::reduction_chain(
+  self : Self,
+) -> Array[(Array[Int32], Array[(Position, Position)])] {
   let stack = self.stack.copy()
   let spans = self.spans.copy()
-  let mut reduced = false
+  let chain = []
   while true {
     guard sole_reduction(stack[stack.length() - 1]) is Some((count, symbol)) else {
       break
@@ -195,15 +215,20 @@ pub fn ErrorState::subject_span(self : Self) -> (Position, Position)? {
     }
     stack.push(next)
     spans.push(span)
-    reduced = true
+    chain.push((stack.copy(), spans.copy()))
   }
-  guard reduced else { return None }
-  let span = spans[spans.length() - 1]
-  if span.0.cnum >= span.1.cnum {
-    None
-  } else {
-    Some(span)
-  }
+  chain
+}
+
+///|
+/// The stack at the end of `reduction_chain`, or `None` when the failing state
+/// reduces nothing.
+///
+/// The second key into the message table: the reference names the state it
+/// reaches after the reductions it performs at the error, so a failing stack
+/// it has no sentence for may still reduce to one it has.
+pub fn ErrorState::reduced_stack(self : Self) -> Array[Int32]? {
+  self.reduction_chain().last().map(c => c.0)
 }
 
 ///|
