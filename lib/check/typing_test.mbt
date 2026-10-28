@@ -318,6 +318,16 @@ test "unknown, error and the bottom reference" {
   let unk = @infer.Cell::make(@infer.InferredType::Unknown)
   let _ = @typing.subtype(info, unk, @infer.valtype_cell(@infer.i32_valtype))
   inspect(@infer.is_unknown_or_error(unk), content="false")
+  // An error EXPECTED -- a declared type that failed to resolve -- accepts
+  // whatever reaches it, for the same reason.
+  inspect(
+    @typing.subtype(
+      info,
+      @infer.valtype_cell(@infer.i32_valtype),
+      @infer.Cell::make(@infer.InferredType::Error),
+    ),
+    content="true",
+  )
   // The bottom reference is a subtype of every reference and of nothing else.
   inspect(check(UnknownRef, anyref), content="&?any")
   inspect(check(UnknownRef, @infer.i32_valtype), content="rejected")

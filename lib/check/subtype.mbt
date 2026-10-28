@@ -181,7 +181,14 @@ pub fn subtype(
       }
       true
     }
-    (_, Unknown | Error | UnknownRef) =>
+    // A declared type that failed to resolve -- a function result naming an
+    // unbound type or a value-type alias behind `&` -- is `Error` poison,
+    // already reported where it was written. Whatever reaches it is accepted,
+    // as an `Error` value is accepted on the left. The reference asserts here
+    // instead, which its CLI never reaches because it exits at the first
+    // error; its LSP, which does not, fails the same way.
+    (_, Error) => true
+    (_, Unknown | UnknownRef) =>
       abort("an unknown type cannot be an expected type")
     (UnknownRef, _) => false
   }

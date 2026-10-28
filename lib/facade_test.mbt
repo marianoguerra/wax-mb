@@ -94,3 +94,28 @@ test "a rejected module reports rather than emits" {
   let _ = session.check(m)
   assert_true(@compile.rejected(session.reports()))
 }
+
+///|
+test "a result type that does not resolve is reported, not raised" {
+  // An alias names a value type, so `&js_string` is no heap type, and the
+  // result of `g` recovers as poison. Its body is still checked, and what it
+  // returns must be accepted against the poison rather than abort.
+  let src =
+    #|type js_string = extern;
+    #|fn f(x: &js_string) -> &extern { return x; }
+    #|fn g(x: &extern) -> &js_string { return x; }
+    #|fn h() -> (i32, &nosuch) { return (1, null); }
+    #|
+  match @wax.compile_string(src) {
+    Ok(_) => abort("expected it to be rejected")
+    Err(diagnostics) =>
+      // Where they are reported: both uses of the alias, and the unbound
+      // name. None of them is a crash.
+      inspect(
+        diagnostics
+        .map(d => "\{d.loc.start.lnum}:\{d.loc.start.column1()}")
+        .join(" "),
+        content="2:10 3:22 4:18 1:18",
+      )
+  }
+}
