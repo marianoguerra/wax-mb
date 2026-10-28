@@ -8,6 +8,55 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## [0.4.1] — 2026-10-28
+
+Covers `wax` and `wax-cli`. Bug fixes, and syntax errors worded like the
+reference's in many more places. The one API addition is a method.
+
+### Added
+
+- `ErrorState::reduced_stack` in `syntax/parser`: the stack the reference
+  reports a syntax error from, after the reductions it makes at the error.
+
+### Fixed
+
+- **The checker aborted on a function whose result type does not resolve.**
+  A result naming an unbound type (`-> &nosuch`), or a value-type alias
+  behind `&` (`type s = extern; fn g(x: &extern) -> &s { return x; }`), is
+  reported at the type, and the body is still checked; returning anything
+  then panicked with "an unknown type cannot be an expected type". It is now
+  accepted against the already-reported type, as an already-reported value
+  is. The reference has the same assertion (its command line stops at the
+  first error and never reaches it; its language server does).
+- **Syntax errors fell back to the bare "Expecting ..." list where the
+  reference says what it assumed complete.** The reference's parser makes
+  the reductions its grammar declares `%on_error_reduce` before it reports,
+  and names the state they lead to; ours failed earlier, in a state its
+  message table had no entry for. Those reductions are now replayed, for the
+  message and for the label on the construct it names, so `x y;`,
+  `return_call g();`, `#[likely] if ...`, `[1, 2, 3 }`, an unclosed `{` and
+  an `if` condition followed by a stray token read as the reference's do.
+  Across the corpus, messages that differ from the reference's go from 52 to
+  20.
+- A malformed string or comment is reported as a zero-width point where no
+  lexer rule applied -- the backslash of a bad escape, the control character,
+  the end of input -- like the reference, rather than spanning from the
+  opening quote or `/*`, onto the next line when the character was a newline.
+
+## [wap 0.4.1] — 2026-10-28
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.4.1`, for its fixes. No API or behaviour
+  change of its own.
+
+## [was 0.2.1] — 2026-10-28
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.4.1`, for the same reason and with the same
+  scope as `wap 0.4.1`.
+
 ## [0.4.0] — 2026-10-23
 
 Covers `wax` and `wax-cli`. Tracks the reference implementation from `209f43a`

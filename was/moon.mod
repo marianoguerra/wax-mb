@@ -6,12 +6,12 @@
 // module runs, and what is left is meaning.
 name = "marianoguerra/was"
 
-version = "0.2.0"
+version = "0.2.1"
 
 import {
   "marianoguerra/error-report@0.1.1",
   "marianoguerra/shrubbery@0.1.2",
-  "marianoguerra/wax@0.4.0",
+  "marianoguerra/wax@0.4.1",
 }
 
 readme = "README.md"
