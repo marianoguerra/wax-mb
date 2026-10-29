@@ -8,6 +8,35 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## [0.4.2] — 2026-10-29
+
+Covers `wax` and `wax-cli`. One checker fix; no API changes.
+
+### Fixed
+
+- **A float-only operator on two integers passed the checker.** `a > b`,
+  `a <= b` or `a / b` on two i32s (or two i64s) -- the unsuffixed comparisons
+  and division are the float ones -- was accepted, and the module then failed
+  to lower with "operator at this type not lowered yet" and no diagnostic.
+  The reverse, `&`, `/s` or `<s` on two floats, slipped through the same way.
+  Both are now reported at the operator, as the reference does: "This operator
+  cannot be applied to operands of types 'i32' and 'i32'." Use `>s`, `/s` and
+  the other suffixed forms on integers.
+
+## [wap 0.4.2] — 2026-10-29
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.4.2`, for its fix. No API or behaviour
+  change of its own.
+
+## [was 0.2.2] — 2026-10-29
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.4.2`, for the same reason and with the same
+  scope as `wap 0.4.2`.
+
 ## [0.4.1] — 2026-10-28
 
 Covers `wax` and `wax-cli`. Bug fixes, and syntax errors worded like the
