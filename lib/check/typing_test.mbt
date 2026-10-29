@@ -1546,6 +1546,8 @@ test "integer operators" {
   inspect(op(i32, f64), content="rejected")
   inspect(op(Float, Number), content="rejected")
   inspect(op(i32, i64), content="rejected")
+  // The same width twice is not enough: it has to be an integer one.
+  inspect(op(f64, f64), content="rejected")
 }
 
 ///|
@@ -1577,6 +1579,11 @@ test "float operators" {
   inspect(op(i32, Number), content="rejected")
   inspect(op(Int, Number), content="rejected")
   inspect(op(f32, f64), content="rejected")
+  // The same width twice is not enough either. Two i32s are what an
+  // unsuffixed `>` or `/` most often meets, and accepting them sent the module
+  // on to a lowering with no float instruction to emit.
+  inspect(op(f64, f64), content="f64 f64")
+  inspect(op(i32, i32), content="rejected")
 }
 
 ///|

@@ -26,6 +26,35 @@ fn same_concrete(a : @infer.InferredType, b : @infer.InferredType) -> Bool {
 }
 
 ///|
+/// Are both operands the same concrete INTEGER type?
+///
+/// The integer-only rule needs this rather than `same_concrete`: two f32s are
+/// the same concrete type, but `&` on them is still a mismatch.
+fn same_concrete_int(a : @infer.InferredType, b : @infer.InferredType) -> Bool {
+  match (a, b) {
+    (Valtype({ internal: I32, .. }), Valtype({ internal: I32, .. }))
+    | (Valtype({ internal: I64, .. }), Valtype({ internal: I64, .. })) => true
+    _ => false
+  }
+}
+
+///|
+/// Are both operands the same concrete FLOAT type?
+///
+/// The float-only counterpart of `same_concrete_int`: two i32s compared with
+/// the unsuffixed `>` are a mismatch, not a float comparison.
+fn same_concrete_float(
+  a : @infer.InferredType,
+  b : @infer.InferredType,
+) -> Bool {
+  match (a, b) {
+    (Valtype({ internal: F32, .. }), Valtype({ internal: F32, .. }))
+    | (Valtype({ internal: F64, .. }), Valtype({ internal: F64, .. })) => true
+    _ => false
+  }
+}
+
+///|
 /// Check and unify the operands of an INTEGER-only operator.
 ///
 /// Two fully flexible operands become `Int` rather than staying `Number`: the
@@ -43,7 +72,7 @@ pub fn check_int_bin_op(
 ) -> @infer.Cell[@infer.InferredType] {
   let a = typ1.get()
   let b = typ2.get()
-  if same_concrete(a, b) {
+  if same_concrete_int(a, b) {
     typ1.merge(typ2, a)
     return typ1
   }
@@ -76,7 +105,7 @@ pub fn check_float_bin_op(
 ) -> @infer.Cell[@infer.InferredType] {
   let a = typ1.get()
   let b = typ2.get()
-  if same_concrete(a, b) {
+  if same_concrete_float(a, b) {
     typ1.merge(typ2, a)
     return typ1
   }
