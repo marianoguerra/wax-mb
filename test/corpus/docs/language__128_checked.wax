@@ -1,31 +1,6 @@
-#[if(portable_int)]
-{
-    type nativeint = i64;
-}
-#[else]
-{
-    type nativeint = i32;
-}
+type word = i64;
+type cell = { value: mut word };
 
-import "nativeint" {
-    fn Nativeint_val(v: &eq) -> nativeint;
-    fn caml_copy_nativeint(n: nativeint) -> &eq;
-}
-
-fn copy(v: &eq) -> &eq {
-    let n = Nativeint_val(v);
-    return caml_copy_nativeint(n);
-}
-
-fn succ(n: nativeint) -> nativeint {
-    let r: nativeint;
-    #[if(portable_int)]
-    {
-        r = n + 1;
-    }
-    #[else]
-    {
-        r = n + 1;
-    }
-    return r;
+fn get(c: &cell) -> word {
+    return c.value;
 }

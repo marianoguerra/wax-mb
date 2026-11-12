@@ -1,10 +1,10 @@
 {
   "_comment": "The reference's expected behaviour for every corpus file. Committed, so `waxdiff.py run` needs neither the reference binary nor the wax/ checkout. A diff here is either your behaviour change or upstream's -- never edit it to make a test pass.",
-  "reference": "658455b15a5585a5f31c204c3bb29ef0d9d1354c5511cea677dd07f7e8381512",
+  "reference": "d8d68496fc2a0787816c5d9a66b9987aa29e88a43f610bd494aef1ecf4886830",
   "counts": {
-    "syntax-bad": 132,
-    "compiles-clean": 1534,
-    "type-bad": 344
+    "syntax-bad": 133,
+    "compiles-clean": 1538,
+    "type-bad": 384
   },
   "files": {
     "cram/all-errors-semantic-raise__module-else.wax": {
@@ -289,6 +289,12 @@
       "diag_code": 0,
       "wasm_sha256": null
     },
+    "cram/cond-dead-code__dead.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
     "cram/cond-define__comments.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
@@ -308,6 +314,12 @@
       "wasm_sha256": null
     },
     "cram/cond-field-position__moved.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/cond-field-position__same-swapped.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
@@ -415,6 +427,12 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
+    "cram/descriptor-types__inexact-alloc.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
     "cram/descriptor-types__not-reciprocal.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
@@ -463,6 +481,12 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
+    "cram/divergent-tail-block__tails.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "8a96801776e64f0ff054cbeb8d37f38a641a0fc616d614b0e37d737babcc2f1f"
+    },
     "cram/duplicate-diagnostic-chains__br_table.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
@@ -493,6 +517,12 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
+    "cram/duplicate-diagnostic-chains__multi_value.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
     "cram/duplicate-diagnostic-chains__simd.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
@@ -500,6 +530,12 @@
       "wasm_sha256": null
     },
     "cram/duplicate-diagnostic-chains__test_chain.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "cram/duplicate-diagnostic-chains__test_unbound.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
@@ -668,6 +704,12 @@
       "wasm_sha256": null
     },
     "cram/guarded-export__guarded.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/guarded-export__onefield.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
@@ -1147,6 +1189,18 @@
       "diag_code": 0,
       "wasm_sha256": "4bd14a13937fab7dbec87bbd6b32d24e11bb9571f054cd5921de15c1ea9cac29"
     },
+    "cram/subtype-depth__deep.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "cram/subtype-depth__ok.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "32a41d0697a9786c64e0f21786ab9576aa9f7051aa937a0e0caf07a8411c7a6d"
+    },
     "cram/suspend-bind-operand-inferred-block__bind.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
@@ -1213,7 +1267,19 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
+    "cram/type-alias__body.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
     "cram/type-alias__cast-branches.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__cast-source.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
@@ -1231,6 +1297,54 @@
       "diag_code": 0,
       "wasm_sha256": null
     },
+    "cram/type-alias__decl-annotated.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__decl-block.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__decl-global.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__decl-local.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__decl-nested.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__decl-select-ascribed.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__decl-select.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__decl-supertype.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
     "cram/type-alias__discard.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
@@ -1243,7 +1357,19 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
+    "cram/type-alias__field-covariant.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
     "cram/type-alias__field-same.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__field-supertype.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
@@ -1259,6 +1385,48 @@
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__imm-array.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__imm-call-ref.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__imm-construct.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__imm-cont.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__imm-descriptor.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__imm-string.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__imm-struct.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
       "wasm_sha256": null
     },
     "cram/type-alias__inferred.wax": {
@@ -1291,6 +1459,12 @@
       "diag_code": 0,
       "wasm_sha256": null
     },
+    "cram/type-alias__literal-unaliased.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
     "cram/type-alias__literal.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
@@ -1304,6 +1478,48 @@
       "wasm_sha256": null
     },
     "cram/type-alias__null.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__op-branches.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__op-compound.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__op-convert.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__op-method.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__op-store.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__op-unaliased.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__op-unreachable.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
@@ -1345,7 +1561,19 @@
       "diag_code": 0,
       "wasm_sha256": "abdcce56c8192bf9d6d90c961f15cf4fc5ac6b2f129218fab1194d680b8d492c"
     },
+    "cram/type-alias__select-unreachable.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
     "cram/type-alias__shared.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__slots.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
@@ -1361,6 +1589,30 @@
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__switching-bind.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__switching-resume.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__switching-switch.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "cram/type-alias__switching.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
       "wasm_sha256": null
     },
     "cram/type-alias__unused.wax": {
@@ -2696,32 +2948,32 @@
       "wasm_sha256": null
     },
     "docs/language__051.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "docs/language__052.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "e9c22c95f468b780a82794d92c84c7374c5652149c2a9e0f18c2634b6775309f"
     },
-    "docs/language__052_checked.wax": {
+    "docs/language__053_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "4fb1145fdfee1ac4d42bb121db3c64e4bb1d2b98c14210b615b81055c18f1a38"
     },
-    "docs/language__053.wax": {
+    "docs/language__054.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
-    },
-    "docs/language__054.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
     "docs/language__055.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
+      "bucket": "type-bad",
+      "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
@@ -2731,106 +2983,106 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__057_checked.wax": {
+    "docs/language__057.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "docs/language__058_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "0a3ae01b9ac1878adf6e98c5e26d02c24223148365976a045d2bcbc10b34d4cd"
     },
-    "docs/language__058.wax": {
+    "docs/language__059.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__059.wax": {
+    "docs/language__060.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
-    },
-    "docs/language__060_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "a65464f70550075b82c6fc1e5d4763debd30638b7ce0f438353a6d94ec0d192b"
     },
     "docs/language__061_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "9586279c747bcd9914b92c65e18dbffb52f3ed09501bccb4bbca440b2455ec71"
+      "wasm_sha256": "a65464f70550075b82c6fc1e5d4763debd30638b7ce0f438353a6d94ec0d192b"
     },
     "docs/language__062_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "f3e20a023a611cfd33e04255165d287aba1bf46c84dd0871ad72d5888559a767"
+      "wasm_sha256": "9586279c747bcd9914b92c65e18dbffb52f3ed09501bccb4bbca440b2455ec71"
     },
     "docs/language__063_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "f3e20a023a611cfd33e04255165d287aba1bf46c84dd0871ad72d5888559a767"
+    },
+    "docs/language__064_checked.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": null
-    },
-    "docs/language__064_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "51bfadcec815259fc676d3cd94ca0b0782ce157f9a5bbb4d4aaef6b61ffbeb4e"
     },
     "docs/language__065_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
+      "wasm_sha256": "51bfadcec815259fc676d3cd94ca0b0782ce157f9a5bbb4d4aaef6b61ffbeb4e"
+    },
+    "docs/language__066_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
       "wasm_sha256": "3aafec526c09b046897ea7d158647c1309bcec4d8d9ccbaf49326be350aa4fd1"
     },
-    "docs/language__066.wax": {
+    "docs/language__067.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__067.wax": {
+    "docs/language__068.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__068.wax": {
+    "docs/language__069.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
-    },
-    "docs/language__069_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "f884eba3e50ae5483236bb3cb2233aac912c4afa62f1310237e2fca331609449"
     },
     "docs/language__070_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "0137045be6a6ea7128e17dd35a51d77f4f7b76d19e159d0f3dd4fc45424f873c"
+      "wasm_sha256": "f884eba3e50ae5483236bb3cb2233aac912c4afa62f1310237e2fca331609449"
     },
     "docs/language__071_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "0b4e6e12c88e3551503268874d251679548d82bf6578993164862256e8c13bcb"
+      "wasm_sha256": "0137045be6a6ea7128e17dd35a51d77f4f7b76d19e159d0f3dd4fc45424f873c"
     },
     "docs/language__072_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "0b4e6e12c88e3551503268874d251679548d82bf6578993164862256e8c13bcb"
+    },
+    "docs/language__073_checked.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": null
-    },
-    "docs/language__073.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
       "wasm_sha256": null
     },
     "docs/language__074.wax": {
@@ -2857,21 +3109,21 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__078_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "85915111cf4a2e95401d4401bb0d11196f372a510e017ee7c84cb093e789c3b0"
-    },
-    "docs/language__079.wax": {
+    "docs/language__078.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__080.wax": {
-      "bucket": "type-bad",
+    "docs/language__079_checked.wax": {
+      "bucket": "compiles-clean",
       "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "85915111cf4a2e95401d4401bb0d11196f372a510e017ee7c84cb093e789c3b0"
+    },
+    "docs/language__080.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
@@ -2882,22 +3134,22 @@
       "wasm_sha256": null
     },
     "docs/language__082.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 128,
+      "wasm_sha256": null
+    },
+    "docs/language__083.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__083_checked.wax": {
+    "docs/language__084_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "453663ca70cc8ea7c34a2581a37f4f22add4db2779105083aaeb14b22f10aec2"
-    },
-    "docs/language__084.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
     },
     "docs/language__085.wax": {
       "bucket": "syntax-bad",
@@ -2911,29 +3163,29 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__087_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "eaf81852b8f092204e6907456e951c955ea37e5e80f86d2956aeb895ecb6be4f"
+    "docs/language__087.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
     },
     "docs/language__088_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "52f3d1a34367445893a47a367032729a902f320698d2284388c2941f63f0ddc5"
+      "wasm_sha256": "eaf81852b8f092204e6907456e951c955ea37e5e80f86d2956aeb895ecb6be4f"
     },
     "docs/language__089_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "a24287c556b1eddaf41029c8a9be41b1c685e679dd53b65b7d7b8e07947e6a96"
+      "wasm_sha256": "52f3d1a34367445893a47a367032729a902f320698d2284388c2941f63f0ddc5"
     },
-    "docs/language__090.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
+    "docs/language__090_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "a24287c556b1eddaf41029c8a9be41b1c685e679dd53b65b7d7b8e07947e6a96"
     },
     "docs/language__091.wax": {
       "bucket": "syntax-bad",
@@ -2941,15 +3193,15 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__092_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
+    "docs/language__092.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__093.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
+    "docs/language__093_checked.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
@@ -2965,71 +3217,71 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__096_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "f8e4f331563f45473060a0c3758488cc904b0f60224c9ea539153d2bd85cfa5b"
+    "docs/language__096.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
     },
     "docs/language__097_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "173ecb32883892b78b9adf0abf0bc4e05f29fec21f0860b0071033eb73ad6036"
+      "wasm_sha256": "f8e4f331563f45473060a0c3758488cc904b0f60224c9ea539153d2bd85cfa5b"
     },
     "docs/language__098_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "2f8e029abcab19d211443d59316d89cb7031c14c67fe334f1cc9aa805df32597"
+      "wasm_sha256": "173ecb32883892b78b9adf0abf0bc4e05f29fec21f0860b0071033eb73ad6036"
     },
     "docs/language__099_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "d916d58d3d21d34e7dc5e53e10827ca8605492147bdf20bde19e6de64ddb1ec1"
+      "wasm_sha256": "2f8e029abcab19d211443d59316d89cb7031c14c67fe334f1cc9aa805df32597"
     },
     "docs/language__100_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "45766e64d342d764bcbfb5d0fa662defb873c3cd18685b9715e50e1062633991"
+      "wasm_sha256": "d916d58d3d21d34e7dc5e53e10827ca8605492147bdf20bde19e6de64ddb1ec1"
     },
     "docs/language__101_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "cb4ebe6a0cb809cf30f2720ae3a3d9ffaa3b0bf48c761b64c836bc7c952062b2"
+      "wasm_sha256": "45766e64d342d764bcbfb5d0fa662defb873c3cd18685b9715e50e1062633991"
     },
     "docs/language__102_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
+      "wasm_sha256": "cb4ebe6a0cb809cf30f2720ae3a3d9ffaa3b0bf48c761b64c836bc7c952062b2"
+    },
+    "docs/language__103_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
       "wasm_sha256": "4476f8618163f1e2fd71434ee523fe1f07ffc48cd679b3e20498d7ff890cae6e"
     },
-    "docs/language__103.wax": {
+    "docs/language__104.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__104.wax": {
+    "docs/language__105.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__105.wax": {
+    "docs/language__106.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "8095ec0e2556b7d15e585fb27ce4b7806fd98745ae2c8135d25fcfe8781a32c0"
-    },
-    "docs/language__106.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
-      "diag_code": 128,
-      "wasm_sha256": null
     },
     "docs/language__107.wax": {
       "bucket": "syntax-bad",
@@ -3049,27 +3301,27 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__110_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "dc797316cd2d09d6aa294109473e771878ee1839c7311e4e973a957f1adea981"
-    },
-    "docs/language__111_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "acc30527abc5cbb53c35105ac0bab2da6c7fc217ac433da7a84ddc4e3a4681b6"
-    },
-    "docs/language__112.wax": {
+    "docs/language__110.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__113.wax": {
-      "bucket": "type-bad",
+    "docs/language__111_checked.wax": {
+      "bucket": "compiles-clean",
       "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "dc797316cd2d09d6aa294109473e771878ee1839c7311e4e973a957f1adea981"
+    },
+    "docs/language__112_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "acc30527abc5cbb53c35105ac0bab2da6c7fc217ac433da7a84ddc4e3a4681b6"
+    },
+    "docs/language__113.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
@@ -3080,8 +3332,8 @@
       "wasm_sha256": null
     },
     "docs/language__115.wax": {
-      "bucket": "syntax-bad",
-      "reprint_code": 128,
+      "bucket": "type-bad",
+      "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
@@ -3091,77 +3343,77 @@
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__117_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "fcd66789584edf8f39f2d27b41b0aa2cc5e5b1368bed99e47e77486dbf01c5a7"
+    "docs/language__117.wax": {
+      "bucket": "syntax-bad",
+      "reprint_code": 128,
+      "diag_code": 128,
+      "wasm_sha256": null
     },
     "docs/language__118_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
+      "wasm_sha256": "fcd66789584edf8f39f2d27b41b0aa2cc5e5b1368bed99e47e77486dbf01c5a7"
+    },
+    "docs/language__119_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
       "wasm_sha256": "9b0531e34c4559e729e9ccbb2b01c3dc713475ffb9227f0ef8031a46ff260587"
     },
-    "docs/language__119.wax": {
+    "docs/language__120.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__120.wax": {
+    "docs/language__121.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
-    },
-    "docs/language__121_checked.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "d57d2ab21b1da62f917db4d8ce222ea65f1c43d986fae465d232da29c05d144d"
     },
     "docs/language__122_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "fe2503d6ebfd7c49be72ef4e4c5fb8547a1e8fb7e671d33acabf95b2bfe66c02"
+      "wasm_sha256": "d57d2ab21b1da62f917db4d8ce222ea65f1c43d986fae465d232da29c05d144d"
     },
     "docs/language__123_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
-      "wasm_sha256": "c022c48c11ed91c80f43c742380af995fe07265121fb03e08dde960cd50eb71a"
+      "wasm_sha256": "fe2503d6ebfd7c49be72ef4e4c5fb8547a1e8fb7e671d33acabf95b2bfe66c02"
     },
     "docs/language__124_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
+      "wasm_sha256": "c022c48c11ed91c80f43c742380af995fe07265121fb03e08dde960cd50eb71a"
+    },
+    "docs/language__125_checked.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
       "wasm_sha256": "db208bfa2e76a5c444b1cb2703e900c7d0a7c9284067d33d1cdd73f9fa9da7a3"
     },
-    "docs/language__125.wax": {
+    "docs/language__126.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__126.wax": {
+    "docs/language__127.wax": {
       "bucket": "syntax-bad",
       "reprint_code": 128,
       "diag_code": 128,
       "wasm_sha256": null
     },
-    "docs/language__127_checked.wax": {
+    "docs/language__128_checked.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "7655276439a3b712fc2b888fb35d7b9ac046ba84170fde172a9d3ddbd38105af"
-    },
-    "docs/language__128_checked.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": null
     },
     "docs/language__129_checked.wax": {
       "bucket": "type-bad",
@@ -3182,6 +3434,12 @@
       "wasm_sha256": null
     },
     "docs/language__132_checked.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "docs/language__133_checked.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
@@ -4231,17 +4489,17 @@
       "diag_code": 0,
       "wasm_sha256": "585bee5333c1decd0f0b1dda44bf3e53ae45687e1d6dbc292d0d03b5ae9bc111"
     },
-    "spec/wasm-test-suite__core__custom-descriptors__struct_new_desc__struct_new_desc.15.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": null
-    },
     "spec/wasm-test-suite__core__custom-descriptors__struct_new_desc__struct_new_desc.18.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "6ba7b69264594fb4fc79d062f78b728a3971a8e52e9b7d5501725cc015fe1506"
+    },
+    "spec/wasm-test-suite__core__custom-descriptors__struct_new_desc__struct_new_desc.19.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "e7727e9c77449ff22641723a7c964d804c77708880cdafb9e35f9bb8572cfca2"
     },
     "spec/wasm-test-suite__core__custom-page-sizes__custom-page-sizes-invalid__custom-page-sizes-invalid.19.wax": {
       "bucket": "compiles-clean",
@@ -8041,6 +8299,12 @@
       "diag_code": 0,
       "wasm_sha256": "013466976fbd98b6a7b27100b46fb85b61131de6daba40d07abb4554660b8f20"
     },
+    "spec/wasm-test-suite__core__unreached-invalid__unreached-invalid.103.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "8e5ff84ea7cc1d53ef696cc9175971d9d2aba1fdca8b3962f91fa46fe70c91ec"
+    },
     "spec/wasm-test-suite__core__unreached-invalid__unreached-invalid.105.wax": {
       "bucket": "compiles-clean",
       "reprint_code": 0,
@@ -8064,12 +8328,6 @@
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "b8c6260e35cb452be397536093a41f5fbaf3f12bddb87c910a1a3a29d29cfd61"
-    },
-    "spec/wasm-test-suite__core__unreached-invalid__unreached-invalid.4.wax": {
-      "bucket": "type-bad",
-      "reprint_code": 0,
-      "diag_code": 128,
-      "wasm_sha256": null
     },
     "spec/wasm-test-suite__core__unreached-valid__unreached-valid.0.wax": {
       "bucket": "compiles-clean",
@@ -8976,12 +9234,6 @@
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "52284045fb63aba5ddf2a38c758f0f78f66783e655c49f8d659b1430d8e830cd"
-    },
-    "spec/wasm-tools-suite__gc__gc-subtyping-too-deep__gc-subtyping-too-deep.0.wax": {
-      "bucket": "compiles-clean",
-      "reprint_code": 0,
-      "diag_code": 0,
-      "wasm_sha256": "a63b98e9beaa7658a21b2b47d2afd741c4574d906e20fead81685f6e8d5f211d"
     },
     "spec/wasm-tools-suite__gc__invalid__invalid.0.wax": {
       "bucket": "compiles-clean",
@@ -10603,6 +10855,12 @@
       "diag_code": 0,
       "wasm_sha256": null
     },
+    "wat/cram-tests__cond-dead-code.t__dead.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
     "wat/cram-tests__cond-define.t__cond.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
@@ -10724,6 +10982,12 @@
       "wasm_sha256": "4fb2d3054007601f8a40cf4d5eb162005689a6921b32814522c32886178ad3c6"
     },
     "wat/cram-tests__guarded-export.t__cstart.wax": {
+      "bucket": "type-bad",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": null
+    },
+    "wat/cram-tests__guarded-export.t__independent.wax": {
       "bucket": "type-bad",
       "reprint_code": 0,
       "diag_code": 0,
@@ -11052,6 +11316,12 @@
       "reprint_code": 0,
       "diag_code": 0,
       "wasm_sha256": "8df574d4861c455c4858ffeb7f29aa6ad34cf6b13c5e108aa1e47162f171f465"
+    },
+    "wat/cram-tests__subtype-depth.t__ok.wax": {
+      "bucket": "compiles-clean",
+      "reprint_code": 0,
+      "diag_code": 0,
+      "wasm_sha256": "b15f94e1abfde5bf1d048a5d3502d7f44b735c99df5d3b5b7635271a15f9f3c4"
     },
     "wat/cram-tests__switch-tag-continuation.t__ok.wax": {
       "bucket": "compiles-clean",

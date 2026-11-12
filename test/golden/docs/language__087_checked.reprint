@@ -1,4 +1,0 @@
-rec {
-    type expr = { op: i32, args: &?args };
-    type args = [mut &expr];
-}

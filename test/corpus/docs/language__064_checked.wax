@@ -1,1 +1,4 @@
-type binary_op = fn(i32, i32) -> i32;
+#[start, if(debug)]
+fn init() {
+    // only run under `-D debug=true`
+}

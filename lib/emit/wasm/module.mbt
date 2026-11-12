@@ -617,9 +617,11 @@ fn Lowering::field(
       // narrower type than the global itself -- `let g: &?func = f;` holds a
       // funcref, not the type of `f` -- and the declaration is what the module
       // states.
-      let ty = match typ {
-        Some(t) => self.valtype_index(t, loc)
-        None =>
+      let ty = match (typ, self.ctx.declared_type(loc)) {
+        (Some(t), _) => self.valtype_index(t, loc)
+        // A type that holds in every configuration, where they differ.
+        (None, Some(t)) => self.valtype_index(t, loc)
+        (None, None) =>
           match node_valtype(def) {
             Some(t) => t
             None => raise Unresolved("global type", loc)
@@ -974,9 +976,11 @@ fn Lowering::collect_locals(
         // then the annotation is the only thing that says what it holds.
         // Otherwise what the initializer produced at that position, which the
         // checker has already made agree with any annotation.
-        let ty = match b.1 {
-          Some(written) => Some(self.valtype_index(written, i.info.1))
-          None =>
+        let ty = match (b.1, self.ctx.declared_type(i.info.1)) {
+          (Some(written), _) => Some(self.valtype_index(written, i.info.1))
+          // A type that holds in every configuration, where they differ.
+          (None, Some(t)) => Some(self.valtype_index(t, i.info.1))
+          (None, None) =>
             match init {
               Some(e) =>
                 if e.info.0.length() > k &&

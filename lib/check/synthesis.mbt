@@ -293,6 +293,7 @@ fn Checker::infer_synthesized(
   ) -> @ast.InstrDesc[@typing_env.InferredAnnotation],
 ) -> @ast.Instr[@typing_env.InferredAnnotation]? {
   guard infer_block_applies(self.ctx, typ) else { return None }
+  let omitted = typ.results.is_empty()
   let (cs, r) = fresh_collecting(
     declared_result(self.ctx.type_context, self.ctx.diagnostics, typ),
   )
@@ -319,8 +320,13 @@ fn Checker::infer_synthesized(
     natural~,
     location=Some(i.info),
   )
+  // Nothing reached the exit of a construct whose result was left unwritten:
+  // it never completes, which the enclosing `block_contents` reads off here.
+  if omitted && cs.collected.is_empty() && cs.empty_exits.is_empty() {
+    self.ctx.divergent.val = Some((i.info, cs))
+  }
   Some({
-    desc: rebuild(typ_),
+    desc: fill_divergent_tails(cs, typ_, results, rebuild(typ_)),
     info: annotate(results, i.info),
     hints: i.hints,
     expected: i.expected,
@@ -575,9 +581,22 @@ fn Checker::block_contents_flat(
     // Each statement is one hole run: its holes draw from the stack as it
     // stands HERE, and they are counted together. See `Checker::with_holes`.
     if routed && is_inferring(results[0]) {
+      self.ctx.divergent.val = None
       let c = self.with_holes(s, () => self.expression(s))
       lost_control = self.ops.stack is Unreachable
-      self.ops.push_results(s.info, c.info.0)
+      match (self.ctx.divergent.val, results[0].get()) {
+        // A nested construct that never completes, its value going to an
+        // enclosing label: it delivers nothing here, and takes the block's
+        // result once that is known (`fill_divergent_tails`), as it would
+        // from a concrete context.
+        (Some((loc, inner)), Collecting(cs)) if loc == c.info.1 => {
+          cs.divergent_tails.push((loc, inner))
+          if self.ops.stack is Empty {
+            self.ops.stack = Unreachable
+          }
+        }
+        _ => self.ops.push_results(s.info, c.info.0)
+      }
       out.push(c)
     } else if routed {
       let c = self.with_holes(s, () => self.check(results[0], s))
@@ -591,7 +610,11 @@ fn Checker::block_contents_flat(
       out.push(c)
     }
     if self.ctx.warn_unused && reachable_before && lost_control && k + 1 < n {
-      dead_code(self.ctx.diagnostics, instrs[k + 1].info, s.info)
+      dead_code(
+        self.ctx.diagnostics,
+        instrs[k + 1].info,
+        diverging_statement(instrs, k),
+      )
     }
     // What the list re-infers to (see `Reinfer`): a trailing statement CHECKED
     // against the result reports its own; otherwise the value it left, read
@@ -626,4 +649,33 @@ fn rebuilt_typ(
     TryCatch(label~, block~, arms~, ..) => TryCatch(label~, typ~, block~, arms~)
     d => d
   }
+}
+
+///|
+/// Where control was lost at `instrs[k]`, as the source has it.
+///
+/// In a specialized configuration a statement-position `#[if]` has been
+/// spliced away, leaving a `Nop` at its span ahead of the branch it selected
+/// (see `Configuring::instr`). The statement that diverged is then one inside
+/// that branch, and a different one in each configuration. The conditional
+/// statement is what diverges in all of them, so it is reported: the outermost
+/// one holding `instrs[k]` but not the dead code after it, which is what the
+/// reference's typer, keeping the conditional in place, points at.
+fn diverging_statement(
+  instrs : Array[@ast.Instr[@basic.Location]],
+  k : Int32,
+) -> @basic.Location {
+  let at = instrs[k].info
+  let dead = instrs[k + 1].info
+  let within = (outer : @basic.Location, inner : @basic.Location) => {
+    outer.start.cnum <= inner.start.cnum && inner.end.cnum <= outer.end.cnum
+  }
+  // Markers come before what they wrap, the outermost first.
+  for j in 0..<k {
+    let m = instrs[j]
+    if m.desc is Nop && within(m.info, at) && !within(m.info, dead) {
+      return m.info
+    }
+  }
+  at
 }

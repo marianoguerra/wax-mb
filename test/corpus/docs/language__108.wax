@@ -1,6 +1,7 @@
-funcs.size()                          // current size
-funcs.grow(init, n)                   // grow by n, filling with init; returns the old size
-funcs.fill(dst, val, n)               // set n slots from dst to val
-funcs.copy(dst, src, n)               // copy n slots within the table
-funcs.init(pool, dst, src, n)         // copy n refs from element segment pool
-pool.drop();                          // drop a passive element segment
+table funcs: &?func [1, 10];          // table of function references
+elem init: &?func @ funcs[0] = [f];   // active: initialize funcs at offset 0
+elem pool: &?func = [f, g, h];        // passive segment
+
+funcs[i]                              // table.get
+funcs[i] = g;                         // table.set
+(funcs[i] as &cmp)(x, y)              // indirect call (call_indirect)

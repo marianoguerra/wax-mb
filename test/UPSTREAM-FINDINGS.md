@@ -227,7 +227,7 @@ reprints as
 
 so the comment now sits beside the function rather than inside it, and a second
 pass leaves it there. The reference is not idempotent on this fixture
-(`docs/language__130_checked.wax`; the reference page that held a second copy
+(`docs/language__131_checked.wax`; the reference page that held a second copy
 is gone from upstream's docs).
 
 Since Oracle 1 gates on byte-exact reprint parity, matching the reference means

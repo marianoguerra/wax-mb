@@ -1,0 +1,1 @@
+{"severity":"error","file":"test/corpus/cram/subtype-depth__deep.wax","startLine":65,"startColumn":10,"endLine":65,"endColumn":13,"startOffset":1649,"endOffset":1652,"message":"This type has too many supertypes: a subtype hierarchy is at most 63 deep.","warning":null,"hint":null,"related":[]}

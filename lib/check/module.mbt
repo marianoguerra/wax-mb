@@ -404,9 +404,10 @@ pub fn check_module(
   // with its diagnostics DISCARDED: they would be the answers to questions
   // asked of a program that is not any of the ones being compiled.
   let conditional = module_has_conditional(fields)
+  let mut forms = None
   if conditional {
     check_let_bindings(diagnostics, fields)
-    check_configurations(
+    forms = check_configurations(
       diagnostics,
       store,
       features,
@@ -422,6 +423,14 @@ pub fn check_module(
   } else {
     diagnostics
   }
+  // A branching cast on a value of a conditional alias takes a source type
+  // that holds in every configuration (see `conditional_cast_source`) -- but
+  // only in the tree the lowering consumes, not in a simplified one.
+  let alias_variants = if conditional && lowering && !simplify {
+    conditional_alias_variants(fields)
+  } else {
+    Map([])
+  }
   let ctx = @typing_env.ModuleContext::new(
     build_diagnostics,
     store,
@@ -429,6 +438,13 @@ pub fn check_module(
     simplify~,
     warn_unused~,
     suggest~,
+    alias_variants~,
+    // A struct or array access names a type that holds in every
+    // configuration (see `receiver_choice`).
+    receiver_types=match forms {
+      Some(tbl) => receiver_types_of(tbl)
+      None => Map([])
+    },
   )
   declare_fields(ctx, fields)
   // Once the whole table exists: a rec group's members may name each other, so
@@ -445,6 +461,11 @@ pub fn check_module(
   // Last: what counts as a USE of a module field is what reached it while every
   // body was checked, so this cannot be answered until they all have been.
   warn_unused_fields(ctx, fields)
+  // An inferred declaration takes a type that holds in every configuration
+  // (see `declaration_choice`).
+  if forms is Some(tbl) {
+    declared_types_of(tbl, ctx.declared_types)
+  }
   (ctx, typed)
 }
 

@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__op-compound.wax","startLine":2,"startColumn":3,"endLine":2,"endColumn":4,"startOffset":84,"endOffset":85,"message":"The function 'g' is never used.","warning":"unused-field","hint":null,"related":[]}

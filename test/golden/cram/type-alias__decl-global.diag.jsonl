@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__decl-global.wax","startLine":2,"startColumn":6,"endLine":2,"endColumn":7,"startOffset":67,"endOffset":68,"message":"The global 'g' is never used.","warning":"unused-field","hint":null,"related":[]}

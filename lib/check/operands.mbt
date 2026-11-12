@@ -48,6 +48,7 @@ fn check_subtype(
   expected : @infer.Cell[@infer.InferredType],
   pin~ : Bool = true,
   expected_at~ : @basic.Location? = None,
+  index~ : Int32? = None,
 ) -> Unit {
   if !subtype(info, provided, expected, location=Some(location), pin~) {
     expression_type_mismatch(
@@ -56,6 +57,7 @@ fn check_subtype(
       provided,
       expected,
       expected_at~,
+      index~,
     )
   }
 }
@@ -84,6 +86,8 @@ pub fn check_subtypes(
     )
     return
   }
+  // Several values share the one location: number each mismatch.
+  let several = expected.length() > 1
   for i in 0..<provided.length() {
     check_subtype(
       info,
@@ -93,6 +97,7 @@ pub fn check_subtypes(
       expected[i],
       pin~,
       expected_at~,
+      index=if several { Some(i) } else { None },
     )
   }
 }

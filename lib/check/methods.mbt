@@ -536,12 +536,22 @@ fn Checker::array_bulk_call(
   {
     desc: Call(
       {
-        desc: StructGet(recv_, meth),
+        desc: StructGet(ascribe_conditional_receiver(ctx, recv_), meth),
         info: annotate([], callee.info),
         hints: callee.hints,
         expected: callee.expected,
       },
-      args_,
+      // `copy`'s source is an array access too.
+      if meth.name == "copy" && args_.length() == 4 {
+        [
+          args_[0],
+          ascribe_conditional_receiver(ctx, args_[1]),
+          args_[2],
+          args_[3],
+        ]
+      } else {
+        args_
+      },
     ),
     info: annotate([], i.info),
     hints: i.hints,
@@ -832,9 +842,12 @@ fn Checker::cont_bind_source_params(
     return out
   }
   let np = src_sig.params.length() - dst_sig.params.length()
+  // As written, so that an operand bound takes the alias its parameter is
+  // declared with.
+  let bound = written_signature(ctx.type_context, src_inner, src_sig).params
   for k in 0..<np {
-    if k < src_sig.params.length() {
-      out.push(src_sig.params[k].desc.1)
+    if k < bound.length() {
+      out.push(bound[k].desc.1)
     }
   }
   out

@@ -337,6 +337,24 @@ fn check_descriptors(
 }
 
 ///|
+/// How many supertypes `id` has, transitively, counting no further than one
+/// past `max_subtype_depth`. The reference's `Types.subtype_depth`.
+fn subtype_depth(
+  info : @type_store.SubtypingInfo,
+  id : @type_store.Id,
+) -> Int32 {
+  for i = id, d = 0 {
+    if d > max_subtype_depth {
+      break d
+    }
+    match info.get_subtype(i).supertype {
+      Some(j) => continue j, d + 1
+      None => break d
+    }
+  }
+}
+
+///|
 /// Check every declared type against the supertype it names.
 ///
 /// This runs over the finished type table rather than at each declaration,
@@ -362,6 +380,11 @@ fn check_type_definitions(ctx : @typing_env.ModuleContext) -> Unit {
     }
     guard ty.supertype is Some(j) else { continue }
     guard st.supertype is Some(sup) else { continue }
+    // Reported at the first type past the limit only: a deeper one is below
+    // it, and its own supertype already carries the report.
+    if subtype_depth(info, j) == max_subtype_depth {
+      subtype_too_deep(ctx.diagnostics, sup.loc)
+    }
     let sup_ty = info.get_subtype(j)
     if sup_ty.final_ {
       final_supertype(ctx.diagnostics, sup.loc, sup.name)

@@ -1,2 +1,2 @@
-x as &!point    // cast to an exact reference
-x is &!point    // test for an exact type
+&!point         // a non-null reference to exactly point
+&?!point        // nullable, exactly point

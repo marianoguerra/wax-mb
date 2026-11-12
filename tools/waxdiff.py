@@ -665,7 +665,7 @@ def check_oracle1(
 # rather than silently tolerated so the set cannot grow unnoticed.
 NON_IDEMPOTENT_UPSTREAM = {
     "cram/custom-page-sizes__huge-pow2.wax",
-    "docs/language__130_checked.wax",
+    "docs/language__131_checked.wax",
 }
 
 
@@ -892,8 +892,8 @@ SPAN_FIELDS = {"startLine", "startColumn", "endLine", "endColumn",
 SPAN_EXEMPT = {
     # Finding 9: the offending token is a STRING, so the reference points at
     # its closing quote rather than at the string. We report the true span.
-    "docs/language__093.wax": "finding 9 (string span)",
-    "docs/language__095.wax": "finding 9 (string span)",
+    "docs/language__094.wax": "finding 9 (string span)",
+    "docs/language__096.wax": "finding 9 (string span)",
     # Finding 12, both directions: the two automata reduce at different
     # moments, so an action's check fires in one and not the other. Here the
     # reference runs the action and we do not; below, we run it and the

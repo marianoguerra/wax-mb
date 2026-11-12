@@ -294,6 +294,29 @@ pub struct ModuleContext {
   mut assigned_locals : Map[String, Unit]
   mut control_types : Array[ControlFrame]
   mut return_types : Array[@infer.Cell[@infer.InferredType]]
+  /// The construct an expression-position inference last found never to
+  /// complete -- nothing reaching its exit -- with its result cell's record,
+  /// for `block_contents` to tell a trailing one from a void one.
+  divergent : Ref[(@basic.Location, @infer.Collecting)?]
+  /// Each alias defined under a conditional annotation, with its definition
+  /// in every branch, as written. Filled only for the typing that builds a
+  /// module lowered as one for every configuration: a branching cast on a
+  /// value of such an alias takes a source type that holds in all of them.
+  /// Empty otherwise, so a checking run types each configuration on its own.
+  alias_variants : Map[String, Array[@wasm_types.ValType[@ast.Ident]]]
+  /// By the span of the receiver of a struct or array access, the type the
+  /// access names, in a module lowered as one for every configuration: of the
+  /// types the receiver has in the configurations, the one the others are
+  /// subtypes of. Filled, as `alias_variants`, only for that typing.
+  receiver_types : Map[(Int32, Int32), String]
+  /// By its span, the type to declare an inferred declaration with -- a
+  /// block's result, a local, a global, a select's result -- where the
+  /// configurations of a module lowered as one for all of them infer
+  /// different reference types for it, one a supertype of the others. For a
+  /// select of numbers wherever its values are not those of unreachable code,
+  /// a numeric type, for an untyped select. Read by the lowering through
+  /// `declared_type`.
+  declared_types : Map[(Int32, Int32), @wasm_types.ValType[@ast.Ident]]
 
   // --- Conditional compilation ---
   /// The current branch assumption, shared with every table above.
@@ -422,6 +445,8 @@ pub fn ModuleContext::new(
   resolve_links~ : ResolveSink = None,
   pun_spans~ : Array[@basic.Location]? = None,
   member_completions~ : Array[(@basic.Location, @members.MemberReceiver)]? = None,
+  alias_variants~ : Map[String, Array[@wasm_types.ValType[@ast.Ident]]] = Map([]),
+  receiver_types~ : Map[(Int32, Int32), String] = Map([]),
 ) -> ModuleContext {
   let cond = Ref(@cond.true_)
   let origin = Ref(Origin::Root)
@@ -498,6 +523,10 @@ pub fn ModuleContext::new(
     assigned_locals: Map([]),
     control_types: [],
     return_types: [],
+    divergent: Ref(None),
+    alias_variants,
+    receiver_types,
+    declared_types: Map([]),
     cond,
     cond_env: @cond.Env::new(),
     resolve_links,
@@ -563,4 +592,16 @@ pub fn ModuleContext::current_deferral(
   } else {
     Some(self.deferred_uninit[self.deferred_uninit.length() - 1])
   }
+}
+
+///|
+/// The type to declare the inferred declaration at `location` with, when the
+/// configurations of a module lowered as one for every configuration infer
+/// different types for it (see `ModuleContext::declared_types`); `None` when
+/// the typed tree's own type holds.
+pub fn ModuleContext::declared_type(
+  self : ModuleContext,
+  location : @basic.Location,
+) -> @wasm_types.ValType[@ast.Ident]? {
+  self.declared_types.get((location.start.cnum, location.end.cnum))
 }

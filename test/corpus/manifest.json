@@ -1,10 +1,10 @@
 {
   "_comment": "Provenance for every corpus file. Regenerate with tools/waxdiff.py collect. Files are committed so the differential suite runs without the wax/ checkout.",
   "counts": {
-    "cram": 348,
-    "docs": 225,
-    "wat": 275,
-    "spec": 1157
+    "cram": 390,
+    "docs": 226,
+    "wat": 278,
+    "spec": 1156
   },
   "files": {
     "cram/all-errors-semantic-raise__module-else.wax": {
@@ -148,6 +148,9 @@
     "cram/cond-dead-branch__dead.wax": {
       "origin": "test/cram-tests/cond-dead-branch.t/dead.wax"
     },
+    "cram/cond-dead-code__dead.wax": {
+      "origin": "test/cram-tests/cond-dead-code.t/dead.wax"
+    },
     "cram/cond-define__comments.wax": {
       "origin": "test/cram-tests/cond-define.t/comments.wax"
     },
@@ -159,6 +162,9 @@
     },
     "cram/cond-field-position__moved.wax": {
       "origin": "test/cram-tests/cond-field-position.t/moved.wax"
+    },
+    "cram/cond-field-position__same-swapped.wax": {
+      "origin": "test/cram-tests/cond-field-position.t/same-swapped.wax"
     },
     "cram/cond-field-position__same.wax": {
       "origin": "test/cram-tests/cond-field-position.t/same.wax"
@@ -211,6 +217,9 @@
     "cram/descriptor-types__finality-mismatch.wax": {
       "origin": "test/cram-tests/descriptor-types.t/finality-mismatch.wax"
     },
+    "cram/descriptor-types__inexact-alloc.wax": {
+      "origin": "test/cram-tests/descriptor-types.t/inexact-alloc.wax"
+    },
     "cram/descriptor-types__not-reciprocal.wax": {
       "origin": "test/cram-tests/descriptor-types.t/not-reciprocal.wax"
     },
@@ -235,6 +244,9 @@
     "cram/dispatch__err_index.wax": {
       "origin": "test/cram-tests/dispatch.t/err_index.wax"
     },
+    "cram/divergent-tail-block__tails.wax": {
+      "origin": "test/cram-tests/divergent-tail-block.t/tails.wax"
+    },
     "cram/duplicate-diagnostic-chains__br_table.wax": {
       "origin": "test/cram-tests/duplicate-diagnostic-chains.t/br_table.wax"
     },
@@ -250,11 +262,17 @@
     "cram/duplicate-diagnostic-chains__mem_init_args.wax": {
       "origin": "test/cram-tests/duplicate-diagnostic-chains.t/mem_init_args.wax"
     },
+    "cram/duplicate-diagnostic-chains__multi_value.wax": {
+      "origin": "test/cram-tests/duplicate-diagnostic-chains.t/multi_value.wax"
+    },
     "cram/duplicate-diagnostic-chains__simd.wax": {
       "origin": "test/cram-tests/duplicate-diagnostic-chains.t/simd.wax"
     },
     "cram/duplicate-diagnostic-chains__test_chain.wax": {
       "origin": "test/cram-tests/duplicate-diagnostic-chains.t/test_chain.wax"
+    },
+    "cram/duplicate-diagnostic-chains__test_unbound.wax": {
+      "origin": "test/cram-tests/duplicate-diagnostic-chains.t/test_unbound.wax"
     },
     "cram/duplicate-diagnostic-chains__try_payload.wax": {
       "origin": "test/cram-tests/duplicate-diagnostic-chains.t/try_payload.wax"
@@ -339,6 +357,9 @@
     },
     "cram/guarded-export__guarded.wax": {
       "origin": "test/cram-tests/guarded-export.t/guarded.wax"
+    },
+    "cram/guarded-export__onefield.wax": {
+      "origin": "test/cram-tests/guarded-export.t/onefield.wax"
     },
     "cram/holes__bad1.wax": {
       "origin": "test/cram-tests/holes.t/bad1.wax"
@@ -577,6 +598,12 @@
     "cram/structured-try__try.wax": {
       "origin": "test/cram-tests/structured-try.t/try.wax"
     },
+    "cram/subtype-depth__deep.wax": {
+      "origin": "test/cram-tests/subtype-depth.t/deep.wax"
+    },
+    "cram/subtype-depth__ok.wax": {
+      "origin": "test/cram-tests/subtype-depth.t/ok.wax"
+    },
     "cram/suspend-bind-operand-inferred-block__bind.wax": {
       "origin": "test/cram-tests/suspend-bind-operand-inferred-block.t/bind.wax"
     },
@@ -610,8 +637,14 @@
     "cram/type-alias__as-type.wax": {
       "origin": "test/cram-tests/type-alias.t/as-type.wax"
     },
+    "cram/type-alias__body.wax": {
+      "origin": "test/cram-tests/type-alias.t/body.wax"
+    },
     "cram/type-alias__cast-branches.wax": {
       "origin": "test/cram-tests/type-alias.t/cast-branches.wax"
+    },
+    "cram/type-alias__cast-source.wax": {
+      "origin": "test/cram-tests/type-alias.t/cast-source.wax"
     },
     "cram/type-alias__cast.wax": {
       "origin": "test/cram-tests/type-alias.t/cast.wax"
@@ -619,20 +652,71 @@
     "cram/type-alias__chain.wax": {
       "origin": "test/cram-tests/type-alias.t/chain.wax"
     },
+    "cram/type-alias__decl-annotated.wax": {
+      "origin": "test/cram-tests/type-alias.t/decl-annotated.wax"
+    },
+    "cram/type-alias__decl-block.wax": {
+      "origin": "test/cram-tests/type-alias.t/decl-block.wax"
+    },
+    "cram/type-alias__decl-global.wax": {
+      "origin": "test/cram-tests/type-alias.t/decl-global.wax"
+    },
+    "cram/type-alias__decl-local.wax": {
+      "origin": "test/cram-tests/type-alias.t/decl-local.wax"
+    },
+    "cram/type-alias__decl-nested.wax": {
+      "origin": "test/cram-tests/type-alias.t/decl-nested.wax"
+    },
+    "cram/type-alias__decl-select-ascribed.wax": {
+      "origin": "test/cram-tests/type-alias.t/decl-select-ascribed.wax"
+    },
+    "cram/type-alias__decl-select.wax": {
+      "origin": "test/cram-tests/type-alias.t/decl-select.wax"
+    },
+    "cram/type-alias__decl-supertype.wax": {
+      "origin": "test/cram-tests/type-alias.t/decl-supertype.wax"
+    },
     "cram/type-alias__discard.wax": {
       "origin": "test/cram-tests/type-alias.t/discard.wax"
     },
     "cram/type-alias__errors.wax": {
       "origin": "test/cram-tests/type-alias.t/errors.wax"
     },
+    "cram/type-alias__field-covariant.wax": {
+      "origin": "test/cram-tests/type-alias.t/field-covariant.wax"
+    },
     "cram/type-alias__field-same.wax": {
       "origin": "test/cram-tests/type-alias.t/field-same.wax"
+    },
+    "cram/type-alias__field-supertype.wax": {
+      "origin": "test/cram-tests/type-alias.t/field-supertype.wax"
     },
     "cram/type-alias__field.wax": {
       "origin": "test/cram-tests/type-alias.t/field.wax"
     },
     "cram/type-alias__forward.wax": {
       "origin": "test/cram-tests/type-alias.t/forward.wax"
+    },
+    "cram/type-alias__imm-array.wax": {
+      "origin": "test/cram-tests/type-alias.t/imm-array.wax"
+    },
+    "cram/type-alias__imm-call-ref.wax": {
+      "origin": "test/cram-tests/type-alias.t/imm-call-ref.wax"
+    },
+    "cram/type-alias__imm-construct.wax": {
+      "origin": "test/cram-tests/type-alias.t/imm-construct.wax"
+    },
+    "cram/type-alias__imm-cont.wax": {
+      "origin": "test/cram-tests/type-alias.t/imm-cont.wax"
+    },
+    "cram/type-alias__imm-descriptor.wax": {
+      "origin": "test/cram-tests/type-alias.t/imm-descriptor.wax"
+    },
+    "cram/type-alias__imm-string.wax": {
+      "origin": "test/cram-tests/type-alias.t/imm-string.wax"
+    },
+    "cram/type-alias__imm-struct.wax": {
+      "origin": "test/cram-tests/type-alias.t/imm-struct.wax"
     },
     "cram/type-alias__inferred.wax": {
       "origin": "test/cram-tests/type-alias.t/inferred.wax"
@@ -649,6 +733,9 @@
     "cram/type-alias__literal-same.wax": {
       "origin": "test/cram-tests/type-alias.t/literal-same.wax"
     },
+    "cram/type-alias__literal-unaliased.wax": {
+      "origin": "test/cram-tests/type-alias.t/literal-unaliased.wax"
+    },
     "cram/type-alias__literal.wax": {
       "origin": "test/cram-tests/type-alias.t/literal.wax"
     },
@@ -657,6 +744,27 @@
     },
     "cram/type-alias__null.wax": {
       "origin": "test/cram-tests/type-alias.t/null.wax"
+    },
+    "cram/type-alias__op-branches.wax": {
+      "origin": "test/cram-tests/type-alias.t/op-branches.wax"
+    },
+    "cram/type-alias__op-compound.wax": {
+      "origin": "test/cram-tests/type-alias.t/op-compound.wax"
+    },
+    "cram/type-alias__op-convert.wax": {
+      "origin": "test/cram-tests/type-alias.t/op-convert.wax"
+    },
+    "cram/type-alias__op-method.wax": {
+      "origin": "test/cram-tests/type-alias.t/op-method.wax"
+    },
+    "cram/type-alias__op-store.wax": {
+      "origin": "test/cram-tests/type-alias.t/op-store.wax"
+    },
+    "cram/type-alias__op-unaliased.wax": {
+      "origin": "test/cram-tests/type-alias.t/op-unaliased.wax"
+    },
+    "cram/type-alias__op-unreachable.wax": {
+      "origin": "test/cram-tests/type-alias.t/op-unreachable.wax"
     },
     "cram/type-alias__operands.wax": {
       "origin": "test/cram-tests/type-alias.t/operands.wax"
@@ -676,14 +784,32 @@
     "cram/type-alias__reuse.wax": {
       "origin": "test/cram-tests/type-alias.t/reuse.wax"
     },
+    "cram/type-alias__select-unreachable.wax": {
+      "origin": "test/cram-tests/type-alias.t/select-unreachable.wax"
+    },
     "cram/type-alias__shared.wax": {
       "origin": "test/cram-tests/type-alias.t/shared.wax"
+    },
+    "cram/type-alias__slots.wax": {
+      "origin": "test/cram-tests/type-alias.t/slots.wax"
     },
     "cram/type-alias__splice.wax": {
       "origin": "test/cram-tests/type-alias.t/splice.wax"
     },
     "cram/type-alias__supertype.wax": {
       "origin": "test/cram-tests/type-alias.t/supertype.wax"
+    },
+    "cram/type-alias__switching-bind.wax": {
+      "origin": "test/cram-tests/type-alias.t/switching-bind.wax"
+    },
+    "cram/type-alias__switching-resume.wax": {
+      "origin": "test/cram-tests/type-alias.t/switching-resume.wax"
+    },
+    "cram/type-alias__switching-switch.wax": {
+      "origin": "test/cram-tests/type-alias.t/switching-switch.wax"
+    },
+    "cram/type-alias__switching.wax": {
+      "origin": "test/cram-tests/type-alias.t/switching.wax"
     },
     "cram/type-alias__unused.wax": {
       "origin": "test/cram-tests/type-alias.t/unused.wax"
@@ -1354,10 +1480,10 @@
     "docs/language__051.wax": {
       "origin": "docs/src/language.md block 51"
     },
-    "docs/language__052_checked.wax": {
+    "docs/language__052.wax": {
       "origin": "docs/src/language.md block 52"
     },
-    "docs/language__053.wax": {
+    "docs/language__053_checked.wax": {
       "origin": "docs/src/language.md block 53"
     },
     "docs/language__054.wax": {
@@ -1369,16 +1495,16 @@
     "docs/language__056.wax": {
       "origin": "docs/src/language.md block 56"
     },
-    "docs/language__057_checked.wax": {
+    "docs/language__057.wax": {
       "origin": "docs/src/language.md block 57"
     },
-    "docs/language__058.wax": {
+    "docs/language__058_checked.wax": {
       "origin": "docs/src/language.md block 58"
     },
     "docs/language__059.wax": {
       "origin": "docs/src/language.md block 59"
     },
-    "docs/language__060_checked.wax": {
+    "docs/language__060.wax": {
       "origin": "docs/src/language.md block 60"
     },
     "docs/language__061_checked.wax": {
@@ -1396,7 +1522,7 @@
     "docs/language__065_checked.wax": {
       "origin": "docs/src/language.md block 65"
     },
-    "docs/language__066.wax": {
+    "docs/language__066_checked.wax": {
       "origin": "docs/src/language.md block 66"
     },
     "docs/language__067.wax": {
@@ -1405,7 +1531,7 @@
     "docs/language__068.wax": {
       "origin": "docs/src/language.md block 68"
     },
-    "docs/language__069_checked.wax": {
+    "docs/language__069.wax": {
       "origin": "docs/src/language.md block 69"
     },
     "docs/language__070_checked.wax": {
@@ -1417,7 +1543,7 @@
     "docs/language__072_checked.wax": {
       "origin": "docs/src/language.md block 72"
     },
-    "docs/language__073.wax": {
+    "docs/language__073_checked.wax": {
       "origin": "docs/src/language.md block 73"
     },
     "docs/language__074.wax": {
@@ -1432,10 +1558,10 @@
     "docs/language__077.wax": {
       "origin": "docs/src/language.md block 77"
     },
-    "docs/language__078_checked.wax": {
+    "docs/language__078.wax": {
       "origin": "docs/src/language.md block 78"
     },
-    "docs/language__079.wax": {
+    "docs/language__079_checked.wax": {
       "origin": "docs/src/language.md block 79"
     },
     "docs/language__080.wax": {
@@ -1447,10 +1573,10 @@
     "docs/language__082.wax": {
       "origin": "docs/src/language.md block 82"
     },
-    "docs/language__083_checked.wax": {
+    "docs/language__083.wax": {
       "origin": "docs/src/language.md block 83"
     },
-    "docs/language__084.wax": {
+    "docs/language__084_checked.wax": {
       "origin": "docs/src/language.md block 84"
     },
     "docs/language__085.wax": {
@@ -1459,7 +1585,7 @@
     "docs/language__086.wax": {
       "origin": "docs/src/language.md block 86"
     },
-    "docs/language__087_checked.wax": {
+    "docs/language__087.wax": {
       "origin": "docs/src/language.md block 87"
     },
     "docs/language__088_checked.wax": {
@@ -1468,16 +1594,16 @@
     "docs/language__089_checked.wax": {
       "origin": "docs/src/language.md block 89"
     },
-    "docs/language__090.wax": {
+    "docs/language__090_checked.wax": {
       "origin": "docs/src/language.md block 90"
     },
     "docs/language__091.wax": {
       "origin": "docs/src/language.md block 91"
     },
-    "docs/language__092_checked.wax": {
+    "docs/language__092.wax": {
       "origin": "docs/src/language.md block 92"
     },
-    "docs/language__093.wax": {
+    "docs/language__093_checked.wax": {
       "origin": "docs/src/language.md block 93"
     },
     "docs/language__094.wax": {
@@ -1486,7 +1612,7 @@
     "docs/language__095.wax": {
       "origin": "docs/src/language.md block 95"
     },
-    "docs/language__096_checked.wax": {
+    "docs/language__096.wax": {
       "origin": "docs/src/language.md block 96"
     },
     "docs/language__097_checked.wax": {
@@ -1507,7 +1633,7 @@
     "docs/language__102_checked.wax": {
       "origin": "docs/src/language.md block 102"
     },
-    "docs/language__103.wax": {
+    "docs/language__103_checked.wax": {
       "origin": "docs/src/language.md block 103"
     },
     "docs/language__104.wax": {
@@ -1528,13 +1654,13 @@
     "docs/language__109.wax": {
       "origin": "docs/src/language.md block 109"
     },
-    "docs/language__110_checked.wax": {
+    "docs/language__110.wax": {
       "origin": "docs/src/language.md block 110"
     },
     "docs/language__111_checked.wax": {
       "origin": "docs/src/language.md block 111"
     },
-    "docs/language__112.wax": {
+    "docs/language__112_checked.wax": {
       "origin": "docs/src/language.md block 112"
     },
     "docs/language__113.wax": {
@@ -1549,19 +1675,19 @@
     "docs/language__116.wax": {
       "origin": "docs/src/language.md block 116"
     },
-    "docs/language__117_checked.wax": {
+    "docs/language__117.wax": {
       "origin": "docs/src/language.md block 117"
     },
     "docs/language__118_checked.wax": {
       "origin": "docs/src/language.md block 118"
     },
-    "docs/language__119.wax": {
+    "docs/language__119_checked.wax": {
       "origin": "docs/src/language.md block 119"
     },
     "docs/language__120.wax": {
       "origin": "docs/src/language.md block 120"
     },
-    "docs/language__121_checked.wax": {
+    "docs/language__121.wax": {
       "origin": "docs/src/language.md block 121"
     },
     "docs/language__122_checked.wax": {
@@ -1573,13 +1699,13 @@
     "docs/language__124_checked.wax": {
       "origin": "docs/src/language.md block 124"
     },
-    "docs/language__125.wax": {
+    "docs/language__125_checked.wax": {
       "origin": "docs/src/language.md block 125"
     },
     "docs/language__126.wax": {
       "origin": "docs/src/language.md block 126"
     },
-    "docs/language__127_checked.wax": {
+    "docs/language__127.wax": {
       "origin": "docs/src/language.md block 127"
     },
     "docs/language__128_checked.wax": {
@@ -1596,6 +1722,9 @@
     },
     "docs/language__132_checked.wax": {
       "origin": "docs/src/language.md block 132"
+    },
+    "docs/language__133_checked.wax": {
+      "origin": "docs/src/language.md block 133"
     },
     "docs/module_fields__000_checked.wax": {
       "origin": "docs/src/correspondence/module_fields.md block 0"
@@ -2119,11 +2248,11 @@
     "spec/wasm-test-suite__core__custom-descriptors__struct_new_desc__struct_new_desc.12.wax": {
       "origin": "test/wasm-test-suite/core/custom-descriptors/struct_new_desc.wast -> struct_new_desc.12.wasm (wasm->wax)"
     },
-    "spec/wasm-test-suite__core__custom-descriptors__struct_new_desc__struct_new_desc.15.wax": {
-      "origin": "test/wasm-test-suite/core/custom-descriptors/struct_new_desc.wast -> struct_new_desc.15.wasm (wasm->wax)"
-    },
     "spec/wasm-test-suite__core__custom-descriptors__struct_new_desc__struct_new_desc.18.wax": {
       "origin": "test/wasm-test-suite/core/custom-descriptors/struct_new_desc.wast -> struct_new_desc.18.wasm (wasm->wax)"
+    },
+    "spec/wasm-test-suite__core__custom-descriptors__struct_new_desc__struct_new_desc.19.wax": {
+      "origin": "test/wasm-test-suite/core/custom-descriptors/struct_new_desc.wast -> struct_new_desc.19.wasm (wasm->wax)"
     },
     "spec/wasm-test-suite__core__custom-page-sizes__custom-page-sizes-invalid__custom-page-sizes-invalid.19.wax": {
       "origin": "test/wasm-test-suite/core/custom-page-sizes/custom-page-sizes-invalid.wast -> custom-page-sizes-invalid.19.wasm (wasm->wax)"
@@ -4024,6 +4153,9 @@
     "spec/wasm-test-suite__core__unreachable__unreachable.0.wax": {
       "origin": "test/wasm-test-suite/core/unreachable.wast -> unreachable.0.wasm (wasm->wax)"
     },
+    "spec/wasm-test-suite__core__unreached-invalid__unreached-invalid.103.wax": {
+      "origin": "test/wasm-test-suite/core/unreached-invalid.wast -> unreached-invalid.103.wasm (wasm->wax)"
+    },
     "spec/wasm-test-suite__core__unreached-invalid__unreached-invalid.105.wax": {
       "origin": "test/wasm-test-suite/core/unreached-invalid.wast -> unreached-invalid.105.wasm (wasm->wax)"
     },
@@ -4035,9 +4167,6 @@
     },
     "spec/wasm-test-suite__core__unreached-invalid__unreached-invalid.116.wax": {
       "origin": "test/wasm-test-suite/core/unreached-invalid.wast -> unreached-invalid.116.wasm (wasm->wax)"
-    },
-    "spec/wasm-test-suite__core__unreached-invalid__unreached-invalid.4.wax": {
-      "origin": "test/wasm-test-suite/core/unreached-invalid.wast -> unreached-invalid.4.wasm (wasm->wax)"
     },
     "spec/wasm-test-suite__core__unreached-valid__unreached-valid.0.wax": {
       "origin": "test/wasm-test-suite/core/unreached-valid.wast -> unreached-valid.0.wasm (wasm->wax)"
@@ -4491,9 +4620,6 @@
     },
     "spec/wasm-tools-suite__gc__gc-subtypes__gc-subtypes.0.wax": {
       "origin": "test/wasm-tools-suite/gc/gc-subtypes.wast -> gc-subtypes.0.wasm (wasm->wax)"
-    },
-    "spec/wasm-tools-suite__gc__gc-subtyping-too-deep__gc-subtyping-too-deep.0.wax": {
-      "origin": "test/wasm-tools-suite/gc/gc-subtyping-too-deep.wast -> gc-subtyping-too-deep.0.wasm (wasm->wax)"
     },
     "spec/wasm-tools-suite__gc__invalid__invalid.0.wax": {
       "origin": "test/wasm-tools-suite/gc/invalid.wast -> invalid.0.wasm (wasm->wax)"
@@ -5305,6 +5431,9 @@
     "wat/cram-tests__cond-dead-branch.t__dead.wax": {
       "origin": "test/cram-tests/cond-dead-branch.t/dead.wat (wat->wax)"
     },
+    "wat/cram-tests__cond-dead-code.t__dead.wax": {
+      "origin": "test/cram-tests/cond-dead-code.t/dead.wat (wat->wax)"
+    },
     "wat/cram-tests__cond-define.t__cond.wax": {
       "origin": "test/cram-tests/cond-define.t/cond.wat (wat->wax)"
     },
@@ -5367,6 +5496,9 @@
     },
     "wat/cram-tests__guarded-export.t__cstart.wax": {
       "origin": "test/cram-tests/guarded-export.t/cstart.wat (wat->wax)"
+    },
+    "wat/cram-tests__guarded-export.t__independent.wax": {
+      "origin": "test/cram-tests/guarded-export.t/independent.wat (wat->wax)"
     },
     "wat/cram-tests__guarded-export.t__nested.wax": {
       "origin": "test/cram-tests/guarded-export.t/nested.wat (wat->wax)"
@@ -5529,6 +5661,9 @@
     },
     "wat/cram-tests__structured-try.t__legacy.wax": {
       "origin": "test/cram-tests/structured-try.t/legacy.wat (wat->wax)"
+    },
+    "wat/cram-tests__subtype-depth.t__ok.wax": {
+      "origin": "test/cram-tests/subtype-depth.t/ok.wat (wat->wax)"
     },
     "wat/cram-tests__switch-tag-continuation.t__ok.wax": {
       "origin": "test/cram-tests/switch-tag-continuation.t/ok.wat (wat->wax)"

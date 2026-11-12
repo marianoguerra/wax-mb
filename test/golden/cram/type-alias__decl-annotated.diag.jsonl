@@ -1,0 +1,2 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__decl-annotated.wax","startLine":2,"startColumn":3,"endLine":2,"endColumn":4,"startOffset":62,"endOffset":63,"message":"The function 'f' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/cram/type-alias__decl-annotated.wax","startLine":2,"startColumn":21,"endLine":2,"endColumn":22,"startOffset":80,"endOffset":81,"message":"The local variable 'y' is never used.","warning":"unused-local","hint":null,"related":[]}

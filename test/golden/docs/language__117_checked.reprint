@@ -1,1 +1,0 @@
-type task = fn(i32) -> i32; type k = cont task;

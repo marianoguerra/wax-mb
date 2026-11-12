@@ -1,0 +1,2 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__op-unaliased.wax","startLine":2,"startColumn":3,"endLine":2,"endColumn":4,"startOffset":64,"endOffset":65,"message":"The function 'f' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/cram/type-alias__op-unaliased.wax","startLine":2,"startColumn":13,"endLine":2,"endColumn":18,"startOffset":74,"endOffset":79,"message":"The result of this expression is discarded, and computing it has no effect.","warning":"unused-result","hint":null,"related":[]}

@@ -1,6 +1,0 @@
-type word = i64;
-type cell = { value: mut word };
-
-fn get(c: &cell) -> word {
-    return c.value;
-}

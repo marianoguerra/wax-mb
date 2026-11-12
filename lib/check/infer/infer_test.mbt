@@ -88,6 +88,7 @@ test "a block result under inference renders as the annotation being tested" {
       declared: Some(declared),
       needed: false,
       empty_exits: [],
+      divergent_tails: [],
     }),
   )
   inspect(@infer.to_string(collecting), content="i64")
@@ -99,6 +100,7 @@ test "a block result under inference renders as the annotation being tested" {
       declared: None,
       needed: false,
       empty_exits: [],
+      divergent_tails: [],
     }),
   )
   inspect(@infer.to_string(bare), content="any")

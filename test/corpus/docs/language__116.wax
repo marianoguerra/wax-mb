@@ -1,1 +1,3 @@
-try_legacy i32 { find(k); } catch { overflow => { _; } _ => { 0; } }
+try { might_throw(); } catch [overflow -> 'h]    // on `overflow`, branch to 'h
+try { might_throw(); } catch [overflow & -> 'h]  // also deliver the exnref
+try { might_throw(); } catch [_ -> 'h]           // catch any exception

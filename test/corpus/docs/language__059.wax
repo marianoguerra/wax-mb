@@ -1,3 +1,4 @@
-fn name(param1: type1, param2: type2) -> return_type {
-    body;
+if x <s 0 {
+    unreachable;            // this branch cannot happen
 }
+nop;                        // no operation

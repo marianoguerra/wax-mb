@@ -1,5 +1,5 @@
-'next: loop {
-    total = total + i;
-    i = i + 1;
-    br_if 'next i <s n;   // jump back to the start while i < n
-}
+x = if condition {
+    1;
+} else {
+    0;
+};

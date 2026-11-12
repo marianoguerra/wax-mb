@@ -1,0 +1,14 @@
+import "x"
+#[export = "g", if(not(wasi))]
+fn f() -> i32;
+#[if(use_js_string)]
+{
+    #[export]
+    fn a() -> i32 {
+        0;
+    }
+}
+#[export = "a", if(not(use_js_string))]
+fn b() -> i32 {
+    1;
+}

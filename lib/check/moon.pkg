@@ -19,6 +19,7 @@ import {
   "marianoguerra/wax/unicode/xid",
   "moonbitlang/core/encoding/utf8",
   "marianoguerra/wax/fmt" @output,
+  "marianoguerra/wax/syntax/trivia",
   "moonbitlang/core/double",
   "moonbitlang/core/math",
   "moonbitlang/core/string",

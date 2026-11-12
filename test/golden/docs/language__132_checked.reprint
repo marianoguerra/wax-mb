@@ -1,12 +1,10 @@
 fn size() -> i32 {
-    let s: i32;
     #[if(debug)]
     {
-        s = 16;
+        return 16;
     }
     #[else]
     {
-        s = 20;
+        return 20;
     }
-    return s;
 }

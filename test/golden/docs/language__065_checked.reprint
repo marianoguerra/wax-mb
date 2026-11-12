@@ -1,1 +1,1 @@
-type callback = fn(i32) -> i32;
+type binary_op = fn(i32, i32) -> i32;

@@ -218,7 +218,9 @@ fn register_tag(
                 ft,
                 sign,
               )
-              Some(ft)
+              // As written, so that a value it delivers takes the alias it is
+              // declared with.
+              Some(written_signature(ctx.type_context, typ, ft))
             }
             _ => {
               expected_func_type(ctx.diagnostics, typ.loc)

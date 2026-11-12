@@ -424,14 +424,17 @@ fn Lowering::hinted(
       }
     }
     Block(label~, typ~, block~) => {
+      let typ = self.declared_block_typ(typ, loc)
       self.note_block_alias(typ)
       out.push(Block(self.block_type(typ, loc), self.body(label, block.desc)))
     }
     Loop(label~, typ~, block~) => {
+      let typ = self.declared_block_typ(typ, loc)
       self.note_block_alias(typ)
       out.push(Loop(self.block_type(typ, loc), self.body(label, block.desc)))
     }
     If(label~, typ~, cond~, if_block~, else_block~) => {
+      let typ = self.declared_block_typ(typ, loc)
       self.instr(out, cond)
       // An `if`/`else` is ONE block in the label space -- a `br` inside either
       // branch counts it once, and it carries one name -- so the label frame
@@ -809,6 +812,7 @@ fn Lowering::hinted(
       )
     }
     TryTable(label~, typ~, catches~, block~) => {
+      let typ = self.declared_block_typ(typ, loc)
       let handlers : Array[@wasm_bin.CatchHandler] = []
       for c in catches {
         handlers.push(self.catch_handler(c, loc))
@@ -822,8 +826,17 @@ fn Lowering::hinted(
     // that run in place -- so each is lowered inside the try's own label frame,
     // which is the one frame the whole construct occupies.
     Try(label~, typ~, block~, catches~, catch_all~) if self.try_table =>
-      self.legacy_try_table(out, loc, label, typ, block, catches, catch_all)
+      self.legacy_try_table(
+        out,
+        loc,
+        label,
+        self.declared_block_typ(typ, loc),
+        block,
+        catches,
+        catch_all,
+      )
     Try(label~, typ~, block~, catches~, catch_all~) => {
+      let typ = self.declared_block_typ(typ, loc)
       let bt = self.block_type(typ, loc)
       // A `try` and its handlers are ONE block in the label space -- a branch
       // inside any of them counts it once, and it carries one name -- so the
@@ -851,6 +864,7 @@ fn Lowering::hinted(
     // to the try has to leave the join block carrying the value; only when
     // there is no such label does the lowering invent one.
     TryCatch(label~, typ~, block~, arms~) => {
+      let typ = self.declared_block_typ(typ, loc)
       let inner : Array[@ast.Instr[@typing_env.InferredAnnotation]] = []
       for x in block.desc {
         inner.push(x)
@@ -1148,6 +1162,19 @@ fn Lowering::hinted(
       self.instr(out, a)
       self.instr(out, b)
       self.instr(out, cond)
+      // A type that holds in every configuration, where they differ; a
+      // numeric one stands for an untyped select.
+      match self.ctx.declared_type(loc) {
+        Some(I32 | I64 | F32 | F64 | V128) => {
+          out.push(Select)
+          return
+        }
+        Some(t) => {
+          out.push(SelectTyped([self.valtype_index(t, loc)]))
+          return
+        }
+        None => ()
+      }
       // A `select` over a REFERENCE needs its type written out: the untyped
       // form only works where the value type is unambiguous, which a reference
       // never is.
@@ -2517,5 +2544,20 @@ fn Lowering::cont_method(
     "resume_throw" =>
       ResumeThrow(ct, self.tag_of(labelled_tag(args, loc), loc), on)
     _ => Switch(ct, self.tag_of(labelled_tag(args, loc), loc))
+  }
+}
+
+///|
+/// A block's signature with the single result an inferred declaration takes
+/// where the configurations of a module lowered as one for all of them infer
+/// different ones (see `ModuleContext::declared_type`).
+fn Lowering::declared_block_typ(
+  self : Lowering,
+  typ : @ast.FuncType,
+  loc : @basic.Location,
+) -> @ast.FuncType {
+  match (typ.results, self.ctx.declared_type(loc)) {
+    ([_], Some(t)) => { ..typ, results: [t], }
+    _ => typ
   }
 }

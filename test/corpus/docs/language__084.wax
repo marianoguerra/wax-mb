@@ -1,4 +1,0 @@
-[bytes| 0; 100]             // New array: 100 elements, all 0
-[bytes| ..; 100]            // New array: 100 elements, default value
-[bytes| 1, 2, 3, 4]         // New array with specific values
-[bytes| seg @ 0; 100]       // New array from a segment (offset, count)

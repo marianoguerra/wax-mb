@@ -121,6 +121,11 @@ pub(all) struct Collecting {
   /// value, and nothing would revisit it. The inference reports these once the
   /// whole body is typed.
   empty_exits : Array[@basic.Location]
+  /// The trailing constructs of the body, their result omitted, that never
+  /// complete -- nothing reaches their exit, their value going to an enclosing
+  /// label -- each with its own cell's record. Each takes the block's result
+  /// once it is known, as it would from a concrete context, and so do its own.
+  divergent_tails : Array[(@basic.Location, Collecting)]
 }
 
 ///|

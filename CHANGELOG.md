@@ -8,6 +8,52 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## Unreleased
+
+Covers `wax` and `wax-cli`. Tracks the reference implementation from `004d19e`
+to `b5f9953`. Wants a minor release: the checker's `Collecting` record gained a
+field, which a record literal notices (see Changed).
+
+### Added
+
+- **A divergent tail takes the type of the block it ends.** A `do`, `loop`,
+  `if` or `try` whose result is omitted and that never completes, its value
+  going to an enclosing label, is now accepted as a call argument, a binding's
+  initializer or a function's value, where it used to be "expecting 1 returned
+  value(s) from the stack, but there are 0".
+- Converting a module with unresolved conditionals reports every construct
+  with no single WebAssembly form: an operation, a literal, an inferred block
+  result, local, global or select, a call through a reference, a continuation
+  instruction, and a struct, array or string built without naming its type,
+  whose type differs between configurations. Where one configuration's type is
+  a supertype of the others', the declaration or access takes it instead of
+  being rejected, and a select of unreachable values lowers untyped.
+- `ModuleContext::declared_type`, which the lowering reads those types from;
+  `lookup_struct_type(written=true)`.
+
+### Changed
+
+- **A struct allocation's descriptor must be exact**: `{descriptor(d)| ..}`
+  needs `d : &!t` or `&?!t`, as `struct.new_desc` does. An inexact one used to
+  pass the checker and fail only once the lowered module was validated.
+- **A subtype hierarchy is at most 63 deep**, as the GC proposal says: "This
+  type has too many supertypes".
+- A mismatch among several values at one place says which one: "Value 0 of
+  this expression has type …", counting from 0 as the reference does.
+- A type test on an unbound type reports it once.
+- Converting a module with a conditional alias, a block, an operand, a struct
+  field, an array element, a call's parameters and a stack-switching value
+  take the alias they are declared with, and a branching cast's source type
+  holds in every configuration.
+- Dead code after a conditional statement points at the conditional, not at
+  the statement inside the branch that diverged.
+- `{descriptor(d)| ..}` no longer asks for the custom-descriptors feature a
+  second time, at the `describes` clause.
+- `Collecting` has `divergent_tails`, `ModuleContext` has `divergent`,
+  `alias_variants`, `receiver_types` and `declared_types`, `Operands` has
+  `polymorphic_values`, and `ModuleContext::new` takes `alias_variants` and
+  `receiver_types`.
+
 ## [0.5.0] — 2026-11-12
 
 Covers `wax` and `wax-cli`. A toolchain release: builds clean on moonc v0.10.20

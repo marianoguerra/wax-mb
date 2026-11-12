@@ -183,6 +183,7 @@ fn conditional_cast_types(
   location : @basic.Location,
   operand : @infer.Cell[@infer.InferredType],
   target : @wasm_types.RefType[@ast.Ident],
+  widen~ : Bool = false,
 ) -> (@infer.Cell[@infer.InferredType], @infer.Cell[@infer.InferredType])? {
   let tc = ctx.type_context
   fn internal(
@@ -194,7 +195,14 @@ fn conditional_cast_types(
   match operand.get() {
     Valtype({ typ: Ref(actual), .. }) => {
       let source = match val_lub(tc, Ref(target), Ref(actual)) {
-        Some(t) => t
+        // `widen` is the branching casts': a source holding in every
+        // configuration (see `conditional_cast_source`).
+        Some(t) =>
+          if widen {
+            conditional_cast_source(ctx, operand, t)
+          } else {
+            t
+          }
         None => {
           // Different hierarchies share no value, so no cast between them can
           // ever apply.

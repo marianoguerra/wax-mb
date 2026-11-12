@@ -48,6 +48,7 @@ pub fn fresh_collecting(
     declared,
     needed,
     empty_exits: [],
+    divergent_tails: [],
   }
   (cs, @infer.Cell::make(Collecting(cs)))
 }

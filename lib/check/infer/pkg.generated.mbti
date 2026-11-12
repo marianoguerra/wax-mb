@@ -48,6 +48,7 @@ pub(all) struct Collecting {
   declared : Cell[InferredType]?
   mut needed : Bool
   empty_exits : Array[@basic.Location]
+  divergent_tails : Array[(@basic.Location, Collecting)]
 }
 
 pub(all) enum InferredType {

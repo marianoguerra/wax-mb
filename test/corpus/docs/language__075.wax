@@ -1,2 +1,1 @@
-!ref            // True if ref is null
-ref!            // Assert non-null (trap if null)
+null            // Null reference (requires type context)

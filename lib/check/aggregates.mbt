@@ -39,11 +39,15 @@ pub fn lookup_func_type(
 
 ///|
 /// The fields a struct type declares.
+///
+/// `written` asks for them as written, aliases included, as for
+/// `lookup_func_type`.
 pub fn lookup_struct_type(
   ctx : @typing_env.TypeContext,
   diagnostics : @diagnostic.Context,
   name : @ast.Ident,
   location~ : @basic.Location? = None,
+  written~ : Bool = false,
 ) -> Array[
   @basic.Annotated[
     (@ast.Ident, @wasm_types.MutType[@wasm_types.StorageType[@ast.Ident]]),
@@ -53,6 +57,7 @@ pub fn lookup_struct_type(
   guard find(ctx.types, diagnostics, name) is Some((_, def)) else {
     return None
   }
+  let def = if written { as_written(ctx, name.name, def) } else { def }
   match def.typ {
     Struct(fields) => Some(fields)
     _ => {
@@ -278,6 +283,38 @@ fn check_elem_subtype(
         @infer.valtype_cell(d),
       )
     }
+  }
+}
+
+///|
+/// An allocation's descriptor operand must be exact, `&?!$Y`:
+/// `struct.new_desc` allocates exactly the type `$Y` describes, where a cast's
+/// target merely takes the descriptor's exactness. The reference's
+/// `require_exact_descriptor`.
+fn require_exact_descriptor(
+  ctx : @typing_env.ModuleContext,
+  descriptor : @typing_env.InferredAnnotation,
+) -> Unit {
+  let (types, location) = descriptor
+  guard types is [ty] else { return }
+  guard ty.get() is Valtype({ typ: Ref({ typ: Type(y), .. }), .. }) else {
+    return
+  }
+  match
+    internalize(
+      ctx.type_context,
+      ctx.diagnostics,
+      Ref({ nullable: true, typ: Exact(y), }),
+    ) {
+    Some(exact) =>
+      check_subtype(
+        ctx.type_context.subtyping_info(),
+        ctx.diagnostics,
+        location,
+        ty,
+        exact,
+      )
+    None => ()
   }
 }
 

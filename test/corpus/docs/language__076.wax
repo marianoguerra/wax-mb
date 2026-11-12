@@ -1,2 +1,2 @@
-val is &type    // Test if val is of type (returns i32)
-val as &type    // Cast val to type (trap on failure)
+!ref            // True if ref is null
+ref!            // Assert non-null (trap if null)

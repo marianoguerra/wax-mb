@@ -1,0 +1,2 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__decl-nested.wax","startLine":2,"startColumn":3,"endLine":2,"endColumn":4,"startOffset":70,"endOffset":71,"message":"The function 'j' is never used.","warning":"unused-field","hint":null,"related":[]}
+{"severity":"warning","file":"test/corpus/cram/type-alias__decl-nested.wax","startLine":2,"startColumn":13,"endLine":2,"endColumn":14,"startOffset":80,"endOffset":81,"message":"The local variable 'y' is never used.","warning":"unused-local","hint":null,"related":[]}

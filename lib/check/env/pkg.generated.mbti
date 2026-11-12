@@ -94,6 +94,10 @@ pub struct ModuleContext {
   mut assigned_locals : Map[String, Unit]
   mut control_types : Array[ControlFrame]
   mut return_types : Array[@infer.Cell[@infer.InferredType]]
+  divergent : @ref.Ref[(@basic.Location, @infer.Collecting)?]
+  alias_variants : Map[String, Array[@types.ValType[@ast.Ident]]]
+  receiver_types : Map[(Int32, Int32), String]
+  declared_types : Map[(Int32, Int32), @types.ValType[@ast.Ident]]
   cond : @ref.Ref[@cond.T]
   cond_env : @cond.Env
   resolve_links : Array[Reference]?
@@ -101,9 +105,10 @@ pub struct ModuleContext {
   member_completions : Array[(@basic.Location, @members.MemberReceiver)]?
 }
 pub fn ModuleContext::current_deferral(Self) -> Array[@ast.Ident]?
+pub fn ModuleContext::declared_type(Self, @basic.Location) -> @types.ValType[@ast.Ident]?
 pub fn ModuleContext::enter_function(Self, return_types~ : Array[@infer.Cell[@infer.InferredType]], label_decls? : Array[@ast.Ident], assigned_locals? : Map[String, Unit]) -> Unit
 pub fn ModuleContext::merge_initialized(Self, Map[String, Unit]) -> Unit
-pub fn ModuleContext::new(@diagnostic.Context, @store.TypeStore, @feature.Set, warn_unused? : Bool, simplify? : Bool, suggest? : Bool, faithful? : Bool, resolve_links? : Array[Reference]?, pun_spans? : Array[@basic.Location]?, member_completions? : Array[(@basic.Location, @members.MemberReceiver)]?) -> Self
+pub fn ModuleContext::new(@diagnostic.Context, @store.TypeStore, @feature.Set, warn_unused? : Bool, simplify? : Bool, suggest? : Bool, faithful? : Bool, resolve_links? : Array[Reference]?, pun_spans? : Array[@basic.Location]?, member_completions? : Array[(@basic.Location, @members.MemberReceiver)]?, alias_variants? : Map[String, Array[@types.ValType[@ast.Ident]]], receiver_types? : Map[(Int32, Int32), String]) -> Self
 pub fn ModuleContext::pop_deferral(Self) -> Unit
 pub fn ModuleContext::push_deferral(Self) -> Array[@ast.Ident]
 pub fn ModuleContext::restore_initialized(Self, Map[String, Unit]) -> Unit

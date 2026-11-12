@@ -316,6 +316,12 @@ fn Checker::check_block(
     expected,
   )
   let typ_ = fill_omitted_result(typ, result_cell)
+  // A trailing construct that never completes takes the block's result.
+  let checked = match @typing_env.standalone_valtype(result_cell) {
+    Some(iv) =>
+      fill_divergent_tail(cs, declared_form(iv), [result_cell], checked)
+    None => checked
+  }
   let body : @basic.Annotated[
     Array[@ast.Instr[@typing_env.InferredAnnotation]],
     @basic.Location,

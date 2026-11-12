@@ -1,6 +1,4 @@
-'done: do {
-    if condition {
-        br 'done;   // jump past the block (exits it)
-    }
-    // ...
+'next: loop {
+    total = total - 1;
+    br_if 'next total >s 0;
 }

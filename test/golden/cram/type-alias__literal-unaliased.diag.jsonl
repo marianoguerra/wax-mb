@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__literal-unaliased.wax","startLine":2,"startColumn":3,"endLine":2,"endColumn":4,"startOffset":60,"endOffset":61,"message":"The function 'j' is never used.","warning":"unused-field","hint":null,"related":[]}

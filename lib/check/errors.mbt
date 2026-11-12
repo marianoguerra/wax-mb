@@ -136,16 +136,27 @@ fn expression_type_mismatch(
   provided : @infer.Cell[@infer.InferredType],
   expected : @infer.Cell[@infer.InferredType],
   expected_at~ : @basic.Location? = None,
+  index~ : Int32? = None,
 ) -> Unit {
   let related = match expected_at {
     None => []
     Some(loc) =>
       [({ loc, message: @message.text("expected here"), } : @diagnostic.Label)]
   }
+  // `index` numbers the value among several the expression produces, so two
+  // of them with the same mismatch are told apart. It counts from 0, as the
+  // reference's does.
+  let subject = match index {
+    None => @message.text("This expression has type")
+    Some(k) =>
+      @message.text("Value")
+      .sep(@message.int(k))
+      .sep(@message.text("of this expression has type"))
+  }
   ctx.report(
     location,
     Error,
-    @message.text("This expression has type")
+    subject
     .sep(@message.lazy_type(() => @infer.to_string(provided)))
     .sep(@message.text("but is expected to have type"))
     .sep(@message.lazy_type(() => @infer.to_string(expected)))
@@ -387,6 +398,150 @@ fn conditional_alias_cast(
         "Cast in the branches of a conditional, or resolve the conditionals with -D.",
       ),
     ),
+  )
+}
+
+///|
+/// A literal whose type differs between configurations, with no conditional
+/// alias to name for it.
+fn configuration_dependent_literal(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "This literal has no single WebAssembly form: it takes different types under different conditional annotations.",
+    ),
+    hint=Some(
+      @message.text(
+        "Write it in the branches of a conditional, give it a type of its own, or resolve the conditionals with -D.",
+      ),
+    ),
+  )
+}
+
+///|
+/// An operation whose instruction its operands' types pick, when those types
+/// differ between configurations.
+fn configuration_dependent_operation(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  alias_ : @ast.Ident?,
+) -> Unit {
+  let message = match alias_ {
+    Some(x) =>
+      @message.text("This operation is on a value of the type alias")
+      .sep(@message.ident(x.name))
+      .sep(
+        @message.text(
+          "and has no single WebAssembly form: the alias stands for different types under a conditional annotation.",
+        ),
+      )
+    None =>
+      @message.text(
+        "This operation has no single WebAssembly form: its operands have different types under different conditional annotations.",
+      )
+  }
+  ctx.report(
+    location,
+    Error,
+    message,
+    hint=Some(
+      @message.text(
+        "Write it in the branches of a conditional, or resolve the conditionals with -D.",
+      ),
+    ),
+  )
+}
+
+///|
+/// An inferred declaration whose type differs between configurations, none of
+/// them a supertype of the others.
+fn configuration_dependent_declaration(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  declaration : Declaration,
+) -> Unit {
+  let message = match declaration {
+    BlockResult =>
+      @message.text(
+        "The result type of this block is inferred as different types under different conditional annotations, so it has no single WebAssembly form.",
+      )
+    SelectResult =>
+      @message.text(
+        "The result type of this selection is inferred as different types under different conditional annotations, so it has no single WebAssembly form.",
+      )
+    GlobalType(x) =>
+      @message.text("The type of the global")
+      .sep(@message.ident(x.name))
+      .sep(
+        @message.text(
+          "is inferred as different types under different conditional annotations, so its declaration has no single WebAssembly form.",
+        ),
+      )
+    Locals([x]) =>
+      @message.text("The type of the local")
+      .sep(@message.ident(x.name))
+      .sep(
+        @message.text(
+          "is inferred as different types under different conditional annotations, so its declaration has no single WebAssembly form.",
+        ),
+      )
+    Locals(_) =>
+      @message.text(
+        "The types of these locals are inferred as different types under different conditional annotations, so their declaration has no single WebAssembly form.",
+      )
+  }
+  ctx.report(
+    location,
+    Error,
+    message,
+    hint=Some(
+      @message.text(
+        "Give it a type that holds in every configuration (a type alias defined in the branches), write it in the branches of a conditional, or resolve the conditionals with -D.",
+      ),
+    ),
+  )
+}
+
+///|
+/// An instruction whose type immediate the lowering takes from a type that
+/// differs between configurations. `kind` is `receiver`, `access`, `call_ref`
+/// or `construction`.
+fn configuration_dependent_immediate(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+  kind : String,
+) -> Unit {
+  let (message, hint) = match kind {
+    "receiver" =>
+      (
+        "This value has different types under different conditional annotations, none of them a supertype of the others, so an access to it has no single WebAssembly form.",
+        "Access it in the branches of a conditional, or resolve the conditionals with -D.",
+      )
+    "access" =>
+      (
+        "This instruction has no single WebAssembly form: the value it applies to has different types under different conditional annotations.",
+        "Write it in the branches of a conditional, or resolve the conditionals with -D.",
+      )
+    "call_ref" =>
+      (
+        "This call has no single WebAssembly form: the function reference it calls has different types under different conditional annotations.",
+        "Write it in the branches of a conditional, or resolve the conditionals with -D.",
+      )
+    _ =>
+      (
+        "The type of this value is inferred as different types under different conditional annotations, so it has no single WebAssembly form.",
+        "Write it in the branches of a conditional, or resolve the conditionals with -D.",
+      )
+  }
+  ctx.report(
+    location,
+    Error,
+    @message.text(message),
+    hint=Some(@message.text(hint)),
   )
 }
 
@@ -2403,6 +2558,26 @@ fn call_targets_direct_call(
     Error,
     @message.text(
       "A call-target hint may only prefix an indirect call. This callee is a function, so the call is direct and its target is already known.",
+    ),
+  )
+}
+
+///|
+/// The deepest subtype hierarchy the GC proposal allows: a type has at most
+/// this many supertypes, transitively. Engines reject a deeper one.
+let max_subtype_depth : Int32 = 63
+
+///|
+/// A type whose chain of supertypes is longer than `max_subtype_depth`.
+fn subtype_too_deep(
+  ctx : @diagnostic.Context,
+  location : @basic.Location,
+) -> Unit {
+  ctx.report(
+    location,
+    Error,
+    @message.text(
+      "This type has too many supertypes: a subtype hierarchy is at most \{max_subtype_depth} deep.",
     ),
   )
 }

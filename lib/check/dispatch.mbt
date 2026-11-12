@@ -1010,7 +1010,7 @@ pub fn Checker::statement(
         field,
       )
       {
-        desc: StructGet(recv_, field),
+        desc: StructGet(ascribe_conditional_receiver(ctx, recv_), field),
         info: annotate([ty], loc),
         hints: i.hints,
         expected: i.expected,
@@ -1044,7 +1044,7 @@ pub fn Checker::statement(
         None => self.expression(value)
       }
       {
-        desc: StructSet(recv_, field, value_),
+        desc: StructSet(ascribe_conditional_receiver(ctx, recv_), field, value_),
         info: annotate([], loc),
         hints: i.hints,
         expected: i.expected,
@@ -1104,7 +1104,7 @@ pub fn Checker::statement(
         None => @infer.Cell::make(@infer.InferredType::Error)
       }
       {
-        desc: ArrayGet(recv_, index_),
+        desc: ArrayGet(ascribe_conditional_receiver(ctx, recv_), index_),
         info: annotate([ty], loc),
         hints: i.hints,
         expected: i.expected,
@@ -1135,6 +1135,8 @@ pub fn Checker::statement(
             }
           }
       }
+      // As written, so that a field value takes the alias its field is
+      // declared with.
       let declared = match resolved {
         Some(n) =>
           lookup_struct_type(
@@ -1142,6 +1144,7 @@ pub fn Checker::statement(
             ctx.diagnostics,
             n,
             location=Some(loc),
+            written=true,
           )
         None => None
       }
@@ -1513,8 +1516,9 @@ pub fn Checker::statement(
       // place. The innermost link is the one to fix. An operand that is
       // ALREADY poison passes silently and poisons the result too, which is
       // what keeps the chain quiet past its first link.
-      let operand_ok = match
-        top_heap_type(ctx.type_context, ctx.diagnostics, target.typ) {
+      // `None` for an unbound target, reported here once.
+      let top = top_heap_type(ctx.type_context, ctx.diagnostics, target.typ)
+      let operand_ok = match top {
         Some(top) =>
           match
             internalize(
@@ -1538,7 +1542,10 @@ pub fn Checker::statement(
           }
         None => true
       }
-      if internalize(ctx.type_context, ctx.diagnostics, Ref(target)) is Some(w) {
+      // Only on a target that resolved: resolving an unbound one again would
+      // report it a second time, at the same place.
+      if top is Some(_) &&
+        internalize(ctx.type_context, ctx.diagnostics, Ref(target)) is Some(w) {
         lint_ref_cast(
           ctx,
           loc,
@@ -1994,7 +2001,13 @@ pub fn Checker::statement(
       // No pair of types means the operand is not a reference at all (reported
       // just now): there is no instruction left to annotate, so the whole
       // `br_on_cast` is abandoned rather than kept with an `Error` residual.
-      guard conditional_cast_types(ctx, operand.info, ref_ty, target)
+      guard conditional_cast_types(
+          ctx,
+          operand.info,
+          ref_ty,
+          target,
+          widen=true,
+        )
         is Some((source, residual)) else {
         return self.abandoned()
       }
@@ -2028,7 +2041,7 @@ pub fn Checker::statement(
       // instruction names both types, and a source narrower than the target is
       // not a well-formed pair.
       let residual = match
-        conditional_cast_types(ctx, operand.info, ref_ty, target) {
+        conditional_cast_types(ctx, operand.info, ref_ty, target, widen=true) {
         Some((source, r)) => {
           ref_ty.set(source.get())
           r
@@ -2709,6 +2722,7 @@ pub fn Checker::statement(
         nullable=false,
         expression_type(ctx, desc_.info),
       )
+      require_exact_descriptor(ctx, desc_.info)
       let declared = match target {
         Some({ typ: Type(n) | Exact(n), .. }) =>
           lookup_struct_type(
@@ -2716,6 +2730,7 @@ pub fn Checker::statement(
             ctx.diagnostics,
             n,
             location=Some(loc),
+            written=true,
           )
         _ => None
       }
@@ -2752,6 +2767,7 @@ pub fn Checker::statement(
         nullable=false,
         expression_type(ctx, desc_.info),
       )
+      require_exact_descriptor(ctx, desc_.info)
       if target is Some({ typ: Type(n) | Exact(n), .. }) {
         if lookup_struct_type(
             ctx.type_context,
@@ -2765,13 +2781,14 @@ pub fn Checker::statement(
           }
         }
       }
+      // Through `construction_result`, for the reason `StructDesc` gives.
       let ty = match target {
-        Some(rt) =>
-          match internalize(ctx.type_context, ctx.diagnostics, Ref(rt)) {
+        Some({ typ: Type(n) | Exact(n), .. }) =>
+          match construction_result(ctx, n) {
             Some(c) => c
             None => @infer.Cell::make(@infer.InferredType::Error)
           }
-        None => @infer.Cell::make(@infer.InferredType::Error)
+        _ => @infer.Cell::make(@infer.InferredType::Error)
       }
       {
         desc: StructDefaultDesc(desc_),
@@ -2889,7 +2906,7 @@ pub fn Checker::statement(
         None => self.expression(value)
       }
       {
-        desc: ArraySet(recv_, index_, value_),
+        desc: ArraySet(ascribe_conditional_receiver(ctx, recv_), index_, value_),
         info: annotate([], loc),
         hints: i.hints,
         expected: i.expected,
@@ -3550,7 +3567,13 @@ fn Checker::element_of(
     cannot_infer_array_type(self.ctx.diagnostics, location)
     return None
   }
-  guard lookup_array_type(self.ctx.type_context, self.ctx.diagnostics, n)
+  // As written, so that an element takes the alias it is declared with.
+  guard lookup_array_type(
+      self.ctx.type_context,
+      self.ctx.diagnostics,
+      n,
+      written=true,
+    )
     is Some(field) else {
     return None
   }
@@ -5036,13 +5059,12 @@ fn Checker::check_cont_bind(
   // The operands are the bound prefix, then the source continuation itself.
   let want : Array[@infer.Cell[@infer.InferredType]] = []
   let n = if np > 0 { np } else { 0 }
+  // As written, so that an operand bound takes the alias its parameter is
+  // declared with.
+  let bound = written_signature(ctx.type_context, src_inner, src_sig).params
   for k in 0..<n {
-    if k < src_sig.params.length() {
-      if internalize(
-          ctx.type_context,
-          ctx.diagnostics,
-          src_sig.params[k].desc.1,
-        )
+    if k < bound.length() {
+      if internalize(ctx.type_context, ctx.diagnostics, bound[k].desc.1)
         is Some(c) {
         want.push(c)
       }
@@ -5090,6 +5112,9 @@ fn Checker::type_resume(
   guard lookup_func_type(ctx.type_context, ctx.diagnostics, inner) is Some(sg) else {
     return []
   }
+  // The operands and the values delivered as written, so that each takes the
+  // alias it is declared with.
+  let written = written_signature(ctx.type_context, inner, sg)
   let want : Array[@infer.Cell[@infer.InferredType]] = []
   if ref_first {
     // `resume_throw_ref` throws an exception object that was caught elsewhere.
@@ -5108,7 +5133,7 @@ fn Checker::type_resume(
           Some(ft) => ft.params
           None => []
         }
-      None => sg.params
+      None => written.params
     }
     for p in params {
       if internalize(ctx.type_context, ctx.diagnostics, p.desc.1) is Some(c) {
@@ -5135,7 +5160,7 @@ fn Checker::type_resume(
   )
   check_resume_handlers(ctx, sg.results, handlers)
   let out : Array[@infer.Cell[@infer.InferredType]] = []
-  for r in sg.results {
+  for r in written.results {
     if internalize(ctx.type_context, ctx.diagnostics, r) is Some(c) {
       out.push(c)
     }
@@ -5170,8 +5195,9 @@ fn Checker::type_switch(
   if np >= 1 {
     // Everything but that last slot goes on the stack, then the continuation.
     let want : Array[@infer.Cell[@infer.InferredType]] = []
+    let lead = written_signature(ctx.type_context, inner, sg).params
     for k in 0..<(np - 1) {
-      if internalize(ctx.type_context, ctx.diagnostics, sg.params[k].desc.1)
+      if internalize(ctx.type_context, ctx.diagnostics, lead[k].desc.1)
         is Some(c) {
         want.push(c)
       }
@@ -5199,7 +5225,10 @@ fn Checker::type_switch(
     match sg.params[np - 1].desc.1 {
       Ref({ typ: Type(ct2) | Exact(ct2), .. }) =>
         match lookup_cont_inner(ctx.type_context, ctx.diagnostics, ct2) {
-          Some(i2) => lookup_func_type(ctx.type_context, ctx.diagnostics, i2)
+          Some(i2) =>
+            lookup_func_type(ctx.type_context, ctx.diagnostics, i2).map(s2 => {
+              (i2, s2)
+            })
           None => None
         }
       _ => None
@@ -5232,7 +5261,7 @@ fn Checker::type_switch(
         location,
         "the continuation's last parameter must itself be a continuation type",
       )
-    Some(inner2) =>
+    Some((_, inner2)) =>
       // A `switch` tag carries no values -- it names the switch, it does not
       // pass anything -- and its results have to agree with BOTH continuations,
       // since they are what flows across the exchange.
@@ -5249,8 +5278,10 @@ fn Checker::type_switch(
       }
   }
   let out : Array[@infer.Cell[@infer.InferredType]] = []
-  if inner_sg is Some(s2) {
-    for p in s2.params {
+  if inner_sg is Some((i2, s2)) {
+    // As written, so that the values switched in take the alias they are
+    // declared with.
+    for p in written_signature(ctx.type_context, i2, s2).params {
       if internalize(ctx.type_context, ctx.diagnostics, p.desc.1) is Some(c) {
         out.push(c)
       }

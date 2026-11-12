@@ -129,7 +129,7 @@ pub fn lookup_array_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, loca
 
 pub fn lookup_func_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?, written? : Bool) -> @ast.FuncType?
 
-pub fn lookup_struct_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?) -> Array[@basic.Annotated[(@ast.Ident, @types.MutType[@types.StorageType[@ast.Ident]]), @basic.Location]]?
+pub fn lookup_struct_type(@env.TypeContext, @diagnostic.Context, @ast.Ident, location? : @basic.Location?, written? : Bool) -> Array[@basic.Annotated[(@ast.Ident, @types.MutType[@types.StorageType[@ast.Ident]]), @basic.Location]]?
 
 pub fn mark_initialized(@env.ModuleContext, String) -> Unit
 
@@ -239,6 +239,7 @@ type MissingBatch
 
 pub struct Operands {
   mut stack : Stack
+  polymorphic_values : Array[@infer.Cell[@infer.InferredType]]
 }
 pub fn Operands::new() -> Self
 pub fn Operands::pop(Self, @store.SubtypingInfo, @diagnostic.Context, StackKind, @basic.Location, Int32, Int32, @infer.Cell[@infer.InferredType]) -> Unit

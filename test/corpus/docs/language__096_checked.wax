@@ -1,7 +1,0 @@
-fn scale(v: v128, k: i32) -> v128 {
-    v.add_i32x4(k.splat_i32x4());     // i32x4.add of v and (i32x4.splat k)
-}
-
-fn lane0(v: v128) -> i32 {
-    v.extract_lane_i32x4(0);          // extract lane 0
-}

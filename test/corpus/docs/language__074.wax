@@ -1,1 +1,2 @@
-null            // Null reference (requires type context)
+&type           // Non-nullable reference
+&?type          // Nullable reference

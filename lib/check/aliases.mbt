@@ -280,6 +280,33 @@ fn as_written(
 }
 
 ///|
+/// The signature `sg` of the function type `name`, its parameters and results
+/// as written, aliases included, so that a value passed to or delivered by it
+/// takes the alias it is declared with. The reference's `written_params` and
+/// `written_results`: each side is kept as stored when the written form does
+/// not line up with it.
+fn written_signature(
+  ctx : @typing_env.TypeContext,
+  name : @ast.Ident,
+  sg : @ast.FuncType,
+) -> @ast.FuncType {
+  guard ctx.types.find_no_mark(name.name) is Some((_, def)) else { return sg }
+  guard as_written(ctx, name.name, def).typ is Func(f) else { return sg }
+  {
+    params: if f.params.length() == sg.params.length() {
+      f.params
+    } else {
+      sg.params
+    },
+    results: if f.results.length() == sg.results.length() {
+      f.results
+    } else {
+      sg.results
+    },
+  }
+}
+
+///|
 /// Whether the alias `a` is defined under a conditional annotation: it may then
 /// stand for a reference in one configuration and a number in another, and a
 /// construct of its type lowers to a form that holds in every configuration.
@@ -304,5 +331,99 @@ fn ascribe_conditional_select(
       conditional_alias(ctx, a) =>
       { ..sel, desc: Cast(sel, Ascribed(Alias(a))), }
     _ => sel
+  }
+}
+
+///|
+/// Each alias defined under a conditional annotation, with its definition in
+/// every branch, as written.
+fn conditional_alias_variants(
+  fields : @ast.Module[@basic.Location],
+) -> Map[String, Array[@wasm_types.ValType[@ast.Ident]]] {
+  let tbl : Map[String, Array[@wasm_types.ValType[@ast.Ident]]] = Map([])
+  fn walk(
+    under : Bool,
+    fields : Array[
+      @basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location],
+    ],
+  ) -> Unit {
+    for field in fields {
+      match field.desc {
+        Conditional(then_fields~, else_fields~, ..) => {
+          walk(true, then_fields.desc)
+          if else_fields is Some(e) {
+            walk(true, e.desc)
+          }
+        }
+        TypeAlias(name~, typ~) if under =>
+          match tbl.get(name.name) {
+            Some(defs) => defs.push(typ)
+            None => tbl[name.name] = [typ]
+          }
+        _ => ()
+      }
+    }
+  }
+
+  walk(false, fields)
+  tbl
+}
+
+///|
+/// The source type `ty1` of a branching cast whose operand `cell` is a value
+/// of a conditional alias, in a module lowered as one for every configuration:
+/// widened to the lub with the type the alias stands for in each of them, so
+/// that the cast holds in all of them. A source type is a reference-type
+/// immediate, with no alias to defer to. `ty1` itself when a definition does
+/// not resolve here to a reference of the same hierarchy.
+fn conditional_cast_source(
+  ctx : @typing_env.ModuleContext,
+  cell : @infer.Cell[@infer.InferredType],
+  ty1 : @wasm_types.ValType[@ast.Ident],
+) -> @wasm_types.ValType[@ast.Ident] {
+  guard cell.get() is Valtype({ type_alias: Some(a), .. }) else { return ty1 }
+  guard ctx.alias_variants.get(a.name) is Some(defs) else { return ty1 }
+  let mut acc = Some(ty1)
+  for def in defs {
+    acc = match acc {
+      Some(t) => val_lub(ctx.type_context, t, ctx.type_context.unalias(def))
+      None => None
+    }
+  }
+  acc.unwrap_or(ty1)
+}
+
+///|
+/// The receiver `recv` of a struct or array access ascribed the type
+/// `receiver_types` gives it, when it is not the receiver's own, so that the
+/// lowering names that type whichever configuration's run builds the access.
+fn ascribe_conditional_receiver(
+  ctx : @typing_env.ModuleContext,
+  recv : @ast.Instr[@typing_env.InferredAnnotation],
+) -> @ast.Instr[@typing_env.InferredAnnotation] {
+  let (cells, l) = recv.info
+  guard cells is [cell] else { return recv }
+  guard ctx.receiver_types.get((l.start.cnum, l.end.cnum)) is Some(name) else {
+    return recv
+  }
+  guard cell.get() is Valtype({ typ, .. }) else { return recv }
+  guard ctx.type_context.unalias(typ)
+    is Ref({ typ: Type(n) | Exact(n), .. } as r) &&
+    n.name != name else {
+    return recv
+  }
+  let t : @wasm_types.ValType[@ast.Ident] = Ref({
+    ..r,
+    typ: Type({ ..n, name, }),
+  })
+  match internalize(ctx.type_context, ctx.diagnostics, t) {
+    Some(cell_) =>
+      {
+        desc: Cast(recv, Ascribed(t)),
+        info: ([cell_], l),
+        hints: @ast.no_hints,
+        expected: None,
+      }
+    None => recv
   }
 }

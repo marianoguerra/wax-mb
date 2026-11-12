@@ -2020,6 +2020,7 @@ test "subtype records and join_collected folds" {
     declared: None,
     needed: false,
     empty_exits: [],
+    divergent_tails: [],
   }
   let result = @infer.Cell::make(@infer.InferredType::Collecting(collecting))
   // Two deliveries, checked against the block's result cell.
@@ -7794,6 +7795,17 @@ test "a descriptor construction recovers its type from the descriptor" {
         Ref({ nullable: false, typ: Type(id("d")), }),
       ),
     )
+    // An allocation takes an EXACT descriptor (`struct.new_desc` allocates
+    // exactly the type it describes), where a cast takes either.
+    @typing.bind_local(
+      ctx,
+      id("dx"),
+      @typing.internalize_valtype(
+        ctx.type_context,
+        ctx.diagnostics,
+        Ref({ nullable: false, typ: Exact(id("d")), }),
+      ),
+    )
     @typing.bind_local(ctx, id("bad"), Some(@infer.i32_valtype))
     ctx
   }
@@ -7816,7 +7828,7 @@ test "a descriptor construction recovers its type from the descriptor" {
   let checker = @typing.Checker::new(ctx, @typing.Operands::new())
   let checked = checker.statement(
     instr(
-      StructDesc(instr(Get(id("dv")), 20), [
+      StructDesc(instr(Get(id("dx")), 20), [
         (id("x"), Some(instr(Int("1"), 30))),
       ]),
       10,

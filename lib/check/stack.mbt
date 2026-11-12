@@ -61,11 +61,15 @@ pub(all) enum StackKind {
 /// The operand stack of the function being checked.
 pub struct Operands {
   mut stack : Stack
+  /// The cell of each value taken off the polymorphic stack of unreachable
+  /// code. Its type is whatever its use defaults it to, so a hole holding one
+  /// picks no operation's form (`record_configuration_forms`).
+  polymorphic_values : Array[@infer.Cell[@infer.InferredType]]
 }
 
 ///|
 pub fn Operands::new() -> Operands {
-  { stack: Empty, }
+  { stack: Empty, polymorphic_values: [], }
 }
 
 ///|
@@ -97,7 +101,11 @@ pub fn Operands::pop_any(
   expected : Int32,
 ) -> @infer.Cell[@infer.InferredType] {
   match self.stack {
-    Unreachable => @infer.Cell::make(Unknown)
+    Unreachable => {
+      let cell = @infer.Cell::make(@infer.InferredType::Unknown)
+      self.polymorphic_values.push(cell)
+      cell
+    }
     Poisoned => @infer.Cell::make(@infer.InferredType::Error)
     Cons(_, ty, rest) => {
       self.stack = rest

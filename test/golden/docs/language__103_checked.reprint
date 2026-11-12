@@ -1,0 +1,14 @@
+memory mem: i32 [1, 2] shared;
+
+fn atomics(p: i32, v: i32, w: i64) -> i32 {
+    _ = mem.atomic_load32(p); // i32.atomic.load
+    _ = mem.atomic_load8(p) as i32_u; // i32.atomic.load8_u (zero-extend)
+    _ = mem.atomic_load32(p) as i64_u; // i64.atomic.load32_u
+    mem.atomic_store16(p, v); // i32.atomic.store16 (v is i32)
+    mem.atomic_store16(p, w); // i64.atomic.store16 (w is i64)
+    _ = mem.atomic_rmw_add32(p, v); // read-modify-write: the old value
+    _ = mem.atomic_rmw_add16(p, w); // i64.atomic.rmw16.add_u
+    _ = mem.atomic_rmw_cmpxchg32(p, v, v); // compare-and-exchange
+    _ = mem.atomic_wait32(p, v, w); // wait: expected value and timeout
+    mem.atomic_notify(p, 1); // wake waiters: how many woke
+}

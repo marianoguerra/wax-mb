@@ -1,0 +1,1 @@
+{"severity":"warning","file":"test/corpus/cram/type-alias__decl-block.wax","startLine":2,"startColumn":3,"endLine":2,"endColumn":4,"startOffset":62,"endOffset":63,"message":"The function 'f' is never used.","warning":"unused-field","hint":null,"related":[]}

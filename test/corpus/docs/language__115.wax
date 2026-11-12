@@ -1,3 +1,6 @@
-try { might_throw(); } catch [overflow -> 'h]    // on `overflow`, branch to 'h
-try { might_throw(); } catch [overflow & -> 'h]  // also deliver the exnref
-try { might_throw(); } catch [_ -> 'h]           // catch any exception
+let res: &eq = try &eq {
+    apply(f);
+} catch {
+    javascript_exception => { wrap_exception(_); }  // normalize; falls through
+    ocaml_exception => { _; }                       // handle either
+};

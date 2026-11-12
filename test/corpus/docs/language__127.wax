@@ -1,0 +1,3 @@
+fn bad(x: &any) {
+    x; match _ { … }    // Error: A hole '_' cannot be used as a 'match' scrutinee.
+}
