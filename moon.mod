@@ -23,12 +23,12 @@ name = "marianoguerra/wax-dev"
 version = "0.0.0"
 
 import {
-  "marianoguerra/error-report@0.1.1",
-  "marianoguerra/wap@0.4.2",
-  "marianoguerra/was@0.2.2",
-  "marianoguerra/wax@0.4.2",
+  "marianoguerra/error-report@0.1.2",
+  "marianoguerra/wap@0.5.0",
+  "marianoguerra/was@0.3.0",
+  "marianoguerra/wax@0.5.0",
   "moonbitlang/x@0.5.7",
-  "marianoguerra/pretty-fast-pretty-printer@0.2.3",
+  "marianoguerra/pretty-fast-pretty-printer@0.2.4",
 }
 
 license = "Apache-2.0"

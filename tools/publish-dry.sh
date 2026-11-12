@@ -8,6 +8,9 @@
 # the recipe stops there and never reaches `cli`. So the acceptance line is what
 # is believed here, not the status.
 #
+# moon 0.1.20261104 changed both halves: an accepted dry run now prints only
+# "Server status: 202 Accepted" and exits 0. Either spelling is believed.
+#
 # The second thing this exists for is refusing to run at the repository root.
 # `moon publish` with no -C publishes `marianoguerra/wax-dev`, the development
 # harness -- the corpus, the porting tools, the alternative layout engine -- and
@@ -38,7 +41,7 @@ out="$(moon -C "$root/$mod" publish --dry-run 2>&1)"
 code=$?
 echo "$out"
 
-if grep -q "Dry run completed successfully" <<<"$out"; then
+if grep -qE "Dry run completed successfully|Server status: 202 Accepted" <<<"$out"; then
   echo "publish-dry: $mod accepted by the registry (moon exited $code; see the note in this script)"
   exit 0
 fi

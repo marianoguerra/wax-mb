@@ -8,6 +8,41 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
+## [0.5.0] — 2026-11-12
+
+Covers `wax` and `wax-cli`. A toolchain release: builds clean on moonc v0.10.20
+(moon 0.1.20261104). No public name is added or removed and nothing behaves
+differently; all three oracles and the cram tests pass unchanged.
+
+### Changed
+
+- **Builds clean on moonc v0.10.20**, which deprecates the postfix
+  `} derive(...)` and `String::view`'s `start_offset~`/`end_offset~`. Derives
+  are written as a `#derive(...)` attribute before the type, which is how the
+  `.mbti` files now render them, and the view calls are `exact_view`, which
+  keeps the old abort-on-bad-range behaviour.
+- The generated lexer tables and parser come from `moonbitlang/yacc@0.7.26`,
+  which emits the new syntax; syntax-error recovery follows its new reduction
+  shape, with the same messages at the same spans.
+- `wax-cli` takes `moonbitlang/x@0.5.7`.
+
+## [wap 0.5.0] — 2026-11-12
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.5.0`, `marianoguerra/shrubbery@0.1.3` and
+  `marianoguerra/error-report@0.1.2`, all built clean on moonc v0.10.20.
+- `wap/ast`'s derives are written as `#derive(...)` attributes, and its `.mbti`
+  renders them that way. No API or behaviour change.
+
+## [was 0.3.0] — 2026-11-12
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.5.0`, `marianoguerra/shrubbery@0.1.3` and
+  `marianoguerra/error-report@0.1.2`, for the same reason as `wap 0.5.0`. No API
+  or behaviour change of its own.
+
 ## [0.4.2] — 2026-10-29
 
 Covers `wax` and `wax-cli`. One checker fix; no API changes.
