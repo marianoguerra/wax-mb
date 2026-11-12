@@ -3,8 +3,8 @@ name = "marianoguerra/wisp"
 version = "0.0.0"
 
 import {
-  "marianoguerra/wap@0.5.0",
-  "marianoguerra/wax@0.5.0",
+  "marianoguerra/wap@0.6.0",
+  "marianoguerra/wax@0.6.0",
   "marianoguerra/shrubbery@0.1.3",
   "marianoguerra/error-report@0.1.2",
 }

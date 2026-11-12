@@ -8,11 +8,11 @@ a release note here covers both unless it says otherwise. `was` and `wap` are
 separate packages on their own version lines: each depends on a published `wax`
 rather than on this tree, and neither release implies a wax one.
 
-## Unreleased
+## [0.6.0] — 2026-11-12
 
 Covers `wax` and `wax-cli`. Tracks the reference implementation from `004d19e`
-to `b5f9953`. Wants a minor release: the checker's `Collecting` record gained a
-field, which a record literal notices (see Changed).
+to `b5f9953`. A minor release because the checker's `Collecting` record gained
+a field, which a record literal notices (see Changed).
 
 ### Added
 
@@ -53,6 +53,21 @@ field, which a record literal notices (see Changed).
   `alias_variants`, `receiver_types` and `declared_types`, `Operands` has
   `polymorphic_values`, and `ModuleContext::new` takes `alias_variants` and
   `receiver_types`.
+
+## [wap 0.6.0] — 2026-11-12
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.6.0`. No behaviour change of its own beyond
+  what it compiles through; a minor release because its API names `wax` types,
+  whose definitions grew.
+
+## [was 0.4.0] — 2026-11-12
+
+### Changed
+
+- Depends on `marianoguerra/wax@0.6.0`, for the same reason and with the same
+  scope as `wap 0.6.0`.
 
 ## [0.5.0] — 2026-11-12
 
