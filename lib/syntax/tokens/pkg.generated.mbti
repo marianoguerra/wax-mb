@@ -11,6 +11,7 @@ import {
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) enum Token {
   IDENT(String)
   INT(String)
@@ -131,10 +132,11 @@ pub(all) enum Token {
   DESCRIPTOR
   DESCRIBES
   IMPORT
-} derive(@debug.Debug)
+}
 pub fn Token::kind(Self) -> TokenKind
 pub fn Token::to_expect_string(Self) -> String
 
+#derive(Compare, Eq, Hash)
 pub(all) enum TokenKind {
   TK_IDENT
   TK_INT
@@ -255,7 +257,7 @@ pub(all) enum TokenKind {
   TK_DESCRIPTOR
   TK_DESCRIBES
   TK_IMPORT
-} derive(Compare, Eq, Hash)
+}
 pub fn TokenKind::expect_class(Self) -> String?
 pub fn TokenKind::to_expect_string(Self) -> String
 pub impl Show for TokenKind

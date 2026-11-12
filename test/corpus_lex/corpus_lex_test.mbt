@@ -110,7 +110,7 @@ test "corpus token histogram" (t : @test.Test) {
     let src = @fs.read_file_to_string("test/corpus/" + c.file)
     let r = @lexer.tokens_from_string(src, fname=c.file)
     for tok in r.tokens {
-      let k = @debug.render(tok.0.kind().to_repr())
+      let k = @debug.render(@debug.Debug::to_repr(tok.0.kind()))
       counts[k] = counts.get(k).unwrap_or(0) + 1
       total += 1
     }

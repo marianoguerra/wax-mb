@@ -5,10 +5,11 @@
 ///
 /// The two spell conditions differently: WAT uses `$`-prefixed variables,
 /// dotted versions and `<>`; Wax uses bare names, version tuples and `!=`.
+#derive(Eq, Debug)
 pub(all) enum Style {
   Wat
   Wax
-} derive(Eq, Debug)
+}
 
 ///|
 fn Env::render_atom(

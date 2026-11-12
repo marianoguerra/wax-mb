@@ -12,13 +12,14 @@
 
 ///|
 /// A proposal this toolchain knows about.
+#derive(Eq, Compare, Debug)
 pub(all) enum Feature {
   /// Exact reference types, descriptor structs, and their instructions.
   CustomDescriptors
   /// Grouping a module's imports under one module name in the binary import
   /// section.
   CompactImportSection
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 /// Every known feature, in the order everything reports them.

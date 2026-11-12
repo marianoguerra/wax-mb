@@ -14,17 +14,20 @@ pub let nowhere : @error-report.Span
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Arm {
   pat : Pattern
   body : Array[Node]
   span : @error-report.Span
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum AssignOp {
   Set
   OpSet(BinOp)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum BinOp {
   Add
   Sub
@@ -42,14 +45,16 @@ pub(all) enum BinOp {
   Gt
   Le
   Ge
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Binder {
   name : String
   typ : Type?
   span : @error-report.Span
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ConstDecl {
   name : String
   typ : Type?
@@ -58,8 +63,9 @@ pub(all) struct ConstDecl {
   import_name : String?
   is_pub : Bool
   span : @error-report.Span
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Decl {
   ModuleName(String)
   Import(Array[String])
@@ -69,8 +75,9 @@ pub(all) enum Decl {
   TypeD(name~ : String, def~ : TypeDef, is_pub~ : Bool, span~ : @error-report.Span)
   Fn(FnDecl)
   Impl(typ~ : String, methods~ : Array[FnDecl], span~ : @error-report.Span)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Expr {
   Int(String)
   Float(String)
@@ -113,15 +120,17 @@ pub(all) enum Expr {
   Unreachable
   Nop
   Drop(Node)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Field {
   name : String
   mut_ : Bool
   typ : Type
   span : @error-report.Span
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct FnDecl {
   name : String
   receiver : String?
@@ -133,24 +142,28 @@ pub(all) struct FnDecl {
   is_start : Bool
   is_pub : Bool
   span : @error-report.Span
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Module {
   name : String
   decls : Array[Decl]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Node {
   it : Expr
   span : @error-report.Span
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Param {
   name : String
   typ : Type
   span : @error-report.Span
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Pattern {
   PType(name~ : String?, typ~ : Type)
   PNull
@@ -158,8 +171,9 @@ pub(all) enum Pattern {
   PRange(low~ : String, high~ : String)
   PSet(Array[Pattern])
   PWild
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Type {
   I8
   I16
@@ -181,20 +195,22 @@ pub(all) enum Type {
   Any
   Eq
   I31
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TypeDef {
   Record(parent~ : String?, fields~ : Array[Field])
   Enum(Array[(String, Int32?)])
   SetOf(String)
   Subrange(low~ : Int32, high~ : Int32)
   Alias(Type)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum UnOp {
   Neg
   Not
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 pub using @error-report {type Span}

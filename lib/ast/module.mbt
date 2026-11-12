@@ -3,6 +3,7 @@
 
 ///|
 /// An attribute, `#[name]` or `#[name = value]`.
+#derive(Eq, Debug)
 pub(all) struct Attribute {
   attr_name : String
   /// `#[export = "f"]` carries one; `#[start]` does not.
@@ -16,7 +17,7 @@ pub(all) struct Attribute {
   /// the attribute rather than falling back to the value (which a valueless
   /// attribute lacks) or to the whole field.
   attr_span : Location
-} derive(Eq, Debug)
+}
 
 ///|
 pub type Attributes = Array[Attribute]
@@ -25,6 +26,7 @@ pub type Attributes = Array[Attribute]
 /// What an `import "module" { ... }` entry brings in.
 ///
 /// Imports have no body, so these carry only type-level information.
+#derive(Eq, Debug)
 pub(all) enum ImportKind {
   /// `exact` marks an exact function import, `fn f: !t`.
   Func(typ~ : Ident?, sign~ : FuncType?, exact~ : Bool)
@@ -41,18 +43,19 @@ pub(all) enum ImportKind {
     reftype~ : RefType,
     limits~ : (UInt64, UInt64?)?
   )
-} derive(Eq, Debug)
+}
 
 ///|
 /// A single imported entity.
 ///
 /// It is imported under `id` unless a name-only `#[import = "name"]` attribute
 /// overrides it. `attributes` also carries e.g. `#[export]` to re-export it.
+#derive(Eq, Debug)
 pub(all) struct ImportDecl {
   id : Ident
   kind : ImportKind
   attributes : Attributes
-} derive(Eq, Debug)
+}
 
 ///|
 /// One element of a data segment's contents.
@@ -60,6 +63,7 @@ pub(all) struct ImportDecl {
 /// Holds no instructions: every value is a literal. In a run the element type
 /// is stated once and the values are RAW literal strings, packed
 /// little-endian -- raw for the same round-tripping reason as numeric literals.
+#derive(Eq, Debug)
 pub(all) enum DataElem {
   /// A string literal's raw bytes.
   Str(Bytes)
@@ -67,31 +71,35 @@ pub(all) enum DataElem {
   Run(StorageType, Array[Annotated[String, Location]])
   /// A v128 run, `[v128: i32x4(1,2,3,4), ...]`.
   V128Run(Array[Annotated[V128Literal, Location]])
-} derive(Eq, Debug)
+}
 
 ///|
 /// A data segment attached to a memory definition.
+#derive(Eq, Debug)
 pub(all) struct MemData[Info] {
   data_name : Ident?
   offset : Instr[Info]
   init : Array[DataElem]
-} derive(Eq, Debug)
+}
 
 ///|
 /// Whether a data segment is copied in at instantiation or only on demand.
+#derive(Eq, Debug)
 pub(all) enum DataMode[Info] {
   Passive
   Active(Ident, Instr[Info])
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum ElemMode[Info] {
   EPassive
   EActive(Ident, Instr[Info])
-} derive(Eq, Debug)
+}
 
 ///|
 /// A top-level definition.
+#derive(Eq, Debug)
 pub(all) enum ModuleField[Info] {
   Type(RecType)
   /// A value-type alias, `type t = v;`: the name `t` then stands for the value
@@ -170,7 +178,7 @@ pub(all) enum ModuleField[Info] {
       Location,
     ]?
   )
-} derive(Eq, Debug)
+}
 
 ///|
 /// A module: a list of spanned fields.

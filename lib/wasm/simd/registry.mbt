@@ -15,13 +15,14 @@
 
 ///|
 /// What constant immediates an intrinsic takes after its operands.
+#derive(Eq, Debug)
 pub(all) enum Imm {
   NoImm
   /// One lane index, bounded by the shape's lane count.
   Lane(Shape)
   /// Exactly sixteen indices, each below 32.
   Shuffle
-} derive(Eq, Debug)
+}
 
 ///|
 /// What a vector intrinsic takes, gives back, and builds.

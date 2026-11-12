@@ -18,6 +18,7 @@
 /// whether a declaration is referenced -- it has to ask whether anything that
 /// can actually run references it, and that needs to know where each reference
 /// came from.
+#derive(Eq, Hash, Debug)
 pub(all) enum Origin {
   /// Module level -- an initializer, a segment, an import -- which runs
   /// whatever the bodies do.
@@ -28,7 +29,7 @@ pub(all) enum Origin {
   /// Not a source reference at all: the pass that re-checks every type
   /// definition, whose lookups should not mark anything used.
   Ignored
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// One declaration of a name: what kind of thing it declared, where, and under

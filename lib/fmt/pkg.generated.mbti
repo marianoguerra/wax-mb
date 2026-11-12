@@ -27,12 +27,13 @@ pub let width : Int32
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum BinopKind {
   Shift
   Arith
   Bitwise
   Comparison
-} derive(Eq, @debug.Debug)
+}
 
 pub struct Ctx[Info] {
   p : @printer.Printer
@@ -56,7 +57,8 @@ pub fn Ctx::subtype(Self[@basic.Location], @basic.Annotated[(@ast.Ident, @ast.Su
 pub fn[Info] Ctx::typ(Self[Info], String) -> Unit
 pub fn[Info] Ctx::valtype(Self[Info], @types.ValType[@ast.Ident]) -> Unit
 
-type Prec derive(Compare, Eq, @debug.Debug)
+#derive(Compare, Eq, @debug.Debug)
+type Prec
 
 // Type aliases
 

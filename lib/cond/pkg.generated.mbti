@@ -32,7 +32,8 @@ pub let true_ : T
 // Errors
 
 // Types and methods
-type Atom derive(Eq, Hash, @debug.Debug)
+#derive(Eq, Hash, @debug.Debug)
+type Atom
 
 pub struct Env {
   bool_vars : Map[String, Int32]
@@ -47,22 +48,25 @@ pub fn Env::explain(Self, T, style? : Style) -> String?
 pub fn Env::new() -> Self
 pub fn Env::of_cond(Self, @diagnostic.Context, @basic.Location, @types.Cond) -> T
 
-type Node derive(Eq, @debug.Debug)
+#derive(Eq, @debug.Debug)
+type Node
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Style {
   Wat
   Wax
-} derive(Eq, @debug.Debug)
+}
 
 pub struct T {
   node : Node
 }
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) struct Version {
   major : Int32
   minor : Int32
   patch : Int32
-} derive(Eq, Hash, @debug.Debug)
+}
 pub fn Version::compare_to(Self, Self) -> Int32
 pub impl Show for Version
 

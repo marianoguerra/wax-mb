@@ -33,13 +33,14 @@ pub fn Cursor::peek(Self, n? : Int32) -> Char?
 pub fn Cursor::pos(Self) -> @basic.Position
 pub fn Cursor::span(Self, @basic.Position) -> @basic.Location
 
+#derive(Eq, @debug.Debug)
 pub(all) enum LexError {
   UnexpectedChar(String)
   MalformedComment
   MalformedString
   MalformedUnicodeEscape
   InvalidUnicodeChar
-} derive(Eq, @debug.Debug)
+}
 pub fn LexError::hint(Self) -> String?
 pub fn LexError::message(Self) -> String
 pub fn LexError::to_report(Self, @basic.Location) -> @basic.Report

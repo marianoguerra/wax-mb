@@ -17,12 +17,13 @@
 ///
 /// Cut and Space are SOFT: they flatten inside a group that fits. Newline and
 /// BlankLine always break. Two adjacent breaks coalesce into the stronger.
+#derive(Eq, Debug)
 pub(all) enum BreakStrength {
   Cut
   Space
   Newline
   BlankLine
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn BreakStrength::strength(self : BreakStrength) -> Int32 {
@@ -36,6 +37,7 @@ pub fn BreakStrength::strength(self : BreakStrength) -> Int32 {
 
 ///|
 /// How a group lays its soft breaks out.
+#derive(Eq, Debug)
 pub(all) enum GKind {
   /// Fill: each soft break wraps independently, as needed.
   GBox
@@ -47,13 +49,14 @@ pub(all) enum GKind {
   GV
   /// Soft breaks never wrap; hard ones still do.
   GH
-} derive(Eq, Debug)
+}
 
 ///|
 /// One token of the flat stream the builder feeds the engine.
 ///
 /// A group, nest or if-broken opens with its own token and closes with a
 /// matching `TEnd`.
+#derive(Eq, Debug)
 pub(all) enum Token {
   /// Display width, then the payload. The width is carried rather than
   /// recomputed because it is not the string's length: see unicode/.
@@ -66,22 +69,24 @@ pub(all) enum Token {
   /// counts toward the fit decision.
   TIfBroken
   TEnd
-} derive(Eq, Debug)
+}
 
 ///|
 /// A live layout mode.
+#derive(Eq, Debug)
 pub(all) enum Mode {
   Flat
   Brkm
   Fill
-} derive(Eq, Debug)
+}
 
 ///|
 /// A live layout frame: where breaks indent to, and how they behave.
+#derive(Eq, Debug)
 struct Frame {
   findent : Int32
   fmode : Mode
-} derive(Eq, Debug)
+}
 
 ///|
 /// The outcome of a fit scan.
@@ -89,8 +94,9 @@ struct Frame {
 /// `Susp` means the scan ran out of buffered input and parked its state, to be
 /// resumed on the next fed token -- so each buffered token is scanned once
 /// rather than re-scanned from scratch.
+#derive(Eq, Debug)
 enum ScanResult {
   Fits
   Nofit
   Susp
-} derive(Eq, Debug)
+}

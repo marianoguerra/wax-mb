@@ -21,22 +21,24 @@
 
 ///|
 /// What a value method's result type is, relative to its receiver.
+#derive(Eq, Debug)
 pub(all) enum MethodResult {
   /// The receiver's own type.
   Same
   /// The equal-width opposite numeric family -- i32 <-> f32, i64 <-> f64 --
   /// as `from_bits` and `to_bits` reinterpret.
   Reinterpret
-} derive(Eq, Debug)
+}
 
 ///|
 /// One value method: `x.clz()`, `x.rotl(y)`.
+#derive(Eq, Debug)
 pub(all) struct ValueMethod {
   name : String
   /// Takes a second operand, of the receiver's type.
   binary : Bool
   result : MethodResult
-} derive(Eq, Debug)
+}
 
 ///|
 fn meth(
@@ -127,13 +129,14 @@ pub fn simd_valtype(t : SimdTy) -> @infer.InferredValType {
 /// type checker (task 12), which dispatches `v.add_i32x4(w)` through it. This
 /// enum is the part `simd_valtype` needs, so the checker-facing half of this
 /// file does not wait on the other 856 lines.
+#derive(Eq, Debug)
 pub(all) enum SimdTy {
   TV128
   TI32
   TI64
   TF32
   TF64
-} derive(Eq, Debug)
+}
 
 ///|
 /// Does a value receiver of this type have value methods?

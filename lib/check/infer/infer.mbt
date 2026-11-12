@@ -19,6 +19,7 @@
 
 ///|
 /// A fully resolved value type, in both the forms the checker needs.
+#derive(Eq)
 pub(all) struct InferredValType {
   /// The Wax-side type, naming its referenced types.
   typ : @wasm_types.ValType[@ast.Ident]
@@ -37,7 +38,7 @@ pub(all) struct InferredValType {
   /// typed, and the alias is what holds in every configuration -- so a
   /// declaration inferred from the value is written with it.
   type_alias : @ast.Ident?
-} derive(Eq)
+}
 
 ///|
 /// What inference knows about a value.

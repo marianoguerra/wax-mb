@@ -33,33 +33,38 @@ pub fn signature(Op) -> (Array[NumTy], Array[NumTy])
 // Errors
 
 // Types and methods
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum Family {
   Load(Width)
   Store(Width)
   Rmw(RmwOp, Width)
   Wait(NumTy)
   Notify
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum Narrow {
   N8
   N16
   N32
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum NumTy {
   I32
   I64
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum Op {
   Notify
   Wait(NumTy)
   Load(NumTy, Narrow?)
   Store(NumTy, Narrow?)
   Rmw(RmwOp, NumTy, Narrow?)
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum RmwOp {
   Add
   Sub
@@ -68,14 +73,15 @@ pub(all) enum RmwOp {
   Xor
   Xchg
   Cmpxchg
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum Width {
   W8
   W16
   W32
   W64
-} derive(Eq, Hash, @debug.Debug)
+}
 pub fn Width::bytes(Self) -> Int32
 
 // Type aliases

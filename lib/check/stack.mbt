@@ -50,11 +50,12 @@ struct MissingBatch {
 ///|
 /// Which side of an instruction a stack complaint is about, which decides both
 /// the wording and where the caret goes.
+#derive(Eq, Debug)
 pub(all) enum StackKind {
   Input
   Output
   Holes
-} derive(Eq, Debug)
+}
 
 ///|
 /// The operand stack of the function being checked.

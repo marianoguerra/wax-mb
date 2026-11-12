@@ -2,6 +2,7 @@
 
 ///|
 /// What to do with a warning when it is reported.
+#derive(Eq, Debug)
 pub(all) enum Level {
   /// Suppress it entirely.
   Hidden
@@ -9,7 +10,7 @@ pub(all) enum Level {
   Displayed
   /// Promote it to an error, failing the run.
   ErrorLevel
-} derive(Eq, Debug)
+}
 
 ///|
 /// Group name to members.
@@ -153,8 +154,8 @@ pub fn parse_spec(s : String) -> Result[(String, Level), String] {
         "Malformed warning spec '\{s}'; expected NAME=LEVEL (LEVEL is hidden, warning, or error).",
       )
     Some(i) => {
-      let name = s.view(end_offset=i).to_owned()
-      let level = s.view(start_offset=i + 1).to_owned()
+      let name = s.exact_view(end=i).to_owned()
+      let level = s.exact_view(start=i + 1).to_owned()
       match level_of_string(level) {
         Some(l) => Ok((name, l))
         None =>

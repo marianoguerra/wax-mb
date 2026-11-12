@@ -13,6 +13,7 @@
 ///|
 /// A statement or expression. Wax is expression-oriented, so there is no
 /// separate statement type.
+#derive(Eq, Debug)
 pub(all) enum InstrDesc[Info] {
   // -- structured control flow ---------------------------------------------
   Block(label~ : Label?, typ~ : FuncType, block~ : Body[Info])
@@ -182,7 +183,7 @@ pub(all) enum InstrDesc[Info] {
   /// produces markers for each brace group and a post-pass folds adjacent ones
   /// into this node. See parser.mbty.
   IfAnnotation(cond~ : Cond, then_body~ : Body[Info], else_body~ : Body[Info]?)
-} derive(Eq, Debug)
+}
 
 ///|
 /// A braced block of instructions together with the span of its braces.
@@ -193,6 +194,7 @@ pub type Body[Info] = Annotated[Array[Instr[Info]], Location]
 ///
 /// `hints` and `expected` are fields rather than wrapper nodes so the pervasive
 /// matches on `desc` neither see them nor have to see through them.
+#derive(Eq, Debug)
 pub(all) struct Instr[Info] {
   desc : InstrDesc[Info]
   info : Info
@@ -210,10 +212,11 @@ pub(all) struct Instr[Info] {
   /// Kept even though this port never populates it, because omitting it would
   /// force an AST change when the typer lands.
   expected : ValType?
-} derive(Eq, Debug)
+}
 
 ///|
 /// One arm of a structured `try ... catch`.
+#derive(Eq, Debug)
 pub(all) struct TryCatchArm[Info] {
   /// `None` for the trailing catch-all.
   arm_tag : Ident?
@@ -225,7 +228,7 @@ pub(all) struct TryCatchArm[Info] {
   /// it. Present here for the same reason as `Instr::expected`.
   arm_types : Array[ValType]
   arm_body : Body[Info]
-} derive(Eq, Debug)
+}
 
 ///|
 /// Build an instruction with a span and no hints.

@@ -1,11 +1,12 @@
 // The diagnostic value, its theme, and where rendered output goes.
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum Severity {
   Error
   Warning
   Suggestion
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn Severity::to_str(self : Severity) -> String {
@@ -62,6 +63,7 @@ pub(all) struct Diagnostic {
 
 ///|
 /// How diagnostics are rendered.
+#derive(Eq, Debug)
 pub(all) enum OutputFormat {
   /// Source snippets. The default.
   Human
@@ -70,7 +72,7 @@ pub(all) enum OutputFormat {
   /// One `file:line:col: severity: message` line, gcc/rustc style, for editors
   /// with a line-based error parser.
   Short
-} derive(Eq, Debug)
+}
 
 ///|
 /// The colours of the diagnostic frame.

@@ -1,10 +1,11 @@
 ///|
 /// A source span, mirroring the reference's `Wax_utils.Ast.location`
 /// (`{ loc_start; loc_end }`).
+#derive(Eq, Compare, Hash, Debug)
 pub(all) struct Location {
   start : Position
   end : Position
-} derive(Eq, Compare, Hash, Debug)
+}
 
 ///|
 /// The span of a synthesized node, mirroring the reference's `dummy_loc`.
@@ -73,10 +74,11 @@ pub impl ToJson for Location with fn to_json(self) {
 /// This is the reference's `('desc, 'info) annotated`. The annotation is a type
 /// parameter rather than a fixed `Location` because the type checker — which
 /// will be ported later — re-annotates the tree with inferred types.
+#derive(Eq, Debug)
 pub(all) struct Annotated[D, Info] {
   desc : D
   info : Info
-} derive(Eq, Debug)
+}
 
 ///|
 /// Wrap a value with a dummy span, the counterpart of the reference's `no_loc`.

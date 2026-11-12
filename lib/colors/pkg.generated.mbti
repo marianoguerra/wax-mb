@@ -41,12 +41,14 @@ pub let yellow : String
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum Flag {
   Never
   Always
   Auto
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Style {
   Keyword
   Instruction
@@ -59,7 +61,7 @@ pub(all) enum Style {
   Annotation
   Comment
   Punctuation
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct Theme {
   keyword : String

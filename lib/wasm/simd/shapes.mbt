@@ -14,6 +14,7 @@
 
 ///|
 /// A lane shape: how the 128 bits are divided, and into what.
+#derive(Eq, Hash, Debug)
 pub(all) enum Shape {
   I8x16
   I16x8
@@ -21,7 +22,7 @@ pub(all) enum Shape {
   I64x2
   F32x4
   F64x2
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 pub fn Shape::to_str(self : Shape) -> String {
@@ -65,13 +66,14 @@ pub fn Shape::lane_count(self : Shape) -> Int32 {
 ///
 /// Kept apart from both the Wax and the wasm value-type representations, so
 /// each consumer maps it to its own rather than this module picking one.
+#derive(Eq, Hash, Debug)
 pub(all) enum Ty {
   TV128
   TI32
   TI64
   TF32
   TF64
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// The scalar type of one lane: what `splat` takes, what `extract` gives back,

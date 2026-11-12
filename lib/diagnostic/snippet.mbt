@@ -103,5 +103,5 @@ fn line_info(source : String, bol : Int32) -> (String, Int32) {
   while e < source.length() && source.unsafe_get(e).to_int() != 0x0A {
     e = e + 1
   }
-  (source.view(start_offset=bol, end_offset=e).to_owned(), e)
+  (source.exact_view(start=bol, end=e).to_owned(), e)
 }

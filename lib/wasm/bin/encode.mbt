@@ -23,11 +23,12 @@
 /// Only one case is left. The opcode table is now total over `Instruction` --
 /// the compiler says so, which is why there is no "unsupported instruction"
 /// variant here.
+#derive(Eq, Debug)
 pub suberror EncodeError {
   /// A block's signature was still inline. It has to become a type index, and
   /// interning it is the lowering's job, not the encoder's.
   UnresolvedBlockType
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl Show for EncodeError with fn output(self, logger) {

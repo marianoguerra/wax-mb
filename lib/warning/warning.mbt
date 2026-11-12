@@ -10,6 +10,7 @@
 
 ///|
 /// A named warning.
+#derive(Eq, Debug)
 pub(all) enum Warning {
   /// A local that is declared but never read.
   UnusedLocal
@@ -67,7 +68,7 @@ pub(all) enum Warning {
   /// A string holds a bidirectional control character that can make the source
   /// read differently than it runs -- a "Trojan Source" character.
   ConfusableUnicode
-} derive(Eq, Debug)
+}
 
 ///|
 /// Every named warning.

@@ -16,12 +16,13 @@
 ///
 /// The column is not stored; it is `cnum - bol`. Use `column0` or `column1`
 /// depending on the convention the caller needs — see their documentation.
+#derive(Debug, Hash, ToJson)
 pub(all) struct Position {
   fname : String
   lnum : Int32
   bol : Int32
   cnum : Int32
-} derive(Debug, Hash, ToJson)
+}
 
 ///|
 /// The 0-based column: the raw `cnum - bol`.

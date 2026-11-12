@@ -5,9 +5,10 @@
 
 ///|
 /// A stand-in for the Wax instance, which refers to types by name.
+#derive(Eq, Debug)
 priv struct Name {
   text : String
-} derive(Eq, Debug)
+}
 
 ///|
 test "the spine instantiates at a named Idx, as Wax does" {

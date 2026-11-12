@@ -96,6 +96,7 @@ pub fn classify_method_call(
 
 ///|
 /// What `recv.meth(..)` turned out to be.
+#derive(Eq)
 pub(all) enum MethodCall {
   Atomic(@atomics.Family)
   MemAccess
@@ -106,7 +107,7 @@ pub(all) enum MethodCall {
   /// Not an intrinsic: a call through a function reference, or a struct field
   /// holding one.
   Ordinary
-} derive(Eq)
+}
 
 ///|
 /// The function type a continuation type wraps.

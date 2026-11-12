@@ -7,7 +7,7 @@ version = "0.4.2"
 // pay. Everything language-related is in `marianoguerra/wax`.
 import {
   "marianoguerra/wax@0.4.2",
-  "moonbitlang/x@0.5.5",
+  "moonbitlang/x@0.5.7",
 }
 
 readme = "README.md"

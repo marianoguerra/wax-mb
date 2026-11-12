@@ -58,11 +58,12 @@ pub let vec_loads : Array[VecLoad]
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum Imm {
   NoImm
   Lane(Shape)
   Shuffle
-} derive(Eq, @debug.Debug)
+}
 
 pub struct Intrinsic {
   operands : Array[Ty]
@@ -72,12 +73,13 @@ pub struct Intrinsic {
   build : (Array[Int32]) -> @bin.Instruction
 }
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum LaneWidth {
   L8
   L16
   L32
   L64
-} derive(Eq, Hash, @debug.Debug)
+}
 pub fn LaneWidth::nat_align(Self) -> Int32
 pub fn LaneWidth::to_str(Self) -> String
 
@@ -89,6 +91,7 @@ pub struct MemIntrinsic {
   build : (Int32, Int32, Int64, Int32) -> @bin.Instruction
 }
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum Shape {
   I8x16
   I16x8
@@ -96,21 +99,23 @@ pub(all) enum Shape {
   I64x2
   F32x4
   F64x2
-} derive(Eq, Hash, @debug.Debug)
+}
 pub fn Shape::is_float(Self) -> Bool
 pub fn Shape::lane_count(Self) -> Int32
 pub fn Shape::lane_scalar(Self) -> Ty
 pub fn Shape::of_str(String) -> Self?
 pub fn Shape::to_str(Self) -> String
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum Ty {
   TV128
   TI32
   TI64
   TF32
   TF64
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum VecLoad {
   Load128
   Load8x8S
@@ -121,7 +126,7 @@ pub(all) enum VecLoad {
   Load32x2U
   Load32Zero
   Load64Zero
-} derive(Eq, Hash, @debug.Debug)
+}
 pub fn VecLoad::nat_align(Self) -> Int32
 pub fn VecLoad::to_str(Self) -> String
 

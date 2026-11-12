@@ -7,12 +7,13 @@
 
 ///|
 /// The lane width a `load8_lane`-style name carries.
+#derive(Eq, Hash, Debug)
 pub(all) enum LaneWidth {
   L8
   L16
   L32
   L64
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 pub fn LaneWidth::to_str(self : LaneWidth) -> String {
@@ -41,6 +42,7 @@ pub let lane_widths : Array[LaneWidth] = [L8, L16, L32, L64]
 ///|
 /// The whole-vector loads, each of which reads a differently shaped chunk and
 /// widens or zero-fills it.
+#derive(Eq, Hash, Debug)
 pub(all) enum VecLoad {
   Load128
   Load8x8S
@@ -51,7 +53,7 @@ pub(all) enum VecLoad {
   Load32x2U
   Load32Zero
   Load64Zero
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 pub fn VecLoad::to_str(self : VecLoad) -> String {

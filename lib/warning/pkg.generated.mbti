@@ -17,11 +17,12 @@ pub fn parse_spec(String) -> Result[(String, Level), String]
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum Level {
   Hidden
   Displayed
   ErrorLevel
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct Policy {
   level : (Warning) -> Level
@@ -29,6 +30,7 @@ pub(all) struct Policy {
 pub fn Policy::resolve(Self, Warning) -> Level
 pub fn Policy::set(Self, String, Level) -> Result[Self, String]
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Warning {
   UnusedLocal
   UnusedField
@@ -53,7 +55,7 @@ pub(all) enum Warning {
   FieldPunning
   RedundantAnnotation
   ConfusableUnicode
-} derive(Eq, @debug.Debug)
+}
 pub fn Warning::description(Self) -> String
 pub fn Warning::is_unnecessary(Self) -> Bool
 pub fn Warning::name(Self) -> String

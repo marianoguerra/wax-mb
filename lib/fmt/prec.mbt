@@ -53,6 +53,7 @@ fn unop_str(op : @ast.UnOp) -> String {
 /// Binding strength, weakest first.
 ///
 /// Ordered so a plain comparison decides whether parentheses are needed.
+#derive(Eq, Compare, Debug)
 enum Prec {
   Instruction
   Branch
@@ -70,7 +71,7 @@ enum Prec {
   UnaryPostfix
   CallAndFieldAccess
   Atom
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 fn Prec::rank(self : Prec) -> Int32 {
@@ -175,12 +176,13 @@ fn[Info] Ctx::casttype(self : Ctx[Info], ty : @ast.CastType) -> Unit {
 
 ///|
 /// What family a binary operator belongs to, for the confusing-precedence rule.
+#derive(Eq, Debug)
 pub(all) enum BinopKind {
   Shift
   Arith
   Bitwise
   Comparison
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn binop_kind(op : @ast.BinOp) -> BinopKind {

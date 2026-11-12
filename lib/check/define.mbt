@@ -11,11 +11,12 @@
 
 ///|
 /// The value a `-D NAME[=VALUE]` sets.
+#derive(Eq, Debug)
 pub(all) enum Define {
   DefineBool(Bool)
   DefineVersion(Int32, Int32, Int32)
   DefineString(String)
-} derive(Eq, Debug)
+}
 
 ///|
 /// Parse one `-D` argument: a bare name, or `NAME=true`, sets a boolean;

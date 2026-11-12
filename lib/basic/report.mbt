@@ -4,11 +4,12 @@
 /// `Suggestion` is never produced by the front end — it belongs to the type
 /// checker's machine-applicable fixes — but it is declared here so the
 /// diagnostic renderers can be written once, against the complete set.
+#derive(Eq, Debug)
 pub(all) enum Severity {
   Error
   Warning
   Suggestion
-} derive(Eq, Debug)
+}
 
 ///|
 /// The word the reference's human renderer prints as a diagnostic header.
@@ -33,18 +34,20 @@ pub fn Severity::to_str(self : Severity) -> String {
 ///|
 /// A machine-applicable rewrite: replace the source spanned by `loc` with
 /// `new_text`. An empty span denotes an insertion. Mirrors `Diagnostic.edit`.
+#derive(Eq, Debug)
 pub(all) struct Edit {
   loc : Location
   new_text : String
-} derive(Eq, Debug)
+}
 
 ///|
 /// A secondary span attached to a diagnostic, e.g. "This '(' opens the
 /// enclosing construct." Mirrors `Diagnostic.label`.
+#derive(Eq, Debug)
 pub(all) struct Label {
   loc : Location
   message : String
-} derive(Eq, Debug)
+}
 
 ///|
 /// A diagnostic, in the accumulate-don't-raise style `moonbitlang/parser` uses.
@@ -54,6 +57,7 @@ pub(all) struct Label {
 /// not to restyle. When the type checker lands it will want the combinator form
 /// (so types can be coloured inside a sentence), at which point this field
 /// becomes a `Message` — every other field stays as-is.
+#derive(Eq, Debug)
 pub(all) struct Report {
   loc : Location
   severity : Severity
@@ -63,7 +67,7 @@ pub(all) struct Report {
   hint : String?
   edit : Edit?
   related : Array[Label]
-} derive(Eq, Debug)
+}
 
 ///|
 /// An error `Report` with no warning name, hint, edit or related labels — the

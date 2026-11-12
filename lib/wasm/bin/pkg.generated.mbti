@@ -11,12 +11,14 @@ import {
 pub fn encode(Module, label_names? : Bool) -> Bytes raise EncodeError
 
 // Errors
+#derive(Eq, @debug.Debug)
 pub suberror EncodeError {
   UnresolvedBlockType
-} derive(Eq, @debug.Debug)
+}
 pub impl Show for EncodeError
 
 // Types and methods
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum AliasSite {
   SiteParam(ParamOwner, Int32)
   SiteResult(ParamOwner, Int32)
@@ -26,86 +28,99 @@ pub(all) enum AliasSite {
   SiteAlias(Int32)
   SiteLocal(Int32, Int32)
   SiteBlock(Int32, Int32)
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ArrayType {
   element : @types.MutType[@types.StorageType[Int32]]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum BlockType {
   Empty
   Value(@types.ValType[Int32])
   MultiValue(Array[@types.ValType[Int32]])
   InlineType(Array[@types.ValType[Int32]], Array[@types.ValType[Int32]])
   TypeIndex(Int32)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum CatchHandler {
   Catch(Int32, Int32)
   CatchRef(Int32, Int32)
   CatchAll(Int32)
   CatchAllRef(Int32)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum CompositeType {
   Func(FuncType)
   Struct(StructType)
   Array(ArrayType)
   Cont(Int32)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct CondGroup {
   cond : String
   tree : @types.Cond
   loc : @basic.Location
   then_ : @basic.Location
   else_ : @basic.Location?
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Data {
   mode : DataMode
   init : Bytes
   offset_spans : Array[Span]
   spelling : Array[DataPiece]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum DataMode {
   Active(Int32, Array[Instruction])
   Passive
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum DataPiece {
   PieceStr(Bytes)
   PieceRun(String, Array[String])
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ElemMode {
   Active(Int32, Array[Instruction])
   Passive
   Declarative
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Element {
   mode : ElemMode
   type_ : @types.RefType[Int32]
   init : Array[Array[Instruction]]
   init_spans : Array[Array[Span]]
   offset_spans : Array[Span]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Export {
   name : Bytes
   desc : ExportDesc
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ExportDesc {
   Func(Int32)
   Table(Int32)
   Memory(Int32)
   Global(Int32)
   Tag(Int32)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum FieldRef {
   FTypes(Array[Int32])
   FFeature(Bytes)
@@ -120,13 +135,15 @@ pub(all) enum FieldRef {
   FElem(Int32)
   FData(Int32)
   FTypeAlias(Int32)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct FuncType {
   params : Array[@types.ValType[Int32]]
   results : Array[@types.ValType[Int32]]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct FunctionCode {
   locals : Array[@types.ValType[Int32]]
   body : Array[Instruction]
@@ -138,42 +155,48 @@ pub(all) struct FunctionCode {
   name_loc : @basic.Location
   param_locs : Map[Int32, (@basic.Location, @basic.Location)]
   priority : Priority?
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Global {
   type_ : @types.MutType[@types.ValType[Int32]]
   init : Array[Instruction]
   init_spans : Array[Span]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Import {
   mod_name : Bytes
   name : Bytes
   desc : ImportDesc
   group : ImportGroup?
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ImportDesc {
   Func(Int32, Bool)
   Table(TableType)
   Memory(MemoryType)
   Global(@types.MutType[@types.ValType[Int32]])
   Tag(Int32)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ImportGroup {
   Heterogeneous(Array[(Bytes, ImportDesc)])
   Homogeneous(Array[Bytes])
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct InstrHints {
   branch : Bool?
   freq : Int32?
   targets : Array[(Int32, Int32)]?
-} derive(Eq, @debug.Debug)
+}
 pub fn InstrHints::is_empty(Self) -> Bool
 pub fn InstrHints::none() -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Instruction {
   Unreachable
   Nop
@@ -697,12 +720,14 @@ pub(all) enum Instruction {
   I16x8RelaxedQ15mulrS
   I16x8RelaxedDotI8x16I7x16S
   I32x4RelaxedDotI8x16I7x16AddS
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct MemoryType {
   limits : @types.Limits
-} derive(Eq, @debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct Module {
   types : Array[SubType]
   rec_groups : Array[RecGroup]
@@ -720,9 +745,10 @@ pub(all) struct Module {
   text : TextView
   names : Names
   target_features : Array[(Int32, Bytes)]
-} derive(@debug.Debug)
+}
 pub fn Module::empty() -> Self
 
+#derive(@debug.Debug)
 pub(all) struct Names {
   mut module_ : Bytes?
   functions : Map[Int32, Bytes]
@@ -736,67 +762,78 @@ pub(all) struct Names {
   data : Map[Int32, Bytes]
   fields : Map[Int32, Map[Int32, Bytes]]
   tags : Map[Int32, Bytes]
-} derive(@debug.Debug)
+}
 pub fn Names::empty() -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum OnClause {
   OnLabel(Int32, Int32)
   OnSwitch(Int32)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum ParamOwner {
   OwnerFunc(Int32)
   OwnerTag(Int32)
   OwnerType(Int32)
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Priority {
   compilation : Int32
   optimization : Int32?
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct RecGroup {
   start : Int32
   len : Int32
   explicit : Bool
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Span {
   start : Int32
   head : Int32
   end : Int32
   loc : @basic.Location
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct StructType {
   fields : Array[@types.MutType[@types.StorageType[Int32]]]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct SubType {
   final_ : Bool
   supertypes : Array[Int32]
   descriptor : Int32?
   describes : Int32?
   composite : CompositeType
-} derive(Eq, @debug.Debug)
+}
 pub fn SubType::func(Array[@types.ValType[Int32]], Array[@types.ValType[Int32]]) -> Self
 pub fn SubType::simple(CompositeType) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Table {
   type_ : TableType
   init : Array[Instruction]?
   init_spans : Array[Span]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TableType {
   elem_type : @types.RefType[Int32]
   limits : @types.Limits
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TagType {
   type_idx : Int32
-} derive(Eq, @debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct TextView {
   field_order : Array[FieldRef]
   field_locs : Array[@basic.Location]
@@ -810,13 +847,14 @@ pub(all) struct TextView {
   field_spans : Map[(Int32, Int32), (@basic.Location, @basic.Location)]
   export_locs : Map[Int32, @basic.Location]
   type_name_locs : Map[Int32, @basic.Location]
-} derive(@debug.Debug)
+}
 pub fn TextView::empty() -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TypeUse {
   named : Bool
   spelled : Bool
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 pub type FieldType = @types.MutType[@types.StorageType[Int32]]

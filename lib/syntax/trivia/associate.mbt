@@ -11,6 +11,7 @@
 
 ///|
 /// Where a comment sits relative to the node that owns it.
+#derive(Eq, Debug)
 pub(all) struct Associated {
   /// Anchored before the node starts.
   before : Array[Entry]
@@ -18,7 +19,7 @@ pub(all) struct Associated {
   within : Array[Entry]
   /// Trailing, up to the next sibling: rendered past the closing delimiter.
   after : Array[Entry]
-} derive(Eq, Debug)
+}
 
 ///|
 pub let empty_assoc : Associated = { before: [], within: [], after: [], }
@@ -37,10 +38,11 @@ pub struct Table {
 ///
 /// Keying on offsets alone is deliberate: it is cheap to hash and compare, and
 /// the filename is the same for every span in one parse.
+#derive(Eq, Hash, Compare, Debug)
 struct SpanKey {
   start : Int32
   end : Int32
-} derive(Eq, Hash, Compare, Debug)
+}
 
 ///|
 fn key_of(loc : @basic.Location) -> SpanKey {

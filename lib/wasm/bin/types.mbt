@@ -59,25 +59,29 @@ pub type Limits = @wasm_types.Limits
 
 ///|
 /// A function type.
+#derive(Eq, Debug)
 pub(all) struct FuncType {
   params : Array[ValType]
   results : Array[ValType]
-} derive(Eq, Debug)
+}
 
 ///|
 /// A struct type.
+#derive(Eq, Debug)
 pub(all) struct StructType {
   fields : Array[FieldType]
-} derive(Eq, Debug)
+}
 
 ///|
 /// An array type.
+#derive(Eq, Debug)
 pub(all) struct ArrayType {
   element : FieldType
-} derive(Eq, Debug)
+}
 
 ///|
 /// What a defined type actually defines.
+#derive(Eq, Debug)
 pub(all) enum CompositeType {
   Func(FuncType)
   Struct(StructType)
@@ -87,7 +91,7 @@ pub(all) enum CompositeType {
   /// and the type nowhere either; the instructions arrived first, but a module
   /// that uses them has to be able to define what they act on.
   Cont(Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 /// A defined type, with its supertypes and whether it may be subtyped further.
@@ -96,13 +100,14 @@ pub(all) enum CompositeType {
 /// clauses, and they come in pairs: `descriptor` names the type of this
 /// struct's runtime descriptor, `describes` names the struct this one is the
 /// descriptor OF. A type may carry either, both, or neither.
+#derive(Eq, Debug)
 pub(all) struct SubType {
   final_ : Bool
   supertypes : Array[Int32]
   descriptor : Int32?
   describes : Int32?
   composite : CompositeType
-} derive(Eq, Debug)
+}
 
 ///|
 /// A run of defined types emitted as one `rec (...)`.
@@ -115,11 +120,12 @@ pub(all) struct SubType {
 /// different type from the same definition written bare -- recursive type
 /// identity is by group -- so the encoder cannot infer the prefix from the
 /// length, and what the source said has to be recorded.
+#derive(Eq, Debug)
 pub(all) struct RecGroup {
   start : Int32
   len : Int32
   explicit : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 /// A subtype that is final and inherits from nothing -- the common case.
@@ -147,6 +153,7 @@ pub fn SubType::func(
 // ============================================================
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum Instruction {
   // Control instructions
   Unreachable
@@ -833,17 +840,18 @@ pub(all) enum Instruction {
   I16x8RelaxedQ15mulrS
   I16x8RelaxedDotI8x16I7x16S
   I32x4RelaxedDotI8x16I7x16AddS
-} derive(Eq, Debug)
+}
 
 ///|
 /// What a block, loop or `if` consumes and produces.
+#derive(Eq, Debug)
 pub(all) enum BlockType {
   Empty
   Value(ValType)
   MultiValue(Array[ValType])
   InlineType(Array[ValType], Array[ValType])
   TypeIndex(Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 /// The compilation hints attached to a single instruction.
@@ -853,6 +861,7 @@ pub(all) enum BlockType {
 /// offset within its function body. Which is why they hang off the instruction
 /// here: the offset is only knowable while encoding, and only the encoder knows
 /// it.
+#derive(Eq, Debug)
 pub(all) struct InstrHints {
   /// `#[likely]` / `#[unlikely]` on a branch.
   branch : Bool?
@@ -861,7 +870,7 @@ pub(all) struct InstrHints {
   freq : Int32?
   /// `#[targets]`: likely call targets, as (function index, percentage).
   targets : Array[(Int32, Int32)]?
-} derive(Eq, Debug)
+}
 
 ///|
 /// No hints.
@@ -878,23 +887,26 @@ pub fn InstrHints::is_empty(self : InstrHints) -> Bool {
 /// `#[priority]`: advice about the function as a whole rather than about one
 /// instruction, which is why it lives on the code entry and is recorded at
 /// offset 0 -- the position that means "the function itself".
+#derive(Eq, Debug)
 pub(all) struct Priority {
   compilation : Int32
   optimization : Int32?
-} derive(Eq, Debug)
+}
 
 ///|
 /// One arm of a resume table: what happens when the continuation suspends with
 /// a given tag.
+#derive(Eq, Debug)
 pub(all) enum OnClause {
   /// Branch to this label.
   OnLabel(Int32, Int32)
   /// Switch to the continuation on the stack.
   OnSwitch(Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 /// One arm of a `try_table`.
+#derive(Eq, Debug)
 pub(all) enum CatchHandler {
   /// Catch this tag, branching to this label.
   Catch(Int32, Int32)
@@ -904,7 +916,7 @@ pub(all) enum CatchHandler {
   CatchAll(Int32)
   /// As `CatchAll`, but the exception reference is pushed too.
   CatchAllRef(Int32)
-} derive(Eq, Debug)
+}
 
 // ============================================================
 // Module structure
@@ -912,35 +924,40 @@ pub(all) enum CatchHandler {
 
 ///|
 /// A memory's type.
+#derive(Eq, Debug)
 pub(all) struct MemoryType {
   limits : Limits
-} derive(Eq, Debug)
+}
 
 ///|
 /// A table's type. The element type is a REFERENCE type, not a value type:
 /// nothing else can go in a table.
+#derive(Eq, Debug)
 pub(all) struct TableType {
   elem_type : RefType
   limits : Limits
-} derive(Eq, Debug)
+}
 
 ///|
 /// A defined table, with the initialiser every element starts at.
+#derive(Eq, Debug)
 pub(all) struct Table {
   type_ : TableType
   init : Array[Instruction]?
   init_spans : Array[Span]
-} derive(Eq, Debug)
+}
 
 ///|
 /// An exception tag: an index into the type section, naming a function type
 /// whose parameters are the exception's payload and whose results are empty.
+#derive(Eq, Debug)
 pub(all) struct TagType {
   type_idx : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 /// What an import brings in.
+#derive(Eq, Debug)
 pub(all) enum ImportDesc {
   /// A function's type index, and whether the import is EXACT -- a `ref.func`
   /// on it then yields an exact reference rather than a plain one. The flag
@@ -950,9 +967,10 @@ pub(all) enum ImportDesc {
   Memory(MemoryType)
   Global(GlobalType)
   Tag(Int32)
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Import {
   mod_name : Bytes
   name : Bytes
@@ -963,47 +981,52 @@ pub(all) struct Import {
   /// of imports from it. The marker sits where an externtype kind byte would,
   /// and neither marker is a valid kind, so a plain import stays unambiguous.
   group : ImportGroup?
-} derive(Eq, Debug)
+}
 
 ///|
 /// The two compact forms: per-item descriptors, or one shared descriptor and a
 /// list of names.
+#derive(Eq, Debug)
 pub(all) enum ImportGroup {
   /// Marker 0x7F: each item carries its own name and descriptor.
   Heterogeneous(Array[(Bytes, ImportDesc)])
   /// Marker 0x7E: one descriptor, then the names that share it.
   Homogeneous(Array[Bytes])
-} derive(Eq, Debug)
+}
 
 ///|
 /// What an export names, as an index into the matching space.
+#derive(Eq, Debug)
 pub(all) enum ExportDesc {
   Func(Int32)
   Table(Int32)
   Memory(Int32)
   Global(Int32)
   Tag(Int32)
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Export {
   name : Bytes
   desc : ExportDesc
-} derive(Eq, Debug)
+}
 
 ///|
 /// A function body: its locals, then its instructions.
 /// One node's run in a body: where it starts, where its OWN emission begins
 /// (everything before that is its operands), where it ends, and where the
 /// source wrote it.
+#derive(Eq, Debug)
 pub(all) struct Span {
   start : Int32
   head : Int32
   end : Int32
   loc : @basic.Location
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct FunctionCode {
   locals : Array[ValType]
   body : Array[Instruction]
@@ -1042,9 +1065,10 @@ pub(all) struct FunctionCode {
   param_locs : Map[Int32, (@basic.Location, @basic.Location)]
   /// `#[priority]` on the function, if any.
   priority : Priority?
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Global {
   type_ : GlobalType
   init : Array[Instruction]
@@ -1052,10 +1076,11 @@ pub(all) struct Global {
   /// expression is its own body with its own indices, so its spans are its
   /// own too.
   init_spans : Array[Span]
-} derive(Eq, Debug)
+}
 
 ///|
 /// How an element segment reaches its table.
+#derive(Eq, Debug)
 pub(all) enum ElemMode {
   /// Copied into a table at instantiation, at this offset.
   Active(Int32, Array[Instruction])
@@ -1063,9 +1088,10 @@ pub(all) enum ElemMode {
   Passive
   /// Present only so the references in it count as declared.
   Declarative
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Element {
   mode : ElemMode
   type_ : RefType
@@ -1073,7 +1099,7 @@ pub(all) struct Element {
   /// One span list per initialiser, and one for the active offset.
   init_spans : Array[Array[Span]]
   offset_spans : Array[Span]
-} derive(Eq, Debug)
+}
 
 ///|
 /// How a data segment reaches its memory.
@@ -1083,14 +1109,16 @@ pub(all) struct Element {
 /// state representable -- an active segment with an empty offset expression --
 /// and it decided the encoding from `offset.is_empty()`, so such a segment was
 /// silently written as active-at-an-explicit-memory instead.
+#derive(Eq, Debug)
 pub(all) enum DataMode {
   /// Copied into this memory at instantiation, at this offset.
   Active(Int32, Array[Instruction])
   /// Left for `memory.init`.
   Passive
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Data {
   mode : DataMode
   init : Bytes
@@ -1103,10 +1131,11 @@ pub(all) struct Data {
   /// come back from them. Empty when nothing recorded it, and then the bytes
   /// are written as one string.
   spelling : Array[DataPiece]
-} derive(Eq, Debug)
+}
 
 ///|
 /// One piece of a data segment, as the source wrote it.
+#derive(Eq, Debug)
 pub(all) enum DataPiece {
   /// A byte string.
   PieceStr(Bytes)
@@ -1114,7 +1143,7 @@ pub(all) enum DataPiece {
   /// vector run keeps its shapes among them, because `(v128 i32x4 1 2 3 4
   /// f64x2 1.0 2.0)` is one run of two vectors written two different ways.
   PieceRun(String, Array[String])
-} derive(Eq, Debug)
+}
 
 ///|
 /// The `name` custom section: what everything in the module is called.
@@ -1126,6 +1155,7 @@ pub(all) enum DataPiece {
 /// Maps rather than arrays, mirroring the reference's `IntMap`: the format
 /// wants each vector in ascending index order, and making that the encoder's
 /// job rather than the caller's is one fewer way to differ by a byte.
+#derive(Debug)
 pub(all) struct Names {
   mut module_ : Bytes?
   functions : Map[Int32, Bytes]
@@ -1141,7 +1171,7 @@ pub(all) struct Names {
   data : Map[Int32, Bytes]
   fields : Map[Int32, Map[Int32, Bytes]]
   tags : Map[Int32, Bytes]
-} derive(Debug)
+}
 
 ///|
 /// No names at all, which is also what makes the section disappear.
@@ -1164,6 +1194,7 @@ pub fn Names::empty() -> Names {
 
 ///|
 /// A whole module, in the form the encoder writes out.
+#derive(Debug)
 pub(all) struct Module {
   /// Every defined type, flat, because that is the space indices refer to.
   types : Array[SubType]
@@ -1196,7 +1227,7 @@ pub(all) struct Module {
   /// emitted verbatim and in order, because entries from other producers pass
   /// through untouched.
   target_features : Array[(Int32, Bytes)]
-} derive(Debug)
+}
 
 ///|
 /// The source facts the text form needs and the binary has no room for.
@@ -1204,6 +1235,7 @@ pub(all) struct Module {
 /// Recorded as the lowering goes rather than recovered afterwards: there is
 /// nothing in the sections to recover them from, and a second derivation could
 /// disagree with the first with nothing to say which output is wrong.
+#derive(Debug)
 pub(all) struct TextView {
   /// The order the SOURCE wrote the fields in.
   ///
@@ -1277,10 +1309,11 @@ pub(all) struct TextView {
   export_locs : Map[Int32, @basic.Location]
   /// Where each declared type's name was written, by type index.
   type_name_locs : Map[Int32, @basic.Location]
-} derive(Debug)
+}
 
 ///|
 /// A place a value type is written, for `TextView::alias_uses`.
+#derive(Eq, Hash, Debug)
 pub(all) enum AliasSite {
   /// A parameter of a declaration's signature.
   SiteParam(ParamOwner, Int32)
@@ -1300,11 +1333,12 @@ pub(all) enum AliasSite {
   /// A block's single result, by function index and the number the block's
   /// label takes in the order blocks open.
   SiteBlock(Int32, Int32)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// One `#[if(..)]` group: the condition as the TEXT format writes it, and
 /// where each branch stood in the source.
+#derive(Eq, Debug)
 pub(all) struct CondGroup {
   cond : String
   /// The same condition as a tree, for a layout that can break it across
@@ -1313,7 +1347,7 @@ pub(all) struct CondGroup {
   loc : @basic.Location
   then_ : @basic.Location
   else_ : @basic.Location?
-} derive(Eq, Debug)
+}
 
 ///|
 /// An empty view, for a module nothing recorded one for.
@@ -1337,24 +1371,27 @@ pub fn TextView::empty() -> TextView {
 ///|
 /// Which of the two clauses a declaration wrote for its type. Both are
 /// optional and they are independent: `fn f: ft(i32)` wrote both.
+#derive(Eq, Debug)
 pub(all) struct TypeUse {
   named : Bool
   spelled : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 /// Whose parameters a name list belongs to. Imported functions and tags sit in
 /// different index spaces, so the index alone does not say.
+#derive(Eq, Hash, Debug)
 pub(all) enum ParamOwner {
   OwnerFunc(Int32)
   OwnerTag(Int32)
   /// A declared `type t = fn(x: i32)`, by type index. Its parameter names are
   /// no more encodable than an import's.
   OwnerType(Int32)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// One field of a module, named by where its item landed.
+#derive(Eq, Debug)
 pub(all) enum FieldRef {
   /// The type-section entries one `type` or `rec` field declared.
   FTypes(Array[Int32])
@@ -1378,7 +1415,7 @@ pub(all) enum FieldRef {
   FData(Int32)
   /// A value-type alias, by its position in `TextView::type_aliases`.
   FTypeAlias(Int32)
-} derive(Eq, Debug)
+}
 
 ///|
 /// A module with nothing in it.

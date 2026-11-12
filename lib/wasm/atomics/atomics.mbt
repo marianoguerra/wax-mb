@@ -10,22 +10,25 @@
 
 ///|
 /// The value type an atomic operation works in.
+#derive(Eq, Hash, Debug)
 pub(all) enum NumTy {
   I32
   I64
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A narrower access than the value type: `i64.atomic.load16_u` reads two bytes
 /// into an i64. `None` means the access is the full width of the value type.
+#derive(Eq, Hash, Debug)
 pub(all) enum Narrow {
   N8
   N16
   N32
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// The read-modify-write operations.
+#derive(Eq, Hash, Debug)
 pub(all) enum RmwOp {
   Add
   Sub
@@ -34,17 +37,18 @@ pub(all) enum RmwOp {
   Xor
   Xchg
   Cmpxchg
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A concrete atomic operation, as the binary format sees it.
+#derive(Eq, Hash, Debug)
 pub(all) enum Op {
   Notify
   Wait(NumTy)
   Load(NumTy, Narrow?)
   Store(NumTy, Narrow?)
   Rmw(RmwOp, NumTy, Narrow?)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 fn NumTy::to_str(self : NumTy) -> String {
@@ -188,12 +192,13 @@ pub fn of_opcode(code : Int32) -> Op? {
 
 ///|
 /// The access width a Wax method name carries.
+#derive(Eq, Hash, Debug)
 pub(all) enum Width {
   W8
   W16
   W32
   W64
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A Wax method name denotes a FAMILY, not a single operation.
@@ -203,13 +208,14 @@ pub(all) enum Width {
 /// while type checking, exactly as it is for the plain scalar accesses
 /// (`load16(p) as i64_u`). `atomic_wait32`/`atomic_wait64` and `atomic_notify`
 /// are the exceptions: they resolve from the name alone.
+#derive(Eq, Hash, Debug)
 pub(all) enum Family {
   Load(Width)
   Store(Width)
   Rmw(RmwOp, Width)
   Wait(NumTy)
   Notify
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 let widths : Array[Width] = [W8, W16, W32, W64]

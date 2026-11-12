@@ -15,32 +15,36 @@ pub fn run_tokens((Printer) -> Unit, width? : Int32) -> Array[Token]
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum BreakStrength {
   Cut
   Space
   Newline
   BlankLine
-} derive(Eq, @debug.Debug)
+}
 pub fn BreakStrength::strength(Self) -> Int32
 
 type Engine
 pub fn Engine::new(width? : Int32) -> Self
 
-type Frame derive(Eq, @debug.Debug)
+#derive(Eq, @debug.Debug)
+type Frame
 
+#derive(Eq, @debug.Debug)
 pub(all) enum GKind {
   GBox
   GHov
   GHv
   GV
   GH
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Mode {
   Flat
   Brkm
   Fill
-} derive(Eq, @debug.Debug)
+}
 
 pub struct Printer {
   engine : Engine
@@ -67,8 +71,10 @@ pub fn Printer::string_as(Self, Int32, String) -> Unit
 pub fn Printer::vbox(Self, () -> Unit, skip_space? : Bool, indent? : Int32) -> Unit
 pub fn Printer::with_held_eol(Self, () -> Unit) -> Unit
 
-type ScanResult derive(Eq, @debug.Debug)
+#derive(Eq, @debug.Debug)
+type ScanResult
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Token {
   TText(Int32, String)
   TBreak(BreakStrength)
@@ -76,7 +82,7 @@ pub(all) enum Token {
   TNest(Int32)
   TIfBroken
   TEnd
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

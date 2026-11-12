@@ -128,7 +128,8 @@ fn drive_recovering(
   let data : Array[(YYObj, Position, Position)] = []
   let mut state = 0
   let mut cursor = 0
-  let mut last_pos = tokens[0].1
+  let initial_pos = tokens[0].1
+  let mut last_pos = initial_pos
   let mut lookahead : (Int32, (YYObj, Position, Position), Token?)? = None
   // Tokens recovery has decided to splice in, taken before the real ones.
   let pending : Array[(Token, Position, Position)] = []
@@ -182,13 +183,29 @@ fn drive_recovering(
         let mut symbol = symbol
         let mut action = action
         while true {
-          let args = data[data.length() - count:]
-          let obj = action(last_pos, args)
-          let span = if args.length() == 0 {
-            (last_pos, last_pos)
+          // Mirrors the reduce step yacc generates into `yy_parse`: an empty
+          // production ends where the item below it ends, and a reduction
+          // flagged `start_before_rhs` starts there too.
+          let start_index = data.length() - count
+          let args = data[start_index:]
+          let previous_end = if start_index == 0 {
+            initial_pos
           } else {
-            (args[0].1, args[args.length() - 1].2)
+            data[start_index - 1].2
           }
+          let obj = (action.action)(args)
+          let span = (
+            if action.start_before_rhs {
+              previous_end
+            } else {
+              args[0].1
+            },
+            if count == 0 {
+              previous_end
+            } else {
+              args[count - 1].2
+            },
+          )
           for _ in 0..<count {
             data.unsafe_pop() |> ignore
             stack.unsafe_pop() |> ignore

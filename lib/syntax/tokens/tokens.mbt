@@ -1,3 +1,5 @@
+///|
+#derive(Debug)
 pub(all) enum Token {
   IDENT(String)
   INT(String)
@@ -118,8 +120,14 @@ pub(all) enum Token {
   DESCRIPTOR
   DESCRIBES
   IMPORT
-} derive(Debug)
+}
 
+///|
+#deprecated("Use Debug::to_repr instead")
+#doc(hidden)
+pub extend Token with Debug::{to_repr}
+
+///|
 pub fn Token::kind(self : Token) -> TokenKind {
   match self {
     IDENT(_) => TK_IDENT
@@ -244,6 +252,8 @@ pub fn Token::kind(self : Token) -> TokenKind {
   }
 }
 
+///|
+#derive(Eq, Hash, Compare)
 pub(all) enum TokenKind {
   TK_IDENT
   TK_INT
@@ -364,10 +374,32 @@ pub(all) enum TokenKind {
   TK_DESCRIPTOR
   TK_DESCRIBES
   TK_IMPORT
-} derive(Eq, Hash, Compare)
+}
 
+///|
+#deprecated("Use Eq::equal or Eq::not_equal instead")
+#doc(hidden)
+pub extend TokenKind with Eq::{equal, not_equal}
+
+///|
+#deprecated("Use Hash::hash or Hash::hash_combine instead")
+#doc(hidden)
+pub extend TokenKind with Hash::{hash, hash_combine}
+
+///|
+#deprecated("Use Compare::compare or Compare::op_ge or Compare::op_gt or Compare::op_le or Compare::op_lt instead")
+#doc(hidden)
+pub extend TokenKind with Compare::{compare, op_ge, op_gt, op_le, op_lt}
+
+///|
+#deprecated("Use Show::output or Show::to_string instead")
+#doc(hidden)
+pub extend TokenKind with Show::{output, to_string}
+
+///|
 pub impl Show for TokenKind with fn output(self, logger) {
-  logger.write_string(
+  Logger::write_string(
+    logger,
     match self {
       TK_IDENT => "IDENT"
       TK_INT => "INT"
@@ -492,127 +524,132 @@ pub impl Show for TokenKind with fn output(self, logger) {
   )
 }
 
-pub impl Debug for TokenKind with fn to_repr(self) {
-    match self {
-      TK_IDENT => Repr("IDENT")
-      TK_INT => Repr("INT")
-      TK_FLOAT => Repr("FLOAT")
-      TK_STRING => Repr("STRING")
-      TK_CHAR => Repr("CHAR")
-      TK_EOF => Repr("EOF")
-      TK_INF => Repr("INF")
-      TK_NAN => Repr("NAN")
-      TK_SEMI => Repr(";")
-      TK_SHARP => Repr("#")
-      TK_QUESTIONMARK => Repr("?")
-      TK_LPAREN => Repr("(")
-      TK_RPAREN => Repr(")")
-      TK_LBRACE => Repr("{")
-      TK_RBRACE => Repr("}")
-      TK_LBRACKET => Repr("[")
-      TK_RBRACKET => Repr("]")
-      TK_COMMA => Repr(",")
-      TK_COLON => Repr(":")
-      TK_COLONCOLON => Repr("::")
-      TK_ARROW => Repr("->")
-      TK_FATARROW => Repr("=>")
-      TK_EQUAL => Repr("=")
-      TK_COLONEQUAL => Repr(":=")
-      TK_AT => Repr("@")
-      TK_QUOTE => Repr("'")
-      TK_DOT => Repr(".")
-      TK_DOTDOT => Repr("..")
-      TK_BANG => Repr("!")
-      TK_PLUS => Repr("+")
-      TK_PLUSPLUS => Repr("++")
-      TK_PLUSEQUAL => Repr("+=")
-      TK_MINUS => Repr("-")
-      TK_MINUSEQUAL => Repr("-=")
-      TK_STAR => Repr("*")
-      TK_STAREQUAL => Repr("*=")
-      TK_SLASH => Repr("/")
-      TK_SLASHEQUAL => Repr("/=")
-      TK_SLASHS => Repr("/s")
-      TK_SLASHSEQUAL => Repr("/s=")
-      TK_SLASHU => Repr("/u")
-      TK_SLASHUEQUAL => Repr("/u=")
-      TK_PERCENTS => Repr("%s")
-      TK_PERCENTSEQUAL => Repr("%s=")
-      TK_PERCENTU => Repr("%u")
-      TK_PERCENTUEQUAL => Repr("%u=")
-      TK_AMPERSAND => Repr("&")
-      TK_AMPERSANDEQUAL => Repr("&=")
-      TK_PIPE => Repr("|")
-      TK_PIPEEQUAL => Repr("|=")
-      TK_CARET => Repr("^")
-      TK_CARETEQUAL => Repr("^=")
-      TK_SHL => Repr("<<")
-      TK_SHLEQUAL => Repr("<<=")
-      TK_SHRS => Repr(">>s")
-      TK_SHRSEQUAL => Repr(">>s=")
-      TK_SHRU => Repr(">>u")
-      TK_SHRUEQUAL => Repr(">>u=")
-      TK_EQUALEQUAL => Repr("==")
-      TK_BANGEQUAL => Repr("!=")
-      TK_GT => Repr(">")
-      TK_GTS => Repr(">s")
-      TK_GTU => Repr(">u")
-      TK_LT => Repr("<")
-      TK_LTS => Repr("<s")
-      TK_LTU => Repr("<u")
-      TK_GE => Repr(">=")
-      TK_GES => Repr(">=s")
-      TK_GEU => Repr(">=u")
-      TK_LE => Repr("<=")
-      TK_LES => Repr("<=s")
-      TK_LEU => Repr("<=u")
-      TK_UNDERSCORE => Repr("_")
-      TK_FN => Repr("FN")
-      TK_TAG => Repr("TAG")
-      TK_MUT => Repr("MUT")
-      TK_TYPE => Repr("TYPE")
-      TK_REC => Repr("REC")
-      TK_OPEN => Repr("OPEN")
-      TK_NOP => Repr("NOP")
-      TK_UNREACHABLE => Repr("UNREACHABLE")
-      TK_NULL => Repr("NULL")
-      TK_DO => Repr("DO")
-      TK_WHILE => Repr("WHILE")
-      TK_LOOP => Repr("LOOP")
-      TK_IF => Repr("IF")
-      TK_ELSE => Repr("ELSE")
-      TK_CONST => Repr("CONST")
-      TK_LET => Repr("LET")
-      TK_AS => Repr("AS")
-      TK_IS => Repr("IS")
-      TK_BECOME => Repr("BECOME")
-      TK_BR => Repr("BR")
-      TK_BR_IF => Repr("BR_IF")
-      TK_BR_TABLE => Repr("BR_TABLE")
-      TK_RETURN => Repr("RETURN")
-      TK_THROW => Repr("THROW")
-      TK_THROW_REF => Repr("THROW_REF")
-      TK_BR_ON_CAST => Repr("BR_ON_CAST")
-      TK_BR_ON_CAST_FAIL => Repr("BR_ON_CAST_FAIL")
-      TK_BR_ON_NULL => Repr("BR_ON_NULL")
-      TK_BR_ON_NON_NULL => Repr("BR_ON_NON_NULL")
-      TK_TRY => Repr("TRY")
-      TK_TRY_LEGACY => Repr("TRY_LEGACY")
-      TK_CATCH => Repr("CATCH")
-      TK_CONT => Repr("CONT")
-      TK_SUSPEND => Repr("SUSPEND")
-      TK_ON => Repr("ON")
-      TK_DISPATCH => Repr("DISPATCH")
-      TK_MATCH => Repr("MATCH")
-      TK_MEMORY => Repr("MEMORY")
-      TK_DATA => Repr("DATA")
-      TK_TABLE => Repr("TABLE")
-      TK_ELEM => Repr("ELEM")
-      TK_PAGESIZE => Repr("PAGESIZE")
-      TK_SHARED => Repr("SHARED")
-      TK_DESCRIPTOR => Repr("DESCRIPTOR")
-      TK_DESCRIBES => Repr("DESCRIBES")
-      TK_IMPORT => Repr("IMPORT")
-    }
-}
+///|
+#deprecated("Use Debug::to_repr instead")
+#doc(hidden)
+pub extend TokenKind with Debug::{to_repr}
 
+///|
+pub impl Debug for TokenKind with fn to_repr(self) {
+  match self {
+    TK_IDENT => Repr("IDENT")
+    TK_INT => Repr("INT")
+    TK_FLOAT => Repr("FLOAT")
+    TK_STRING => Repr("STRING")
+    TK_CHAR => Repr("CHAR")
+    TK_EOF => Repr("EOF")
+    TK_INF => Repr("INF")
+    TK_NAN => Repr("NAN")
+    TK_SEMI => Repr(";")
+    TK_SHARP => Repr("#")
+    TK_QUESTIONMARK => Repr("?")
+    TK_LPAREN => Repr("(")
+    TK_RPAREN => Repr(")")
+    TK_LBRACE => Repr("{")
+    TK_RBRACE => Repr("}")
+    TK_LBRACKET => Repr("[")
+    TK_RBRACKET => Repr("]")
+    TK_COMMA => Repr(",")
+    TK_COLON => Repr(":")
+    TK_COLONCOLON => Repr("::")
+    TK_ARROW => Repr("->")
+    TK_FATARROW => Repr("=>")
+    TK_EQUAL => Repr("=")
+    TK_COLONEQUAL => Repr(":=")
+    TK_AT => Repr("@")
+    TK_QUOTE => Repr("'")
+    TK_DOT => Repr(".")
+    TK_DOTDOT => Repr("..")
+    TK_BANG => Repr("!")
+    TK_PLUS => Repr("+")
+    TK_PLUSPLUS => Repr("++")
+    TK_PLUSEQUAL => Repr("+=")
+    TK_MINUS => Repr("-")
+    TK_MINUSEQUAL => Repr("-=")
+    TK_STAR => Repr("*")
+    TK_STAREQUAL => Repr("*=")
+    TK_SLASH => Repr("/")
+    TK_SLASHEQUAL => Repr("/=")
+    TK_SLASHS => Repr("/s")
+    TK_SLASHSEQUAL => Repr("/s=")
+    TK_SLASHU => Repr("/u")
+    TK_SLASHUEQUAL => Repr("/u=")
+    TK_PERCENTS => Repr("%s")
+    TK_PERCENTSEQUAL => Repr("%s=")
+    TK_PERCENTU => Repr("%u")
+    TK_PERCENTUEQUAL => Repr("%u=")
+    TK_AMPERSAND => Repr("&")
+    TK_AMPERSANDEQUAL => Repr("&=")
+    TK_PIPE => Repr("|")
+    TK_PIPEEQUAL => Repr("|=")
+    TK_CARET => Repr("^")
+    TK_CARETEQUAL => Repr("^=")
+    TK_SHL => Repr("<<")
+    TK_SHLEQUAL => Repr("<<=")
+    TK_SHRS => Repr(">>s")
+    TK_SHRSEQUAL => Repr(">>s=")
+    TK_SHRU => Repr(">>u")
+    TK_SHRUEQUAL => Repr(">>u=")
+    TK_EQUALEQUAL => Repr("==")
+    TK_BANGEQUAL => Repr("!=")
+    TK_GT => Repr(">")
+    TK_GTS => Repr(">s")
+    TK_GTU => Repr(">u")
+    TK_LT => Repr("<")
+    TK_LTS => Repr("<s")
+    TK_LTU => Repr("<u")
+    TK_GE => Repr(">=")
+    TK_GES => Repr(">=s")
+    TK_GEU => Repr(">=u")
+    TK_LE => Repr("<=")
+    TK_LES => Repr("<=s")
+    TK_LEU => Repr("<=u")
+    TK_UNDERSCORE => Repr("_")
+    TK_FN => Repr("FN")
+    TK_TAG => Repr("TAG")
+    TK_MUT => Repr("MUT")
+    TK_TYPE => Repr("TYPE")
+    TK_REC => Repr("REC")
+    TK_OPEN => Repr("OPEN")
+    TK_NOP => Repr("NOP")
+    TK_UNREACHABLE => Repr("UNREACHABLE")
+    TK_NULL => Repr("NULL")
+    TK_DO => Repr("DO")
+    TK_WHILE => Repr("WHILE")
+    TK_LOOP => Repr("LOOP")
+    TK_IF => Repr("IF")
+    TK_ELSE => Repr("ELSE")
+    TK_CONST => Repr("CONST")
+    TK_LET => Repr("LET")
+    TK_AS => Repr("AS")
+    TK_IS => Repr("IS")
+    TK_BECOME => Repr("BECOME")
+    TK_BR => Repr("BR")
+    TK_BR_IF => Repr("BR_IF")
+    TK_BR_TABLE => Repr("BR_TABLE")
+    TK_RETURN => Repr("RETURN")
+    TK_THROW => Repr("THROW")
+    TK_THROW_REF => Repr("THROW_REF")
+    TK_BR_ON_CAST => Repr("BR_ON_CAST")
+    TK_BR_ON_CAST_FAIL => Repr("BR_ON_CAST_FAIL")
+    TK_BR_ON_NULL => Repr("BR_ON_NULL")
+    TK_BR_ON_NON_NULL => Repr("BR_ON_NON_NULL")
+    TK_TRY => Repr("TRY")
+    TK_TRY_LEGACY => Repr("TRY_LEGACY")
+    TK_CATCH => Repr("CATCH")
+    TK_CONT => Repr("CONT")
+    TK_SUSPEND => Repr("SUSPEND")
+    TK_ON => Repr("ON")
+    TK_DISPATCH => Repr("DISPATCH")
+    TK_MATCH => Repr("MATCH")
+    TK_MEMORY => Repr("MEMORY")
+    TK_DATA => Repr("DATA")
+    TK_TABLE => Repr("TABLE")
+    TK_ELEM => Repr("ELEM")
+    TK_PAGESIZE => Repr("PAGESIZE")
+    TK_SHARED => Repr("SHARED")
+    TK_DESCRIPTOR => Repr("DESCRIPTOR")
+    TK_DESCRIBES => Repr("DESCRIBES")
+    TK_IMPORT => Repr("IMPORT")
+  }
+}

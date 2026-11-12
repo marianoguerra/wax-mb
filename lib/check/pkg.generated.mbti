@@ -215,14 +215,16 @@ pub fn Checker::gaps(Self) -> Array[(String, Int32)]
 pub fn Checker::new(@env.ModuleContext, Operands) -> Self
 pub fn Checker::statement(Self, @ast.Instr[@basic.Location]) -> @ast.Instr[(Array[@infer.Cell[@infer.InferredType]], @basic.Location)]
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Define {
   DefineBool(Bool)
   DefineVersion(Int32, Int32, Int32)
   DefineString(String)
-} derive(Eq, @debug.Debug)
+}
 
 type HoleRun
 
+#derive(Eq)
 pub(all) enum MethodCall {
   Atomic(@atomics.Family)
   MemAccess
@@ -231,7 +233,7 @@ pub(all) enum MethodCall {
   TableManage
   SegmentDrop
   Ordinary
-} derive(Eq)
+}
 
 type MissingBatch
 
@@ -265,11 +267,12 @@ pub(all) enum Stack {
   Cons(@basic.Location?, @infer.Cell[@infer.InferredType], Stack)
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum StackKind {
   Input
   Output
   Holes
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

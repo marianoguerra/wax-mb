@@ -11,11 +11,13 @@ import {
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum AddressType {
   I32
   I64
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum CmpOp {
   Eq
   Ne
@@ -23,8 +25,9 @@ pub(all) enum CmpOp {
   Gt
   Le
   Ge
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Cond {
   Var(@basic.Annotated[String, @basic.Location])
   Str(@basic.Annotated[Bytes, @basic.Location])
@@ -33,8 +36,9 @@ pub(all) enum Cond {
   Or(Array[Cond])
   Not(Cond)
   Cmp(CmpOp, Cond, Cond)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum HeapType[Idx] {
   Func
   NoFunc
@@ -52,47 +56,55 @@ pub(all) enum HeapType[Idx] {
   None_
   Type(Idx)
   Exact(Idx)
-} derive(Eq, Hash, @debug.Debug)
+}
 pub fn[Idx] HeapType::keyword(Self[Idx]) -> String?
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Limits {
   mi : UInt64
   ma : UInt64?
   address_type : AddressType
   page_size_log2 : Int32?
   shared : Bool
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) struct MutType[T] {
   mut_ : Bool
   typ : T
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum PackedType {
   I8
   I16
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) struct RefType[Idx] {
   nullable : Bool
   typ : HeapType[Idx]
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Signage {
   Signed
   Unsigned
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum StorageType[Idx] {
   Value(ValType[Idx])
   Packed(PackedType)
-} derive(Eq, Hash, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct V128Literal {
   shape : V128Shape
   components : Array[String]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum V128Shape {
   I8x16
   I16x8
@@ -100,9 +112,10 @@ pub(all) enum V128Shape {
   I64x2
   F32x4
   F64x2
-} derive(Eq, @debug.Debug)
+}
 pub fn V128Shape::to_str(Self) -> String
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum ValType[Idx] {
   I32
   I64
@@ -111,7 +124,7 @@ pub(all) enum ValType[Idx] {
   V128
   Ref(RefType[Idx])
   Alias(Idx)
-} derive(Eq, Hash, @debug.Debug)
+}
 
 // Type aliases
 pub type FieldType[Idx] = MutType[StorageType[Idx]]

@@ -42,6 +42,7 @@ pub fn has_source(s : Span) -> Bool {
 /// which is the whole reason wap can spell integer comparison `<` where was has
 /// to spell it `<` or `<$`. `U32` and `I32` are both wasm i32; they differ only
 /// in which instruction an operator on them selects.
+#derive(Eq, @debug.Debug)
 pub(all) enum Type {
   I8
   I16
@@ -71,10 +72,11 @@ pub(all) enum Type {
   Eq
   /// `i31` -- a boxed 31-bit integer.
   I31
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// What a `type` declaration introduces.
+#derive(Eq, @debug.Debug)
 pub(all) enum TypeDef {
   /// `{ x :: i32, y :: mut f64 }`, optionally extending another record.
   Record(parent~ : String?, fields~ : Array[Field])
@@ -86,16 +88,17 @@ pub(all) enum TypeDef {
   Subrange(low~ : Int32, high~ : Int32)
   /// `[u8]`, `fn(i32) -> i32`, or any other type expression.
   Alias(Type)
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// One field of a record.
+#derive(Eq, @debug.Debug)
 pub(all) struct Field {
   name : String
   mut_ : Bool
   typ : Type
   span : Span
-} derive(Eq, @debug.Debug)
+}
 
 // ---------------------------------------------------------------- operators
 
@@ -105,6 +108,7 @@ pub(all) struct Field {
 /// `Div`, `Rem`, `Shr` and the four comparisons become signed or unsigned wasm
 /// instructions according to the type of their operands; the parser never has
 /// to decide, and there is no wap spelling that lets it.
+#derive(Eq, @debug.Debug)
 pub(all) enum BinOp {
   Add
   Sub
@@ -122,26 +126,29 @@ pub(all) enum BinOp {
   Gt
   Le
   Ge
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// A prefix operator.
+#derive(Eq, @debug.Debug)
 pub(all) enum UnOp {
   Neg
   Not
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// How an assignment combines with the old value.
+#derive(Eq, @debug.Debug)
 pub(all) enum AssignOp {
   Set
   OpSet(BinOp)
-} derive(Eq, @debug.Debug)
+}
 
 // ---------------------------------------------------------------- patterns
 
 ///|
 /// A `match` arm's pattern.
+#derive(Eq, @debug.Debug)
 pub(all) enum Pattern {
   /// `c :: circle` -- a type test that binds.
   PType(name~ : String?, typ~ : Type)
@@ -155,35 +162,39 @@ pub(all) enum Pattern {
   PSet(Array[Pattern])
   /// `_`
   PWild
-} derive(Eq, @debug.Debug)
+}
 
 // ---------------------------------------------------------------- expressions
 
 ///|
 /// An expression with the span it was written at.
+#derive(Eq, @debug.Debug)
 pub(all) struct Node {
   it : Expr
   span : Span
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// One arm of a `match`.
+#derive(Eq, @debug.Debug)
 pub(all) struct Arm {
   pat : Pattern
   body : Array[Node]
   span : Span
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// A `let`/`var` binding target.
+#derive(Eq, @debug.Debug)
 pub(all) struct Binder {
   name : String
   typ : Type?
   span : Span
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// Everything a wap body can contain.
+#derive(Eq, @debug.Debug)
 pub(all) enum Expr {
   // -- literals -----------------------------------------------------------
   /// An integer literal, kept as written. Parsing it here would lose the
@@ -272,12 +283,13 @@ pub(all) enum Expr {
   Nop
   /// `_ = e` -- evaluate and drop.
   Drop(Node)
-} derive(Eq, @debug.Debug)
+}
 
 // ---------------------------------------------------------------- declarations
 
 ///|
 /// A function or method, defined or merely declared.
+#derive(Eq, @debug.Debug)
 pub(all) struct FnDecl {
   name : String
   /// Set when the function came from an `impl` block: the receiver's type.
@@ -293,18 +305,20 @@ pub(all) struct FnDecl {
   /// thing entirely: `export "n"` is an ABI, `pub` is visibility.
   is_pub : Bool
   span : Span
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// One parameter.
+#derive(Eq, @debug.Debug)
 pub(all) struct Param {
   name : String
   typ : Type
   span : Span
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// A global constant.
+#derive(Eq, @debug.Debug)
 pub(all) struct ConstDecl {
   name : String
   typ : Type?
@@ -313,10 +327,11 @@ pub(all) struct ConstDecl {
   import_name : String?
   is_pub : Bool
   span : Span
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// A top-level declaration.
+#derive(Eq, @debug.Debug)
 pub(all) enum Decl {
   /// `module vector`
   ModuleName(String)
@@ -337,11 +352,12 @@ pub(all) enum Decl {
   Fn(FnDecl)
   /// `impl circle: ...`
   Impl(typ~ : String, methods~ : Array[FnDecl], span~ : Span)
-} derive(Eq, @debug.Debug)
+}
 
 ///|
 /// A whole wap compilation unit.
+#derive(Eq, @debug.Debug)
 pub(all) struct Module {
   name : String
   decls : Array[Decl]
-} derive(Eq, @debug.Debug)
+}

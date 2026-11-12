@@ -17,11 +17,12 @@ pub let empty_assoc : Associated
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Associated {
   before : Array[Entry]
   within : Array[Entry]
   after : Array[Entry]
-} derive(Eq, @debug.Debug)
+}
 
 pub struct Context {
   entries : Array[Entry]
@@ -38,11 +39,12 @@ pub fn Context::report_item(Self, TriviaKind, @basic.Location, String) -> Unit
 pub fn Context::report_newline(Self) -> Unit
 pub fn Context::report_token(Self, Int32) -> Unit
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Entry {
   anchor : Int32
   trivia : Trivia
   position : TriviaPos
-} derive(Eq, @debug.Debug)
+}
 
 pub struct Locations {
   marked : @set.Set[SpanKey]
@@ -51,7 +53,8 @@ pub fn Locations::contains(Self, @basic.Location) -> Bool
 pub fn Locations::mark(Self, @basic.Location) -> Unit
 pub fn Locations::new() -> Self
 
-type SpanKey derive(Compare, Eq, Hash, @debug.Debug)
+#derive(Compare, Eq, Hash, @debug.Debug)
+type SpanKey
 
 pub struct Table {
   entries : Map[SpanKey, Associated]
@@ -60,21 +63,24 @@ pub struct Table {
 pub fn Table::empty() -> Self
 pub fn Table::get(Self, @basic.Location?) -> Associated
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Trivia {
   Item(content~ : String, kind~ : TriviaKind, loc~ : @basic.Location)
   BlankLine
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TriviaKind {
   LineComment
   BlockComment
   Annotation
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TriviaPos {
   LineStart
   Inline
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

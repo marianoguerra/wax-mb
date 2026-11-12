@@ -22,11 +22,12 @@ pub fn usage_line(Array[String]) -> String
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) enum Command {
   Convert
   Format
   Check
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct Options {
   command : Command
@@ -46,13 +47,14 @@ pub(all) struct Options {
   defines : Map[String, @check.Define]
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Status {
   Ok
   Usage
   BadArgs
   Internal
   Rejected
-} derive(Eq, @debug.Debug)
+}
 pub fn Status::code(Self) -> Int32
 
 // Type aliases

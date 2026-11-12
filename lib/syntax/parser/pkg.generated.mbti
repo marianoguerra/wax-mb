@@ -30,7 +30,8 @@ pub suberror ParseError {
   UnexpectedEndOfInput(@basic.Position, Array[@tokens.TokenKind])
 }
 
-type SyntaxError derive(@debug.Debug)
+#derive(@debug.Debug)
+type SyntaxError
 
 // Types and methods
 pub struct ErrorState {
@@ -42,7 +43,8 @@ pub struct ErrorState {
 pub fn ErrorState::reduced_stack(Self) -> Array[Int32]?
 pub fn ErrorState::subject_span(Self) -> (@basic.Position, @basic.Position)?
 
-type HintSetter derive(@debug.Debug)
+#derive(@debug.Debug)
+type HintSetter
 
 pub struct ParseResult {
   module_ : Array[@basic.Annotated[@ast.ModuleField[@basic.Location], @basic.Location]]?

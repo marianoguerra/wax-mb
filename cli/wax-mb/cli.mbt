@@ -2,6 +2,7 @@
 
 ///|
 /// What the tool was asked to do.
+#derive(Eq, Debug)
 pub(all) enum Command {
   /// Read a file and write it out in the requested format. The default.
   Convert
@@ -10,13 +11,14 @@ pub(all) enum Command {
   Format
   /// Report diagnostics and produce no output.
   Check
-} derive(Eq, Debug)
+}
 
 ///|
 /// Exit statuses, shared by every command.
 ///
 /// The distinction is HOW YOU USED THE TOOL (123/124) against THE INPUT IS BAD
 /// (128), so a CI gate can tell a broken invocation from a rejected file.
+#derive(Eq, Debug)
 pub(all) enum Status {
   /// Every file passed.
   Ok
@@ -29,7 +31,7 @@ pub(all) enum Status {
   Internal
   /// The input was rejected by a diagnostic.
   Rejected
-} derive(Eq, Debug)
+}
 
 ///|
 /// The name this program was invoked as, for the `NAME: message` prefix its
@@ -174,8 +176,8 @@ pub fn parse_args(argv : Array[String]) -> Result[Options, (Status, String)] {
     let (name, inline_value) = match a.find("=") {
       Some(k) if a.has_prefix("--") =>
         (
-          a.view(end_offset=k).to_owned(),
-          Some(a.view(start_offset=k + 1).to_owned()),
+          a.exact_view(end=k).to_owned(),
+          Some(a.exact_view(start=k + 1).to_owned()),
         )
       _ => (a, None)
     }

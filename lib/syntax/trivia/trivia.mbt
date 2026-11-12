@@ -16,12 +16,14 @@
 /// The printer needs the distinction: a comment on its own line stays on its
 /// own line, while one trailing `foo; // why` has to be held back and emitted
 /// after the separator rather than before it.
+#derive(Eq, Debug)
 pub(all) enum TriviaPos {
   LineStart
   Inline
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum TriviaKind {
   LineComment
   BlockComment
@@ -30,24 +32,26 @@ pub(all) enum TriviaKind {
   /// shares this table with its WAT front end, and keeping the case makes the
   /// two ports line up.
   Annotation
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum Trivia {
   Item(content~ : String, kind~ : TriviaKind, loc~ : @basic.Location)
   /// A blank line, which the printer preserves: run-of-blank-lines structure is
   /// part of how the source reads, so dropping it would change the output.
   BlankLine
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Entry {
   /// Byte offset of the end of the last real token before this trivia. This is
   /// the join key the printer uses to decide which node owns the comment.
   anchor : Int32
   trivia : Trivia
   position : TriviaPos
-} derive(Eq, Debug)
+}
 
 ///|
 /// Collection state, threaded through lexing.

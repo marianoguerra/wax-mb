@@ -26,6 +26,7 @@
 /// of the internal hierarchy. `Type` names a concrete defined type; `Exact`
 /// names one and forbids subtypes, which is the `custom-descriptors` proposal's
 /// `&!t`.
+#derive(Eq, Hash, Debug)
 pub(all) enum HeapType[Idx] {
   Func
   NoFunc
@@ -45,7 +46,7 @@ pub(all) enum HeapType[Idx] {
   None_
   Type(Idx)
   Exact(Idx)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// The keyword naming a heap type, or None for the two that carry an index.
@@ -75,13 +76,15 @@ pub fn[Idx] HeapType::keyword(self : HeapType[Idx]) -> String? {
 
 ///|
 /// A reference type: a heap type plus whether null is allowed.
+#derive(Eq, Hash, Debug)
 pub(all) struct RefType[Idx] {
   nullable : Bool
   typ : HeapType[Idx]
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A value type -- what a local, parameter or stack slot holds.
+#derive(Eq, Hash, Debug)
 pub(all) enum ValType[Idx] {
   I32
   I64
@@ -94,30 +97,33 @@ pub(all) enum ValType[Idx] {
   /// ever builds one; the binary format has no aliases, and the lowering
   /// expands each to the type it stands for.
   Alias(Idx)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A packed storage type. These exist only in struct fields and arrays: there
 /// is no i8 or i16 on the operand stack, so they are not value types.
+#derive(Eq, Hash, Debug)
 pub(all) enum PackedType {
   I8
   I16
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// What a struct field or array element stores.
+#derive(Eq, Hash, Debug)
 pub(all) enum StorageType[Idx] {
   Value(ValType[Idx])
   Packed(PackedType)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A type paired with its mutability. Used for both globals and struct fields,
 /// which is why it is generic in the thing being made mutable.
+#derive(Eq, Hash, Debug)
 pub(all) struct MutType[T] {
   mut_ : Bool
   typ : T
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A struct field or array element type.
@@ -137,20 +143,22 @@ pub type GlobalType[Idx] = MutType[ValType[Idx]]
 ///
 /// `mi`/`ma` are u64 to cover 64-bit memories. MoonBit's UInt64 is used
 /// directly where the reference has its own Uint64 module.
+#derive(Eq, Debug)
 pub(all) struct Limits {
   mi : UInt64
   ma : UInt64?
   address_type : AddressType
   page_size_log2 : Int32?
   shared : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 /// Whether a memory or table is indexed by i32 or i64 (`memory64`).
+#derive(Eq, Debug)
 pub(all) enum AddressType {
   I32
   I64
-} derive(Eq, Debug)
+}
 
 ///|
 /// A 128-bit vector literal, kept as its shape plus the raw component strings.
@@ -158,12 +166,14 @@ pub(all) enum AddressType {
 /// The components stay unparsed for the same reason numeric literals do: the
 /// printer has to reproduce what was written, and a v128 can be spelled in six
 /// different shapes.
+#derive(Eq, Debug)
 pub(all) struct V128Literal {
   shape : V128Shape
   components : Array[String]
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum V128Shape {
   I8x16
   I16x8
@@ -171,7 +181,7 @@ pub(all) enum V128Shape {
   I64x2
   F32x4
   F64x2
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn V128Shape::to_str(self : V128Shape) -> String {
@@ -187,13 +197,15 @@ pub fn V128Shape::to_str(self : V128Shape) -> String {
 
 ///|
 /// Signedness, where WebAssembly needs an operation to state it.
+#derive(Eq, Debug)
 pub(all) enum Signage {
   Signed
   Unsigned
-} derive(Eq, Debug)
+}
 
 ///|
 /// Comparison operators available inside a conditional-compilation condition.
+#derive(Eq, Debug)
 pub(all) enum CmpOp {
   Eq
   Ne
@@ -201,7 +213,7 @@ pub(all) enum CmpOp {
   Gt
   Le
   Ge
-} derive(Eq, Debug)
+}
 
 ///|
 /// A conditional-compilation condition, from `#[if(...)]`.
@@ -209,6 +221,7 @@ pub(all) enum CmpOp {
 /// Evaluated against the `-D` variables, not against program values: it decides
 /// which source survives, so it belongs to the type layer rather than the
 /// instruction layer.
+#derive(Eq, Debug)
 pub(all) enum Cond {
   /// A variable, written `$name`.
   Var(@basic.Annotated[String, @basic.Location])
@@ -218,4 +231,4 @@ pub(all) enum Cond {
   Or(Array[Cond])
   Not(Cond)
   Cmp(CmpOp, Cond, Cond)
-} derive(Eq, Debug)
+}

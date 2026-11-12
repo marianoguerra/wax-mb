@@ -5,6 +5,7 @@ import {
   "marianoguerra/wax/basic",
   "marianoguerra/wax/wasm/types",
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -12,7 +13,7 @@ pub fn build(InstrDesc[@basic.Location], @basic.Location) -> Instr[@basic.Locati
 
 pub fn format_signed_type(NumType, @types.Signage, Bool) -> String
 
-pub fn heaptype_json(@types.HeapType[Ident]) -> Json
+pub fn heaptype_json(@types.HeapType[Ident]) -> @json.Json
 
 pub fn import_name(ImportDecl) -> @basic.Annotated[Bytes, @basic.Location]
 
@@ -26,7 +27,7 @@ pub fn[I] lower_trycatch(I, join~ : Ident, arm_labels~ : Array[Ident], typ~ : Fu
 
 pub fn[I] lower_while(I, fresh_loop~ : Ident, label~ : Ident?, cond~ : Instr[I], step~ : Instr[I]?, block~ : Array[Instr[I]]) -> Array[Instr[I]]
 
-pub fn[Info] module_to_json(Array[@basic.Annotated[ModuleField[Info], @basic.Location]]) -> Json
+pub fn[Info] module_to_json(Array[@basic.Annotated[ModuleField[Info], @basic.Location]]) -> @json.Json
 
 pub let no_hints : Hints
 
@@ -38,18 +39,20 @@ pub let splice_field_name : String
 
 pub let synthetic_loop_label : String
 
-pub fn valtype_json(@types.ValType[Ident]) -> Json
+pub fn valtype_json(@types.ValType[Ident]) -> @json.Json
 
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct Attribute {
   attr_name : String
   attr_value : Instr[@basic.Location]?
   attr_guard : @basic.Annotated[@types.Cond, @basic.Location]?
   attr_span : @basic.Location
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum BinOp {
   Add
   Sub
@@ -67,95 +70,109 @@ pub(all) enum BinOp {
   Gt(@types.Signage?)
   Le(@types.Signage?)
   Ge(@types.Signage?)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum CastType {
   Value(@types.ValType[Ident])
   Func(nullable~ : Bool, sign~ : FuncType)
   Signed(typ~ : NumType, signage~ : @types.Signage, strict~ : Bool)
   Ascribed(@types.ValType[Ident])
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Catch {
   Catch(Ident, Ident)
   CatchRef(Ident, Ident)
   CatchAll(Ident)
   CatchAllRef(Ident)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum CompType {
   Func(FuncType)
   Struct(Array[@basic.Annotated[(Ident, @types.MutType[@types.StorageType[Ident]]), @basic.Location]])
   Array(@types.MutType[@types.StorageType[Ident]])
   Cont(Ident)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum DataElem {
   Str(Bytes)
   Run(@types.StorageType[Ident], Array[@basic.Annotated[String, @basic.Location]])
   V128Run(Array[@basic.Annotated[@types.V128Literal, @basic.Location]])
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum DataMode[Info] {
   Passive
   Active(Ident, Instr[Info])
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ElemMode[Info] {
   EPassive
   EActive(Ident, Instr[Info])
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct FuncType {
   params : Array[@basic.Annotated[(Ident?, @types.ValType[Ident]), @basic.Location]]
   results : Array[@types.ValType[Ident]]
-} derive(Eq, @debug.Debug)
-pub fn FuncType::to_json(Self) -> Json
+}
+pub fn FuncType::to_json(Self) -> @json.Json
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Hint[T] {
   value : T
   loc : @basic.Location
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Hints {
   branch : Hint[Bool]?
   freq : Hint[Int32]?
   targets : Hint[Array[(Ident, Int32)]]?
-} derive(Eq, @debug.Debug)
+}
 pub fn Hints::is_empty(Self) -> Bool
 
 #alias(Label)
+#derive(Eq, @debug.Debug)
 pub(all) struct Ident {
   name : String
   loc : @basic.Location
-} derive(Eq, @debug.Debug)
-pub fn Ident::to_json(Self) -> Json
+}
+pub fn Ident::to_json(Self) -> @json.Json
 
+#derive(Eq, @debug.Debug)
 pub(all) struct ImportDecl {
   id : Ident
   kind : ImportKind
   attributes : Array[Attribute]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ImportKind {
   Func(typ~ : Ident?, sign~ : FuncType?, exact~ : Bool)
   Global(mut_~ : Bool, typ~ : @types.ValType[Ident])
   Tag(typ~ : Ident?, sign~ : FuncType?)
   Memory(address_type~ : @types.AddressType, limits~ : (UInt64, UInt64?)?, page_size_log2~ : Int32?, shared~ : Bool)
   Table(address_type~ : @types.AddressType, reftype~ : @types.RefType[Ident], limits~ : (UInt64, UInt64?)?)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Instr[Info] {
   desc : InstrDesc[Info]
   info : Info
   hints : Hints
   expected : @types.ValType[Ident]?
-} derive(Eq, @debug.Debug)
+}
 pub fn[I] Instr::iter_instr(Self[I], (Self[I]) -> Unit) -> Unit
 pub fn[A, B] Instr::map_info(Self[A], (A) -> B) -> Self[B]
 pub fn[I] Instr::sub_instrs(Self[I]) -> Array[Self[I]]
-pub fn[Info] Instr::to_json(Self[Info]) -> Json
+pub fn[Info] Instr::to_json(Self[Info]) -> @json.Json
 
+#derive(Eq, @debug.Debug)
 pub(all) enum InstrDesc[Info] {
   Block(label~ : Ident?, typ~ : FuncType, block~ : @basic.Annotated[Array[Instr[Info]], @basic.Location])
   Loop(label~ : Ident?, typ~ : FuncType, block~ : @basic.Annotated[Array[Instr[Info]], @basic.Location])
@@ -224,21 +241,24 @@ pub(all) enum InstrDesc[Info] {
   Sequence(Array[Instr[Info]])
   Select(Instr[Info], Instr[Info], Instr[Info])
   IfAnnotation(cond~ : @types.Cond, then_body~ : @basic.Annotated[Array[Instr[Info]], @basic.Location], else_body~ : @basic.Annotated[Array[Instr[Info]], @basic.Location]?)
-} derive(Eq, @debug.Debug)
+}
 pub fn[A, B] InstrDesc::map_desc(Self[A], instr~ : (Instr[A]) -> Instr[B], block~ : (Array[Instr[A]]) -> Array[Instr[B]]) -> Self[B]
-pub fn[Info] InstrDesc::to_json(Self[Info]) -> Json
+pub fn[Info] InstrDesc::to_json(Self[Info]) -> @json.Json
 
+#derive(Eq, @debug.Debug)
 pub(all) enum MatchPattern {
   MatchCast(Ident?, @types.RefType[Ident])
   MatchNull
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct MemData[Info] {
   data_name : Ident?
   offset : Instr[Info]
   init : Array[DataElem]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ModuleField[Info] {
   Type(Array[@basic.Annotated[(Ident, SubType), @basic.Location]])
   TypeAlias(name~ : Ident, typ~ : @types.ValType[Ident])
@@ -253,42 +273,47 @@ pub(all) enum ModuleField[Info] {
   ImportGroup(module_~ : @basic.Annotated[Bytes, @basic.Location], decls~ : Array[@basic.Annotated[ImportDecl, @basic.Location]])
   ModuleAnnotation(Array[Attribute])
   Conditional(cond~ : @types.Cond, then_fields~ : @basic.Annotated[Array[@basic.Annotated[ModuleField[Info], @basic.Location]], @basic.Location], else_fields~ : @basic.Annotated[Array[@basic.Annotated[ModuleField[Info], @basic.Location]], @basic.Location]?)
-} derive(Eq, @debug.Debug)
-pub fn[Info] ModuleField::to_json(Self[Info]) -> Json
+}
+pub fn[Info] ModuleField::to_json(Self[Info]) -> @json.Json
 
+#derive(Eq, @debug.Debug)
 pub(all) enum NumType {
   I32
   I64
   F32
   F64
-} derive(Eq, @debug.Debug)
+}
 pub fn NumType::to_str(Self) -> String
 
+#derive(Eq, @debug.Debug)
 pub(all) enum OnClause {
   OnLabel(Ident, Ident)
   OnSwitch(Ident)
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct SubType {
   typ : CompType
   supertype : Ident?
   final_ : Bool
   descriptor : Ident?
   describes : Ident?
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TryCatchArm[Info] {
   arm_tag : Ident?
   arm_ref : Bool
   arm_types : Array[@types.ValType[Ident]]
   arm_body : @basic.Annotated[Array[Instr[Info]], @basic.Location]
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum UnOp {
   Neg
   Pos
   Not
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 pub type Attributes = Array[Attribute]

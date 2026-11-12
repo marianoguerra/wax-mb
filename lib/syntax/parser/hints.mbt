@@ -8,11 +8,12 @@
 ///|
 /// What a hint attribute asks for, before it has been checked against the
 /// instruction it prefixes.
+#derive(Debug)
 enum HintSetter {
   Branch(Bool)
   Freq(Int32)
   Targets(Array[(Ident, Int32)])
-} derive(Debug)
+}
 
 ///|
 /// `metadata.code.instr_freq`: never optimize.

@@ -12,36 +12,40 @@
 /// This is the `Idx` the Wax AST instantiates the type family at. The reference
 /// spells it `(string, location) annotated`; a named struct is the same shape
 /// with readable field names.
+#derive(Eq, Debug)
 pub(all) struct Ident {
   name : String
   loc : Location
-} derive(Eq, Debug)
+}
 
 ///|
 /// A function signature.
 ///
 /// Parameters may be anonymous (`fn(i32)`) or named (`fn(x: i32)`), hence the
 /// optional name; results never are.
+#derive(Eq, Debug)
 pub(all) struct FuncType {
   params : Array[Annotated[(Ident?, ValType), Location]]
   results : Array[ValType]
-} derive(Eq, Debug)
+}
 
 ///|
 /// What a defined type actually is.
+#derive(Eq, Debug)
 pub(all) enum CompType {
   Func(FuncType)
   Struct(Array[Annotated[(Ident, FieldType), Location]])
   Array(FieldType)
   /// A continuation type, from the stack-switching proposal.
   Cont(Ident)
-} derive(Eq, Debug)
+}
 
 ///|
 /// One member of a recursion group.
 ///
 /// `descriptor`/`describes` are the custom-descriptors proposal's pairing; both
 /// are present because the relation is navigable in each direction.
+#derive(Eq, Debug)
 pub(all) struct SubType {
   typ : CompType
   supertype : Ident?
@@ -49,7 +53,7 @@ pub(all) struct SubType {
   final_ : Bool
   descriptor : Ident?
   describes : Ident?
-} derive(Eq, Debug)
+}
 
 ///|
 /// A recursion group: types that may refer to each other.
@@ -83,11 +87,12 @@ pub fn splice_field(loc : Location) -> Annotated[(Ident, FieldType), Location] {
 
 ///|
 /// Unary operators.
+#derive(Eq, Debug)
 pub(all) enum UnOp {
   Neg
   Pos
   Not
-} derive(Eq, Debug)
+}
 
 ///|
 /// Binary operators.
@@ -97,6 +102,7 @@ pub(all) enum UnOp {
 /// division, remainder, shift and comparison. It is optional on the operators
 /// where floats also apply (`/`, `<`, `>`, `<=`, `>=`): `None` means the
 /// spelling did not commit, and the typer resolves it from the operand type.
+#derive(Eq, Debug)
 pub(all) enum BinOp {
   Add
   Sub
@@ -114,7 +120,7 @@ pub(all) enum BinOp {
   Gt(Signage?)
   Le(Signage?)
   Ge(Signage?)
-} derive(Eq, Debug)
+}
 
 ///|
 /// A block label.
@@ -122,6 +128,7 @@ pub type Label = Ident
 
 ///|
 /// What an `as` cast targets.
+#derive(Eq, Debug)
 pub(all) enum CastType {
   Value(ValType)
   /// `&fn(...)`, a function reference.
@@ -134,16 +141,17 @@ pub(all) enum CastType {
   /// instruction, and -- unlike a cast -- an ascribed bare hole claims no
   /// pending value: it GROUNDS a value of type `t` off the polymorphic floor.
   Ascribed(ValType)
-} derive(Eq, Debug)
+}
 
 ///|
 /// The four numeric types, where a construct admits only those.
+#derive(Eq, Debug)
 pub(all) enum NumType {
   I32
   I64
   F32
   F64
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn NumType::to_str(self : NumType) -> String {
@@ -175,27 +183,30 @@ pub fn format_signed_type(
 ///
 /// The `Ref` variants deliver the exception reference itself alongside the
 /// payload, so a handler can rethrow.
+#derive(Eq, Debug)
 pub(all) enum Catch {
   Catch(Ident, Label)
   CatchRef(Ident, Label)
   CatchAll(Label)
   CatchAllRef(Label)
-} derive(Eq, Debug)
+}
 
 ///|
 /// A stack-switching handler clause, `e on [tag -> 'label]`.
+#derive(Eq, Debug)
 pub(all) enum OnClause {
   OnLabel(Ident, Label)
   OnSwitch(Ident)
-} derive(Eq, Debug)
+}
 
 ///|
 /// A `match` arm pattern: an optionally-bound reference-type test, or a null
 /// test.
+#derive(Eq, Debug)
 pub(all) enum MatchPattern {
   MatchCast(Ident?, RefType)
   MatchNull
-} derive(Eq, Debug)
+}
 
 ///|
 /// Advisory `metadata.code.*` metadata attached to an instruction.
@@ -208,12 +219,14 @@ pub(all) enum MatchPattern {
 /// A hint carries the span of the attribute it was written as, so a diagnostic
 /// about a malformed hint blames the hint rather than the instruction it
 /// decorates.
+#derive(Eq, Debug)
 pub(all) struct Hint[T] {
   value : T
   loc : Location
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct Hints {
   /// `Some(true)` = branch likely taken.
   branch : Hint[Bool]?
@@ -224,7 +237,7 @@ pub(all) struct Hints {
   /// Likely targets of an indirect call, with each one's frequency as a
   /// percentage.
   targets : Hint[Array[(Ident, Int32)]]?
-} derive(Eq, Debug)
+}
 
 ///|
 /// An instruction with no hints, which is what everything carries unless an

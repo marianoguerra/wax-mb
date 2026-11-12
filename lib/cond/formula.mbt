@@ -21,11 +21,12 @@
 
 ///|
 /// A version triple, ordered lexicographically.
+#derive(Eq, Hash, Debug)
 pub(all) struct Version {
   major : Int32
   minor : Int32
   patch : Int32
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 pub fn Version::compare_to(self : Version, other : Version) -> Int32 {
@@ -51,6 +52,7 @@ pub impl Show for Version with fn output(self, logger) {
 /// the lower bounds are its negations. `vid > v` is `not (vid <= v)`, and
 /// `vid = v` is `vid <= v and not (vid < v)`. That is what keeps the atom set
 /// small enough for the search to be trivial.
+#derive(Eq, Hash, Debug)
 enum Atom {
   /// A boolean variable, which is its own atom.
   Bool(Int32)
@@ -58,17 +60,18 @@ enum Atom {
   Bound(Int32, Version, Bool)
   /// `vid == constant`.
   Const(Int32, Bytes)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A boolean formula over atoms.
+#derive(Eq, Debug)
 enum Node {
   True
   False
   Lit(Atom, Bool)
   And(Array[Node])
   Or(Array[Node])
-} derive(Eq, Debug)
+}
 
 ///|
 /// A formula over condition variables.

@@ -27,7 +27,7 @@ import {
   "marianoguerra/wap@0.4.2",
   "marianoguerra/was@0.2.2",
   "marianoguerra/wax@0.4.2",
-  "moonbitlang/x@0.5.5",
+  "moonbitlang/x@0.5.7",
   "marianoguerra/pretty-fast-pretty-printer@0.2.3",
 }
 

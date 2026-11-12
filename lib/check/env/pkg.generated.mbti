@@ -120,12 +120,13 @@ pub struct Namespace {
 pub fn Namespace::exists(Self, @diagnostic.Context, String, @basic.Location) -> Bool
 pub fn Namespace::new(@ref.Ref[@cond.T], links? : Array[Reference]?) -> Self
 
+#derive(Eq, Hash, @debug.Debug)
 pub(all) enum Origin {
   Root
   FromFunction(String)
   FromType(String)
   Ignored
-} derive(Eq, Hash, @debug.Debug)
+}
 
 pub(all) struct Reference {
   use_ : @basic.Location

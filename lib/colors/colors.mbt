@@ -3,12 +3,13 @@
 
 ///|
 /// Whether to emit ANSI colour.
+#derive(Eq, Debug)
 pub(all) enum Flag {
   Never
   Always
   /// Decide from the environment and whether the destination is a terminal.
   Auto
-} derive(Eq, Debug)
+}
 
 ///|
 /// A semantic category for syntax highlighting.
@@ -16,6 +17,7 @@ pub(all) enum Flag {
 /// Semantic rather than literal -- a `Type` is whatever the active palette says
 /// a type looks like, which is why Wax types come out cyan and WAT types red
 /// from the very same printer.
+#derive(Eq, Debug)
 pub(all) enum Style {
   /// `fn`, `let`, `if`.
   Keyword
@@ -36,7 +38,7 @@ pub(all) enum Style {
   Comment
   /// `{`, `(`, `:`, `;`.
   Punctuation
-} derive(Eq, Debug)
+}
 
 ///|
 /// The ANSI escape code to introduce each style, plus the one that ends it.

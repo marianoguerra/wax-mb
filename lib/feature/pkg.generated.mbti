@@ -22,10 +22,11 @@ pub fn set_config(Array[(Feature, Bool)]) -> Unit
 // Errors
 
 // Types and methods
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum Feature {
   CustomDescriptors
   CompactImportSection
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn Feature::description(Self) -> String
 pub fn Feature::enabled_by_default(Self) -> Bool
 pub fn Feature::name(Self) -> String

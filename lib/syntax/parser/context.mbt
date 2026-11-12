@@ -95,6 +95,7 @@ fn reject_chained_comparison(
 /// list is required" -- where the token stream is fine but what it says is not.
 /// Their message text is hand-written in the reference, so unlike the automaton
 /// messages it can be reproduced exactly.
+#derive(Debug)
 suberror SyntaxError {
   SyntaxError(
     loc~ : Location,
@@ -103,7 +104,7 @@ suberror SyntaxError {
     /// A machine-applicable repair, when the message names an exact one.
     fix~ : @basic.Edit?
   )
-} derive(Debug)
+}
 
 ///|
 /// The first semantic error of the running parse, if any.

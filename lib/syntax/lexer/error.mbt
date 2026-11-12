@@ -8,6 +8,7 @@
 // from day one.
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum LexError {
   /// A character that cannot begin any token. Carries the offending text so the
   /// message can quote it, exactly as the reference does.
@@ -24,7 +25,7 @@ pub(all) enum LexError {
   /// `\x80`-`\xFF` would be an incomplete UTF-8 sequence rather than a
   /// character. (In a STRING they are legal: there they denote raw bytes.)
   InvalidUnicodeChar
-} derive(Eq, Debug)
+}
 
 ///|
 /// The reference's message text for this error, byte for byte.

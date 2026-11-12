@@ -27,9 +27,10 @@
 /// from, or confused with, a source-level or wire-level integer. The reference
 /// makes exactly the same choice, and for exactly the same reason: the
 /// source-versus-canonical index confusion is the bug class this prevents.
+#derive(Eq, Hash, Debug)
 pub struct Id {
   index : Int32
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// The canonical index a code generator refers to a type by.
@@ -64,26 +65,29 @@ pub fn Id::to_int_for_tests_only(self : Id) -> Int32 {
 /// the group's own `pos`-th member. Two constructors rather than one integer
 /// space with a sign bit, so the two cannot be confused and an `Id` is only ever
 /// a genuine store index.
+#derive(Eq, Hash, Debug)
 pub(all) enum RefIndex {
   Def(Id)
   Rec(Int32)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A function type.
+#derive(Eq, Hash, Debug)
 pub(all) struct FuncType[Idx] {
   params : Array[@wasm_types.ValType[Idx]]
   results : Array[@wasm_types.ValType[Idx]]
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// What a defined type defines.
+#derive(Eq, Hash, Debug)
 pub(all) enum CompType[Idx] {
   Func(FuncType[Idx])
   Struct(Array[@wasm_types.FieldType[Idx]])
   Array(@wasm_types.FieldType[Idx])
   Cont(Idx)
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A defined type: what it defines, whether it may be subtyped further, and the
@@ -103,13 +107,14 @@ pub(all) enum CompType[Idx] {
 /// the one the two clauses are for. If a corpus file ever turns this into a
 /// byte difference it will show as a type-section drift, and this is the note
 /// that explains it.
+#derive(Eq, Hash, Debug)
 pub(all) struct SubType[Idx] {
   final_ : Bool
   supertype : Idx?
   descriptor : Idx?
   describes : Idx?
   typ : CompType[Idx]
-} derive(Eq, Hash, Debug)
+}
 
 ///|
 /// A rec group: the types defined together, which may therefore refer to each

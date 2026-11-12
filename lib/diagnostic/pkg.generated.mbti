@@ -66,19 +66,21 @@ pub(all) struct Label {
   message : @message.Message
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum OutputFormat {
   Human
   Json
   Short
-} derive(Eq, @debug.Debug)
+}
 
 type Render
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Severity {
   Error
   Warning
   Suggestion
-} derive(Eq, @debug.Debug)
+}
 pub fn Severity::header(Self) -> String
 pub fn Severity::to_str(Self) -> String
 
